@@ -1,0 +1,50 @@
+This is my notes on QFP: how we're going to detect differences in FP results across processors, co-processors, fp hardware, compilers, and libraries:
+
+To begin, it may be easier to target known differences in the components.
+
+One problem with dot product 'perpendicularity' tests is that we:
+* get a product of co-located items in vectors (i.e. a_0 * b_0 ( * ... * z_0))
+* add results (r_0 + r_1 + ... + r_n)
+The problem with addition with differences in magnitudes doesn't hold: i.e. for perpendicular vectors, the magnitudes of the summed products have to be identical (for D = 2) . . . could find more interesting examples with D > 2.  For my understanding, this is one of the biggest 'gotchas'.
+
+So I've done some work with D = 2, or at least I've started a little framework for doing bitwise manipulations of fp numbers and comparing results . . .
+
+But my point is that we may want to target known discrepancies and differences in the FP operation models.
+
+Here is my brainstorm on differences that can be exploited for detecting anomalities or circumstances where fp results will not match:
+
+******
+
+from http://christian-seiler.de/projekte/fpmath/
+
+* intermediate representations:
+** x87 and powerPC use high precision intermediates
+*** powerPC uses 64 bit precision for all fp representations
+the short story, some platforms perform same ops on all operand types, others depend on precision of operands
+
+* calling conventions can determine again a similar problem -- fp registers can be used to pass data directly from one function call to the next, keeping a-n intermediate result and not roudning / truncating into the destination memory type between operations
+
+* lack of support for double precision intermediates
+
+* has a great snippet of compiler reorderings
+
+
+*** THE TEST SUITE ***
+
+OK, so we have this collection of classes/structs so far:
+
+* FPWrap -- handles automatic bit projection onto other types
+* FPHelper -- does things like the actual bit projection to differing types, extraction of
+  FP components (like the exponent bitfield), and other low-level bitwise operations on
+  floating point
+* Vector -- a simple multipurpose Vector templated class, providing things like multiply, L2 norm,
+  dot product, etc
+* Matrix -- a simple multipurpose templated class for matrices
+* FPTests -- this is where the tests are written
+
+** what we need **
+* a script for running the tests
+* command line option handling for the tests (i.e. a 'main' that can construct various
+  tests (provided by FPTests) and interpret command line options like default fp precision,
+  number of tests)
+  
