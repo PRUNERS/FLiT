@@ -13,12 +13,10 @@
 #include <type_traits>
 #include <map>
 #include <float.h>
-//#include <cassert>
 
 using std::vector;
 using std::cout;
 using std::endl;
-// using std::hexfloat; //these ostream format modifiers aren't working!  New to gcc 5.0
 using std::hex;
 using std::dec;
 using std::pair;
@@ -33,15 +31,26 @@ using std::string;
 
 
 //used for directing output to nowhere if wanted
-class NullBuffer : public std::streambuf
-{
+class InfoStream : public std::ostream{
+  class NullBuffer : public std::streambuf
+  {
+  public:
+    int overflow(int c) { return c; }
+  };
 public:
-  int overflow(int c) { return c; }
+  InfoStream():std::ostream(new NullBuffer()){}
+  void
+  reinit(std::streambuf* b){init(b);}
+  void
+  show(){reinit(cout.rdbuf());}
+  void
+  hide(){reinit(new NullBuffer());}
 };
 
 //SETTINGS
-NullBuffer null_buffer;
-std::ostream info_stream(&null_buffer);
+//NullBuffer null_buffer;
+//std::ostream info_stream(&null_buffer);
+InfoStream info_stream;
 //#define info_stream cout
 typedef float prec; //CHANGE ME, works for float, double, long double
 const int D = 16; //must be even
@@ -100,54 +109,47 @@ struct FPHelpers {
     return *u;
   }
 
-  //returns the first normalized number > 0
+  //the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
   //[pos][bias + 1][000...0]
   template<typename T>
   static T
   getFirstNorm(){
     T retVal;
+    typedef typename get_corresponding_type<T>::type t;
+    t val;
     switch(sizeof(T)){
     case 4:
       {
-	uint32_t val = (uint32_t)1 << mantBitWidth32;//30;
-	//	cout << "here's the created uint: " << hex << val << endl;
-	projectType(val, retVal);
+	val = (t)1 << mantBitWidth32;
       }
       break;
     case 8:
       {
-	uint64_t val = (uint64_t)1 << mantBitWidth64;
+	val = (t)1 << mantBitWidth64;
 	projectType(val, retVal);
       }
       break;
     case 16:
       {
-	unsigned __int128 val = (unsigned __int128) 1 << mantBitWidth128;
-	projectType(val, retVal);
+	val = (t) 1 << mantBitWidth128;
       }
       break;
     default:
-      retVal = 0;
+      //won't compile
+      int x = 0;
     }
+    projectType(val, retVal);
     return retVal;
   }
 
   template<typename T>
   static T
-  perturbFP(T const &src, unsigned offset){ //negative offset with 0 gives NAN
-    T *ncSrc = const_cast<T*>(&src);
-    if(NO_SUBNORMALS && *ncSrc == 0) *ncSrc = getFirstNorm<T>();
-    T retVal;
-    if(sizeof(*ncSrc) == 8){
-      uint64_t tmp;
-      retVal = perturbFPTyped(*ncSrc, tmp, offset);
-    }else if(sizeof(*ncSrc) == 4){
-      uint32_t tmp;
-      retVal = perturbFPTyped(*ncSrc, tmp, offset);
-    }else{ //128 bit precision
-      unsigned __int128 tmp;
-      retVal =  perturbFPTyped(*ncSrc, tmp, offset);
-    }
+  perturbFP(T const &src, unsigned offset){ //negative offset with 0 may produce NAN
+    //    T *ncSrc = const_cast<T*>(&src);
+    T ncSrc = src;
+    typename get_corresponding_type<T>::type tmp;
+    if(NO_SUBNORMALS && ncSrc == 0) ncSrc = getFirstNorm<T>();
+    T retVal = perturbFPTyped(ncSrc, tmp, offset);
     return retVal;
   }
 
@@ -166,29 +168,21 @@ struct FPHelpers {
   static unsigned
   getExponent(T v){
     unsigned retVal = -1;
-    // cout << "sizeof(v) is: " << sizeof(v) << endl;
+    typename get_corresponding_type<T>::type val;
+    projectType(v, val);
     switch(sizeof(v)){
     case 4:
       {
-	typedef uint32_t t;
-	t val;
-	projectType(v, val);
 	retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
       }
       break;
     case 8:
       {
-	typedef uint64_t t;
-	t val;
-	projectType(v, val);
 	retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64); 
       }
       break;
     case 16:
       {
-	typedef unsigned __int128 t;
-	t val;
-	projectType(v, val);
 	retVal = ((val >> (128 - expBitWidth128 - 1) & 0x7FFF) - bias128);
       }
       break;
@@ -225,18 +219,6 @@ ostream& operator<<(ostream& os, const FPWrap<U> &w){
   os.flags(f);
   return os;
 }
-
-// template <>
-// ostream& operator<<<long double>(ostream& os, const FPWrap<long double> &w){
-//   w.update();
-//   //  std::ios_base::fmtflags f = std::cout.flags();
-//   //FIXME can't handle 128 bit values for ostream operations
-//   uint64_t high = w.intVal >> 64;
-//   uint64_t low = (uint64_t) w.intVal;
-//   os << std::hex << high << low;
-//   //  std::cout.flags(f);
-//   return os;
-// }
 
 //keeping with the traditional mathematics index
 //ordering [row][column]
@@ -278,7 +260,9 @@ public:
 
   static
   Vector<T>
-  getRandomVector(size_t dim, T min_inc, T max_exc){
+  getRandomVector(size_t dim, T min_inc, T max_exc,
+		  std::default_random_engine::result_type seed = 0){
+    gen.seed(seed);
     std::uniform_real_distribution<T> dist(min_inc,max_exc);
     Vector<T> tmp(dim);
     for(auto& i: tmp.data){
@@ -290,7 +274,7 @@ public:
   Vector<T>
   getUnitVector() const {
     Vector<T> retVal(*this);
-    return retVal * ((T)1.0 / (this->L2norm()));
+    return retVal * ((T)1.0 / (this->L2Norm()));
   }
 
   bool
@@ -298,11 +282,6 @@ public:
     bool retVal = true;
     for(int x = 0; x < size(); ++x){
       if(data[x] != b.data[x]){
-	//TODO FIXME can't handle 128 bit values on ostream!
-	// info_stream << "vector ==, false on i = " << x << " values: " << data[x] <<
-	//   ":" << b.data[x] << endl;
-	// info_stream << "bits: " << FPWrap<T>(data[x]) << ":" << FPWrap<T>(b.data[x]) << endl;
-	// info_stream << "difference: " << data[x] - b.data[x] << endl;
 	retVal = false;
 	break;
       }
@@ -393,11 +372,11 @@ public:
     return distance;
   }
 
-  //dot product specifiers
+  //method to reduce vector (pre-sort)
   enum sort_t{
     lt, //manual lt magnitude sort
     gt, //manual gt magnitude sort
-    bi, //built-in (std::inner_product)
+    bi, //built-in (std::inner_product) [only for ^, assumes def otherwise]
     def //default (manual unsorted)
   };
 
@@ -406,45 +385,63 @@ private:
 public:
   template<class U>
   friend ostream& operator<<(ostream& os, Vector<U> const &a);
+
+  //fun is lamda like: [&sum](T a){sum += a};
+  //you provide the T sum, closure will capture
+  //not const because it may sort cont
+  //C is container type
+  template<typename F, class C>
+  void
+  reduce(C &cont, F const &fun) const {
+    T retVal;
+    if(sortType == lt || sortType == gt){
+      if(sortType == lt)
+	std::sort(cont.begin(), cont.end(),
+		  [](T a, T b){return fabs(a) < fabs(b);});
+      else
+	std::sort(cont.begin(), cont.end(),
+		  [](T a, T b){return fabs(a) > fabs(b);});
+    }
+    for_each(cont.begin(), cont.end(), fun);
+  }
   
   void
   setSort(sort_t st = def){sortType = st;}
   //inner product (dot product)
   T
-  operator^(Vector<T> const &rhs){
-    //    assert(const_cast<size_t>(size()) == rhs.size() && "Mismatched vector sizes in ^");
+  operator^(Vector<T> const &rhs) const {
     T sum = 0;
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), 0);
     }else{
       vector<T> prods(data.size());
       for(int i = 0; i < size(); ++i){ 
-	prods[i] = data[i] * rhs.data[i]; //is this promoted to FMA? (need support for FMA)
-	info_stream << "(" << data[i] << " * " << rhs.data[i] << ") = " << prods[i] << endl;
+	prods[i] = data[i] * rhs.data[i]; 
+	//	info_stream << "(" << data[i] << " * " << rhs.data[i] << ") = " << prods[i] << endl;
       }
-      if( sortType == gt ){
-	std::sort(prods.begin(), prods.end(), [](T l, T r){ return fabs(l) > fabs(r);});
-      }else if(sortType == lt){
-	std::sort(prods.begin(), prods.end(), [](T l, T r){ return fabs(l) < fabs(r);});
-      }
-      info_stream << "list of products to sum:"<< endl;
-      for(auto p: prods) info_stream << p << " ";
-      info_stream << endl;
-      std::for_each(prods.begin(), prods.end(), [&sum](T p){sum += p;});
-      info_stream << "dot prod is: " << sum << endl;
+      reduce(prods, [&sum](T e){sum += e;});
     }
     return sum;
   }
 
   //L2 norm
   T
-  L2norm() const {
+  L2Norm() const {
     Vector<T> squares(size());
     T retVal = 0;
-    for(int x = 0; x < size(); ++x){
-      retVal += data[x] * data[x];
-    }
+    vector<T> prods(data); //make a copy of our data for possible sorted reduction
+    //will sort reduction if sort
+    reduce(prods, [&retVal](T e){retVal += e*e;});
     return sqrt(retVal);
+  }
+
+  T
+  L2Distance(Vector<T> const &rhs) const {
+    T retVal = 0;
+    auto diff = operator-(rhs);
+    //sorts pre-rediction for sortType = gt|lt
+    reduce(diff.data, [&retVal](T e){retVal += e*e;});
+    return retVal;
   }
  
   //cross product
@@ -513,6 +510,9 @@ public:
     for(int x = 0; x < data.size(); ++x){
       for(int y = 0; y < data[0].size(); ++y){
 	if(data[x][y] != rhs.data[x][y]){
+	  info_stream << "in: " << __func__ << endl;
+	  info_stream << "for x,y: " << x << ":" << y << endl;
+	  info_stream << "this = " << data[x][y] << "; rhs = " << rhs.data[x][y] << endl;
 	  retVal = false;
 	  break;
 	}
@@ -615,37 +615,37 @@ struct FPTests {
   template<typename T>
   static pair<string, long double>
   DoSkewSymCPRotationTest(const T min, const T max){
-    cout << "entered " << __PRETTY_FUNCTION__ << endl; 
+    info_stream << "entered " << __func__ << endl; 
     long double score = 0.0;
     auto A = Vector<T>::getRandomVector(3, min, max).getUnitVector();
-    cout << "A (unit) is: " << endl << A << endl;
+    info_stream << "A (unit) is: " << endl << A << endl;
     auto B = Vector<T>::getRandomVector(3, min, max).getUnitVector();
-    cout << "B (unit): " << endl  << B << endl;
+    info_stream << "B (unit): " << endl  << B << endl;
     auto cross = A * B; //cross product
-    cout << "cross: " << endl << cross << endl;
-    auto sine = cross.L2norm();
-    cout << "sine: " << endl << sine << endl;
+    info_stream << "cross: " << endl << cross << endl;
+    auto sine = cross.L2Norm();
+    info_stream << "sine: " << endl << sine << endl;
     auto cosine = A ^ B; //dot product
-    cout << "cosine: " << endl << cosine << endl;
+    info_stream << "cosine: " << endl << cosine << endl;
     auto sscpm = Matrix<T>::SkewSymCrossProdM(cross);
-    cout << "sscpm: " << endl << sscpm << endl;
+    info_stream << "sscpm: " << endl << sscpm << endl;
     auto rMatrix = Matrix<T>::Identity(3) +
       sscpm + (sscpm * sscpm) * ((1 - cosine)/(sine * sine));
     auto result = rMatrix * A;
-    cout << "rotator: " << endl << rMatrix << endl;
+    info_stream << "rotator: " << endl << rMatrix << endl;
     if(!(result == B)){
       auto dist = result.L1Distance(B);
-      cout << "Skew symmetric cross product rotation failed with ";
-      cout << "L1Distance " << dist << endl;
-      cout << "starting vectors: " << endl;
-      cout << A << endl;
-      cout << "...and..." << endl;
-      cout << B << endl;
-      cout << "ended up with: " << endl;
-      cout << result << endl;
+      info_stream << "Skew symmetric cross product rotation failed with ";
+      info_stream << "L1Distance " << dist << endl;
+      info_stream << "starting vectors: " << endl;
+      info_stream << A << endl;
+      info_stream << "...and..." << endl;
+      info_stream << B << endl;
+      info_stream << "ended up with: " << endl;
+      info_stream << result << endl;
       score = dist;
     }
-    return {__PRETTY_FUNCTION__, score};
+    return {__func__, score};
   }
   template<typename T>
   static pair<string, long double>
@@ -653,10 +653,7 @@ struct FPTests {
 		     const size_t ulp_inc,
 		     const typename Vector<T>::sort_t
 		     st = Vector<T>::def){
-    //    typedef typename get_corresponding_type<T>::type itype;
-    //unsigned __int128 score = 0;
     long double score = 0.0;
-    // itype score = 0;
     std::vector<unsigned> orthoCount(dim, 0);
     Vector<T> a(dim, [](){ static unsigned x = 0; return (T)(1 << x++);});
     a.setSort(st);
@@ -711,83 +708,12 @@ struct FPTests {
 	   << FPHelpers::getExponent(a[cdim] * b[cdim]) << endl;
       cdim++;
     }
-    return {__PRETTY_FUNCTION__, score};
+    return {__func__, score};
   }
 
-  //this takes two orthogonal 3d vectors, a theta 'start' and
-  //an divisor.  I'ts hoped that the passed in
-  //theta will be sufficient to detect non-orthogonality,
-  //and then 'start' will be divided until orthogonality is
-  //detected again
-  // template<typename T>
-  // static void
-  // getFirstOrthoTheta(Vector<T> const &a, Vector<T> const &b,
-  // 		     T &start, T div){
-  //   Vector<T> tmp = a;
-  //   tmp.rotateAboutZ_3d(start);
-  //   if(tmp.isOrtho(b)){
-  //     cout << "initial theta, " << start << ", passed to " <<
-  // 	__PRETTY_FUNCTION__ << " does not rotate 'a' to a detectable non-ortho position from b" << endl;
-  //     exit(1);
-  //   }
-  //   do{
-  //     start /= div;
-  //     tmp = a;
-  //     tmp.rotateAboutZ_3d(start);
-  //   } while(tmp.isOrtho(b));
-  //   info_stream << "First ortho theta is: " << start << endl;
-  // }
-  
-  // template<typename T>
-  // static void
-  // DoVectRotate3dTest(const int iters, const size_t ulp_inc,
-  // 		     const int st = Vector<T>::def){
-  //   size_t orthoCount = 0;
-  //   const int dim = 3;
-  //   Vector<T> a = {3, 4, 1};
-  //   a.setSort(Vector<T>::bi);
-  //   Vector<T> b = {3, -2, -1}; //ortholgonal 3d vectors
-  //   cout << "starting dot product orthogonality test after rotation with a, b = " << endl;
-  //   for(int x = 0; x < dim; ++x) cout << x << '\t';
-  //   cout << endl;
-  //   cout << a << endl;
-  //   cout << b << endl;
-  //   T rrads = (T)M_PI/4;
-  //   // using corUint = get_corresponding_type<T>::type;
-  //   FPWrap<T> rWrap(rrads);
-  //   Vector<T> rotated = a;
-  //   getFirstOrthoTheta(a, b, rrads, (T)1.05);
-  //   info_stream << "rrads is now:\t(bits) " << rWrap << endl;
-  //   info_stream << "\t(value): " << rrads << endl;
-  //   for(int i = 0; i < iters; ++i){
-  //     rrads = FPHelpers::perturbFP(rrads, i * ulp_inc);
-  //     info_stream << "rrads is now: " << rWrap << endl;
-  //     rotated.rotateAboutZ_3d(rrads);
-  //     bool isOrth = a.isOrtho(b);
-  //     if(isOrth) ++orthoCount;
-  //     info_stream << "a = " << a << " isOrtho = " << isOrth << endl;
-  //     rotated = a;
-  //   }
-  //   cout << "Final report, ortho detection on infinitismal rotation of one of pair" << endl;
-  //   cout << '\t' << "ulp increment per loop: " << ulp_inc << endl;
-  //   cout << '\t' << "iterations: " << std::dec << iters << endl;
-  //   cout << '\t' << "dimensions: " << dim << endl;
-  //   cout << '\t' << "total ortho: " << orthoCount << endl;
-    
-  // }
-
-  //for this test, we take ortho 3d vectors,
-  //test ortho, compute rotation matrix to
-  //align, rotate, and then calculate angle (s/b 0)
-  // static void
-  // AlignAndCompare(){
-  // }
   template<typename T>
   static pair<string, long double>
   DoMatrixMultSanity(size_t dim, T min, T max){
-    // typedef typename get_corresponding_type<T>::type itype;
-    // typedef unsigned __int128 itype;
-    // itype score = 0;
     long double score = 0.0;
     Vector<T> b = Vector<T>::getRandomVector(dim, min, max);
     auto c = Matrix<T>::Identity(dim) * b;
@@ -795,61 +721,24 @@ struct FPTests {
     bool eq = c == b;
     info_stream << "A * b == b? " << eq << endl;
     if(!eq) score = c.L1Distance(b);
-    return {__PRETTY_FUNCTION__, score};
+    return {__func__, score};
   }
 
   template<typename T>
   static pair<string, long double>
   DoSimpleRotate90(){
-    // typedef typename get_corresponding_type<T>::type itype;
-    // typedef unsigned __int128 itype;
-    // itype score = 0;
     long double score = 0.0;
     Vector<T> A = {1, 1, 1};
     Vector<T> expected = {-1, 1, 1};
     info_stream << "Rotating A: " << A << ", 1/4 PI radians " << endl;
     A.rotateAboutZ_3d(M_PI/2);
     info_stream << "Resulting vector: " << A << endl;
-    //DELME
-    cout << "in " << __PRETTY_FUNCTION__ << endl;
+    info_stream << "in " << __func__ << endl;
     A.dumpDistanceMetrics(expected, info_stream);
     if(!(A == expected))  score = A.L1Distance(expected);
-    return {__PRETTY_FUNCTION__, score};
+    return {__func__, score};
   }
 
-  // template<typename T>
-  // static pair<string, T>
-  // Rotate90CheckOrtho(){
-  //   Vector<T> A = {1, 1, 1};
-  //   auto B = A;
-  //   cout << "Rotating A: " << A << ", 1/2 PI radians " << endl;
-  //   A.rotateAboutZ_3d(M_PI);
-  //   cout << "Resulting vector: " << A << endl;
-  //   cout << "ortho? " << A.isOrtho(B) << endl;
-  //   return {__PRETTY_FUNCTION__, s
-  // }
-
-  // template<typename T>
-  // static pair<string, T>
-  // Rotate3dZUntilOrtho(size_t iters){
-  //   Vector<T> A = {1, 1, 1};
-  //   auto B = Vector<T>({1, 1, -1});
-  //   auto n = M_PI / 2 / iters;
-  //   info_stream << "Rotating A: " << A <<
-  //     ", PI / " << iters << " radians until ortho to original + 0, 0, -2" << endl;
-  //   size_t count = 0;
-  //   do{
-  //     A.rotateAboutZ_3d((T)M_PI / iters);
-  //     ++count;
-  //   } while (!(A.isOrtho(B)) && count < iters);
-  //   info_stream << "Resulting vector: " << A << endl;
-  //   info_stream << "ortho? " << A.isOrtho(B) << endl;
-  //   //DELME
-  //   cout << "in " << __PRETTY_FUNCTION__ << endl;
-  //   A.dumpDistanceMetrics(expected);
-
-  //   return {__PRETTY_FUNCTION__, A.BitDistance(B)};
-  // }
 
   //this test takes a random 3d vector, rotates it and then
   //rotates it again with a theta negative of the previous (unrotates) and
@@ -866,16 +755,14 @@ struct FPTests {
     info_stream << "Unrotated is: " << A << endl;
     bool equal = A == orig;
     info_stream << "Are they equal? " << equal << endl;
-    // auto dist = A.BitDistance(orig);
     auto dist = A.L1Distance(orig);
     if(!equal){
       info_stream << "error in L1 distance is: " << dist << endl;
       info_stream << "difference between: " << (A - orig) << endl;
     }
-    //DELME
-    cout << "in " << __PRETTY_FUNCTION__ << endl;
+    info_stream << "in " << __func__ << endl;
     A.dumpDistanceMetrics(orig, info_stream);
-    return {__PRETTY_FUNCTION__, dist};
+    return {__func__, dist};
   }
 
   //this this test creates a random 3d vector, copies it to orig,
@@ -883,9 +770,6 @@ struct FPTests {
   template <typename T>
   static pair<string, long double>
   RotateFullCircle(size_t n, T min = -1, T max = 1){
-    // typedef typename get_corresponding_type<T>::type itype;
-    // typedef unsigned __int128 itype;
-    // itype score = 0;
     long double score = 0.0;
     Vector<T> A = Vector<T>::getRandomVector(3, min, max);
     auto orig = A;
@@ -898,72 +782,247 @@ struct FPTests {
     info_stream << "Rotated is: " << A << endl;
     bool equal = A == orig;
     info_stream << "Does rotated vect == starting vect? " << equal << endl;
-    // itype bitDistance = 0;
     if(!equal){
-      // auto bitDistance = A.BitDistance(orig);
-      // std::ios_base::fmtflags f = std::cout.flags();
-      // info_stream << "The bit distance is: " << std::hex << bitDistance << endl;
-      // std::cout.flags(f);
       info_stream << "The (vector) difference is: " << (A - orig) << endl;
-      //      score = bitDistance;
       score = A.L1Distance(orig);
     }
-    //DELME
-    cout << "in " << __PRETTY_FUNCTION__ << endl;
+    info_stream << "in " << __func__ << endl;
     A.dumpDistanceMetrics(orig, info_stream);
-    return {__PRETTY_FUNCTION__, score};
-  }
-
-  // static void
-  // SimpleRotate(){
-  //   Vector<float> a = {1, 1, 1};
-  //   float theta = M_PI;
-  //   cout << "starting test rotating a 3d vector " << theta << " radians about z" << endl;
-  //   for(int x = 0; x < 100; ++x){
-  //     a.rotateAboutZ_3d(theta);
-  //     cout << "x:" << x << "\t" << a << endl;
-  //   }
-  // }
-
-  static void
-  SimpleMatrixMultTest(){
-    cout << "doing simple test of matrix * matrix and matrix * scalar" << endl;
-    auto ident = Matrix<float>::Identity(3);
-    Matrix<float> M = {{1, 2, 3},
-		       {4, 5, 6},
-		       {7, 8, 9}};
-    cout << "Multiplying matrices: " << endl;
-    cout << M << endl;
-    cout << "and..." << endl;
-    cout << ident << endl;
-    if(M * ident == M) cout << "success" << endl;
-    else{
-      cout << "failure with: " << endl;
-      cout << (M * ident) << endl;
-    }
-  }
-
-  static void
-  SimpleMatrixScalarMultTest(){
-    cout << "simple scalar mult test with matrix: " << endl;
-    Matrix<float> M = {{1,2,3},
-		       {4,5,6},
-		       {7,8,9}};
-    Matrix<float> const target = {{10, 20, 30},
-				  {40, 50, 60},
-				  {70, 80, 90}};
-    cout << M << endl;
-    float scalar = 10;
-    cout << "and scalar: " << scalar << endl;
-    auto res = M * scalar;
-    if(res == target) cout << "success" << endl;
-    else{
-      cout << "failed with: " << endl;
-      cout << res << endl;
-    }
+    return {__func__, score};
   }
 };
 
+namespace UnitTests{
+  typedef std::pair<std::string, bool> results;
+  //the things we've gotta test:
+  //*
+  //FPHelpers: getFirstNorm, perturbFP, getExponent
+  //*
+  //Vector: getUnitVector, genOrthoVector, -, L1Distance,
+  //^ (innerproduct), L2Norm, L2Distance, *
+  //*
+  //Matrix: * (MxM), *(MxV), *(Mxs), +
+
+  template<typename T>
+  static results
+  TestGenOrthoVector(){
+    bool result = true;
+    auto A = Vector<T>::getRandomVector(10, -10, 10);
+    auto O = A.genOrthoVector();
+    if(!(A.isOrtho(O))) result = false;
+    return {__func__, result};
+  }  
+
+  template<typename T>
+  static results
+  TestL1Distance(){
+    bool result = true;
+    Vector<T> A = {12.25, 77.45, 99.9};
+    Vector<T> B = {-17.29, 33.3, -1};
+    T output = A.L1Distance(B);
+    T expected = (12.25 - -17.29) + (77.45 - 33.3) + (99.9 - -1);
+    if(!(output == expected)){
+      result = false;
+      info_stream << "in " << __func__ << ":" << endl;
+      info_stream << "A:" << endl << A << endl;
+      info_stream << "B:" << endl << B << endl;
+      info_stream << "expected:" << endl << expected << endl;
+      info_stream << "output:" << endl << output << endl;
+    }
+    return{__func__, result};
+  }
+  
+  template<typename T>
+  static results
+  TestInnerProd(){
+    bool result = true;
+    Vector<T> A = {12.25, 77.45, 99.9};
+    Vector<T> B = {-17.29, 33.3, -1};
+    T expected = (12.25*-17.29)+(77.45*33.3)+(99.9*-1);
+    T output = A ^ B;
+    if(!(output == expected)){
+      result = false;
+      info_stream << "in " << __func__ << ":" << endl;
+      info_stream << "A:" << endl << A << endl;
+      info_stream << "B:" << endl << B << endl;
+      info_stream << "expected:" << endl << expected << endl;
+      info_stream << "output:" << endl << output << endl;
+    }
+    return{__func__, result};
+  }
+
+  
+  template<typename T>
+  static results
+  TestL2Distance(){
+    bool result = true;
+    Vector<T> A = {2, 3, 4};
+    Vector<T> B = {4, 5, 6};
+    if(!(A.L2Distance(B) != sqrt(12))) result = false;
+    return {__func__, result};
+  }
+  
+  template<typename T>
+  static results
+  UnitVector(){
+    bool result = true;
+    auto V = Vector<T>::getRandomVector(5, -20, 20);
+    T expected = 1.0;
+    auto output = V.getUnitVector().L2Norm();
+    if(!(output == expected)){
+      result = false;
+      info_stream << "in " << __func__ << ":" << endl;
+      info_stream << "V:" << endl << V << endl;
+      info_stream << "expected:" << endl << expected << endl;
+      info_stream << "output:" << endl << output << endl;
+      info_stream << "expected bits: " << std::hex << FPWrap<T>(expected) << endl;
+      info_stream << "output bits:" << std::hex << FPWrap<T>(output) << endl;
+    }
+    return{__func__, result};
+  }
+
+  template<typename T>
+  static results
+  MplusM(){
+    bool result = true;
+    Matrix<T> A = {{1, 2, 3},
+		   {4, 5, 6},
+		   {7, 8, 9}};
+    Matrix<T> B = {{9, 8, 7},
+		   {6, 5, 4},
+		   {3, 2, 1}};
+    Matrix<T> expected = {{10, 10, 10},
+			  {10, 10, 10},
+			  {10, 10, 10}};
+    if(!(A + B == expected)) result = false;
+    return {__func__, result};
+  }
+
+  template<typename T>
+  static results
+  MxV(){
+    bool result = true;
+    Matrix<T> A = {{77, 16.23, 99},
+		   {17.7777, -23.3, 11},
+		   {131, 134, 137}};
+    Vector<T> b = {-18, 374, 12};
+    Vector<T> expected = {5872.02, -8902.199, 49402};
+    auto output = A * b;
+    if(!(output == expected)){
+      result = false;
+      info_stream << "in " << __func__ << ":" << endl;
+      info_stream << "A:" << endl << A << endl;
+      info_stream << "b:" << endl << b << endl;
+      info_stream << "expected:" << endl << expected << endl;
+      info_stream << "output:" << endl << output << endl;
+    }
+    return {__func__, result};
+  }
+  
+  template<typename T>
+  static results
+  MxM(){
+    bool result = true;
+    Matrix<T> A = {{1,2,3},
+		   {.25, .5, .75},
+		   {4,5,6}};
+    Matrix<T> B = {{7,8,9},
+		   {11,12,13},
+		   {8,7,5}};
+    Matrix<T> expected = {{53, 53, 50},
+			  {13.25, 13.25, 12.5},
+			  {131, 134, 131}};
+    auto output = A * B;
+    if(!(output == expected)){
+      result = false;
+      info_stream << "in " << __func__ << ":" << endl;
+      info_stream << "A:" << endl << A << endl;
+      info_stream << "B:" << endl << B << endl;
+      info_stream << "expected:" << endl << expected << endl;
+      info_stream << "output:" << endl << output << endl;
+    }
+    return {__func__, result};
+  
+  }
+  template<typename T>
+  static results
+  MxI(){
+    bool result = true;
+    info_stream << "in " << __func__ << ":" << endl;
+    auto ident = Matrix<T>::Identity(3);
+    Matrix<T> M = {{1, 2, 3},
+		   {4, 5, 6},
+		   {7, 8, 9}};
+    info_stream << "Multiplying matrices: " << endl;
+    info_stream << M << endl;
+    info_stream << "and..." << endl;
+    info_stream << ident << endl;
+    if(M * ident == M) info_stream << "success" << endl;
+    else{
+      info_stream << "failure with: " << endl;
+      info_stream << (M * ident) << endl;
+      result = false;
+    }
+    return {__func__, result};
+  }
+
+  //tests Matrix*scal operator
+  template<typename T>
+  static results
+  MxS(){
+    bool retVal = true;
+    info_stream << "in " << __func__ << ":" << endl;
+    Matrix<T> M = {{1,2,3},
+		   {4,5,6},
+		   {7,8,9}};
+    Matrix<T> const target = {{10, 20, 30},
+			      {40, 50, 60},
+			      {70, 80, 90}};
+    info_stream << M << endl;
+    T scalar = 10;
+    info_stream << "and scalar: " << scalar << endl;
+    auto res = M * scalar;
+    if(res == target) info_stream << "success" << endl;
+    else{
+      info_stream << "failed with: " << endl;
+      info_stream << res << endl;
+      retVal = false;
+    }
+    return {__func__, retVal};
+  }
+  bool RunTests(std::map<std::string, bool> &results, bool detailed = false){
+    typedef float prec;
+    if(detailed) info_stream.show(); //reinit(cout.rdbuf());
+    cout << "starting unit tests" << endl;
+    results.insert(TestGenOrthoVector<prec>());
+    results.insert(TestL1Distance<prec>());
+    results.insert(TestL2Distance<prec>());
+    results.insert(TestInnerProd<prec>());
+    results.insert(UnitVector<prec>());
+    results.insert(MplusM<prec>());
+    results.insert(MxV<prec>());
+    results.insert(MxM<prec>());
+    results.insert(MxI<prec>());
+    results.insert(MxS<prec>());
+  }
+
+  int DoTests(){
+    int retVal = 0;
+    std::map<std::string, bool> results;
+    RunTests(results);
+    if(std::any_of(results.begin(), results.end(), [](UnitTests::results x){return x.second;})){
+      for(auto i: results){
+	cout << i.first << "\t" << i.second << endl;
+      }
+      retVal = 1;
+      cout << "here are the details:" << endl;
+      RunTests(results, true);
+    }else cout << "all tests passed" << endl;
+    return retVal;
+  }
+}
+
+namespace fpTestSuite{
 template<typename T>
 void
 DoTests(size_t iters,
@@ -974,12 +1033,10 @@ DoTests(size_t iters,
 	typename Vector<T>::sort_t inner_prod_method,
 	T theta,
 	std::map<string, long double> &scores){
-	// std::map<string, unsigned __int128> &scores){
   scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
 				      ulp_inc, inner_prod_method));
   scores.insert(FPTests::DoMatrixMultSanity<T>(highestDim, min, max));
   scores.insert(FPTests::DoSimpleRotate90<T>());
-  //  scores.insert(FPTests::Rotate3dZUntilOrtho<T>(iters));
   scores.insert(FPTests::RotateAndUnrotate<T>(min, max, theta));
   scores.insert(FPTests::RotateFullCircle<T>(iters, min, max));
   scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
@@ -1012,7 +1069,6 @@ outputResults(size_t iters,
 	      int inner_prod_method,
 	      T theta,
 	      std::map<string, long double> &scores){
-	      // std::map<string, unsigned __int128> &scores){
   cout << "*****************************************" << endl;
   cout << "Sub test with:" << endl;
   cout << "precision: " << typeid(T).name() << endl;
@@ -1024,9 +1080,7 @@ outputResults(size_t iters,
     cout << i.first << ":\t" << i.second << endl;
   }
   long double subtotal = 0;
-  // unsigned __int128 subtotal = 0;
   for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
-  // for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, unsigned __int128> p)
 	   {subtotal += p.second;});
   cout << "subtotal score: " << subtotal << endl;
   cout << "*****************************************" << endl;
@@ -1036,11 +1090,8 @@ template<typename T>
 void
 tabulateSubtest(std::map<string, long double> &master,
 		std::map<string, long double> &sub){
-// tabulateSubtest(std::map<string, unsigned __int128> &master,
-// 		std::map<string, unsigned __int128> &sub){
   for(auto i: sub){
     master[i.first] += i.second;
-    //    FPHelpers::projectType(FPWrap<T>(master[i.first]).intVal + FPWrap<T>(i.second).intVal, master[i.first]);
   }
   sub.clear();
 }
@@ -1061,9 +1112,12 @@ getSortT(int t){
     return Vector<T>::def;
   }
 }
+}
 
 int
 main(int argc, char* argv[]){
+  if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
+  using namespace fpTestSuite;
   // The params to perturb are:
   // precision := {float | double | long double}
   // innerIterations := 200
@@ -1081,19 +1135,17 @@ main(int argc, char* argv[]){
   float theta = M_PI;
   
   cout.precision(COUT_PREC); //set cout to print many decimal places
+  info_stream.precision(COUT_PREC);
   int dotProductMethod = Vector<prec>::def; //can be def, lt, gt, bi
   const int TestCount = 6;
 
   std::map<string, long double> masterScore;
   std::map<string, long double> scores;
-  // std::map<string, unsigned __int128> masterScore;
-  // std::map<string, unsigned __int128> scores;
   for(int ipm = 0; ipm < 4; ++ipm){ //inner product sort pre sum
     for(int p = 0; p < 3; ++p){ //float, double, long double
       switch(p){
       case 0: //float
 	{
-	// std::map<string, float>scores;
 	DoTests<float>(iters, dim, ulp_inc, min, max, getSortT<float>(ipm), theta, scores);
 	outputResults<float>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
 	tabulateSubtest<float>(masterScore, scores);
@@ -1101,7 +1153,6 @@ main(int argc, char* argv[]){
 	}
       case 1:
 	{
-	// std::map<string, double>scores;
 	DoTests<double>(iters, dim, ulp_inc, min, max, getSortT<double>(ipm), theta, scores);
 	outputResults<double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
 	tabulateSubtest<double>(masterScore, scores);
@@ -1109,7 +1160,6 @@ main(int argc, char* argv[]){
 	}
       case 2:
 	{
-	// std::map<string, long double>scores;
 	DoTests<long double>(iters, dim, ulp_inc, min, max, getSortT<long double>(ipm), theta, scores);
 	outputResults<long double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
 	tabulateSubtest<long double>(masterScore, scores);
@@ -1119,19 +1169,17 @@ main(int argc, char* argv[]){
     }
   }
   long double mScore = 0;
-  // unsigned __int128 mScore = 0;
   std::for_each(masterScore.begin(),
 		masterScore.end(),
 		[&mScore](pair<string, long double> p){mScore += p.second;});
-		// [&mScore](pair<string, unsigned __int128> p){mScore += p.second;});
   cout << "master score is: " << mScore << endl;
-  // unsigned __int128 retVal;
-  // FPHelpers::projectType(mScore, retVal);
-  // return retVal;
   return mScore;
 }
 
+
+//this executes unit tests
 // int main(){
-//   FPTests::SimpleMatrixMultTest();
-//   FPTests::SimpleMatrixScalarMultTest();
+//   cout.precision(100);
+//   using namespace UnitTests;
+//   return DoTests();
 // }

@@ -47,4 +47,40 @@ OK, so we have this collection of classes/structs so far:
 * command line option handling for the tests (i.e. a 'main' that can construct various
   tests (provided by FPTests) and interpret command line options like default fp precision,
   number of tests)
-  
+
+
+*** results ***
+
+I'm not seeing a general difference between compilers.  Also, x86_64 machines don't generally support x87, so I think
+those are beyond consideration (I mean, everyone doing serious HPC is using modern 64 bit machines)
+
+So I'm experimenting with compiler options that will affect 64 bit floating point math (i.e. mmx / sse / avx instructions).
+
+Here're the differences I'm coming up with:
+
+*** -funsafe-math-optimizations
+
+This shows a difference with g++ (5.x) on bihexal, but no difference with clang (3.6).
+
+Here're the differences:
+
+sawaya@bihexal:~/QFP/perpVects$ diff g++_bihexal_vanilla_out g++_bihexal_relaxed_out
+33c33
+< RotateAndUnrotate:    2.1684043449710088680149056017398834228515625e-19
+---
+> RotateAndUnrotate:    4.336808689942017736029811203479766845703125e-19
+69c69
+< RotateAndUnrotate:    2.1684043449710088680149056017398834228515625e-19
+---
+> RotateAndUnrotate:    4.336808689942017736029811203479766845703125e-19
+105c105
+< RotateAndUnrotate:    2.1684043449710088680149056017398834228515625e-19
+---
+> RotateAndUnrotate:    4.336808689942017736029811203479766845703125e-19
+141c141
+< RotateAndUnrotate:    2.1684043449710088680149056017398834228515625e-19
+---
+> RotateAndUnrotate:    4.336808689942017736029811203479766845703125e-19
+
+I'm guessing that this is due to recognition of common constants (i.e. Pi)?
+This test normally generates 0 error on float and double precision.
