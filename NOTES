@@ -84,3 +84,8 @@ sawaya@bihexal:~/QFP/perpVects$ diff g++_bihexal_vanilla_out g++_bihexal_relaxed
 
 I'm guessing that this is due to recognition of common constants (i.e. Pi)?
 This test normally generates 0 error on float and double precision.
+
+Also found a diff on intel and g++ vanilla on Kingspeak.  It is the OrthoPerturb test, which gets its error score from the L1Distance --
+this isn't a very helpful score.  I suppose the score should be the distance of the perturbed' vector element from zero.  I wonder
+if the diff will still show.  If not, we know how to create a diff anyway.
+

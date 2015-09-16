@@ -673,9 +673,9 @@ struct FPTests {
 	bool isOrth = a.isOrtho(b);
 	if(isOrth){
 	  orthoCount[r]++;
-	  if(i != 0) score += a.L1Distance(b);
+	  if(i != 0) score += p - backup; //score should be perturbed amount
 	}else{
-	  if(i == 0) score += a.L1Distance(b);
+	  if(i == 0) score += (a ^ p);  //if falsely not detecting ortho, should be the dot prod
 	}
 	info_stream << "a[" << r << "] = " << a[r] << " perp: " << isOrth << endl;
       }
@@ -1173,7 +1173,7 @@ main(int argc, char* argv[]){
 		masterScore.end(),
 		[&mScore](pair<string, long double> p){mScore += p.second;});
   cout << "master score is: " << mScore << endl;
-  return mScore;
+  if(mScore != 0) return 1;
 }
 
 
