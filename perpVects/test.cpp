@@ -655,7 +655,8 @@ struct FPTests {
 		     st = Vector<T>::def){
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0);
-    Vector<T> a(dim, [](){ static unsigned x = 0; return (T)(1 << x++);});
+    size_t indexer = 0;
+    Vector<T> a(dim, [&indexer](){ return (T)(1 << indexer++);});
     a.setSort(st);
     Vector<T> b = a.genOrthoVector();
   
