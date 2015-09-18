@@ -71,13 +71,13 @@ all : $(TARGETS)
 #very cool: recyclable target definitions! taken from
 #http://make.mad-scientist.net/the-eval-function/
 
-define RULE =
- $2_$(hostname)_$(strip $(1))_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
+define RULE
+$2_$(hostname)_$(strip $(1))_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
 	-./$$< $(VERBOSE) > $$@
 
- $2_$(hostname)_$(strip $1) : test.cpp
+$2_$(hostname)_$(strip $1) : test.cpp
 	-$(2) $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-
+# all :: $2_$(hostname)_$(strip $(1))_out_$(VERBOSE)
 endef
 
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
