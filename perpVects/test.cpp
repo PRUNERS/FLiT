@@ -647,16 +647,18 @@ struct FPTests {
     }
     return {__func__, score};
   }
-  template<typename T>
+  template<typename T, typename Fun>
   static pair<string, long double>
   DoOrthoPerturbTest(const int iters, const int dim,
 		     const size_t ulp_inc,
 		     const typename Vector<T>::sort_t
-		     st = Vector<T>::def){
+		     st = Vector<T>::def,
+		     Fun f){
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0);
     size_t indexer = 0;
-    Vector<T> a(dim, [&indexer](){ return (T)(1 << indexer++);});
+    if(f == NULL) f = ;
+    Vector<T> a(dim, f);
     a.setSort(st);
     Vector<T> b = a.genOrthoVector();
   
@@ -1031,11 +1033,17 @@ DoTests(size_t iters,
 	size_t ulp_inc,
 	T min,
 	T max,
-	typename Vector<T>::sort_t inner_prod_method,
+	typename Vector<T>::sort_t reduction_sort_type,
 	T theta,
 	std::map<string, long double> &scores){
+  size_t indexer = 0;
   scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-				      ulp_inc, inner_prod_method));
+					       ulp_inc, reduction_sort_type,
+					       [&indexer](){return (T)1 << indexer++};));
+  indexer = 0;
+  scores.insert(FPTests::DoOrthoPerturbTest<T>iters, highestDim,
+					       ulp_inc, reduction_sort_type,
+		[&indexer](){return 0.2 / pow((T)10.0, indexer++)};));
   scores.insert(FPTests::DoMatrixMultSanity<T>(highestDim, min, max));
   scores.insert(FPTests::DoSimpleRotate90<T>());
   scores.insert(FPTests::RotateAndUnrotate<T>(min, max, theta));
@@ -1067,7 +1075,7 @@ outputResults(size_t iters,
 	      size_t ulp_inc,
 	      T min,
 	      T max,
-	      int inner_prod_method,
+	      int reduction_sort_type,
 	      T theta,
 	      std::map<string, long double> &scores){
   cout << "*****************************************" << endl;
@@ -1075,7 +1083,7 @@ outputResults(size_t iters,
   cout << "precision: " << typeid(T).name() << endl;
   cout << "iters: " << iters << ", max dim: " << highestDim <<
     ", ulp_inc: " << ulp_inc << ", min: " << min << ", max: " << max <<
-    ", product sort method: " << getSortName(inner_prod_method) <<
+    ", product sort method: " << getSortName(reduction_sort_type) <<
     ", theta: " << theta << endl;
   for(auto i: scores){
     cout << i.first << ":\t" << i.second << endl;
@@ -1137,12 +1145,10 @@ main(int argc, char* argv[]){
   
   cout.precision(COUT_PREC); //set cout to print many decimal places
   info_stream.precision(COUT_PREC);
-  int dotProductMethod = Vector<prec>::def; //can be def, lt, gt, bi
-  const int TestCount = 6;
 
   std::map<string, long double> masterScore;
   std::map<string, long double> scores;
-  for(int ipm = 0; ipm < 4; ++ipm){ //inner product sort pre sum
+  for(int ipm = 0; ipm < 4; ++ipm){ //reduction sort pre sum
     for(int p = 0; p < 3; ++p){ //float, double, long double
       switch(p){
       case 0: //float

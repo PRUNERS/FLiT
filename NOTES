@@ -89,3 +89,8 @@ Also found a diff on intel and g++ vanilla on Kingspeak.  It is the OrthoPerturb
 this isn't a very helpful score.  I suppose the score should be the distance of the perturbed' vector element from zero.  I wonder
 if the diff will still show.  If not, we know how to create a diff anyway.
 
+
+** 9-17-15 **
+OK, so I want to do the following today:
+
+* add a few more tests -- need to flex things like float unrepresentable values (0.1)e

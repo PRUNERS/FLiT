@@ -1,0 +1,109 @@
+# a makefile for a variety of compielrs and compiler flags
+# NOTES: gcc 5.x (apparently) has a problem with shift count for templated types
+# (regarding -Wno-shift-count-overflow)
+
+#the list of compilers to iterate over 
+COMPILERS := g++ icpc clang++
+
+#gives highly detailed output (general scores aren't perfect indexes of results --
+#  i.e. different results can produce identical scores
+VERBOSE ?= 
+
+#CC_GEN_OPTS ?= -O0 -ggdb
+CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
+
+##Compiler setting targets
+# taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+SSE := -mfpmath=sse -mtune=native
+UNSOPTS := -funsafe-math-optimizations
+AVX := -mavx
+O0 := -O0
+O3 := -O3
+O2 := -O2
+O1 := -O1
+FPCONT := -ffp-contract=on #enables contractions like FMA
+MCONSTS := -fmerge-all-constants #results in non-comforming behavior, according to gcc
+FSTORE := -ffloat-store #disables intermediate precision on some machiens (x87, 68000)
+FASTM := -ffast-math
+FASTEXPREC := -fexcess-precision=fast #more intermediate
+STDEXPREC := -fexcess-precision=standard
+ASSOCMATH := -fassociative-math #allows reassociation of fp ops
+RECIPMATH := -freciprocal-math #uses mult by recip rather than divide
+FINMATH := -ffinite-math-only
+NOTRAP := -fno-trapping-math #allow comp to optimize assuming no user-vis traps
+ROUNDINGMATH := -frounding-math #disable transformations and optimizations in fp, such as constant folding at compile time
+SIGNALNAN := -fsignaling-nans #disables some optimiztions, opposite of default
+SINGLEPRECCONST := -fsingle-precision-constant
+LIMITEDRANGE := -fcx-limited-range #no range reduct needed for cmplx div, opposite of default
+FORTRULES := -fcx-fortran-rules #opposite of default, in context of range reduc
+
+#more comp settings, taken from here:
+#https://software.intel.com/sites/default/files/article/326703/fp-control-2012-08.pdf
+#trying to use gcc style, as many are understood across compilers
+#these tests will just not compile and run if the compiler rejects them
+FLUSHDEN := -ftz #flush denormal
+NOFLUSHDEN := -no-ftz
+PRECDIV := -prec-div #improves division precision
+NOPRECDIV := -no-prec-div
+ENAFMA := -fma #fused multiply-add
+DISFMA := -no-fma
+FPTRAP := -fp-trap=common
+ROUNDUSR := -fp-port #round fp results to user precision
+COMPTRANS := -mp1 #'more consistent compares & transcendentals'
+FPMODPRE := -fp-model=precise
+FPMODSRC := -fp-model=source
+FPMODDBL := -fp-model=double
+FPMODEXT := -fp-model=extended
+FPMODEXC := -fp-model=except
+FPMODSTR := -fp-model=strict
+
+SWITCHES :=  SSE UNSOPTS AVX O0 O3 O2 O1 FPCONT MCONSTS FSTORE FASTM FASTEXPREC STDEXPREC ASSOCMATH RECIPMATH FINMATH NOTRAP ROUNDINGMATH SIGNALNAN SIGNLEPRECCONST LIMITEDRANGE FORTRULES FLUSHDEN NOFLUSHDEN PRECDIV NOPRECDIV ENAFMA DISFMA FPTRAP ROUNDUSR COMPTRANS FPMODPRE FMPODSRC FPMODEXT FPMODEXC FPMODSTR
+
+
+hostname := $(shell hostname)
+
+.phony : all
+
+TARGETS := $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $c_$(hostname)_$(strip $s)_out_$(VERBOSE)))
+
+all : $(TARGETS)
+
+#very cool: recyclable target definitions! taken from
+#http://make.mad-scientist.net/the-eval-function/
+
+define RULE =
+ $2_$(hostname)_$(strip $(1))_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
+	-./$$< $(VERBOSE) > $$@
+
+ $2_$(hostname)_$(strip $1) : test.cpp
+	-$(2) $1 $(CC_REQUIRED) $$< -o $$@
+
+#	all:: $2_$(hostname)_$(subst " ", "", $$($1))_out_$(VERBOSE)
+
+endef
+#$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(INFO RULE $s $c)))
+$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
+#$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call PROG_RULE, $s, $c))))
+#$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call COMP__RULE, $s, $c))))
+
+
+# all :	
+# 	for COMPILER in $(COMPILERS) ; do \
+# 		ifeq (, $(shell which $(COMPILER))) \
+# 			$(info $(COMPILER) "not found in path") \
+# 		else \
+# 			for SWITCH in $(SWITCHES) ; do \
+# 				EXECUTABLE := $$(COMPILER)_$(hostname)_$(subst " ", "", $$(SWITCH)) \
+# 				OUTPUT := $(EXECUTABLE)_out \
+# 				FLAGS := $$(SWITCH) $(CC_REQUIRED) \
+# 				$(eval $(THERULE)) \ ;
+# 			done \ ;
+# 		endif \ ;
+# 	done \
+
+
+
+.phony : clean
+
+clean :
+	-rm $(CC)* $(CLANG)* $(INTEL)*
