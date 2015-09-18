@@ -651,13 +651,12 @@ struct FPTests {
   static pair<string, long double>
   DoOrthoPerturbTest(const int iters, const int dim,
 		     const size_t ulp_inc,
+		     Fun f,
 		     const typename Vector<T>::sort_t
-		     st = Vector<T>::def,
-		     Fun f){
+		     st = Vector<T>::def){
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0);
     size_t indexer = 0;
-    if(f == NULL) f = ;
     Vector<T> a(dim, f);
     a.setSort(st);
     Vector<T> b = a.genOrthoVector();
@@ -678,7 +677,7 @@ struct FPTests {
 	  orthoCount[r]++;
 	  if(i != 0) score += p - backup; //score should be perturbed amount
 	}else{
-	  if(i == 0) score += (a ^ p);  //if falsely not detecting ortho, should be the dot prod
+	  if(i == 0) score += (a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
 	info_stream << "a[" << r << "] = " << a[r] << " perp: " << isOrth << endl;
       }
@@ -1038,12 +1037,15 @@ DoTests(size_t iters,
 	std::map<string, long double> &scores){
   size_t indexer = 0;
   scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-					       ulp_inc, reduction_sort_type,
-					       [&indexer](){return (T)1 << indexer++};));
+					       ulp_inc,
+					       [&indexer](){return (T)(1 << indexer++);},
+					       reduction_sort_type));
+					       
   indexer = 0;
-  scores.insert(FPTests::DoOrthoPerturbTest<T>iters, highestDim,
-					       ulp_inc, reduction_sort_type,
-		[&indexer](){return 0.2 / pow((T)10.0, indexer++)};));
+  scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
+					       ulp_inc, 
+		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
+					       reduction_sort_type));
   scores.insert(FPTests::DoMatrixMultSanity<T>(highestDim, min, max));
   scores.insert(FPTests::DoSimpleRotate90<T>());
   scores.insert(FPTests::RotateAndUnrotate<T>(min, max, theta));

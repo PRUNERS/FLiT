@@ -3,7 +3,7 @@
 # (regarding -Wno-shift-count-overflow)
 
 #the list of compilers to iterate over 
-COMPILERS := g++ icpc clang++
+COMPILERS := $(foreach c, g++ icpc clang++, $(if $(shell which $(c)), $c,))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
@@ -76,12 +76,10 @@ define RULE =
 	-./$$< $(VERBOSE) > $$@
 
  $2_$(hostname)_$(strip $1) : test.cpp
-	-$(2) $1 $(CC_REQUIRED) $$< -o $$@
-
-#	all:: $2_$(hostname)_$(subst " ", "", $$($1))_out_$(VERBOSE)
+	-$(2) $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
 
 endef
-#$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(INFO RULE $s $c)))
+
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
 #$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call PROG_RULE, $s, $c))))
 #$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call COMP__RULE, $s, $c))))
@@ -106,4 +104,4 @@ $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c)
 .phony : clean
 
 clean :
-	-rm $(CC)* $(CLANG)* $(INTEL)*
+	-rm $(addsuffix * 
