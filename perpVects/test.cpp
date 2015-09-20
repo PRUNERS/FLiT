@@ -258,11 +258,13 @@ public:
     return retVal;
   }
 
+
   static
   Vector<T>
   getRandomVector(size_t dim, T min_inc, T max_exc,
-		  std::default_random_engine::result_type seed = 0){
-    gen.seed(seed);
+		  std::default_random_engine::result_type seed = 0,
+		  bool doSeed = false){
+    if(doSeed) gen.seed(seed);
     std::uniform_real_distribution<T> dist(min_inc,max_exc);
     Vector<T> tmp(dim);
     for(auto& i: tmp.data){
@@ -444,7 +446,16 @@ public:
     return retVal;
   }
  
-  //cross product
+  //cross product, only defined here in 3d
+  Vector<T>
+  cross(Vector<T> const &rhs) const {
+    Vector<T> retVal(size());
+    retVal.data[0] = data[1] * rhs.data[2] - rhs.data[1] * data[2];
+    retVal.data[1] = rhs.data[0] * data[2] - data[0] * rhs.data[2];
+    retVal.data[2] = data[0] * rhs.data[1] - rhs.data[0] * data[1];
+    return retVal;
+  }
+  
   Vector<T>
   operator*(Vector<T> const &rhs) const {
     Vector<T> retVal(size());
@@ -609,6 +620,77 @@ struct FPTests {
 
   //each test returns a score, the closer to 0 the better
 
+  //the next two tests are from Prof Hari Sundar's blog:
+  //https://fgiesen.wordpress.com/2013/06/02/modified-gram-schmidt-orthogonalization/
+  //we'll follow along and choose the same (relative) epsilons, shoot for same results
+  template<typename T>
+  static pair<string, long double>
+  DoHariGSBasic(){
+    long double score = 0.0;
+    T e;
+    sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
+    //matrix = {a, b, c};
+    Vector<T> a = {1, e, e};
+    Vector<T> b = {1, e, 0};
+    Vector<T> c = {1, 0, e};
+
+    auto r1 = a.getUnitVector();
+    auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
+    auto r3 = (c - r1 * (c ^ r1) -
+	       r2 * (c ^ r2)).getUnitVector();
+    T o12 = r1 ^ r2;
+    T o13 = r1 ^ r3;
+    T o23 = r2 ^ r3;
+    if((score = o12 + o13 + o23) != 0){
+      cout << "in: " << __func__ << endl;
+      cout << "applied gram-schmidt to:" << endl;
+      cout << "a: " << a << endl;
+      cout << "b: " << b << endl;
+      cout << "c: " << c << endl;
+      cout << "resulting vectors were: " << endl;
+      cout << "r1: " << r1 << endl;
+      cout << "r2: " << r2 << endl;
+      cout << "r3: " << r3 << endl;
+      cout << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
+    }
+    return {__func__, score};
+  }
+
+
+  //Hari Sundar's improved Gram-Schmidt
+  template<typename T>
+  static pair<string, long double>
+  DoHariGSImproved(){
+    long double score = 0.0;
+    T e;
+    sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
+    //matrix = {a, b, c};
+    Vector<T> a = {1, e, e};
+    Vector<T> b = {1, e, 0};
+    Vector<T> c = {1, 0, e};
+
+    auto r1 = a.getUnitVector();
+    auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
+    auto r3 = (c - r1 * (c ^ r1));
+    r3 = (r3 - r2 * (r3 ^ r2)).getUnitVector();
+    T o12 = r1 ^ r2;
+    T o13 = r1 ^ r3;
+    T o23 = r2 ^ r3;
+    if((score = o12 + o13 + o23) != 0){
+      cout << "in: " << __func__ << endl;
+      cout << "applied gram-schmidt to:" << endl;
+      cout << "a: " << a << endl;
+      cout << "b: " << b << endl;
+      cout << "c: " << c << endl;
+      cout << "resulting vectors were: " << endl;
+      cout << "r1: " << r1 << endl;
+      cout << "r2: " << r2 << endl;
+      cout << "r3: " << r3 << endl;
+      cout << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
+    }
+    return {__func__, score};
+  }
+
   //this test takes two random vectors, calculates the required
   //rotation matrix for alignment, and then attempts to align them
   //the score is the distance between the two after the process
@@ -621,7 +703,7 @@ struct FPTests {
     info_stream << "A (unit) is: " << endl << A << endl;
     auto B = Vector<T>::getRandomVector(3, min, max).getUnitVector();
     info_stream << "B (unit): " << endl  << B << endl;
-    auto cross = A * B; //cross product
+    auto cross = A.cross(B); //cross product
     info_stream << "cross: " << endl << cross << endl;
     auto sine = cross.L2Norm();
     info_stream << "sine: " << endl << sine << endl;
@@ -833,6 +915,30 @@ namespace UnitTests{
     }
     return{__func__, result};
   }
+
+  template<typename T>
+  static results
+  TestCrossProd(){
+    bool result = true;
+    auto A = Vector<T>::getRandomVector(3, -3, 3);
+    auto B = Vector<T>::getRandomVector(3, -3, 3);
+    // Vector<T> A = {1, 0, 0};
+    // Vector<T> B = {0, 1, 1};
+    auto C = A.cross(B);
+    T r1 = A ^ C;
+    T r2 = B ^ C;
+    bool expected = 0;
+    if(!(r1 == expected && r2 == expected)){
+      result = false;
+      info_stream << "in " << __func__ << "(AXB), check ortho AC, BC:" << endl;
+      info_stream << "A:" << endl << A << endl;
+      info_stream << "B:" << endl << B << endl;
+      info_stream << "C:" << endl << C << endl;
+      info_stream << "expected:" << endl << expected << endl;
+      info_stream << "r1, r2: " << r1 << ", " << r2 << endl;
+    }
+    return{__func__, result};
+  }
   
   template<typename T>
   static results
@@ -997,8 +1103,9 @@ namespace UnitTests{
     if(detailed) info_stream.show(); //reinit(cout.rdbuf());
     cout << "starting unit tests" << endl;
     results.insert(TestGenOrthoVector<prec>());
+    results.insert(TestGenOrthoVector<prec>());
     results.insert(TestL1Distance<prec>());
-    results.insert(TestL2Distance<prec>());
+    results.insert(TestCrossProd<prec>());
     results.insert(TestInnerProd<prec>());
     results.insert(UnitVector<prec>());
     results.insert(MplusM<prec>());
@@ -1046,11 +1153,13 @@ DoTests(size_t iters,
 					       ulp_inc, 
 		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
 					       reduction_sort_type));
-  scores.insert(FPTests::DoMatrixMultSanity<T>(highestDim, min, max));
+  scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
   scores.insert(FPTests::DoSimpleRotate90<T>());
-  scores.insert(FPTests::RotateAndUnrotate<T>(min, max, theta));
-  scores.insert(FPTests::RotateFullCircle<T>(iters, min, max));
+  scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
+  scores.insert(FPTests::RotateFullCircle(iters, min, max));
   scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
+  scores.insert(FPTests::DoHariGSBasic<T>());
+  scores.insert(FPTests::DoHariGSImproved<T>());
 }
 
 
@@ -1191,4 +1300,20 @@ main(int argc, char* argv[]){
 //   cout.precision(100);
 //   using namespace UnitTests;
 //   return DoTests();
+// }
+
+
+// int main(){
+//   Vector<float> X = {1, 2, 3};
+//   Vector<float> Y = {4, 5, 6};
+
+//   cout << "starting with vectors:" << endl;
+//   cout << X << endl << Y << endl;
+//   cout << "normalize X: " << endl;
+//   X = X.getUnitVector();
+//   cout << X << endl;
+//   cout << "X . Y:" << endl << (X ^ Y) << endl;
+//   cout << "Y(X.Y)" << endl << Y * (X ^ Y) << endl;
+//   cout << "unitVect(Y - (X.Y)Y)" << endl;
+//   cout << (Y - Y * (X ^ Y)).getUnitVector() << endl;
 // }
