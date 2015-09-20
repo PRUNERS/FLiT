@@ -642,16 +642,16 @@ struct FPTests {
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
     if((score = o12 + o13 + o23) != 0){
-      cout << "in: " << __func__ << endl;
-      cout << "applied gram-schmidt to:" << endl;
-      cout << "a: " << a << endl;
-      cout << "b: " << b << endl;
-      cout << "c: " << c << endl;
-      cout << "resulting vectors were: " << endl;
-      cout << "r1: " << r1 << endl;
-      cout << "r2: " << r2 << endl;
-      cout << "r3: " << r3 << endl;
-      cout << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
+      info_stream << "in: " << __func__ << endl;
+      info_stream << "applied gram-schmidt to:" << endl;
+      info_stream << "a: " << a << endl;
+      info_stream << "b: " << b << endl;
+      info_stream << "c: " << c << endl;
+      info_stream << "resulting vectors were: " << endl;
+      info_stream << "r1: " << r1 << endl;
+      info_stream << "r2: " << r2 << endl;
+      info_stream << "r3: " << r3 << endl;
+      info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
     }
     return {__func__, score};
   }
@@ -677,16 +677,16 @@ struct FPTests {
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
     if((score = o12 + o13 + o23) != 0){
-      cout << "in: " << __func__ << endl;
-      cout << "applied gram-schmidt to:" << endl;
-      cout << "a: " << a << endl;
-      cout << "b: " << b << endl;
-      cout << "c: " << c << endl;
-      cout << "resulting vectors were: " << endl;
-      cout << "r1: " << r1 << endl;
-      cout << "r2: " << r2 << endl;
-      cout << "r3: " << r3 << endl;
-      cout << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
+      info_stream << "in: " << __func__ << endl;
+      info_stream << "applied gram-schmidt to:" << endl;
+      info_stream << "a: " << a << endl;
+      info_stream << "b: " << b << endl;
+      info_stream << "c: " << c << endl;
+      info_stream << "resulting vectors were: " << endl;
+      info_stream << "r1: " << r1 << endl;
+      info_stream << "r2: " << r2 << endl;
+      info_stream << "r3: " << r3 << endl;
+      info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
     }
     return {__func__, score};
   }
