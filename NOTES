@@ -93,4 +93,21 @@ if the diff will still show.  If not, we know how to create a diff anyway.
 ** 9-17-15 **
 OK, so I want to do the following today:
 
-* add a few more tests -- need to flex things like float unrepresentable values (0.1)e
+* add a few more tests -- need to flex things like float unrepresentable values (0.1)
+
+
+
+**** push for Ganesh's big NSF proposal (Zvonomir, Hari, Mary, John, Vivek) ****
+
+Added Hari's Gram-Schmidt example
+
+System notes:
+
+* CloudLab A10
+** mostly just seeing differences in optimization levels (all same size output save O2 and O3)
+** The skewed matrix cross product rotation is the one comming up different
+
+Need to see why this is (i.e. what are the underlying optimizations happening, and are they supersets of other FP opts)
+
+* Kingspeak
+
