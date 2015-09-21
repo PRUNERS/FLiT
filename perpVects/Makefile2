@@ -3,7 +3,7 @@
 # (regarding -Wno-shift-count-overflow)
 
 #the list of compilers to iterate over 
-COMPILERS := $(foreach c, g++ icpc clang++, $(if $(shell which $(c)), $c,))
+COMPILERS := $(foreach c, g++ icpc clang++ pgCC, $(if $(shell which $(c)), $c,))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
