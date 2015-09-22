@@ -177,3 +177,41 @@ The only test that differred was 'OrthoPerturb' (again, the ortho vector iterati
 * had a brief meeting with Hari and Ganesh today -- Hari suggested using the exponents from the FP scores -- I'm thinking that that score may not be sensitive enough that way.  I'll provide a switch to show the difference!  However, it does point out that our scoring and diff detection relies upon the conversion that's made to decimal values in the couts.  I'm going to do the following:
 
 * change the score output to the bit values (well, bitwise hex).  This way we won't get any truncation of values in the text files!  Thanks for pointing that out, Hari
+
+
+** OK, let's automate the diff process (produce an nXn grid, showing which diff against which)
+
+* first of all, let's make a script that will do the following (on a list of hosts):
+** git pull (QFP -- duh)
+** make (the compile / run)
+** archive (can be built into the makefile)
+* git commit / push
+
+Once we have that, we have collected results from all hosts of interest
+
+Next, we'll locally generate the diff grid:
+
+* cd results
+* tar -zxf *
+* build list of all *out_ files
+* while list ! empty
+* fileA = list.pop
+* foreach( f in list) diffMap[fileA] += f, diff fileA f
+
+Generate a webpage:
+regen list: tlist = *out_
+
+out <table>
+    out <tr>
+    //build header
+    for x in tlist:
+    	out <td> x </td>
+    </tr>
+    //build rows
+    int skipCount = 1
+    for x in tlist:
+       out <tr>
+       for x : skipCount out <td></td>
+       for y in diffMap[x]
+          out <td> y? </td>
+out </table>
