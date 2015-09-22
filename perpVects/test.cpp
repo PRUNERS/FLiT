@@ -1294,7 +1294,8 @@ main(int argc, char* argv[]){
   std::for_each(masterScore.begin(),
 		masterScore.end(),
 		[&mScore](pair<string, long double> p){mScore += p.second;});
-  cout << "master score is: " << FPWrap<long double>(mScore).intVal << endl;
+  cout << "master score is: " << FPWrap<long double>(mScore)
+       << endl;
   if(mScore != 0) return 1;
 }
 
