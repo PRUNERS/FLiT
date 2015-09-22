@@ -9,7 +9,7 @@ os.system("rm *_out*")
 os.system("find . -name '*.tgz' -exec tar -zxf {} \;")
 
 filelist = sorted(glob.glob("*_out*"))
-print(filelist)
+#print(filelist)
 
 diffMap = []
 count = 0
@@ -20,7 +20,7 @@ for item in filelist:
     count = count + 1
         # diffMap[item].append([f, os.system("diff " + f + " " + item)])
 
-print (diffMap)
+#print (diffMap)
 #OK, built the map of diffs -- now output to webpage table
 
 wstr = "<table border=\"1\"><tr><td></td>"
