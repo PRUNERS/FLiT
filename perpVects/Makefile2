@@ -63,24 +63,29 @@ SWITCHES :=  SSE UNSOPTS AVX O0 O3 O2 O1 FPCONT MCONSTS FSTORE FASTM FASTEXPREC 
 hostname := $(shell hostname)
 
 .phony : all
+.phony : cleanResults #strip excess info from Intel output (__file__) and remove emtpy outputs
 
 TARGETS := $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $c_$(hostname)_$(strip $(s))_out_$(VERBOSE)))
 
-all : $(TARGETS)
+all : $(TARGETS) cleanResults
 
-#very cool: recyclable target definitions! taken from
+#very cool: recyclable target definitions! adapted from
 #http://make.mad-scientist.net/the-eval-function/
 
 define RULE
-$2_$(hostname)_$(strip $(1))_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
+$2_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
 	-./$$< $(VERBOSE) > $$@
 
 $2_$(hostname)_$(strip $1) : test.cpp
 	-$(2) $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-# all :: $2_$(hostname)_$(strip $(1))_out_$(VERBOSE)
 endef
 
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
+
+cleanResults : $(TARGETS)
+	$(info "doing clean")
+	sed -i 's/FPTests:://' *out_$(VERBOSE)
+	find . -size 0 -exec rm {} \;
 
 .phony : clean
 

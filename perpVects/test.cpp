@@ -652,6 +652,8 @@ struct FPTests {
       info_stream << "r2: " << r2 << endl;
       info_stream << "r3: " << r3 << endl;
       info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
+      info_stream << "score (bits): " << FPWrap<long double>(score) << endl;
+      info_stream << "score (dec) :" << score << endl;
     }
     return {__func__, score};
   }
