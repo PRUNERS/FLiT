@@ -1197,12 +1197,14 @@ outputResults(size_t iters,
     ", product sort method: " << getSortName(reduction_sort_type) <<
     ", theta: " << theta << endl;
   for(auto i: scores){
-    cout << i.first << ":\t" << i.second << endl;
+    cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
+    cout << "(decimal)\t" << i.second << endl;
   }
   long double subtotal = 0;
   for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
 	   {subtotal += p.second;});
-  cout << "subtotal score: " << subtotal << endl;
+  cout << "subtotal score (bits): " << std::hex << FPWrap<long double>(subtotal) << endl;
+  cout << "(decimal):\t" << subtotal << endl;
   cout << "*****************************************" << endl;
 }
 
@@ -1290,7 +1292,7 @@ main(int argc, char* argv[]){
   std::for_each(masterScore.begin(),
 		masterScore.end(),
 		[&mScore](pair<string, long double> p){mScore += p.second;});
-  cout << "master score is: " << mScore << endl;
+  cout << "master score is: " << FPWrap<long double>(mScore).intVal << endl;
   if(mScore != 0) return 1;
 }
 

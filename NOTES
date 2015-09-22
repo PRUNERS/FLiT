@@ -171,3 +171,9 @@ RotateAndUnrotate: Rotates a vector Theta, then rotates -Theta, checks differenc
 This was the most common output from Intel, including only specifying 'SSE' instructions
 
 The only test that differred was 'OrthoPerturb' (again, the ortho vector iterative fuzzing test)
+
+** 9-21-15 **
+
+* had a brief meeting with Hari and Ganesh today -- Hari suggested using the exponents from the FP scores -- I'm thinking that that score may not be sensitive enough that way.  I'll provide a switch to show the difference!  However, it does point out that our scoring and diff detection relies upon the conversion that's made to decimal values in the couts.  I'm going to do the following:
+
+* change the score output to the bit values (well, bitwise hex).  This way we won't get any truncation of values in the text files!  Thanks for pointing that out, Hari
