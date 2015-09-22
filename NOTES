@@ -101,13 +101,117 @@ OK, so I want to do the following today:
 
 Added Hari's Gram-Schmidt example
 
-System notes:
+System notes: (currently surveying the obvious diffs -- where the summary output filesizes differ)
 
 * CloudLab A10
-** mostly just seeing differences in optimization levels (all same size output save O2 and O3)
+** only seeing differences in optimization levels (all same size output save O2 and O3)
 ** The skewed matrix cross product rotation is the one comming up different
 
 Need to see why this is (i.e. what are the underlying optimizations happening, and are they supersets of other FP opts)
 
 * Kingspeak
 
+output file sizes are:
+
+*g++:
+
+9393
+
+*icpc:
+
+9400 9393 9465 9396
+
+9465: icpc FPMODEXT
+9396: icpc NOPRECDIV
+9393 g++, icpc AVX, FPMODEPRE FPMODSTR O0 O1 ROUNDINGMATH
+9400: icpc (default)
+
+diffs:
+
+icpc O3 vs g++ O3 (9400 vs 9393)
+
+These differed in the test 'OrthoPerturb' -- a test that fuzzes elements pairs of orthogonal vectors and then checks orthogonality
+
+Do diffs for each, make O0 cannonical
+
+9465 vs 9393 (this is Intel icpc '-fp-model=extended' vs O0 (same on Intel & gcc))
+*****************************************                        |*****************************************
+Sub test with:                                                   |Sub test with:
+precision: d                                                     |precision: d
+iters: 200, max dim: 16, ulp_inc: 1, min: -6, max: 6, product so\|iters: 200, max dim: 16, ulp_inc: 1, min: -6, max: 6, product so\
+rt method: less than, theta: 3.1415927410125732421875            |rt method: less than, theta: 3.1415927410125732421875
+**DIFF** DoHariGSBasic:  0.7071067570444118379705683574698582560813520103\|DoHariGSBasic:  0.7071067570444118377537279229727573692798614501\
+6930084228515625                                                 |953125
+DoHariGSImproved:       -2.0000000000000000418451216602569453506\|DoHariGSImproved:       -2.0000000000000000418451216602569453506\
+53268178575672209262847900390625e-08                             |53268178575672209262847900390625e-08
+DoMatrixMultSanity:     0                                        |DoMatrixMultSanity:     0
+DoOrthoPerturbTest:     3.08417442695940735575277358293533325195\|DoOrthoPerturbTest:     3.08417442695940735575277358293533325195\
+3125e-08                                                         |3125e-08
+DoSimpleRotate90:       1.1102230246251565404236316680908203125e\|DoSimpleRotate90:       1.1102230246251565404236316680908203125e\
+-16                                                              |-16
+**DIFF** DoSkewSymCPRotationTest:        1.665334536937734810635447502136\|DoSkewSymCPRotationTest:        2.775557561562891351059079170227\
+23046875e-16                                                     |05078125e-16
+**DIFF** RotateAndUnrotate:      0                                        |RotateAndUnrotate:      8.8817841970012523233890533447265625e-16
+**DIFF** RotateFullCircle:       3.24706207344149788696086034178733825683\|RotateFullCircle:       3.24706207166514104756060987710952758789\
+59375e-06                                                        |0625e-06
+subtotal score: 0.7071100149482298266286409149650182826007949188\|subtotal score: 0.7071100149482290492556832428583390992571366950\
+35163116455078125                                                |86956024169921875
+*****************************************                        |*****************************************
+
+I know this isn't enough information (just preliminary), but I will let you know what the difference is in the generated code
+
+9396 vs 9393 (this is Intel's -no-prec-div)
+This differred from the 'canonical' (i.e. O0) in the tests:
+RotateFullCircle: (iteratively rotates a vector 2*Pi/n n times and checks difference to original)
+DoSkewSymCPRotationTest: Attempts to translate random vectors into symmetry with a skewed cross-product transformation matrix
+RotateAndUnrotate: Rotates a vector Theta, then rotates -Theta, checks difference
+
+9400 vs 9393
+
+This was the most common output from Intel, including only specifying 'SSE' instructions
+
+The only test that differred was 'OrthoPerturb' (again, the ortho vector iterative fuzzing test)
+
+** 9-21-15 **
+
+* had a brief meeting with Hari and Ganesh today -- Hari suggested using the exponents from the FP scores -- I'm thinking that that score may not be sensitive enough that way.  I'll provide a switch to show the difference!  However, it does point out that our scoring and diff detection relies upon the conversion that's made to decimal values in the couts.  I'm going to do the following:
+
+* change the score output to the bit values (well, bitwise hex).  This way we won't get any truncation of values in the text files!  Thanks for pointing that out, Hari
+
+
+** OK, let's automate the diff process (produce an nXn grid, showing which diff against which)
+
+* first of all, let's make a script that will do the following (on a list of hosts):
+** git pull (QFP -- duh)
+** make (the compile / run)
+** archive (can be built into the makefile)
+* git commit / push
+
+Once we have that, we have collected results from all hosts of interest
+
+Next, we'll locally generate the diff grid:
+
+* cd results
+* tar -zxf *
+* build list of all *out_ files
+* while list ! empty
+* fileA = list.pop
+* foreach( f in list) diffMap[fileA] += f, diff fileA f
+
+Generate a webpage:
+regen list: tlist = *out_
+
+out <table>
+    out <tr>
+    //build header
+    for x in tlist:
+    	out <td> x </td>
+    </tr>
+    //build rows
+    int skipCount = 1
+    for x in tlist:
+       out <tr>
+       for x : skipCount out <td></td>
+       for y in diffMap[x]
+          out <td> y? </td>
+out </table>
