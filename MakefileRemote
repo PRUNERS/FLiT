@@ -26,4 +26,4 @@ endef
 $(foreach h, $(HOSTS), $(eval $(call RULE, $(strip $h), $(word 1, $($(strip $h))), $(word 2, $($(strip $h))))))
 
 pull_local : $(TARGETS)
-	cd .. && git pull
+	   git pull
