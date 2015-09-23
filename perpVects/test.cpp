@@ -84,19 +84,24 @@ ostream& operator<<(ostream& os, const unsigned __int128 &i){
 struct FPHelpers {
   static const unsigned expBitWidth32 = 8;
   static const unsigned expBitWidth64 = 11;
-  static const unsigned expBitWidth128 = 15;
+  static const unsigned expBitWidth80 = 15;
   static const unsigned mantBitWidth32 = FLT_MANT_DIG; //32 - expBitWidth32 - 1;
   static const unsigned mantBitWidth64 = DBL_MANT_DIG; //64 - expBitWidth64 - 1;
-  static const unsigned mantBitWidth128 = LDBL_MANT_DIG; //128 - expBitWidth128 - 1;
+  static const unsigned mantBitWidth80 = LDBL_MANT_DIG; //128 - expBitWidth80 - 1;
   static const unsigned bias32 = (1 << expBitWidth32 - 1) - 1;
   static const unsigned bias64 = (1 << expBitWidth64 - 1) - 1;
-  static const unsigned bias128 = (1 << expBitWidth128 - 1) - 1;
+  static const unsigned bias80 = (1 << expBitWidth80 - 1) - 1;
   
   template<typename S, typename R>
   static void
   projectType(S const &source, R& result){
     S temp = source;
     R* u = reinterpret_cast<R*>(&temp);
+    if( sizeof(S) == 16 && std::is_floating_point<S>::value){ //we must be using long double, which is 80 bit extended -- mask out higher bits
+      unsigned __int128 zero = 0;
+      //some compilers are leaving garbage in unused bits (not defined behavior
+      *u = (unsigned __int128)*u & (~zero >> 48); //this is really tacky hacky
+    }
     result = *u;
   }
   
@@ -106,6 +111,10 @@ struct FPHelpers {
     using I = typename get_corresponding_type<F>::type;
     F temp = source;
     I* u = reinterpret_cast<I*>(&temp);
+    if( sizeof(F) == 16 && std::is_floating_point<F>::value){ //we must be using long double, which is 80 bit extended -- mask out higher bits
+      unsigned __int128 zero = 0;
+      *u = *u & (~zero >> 48);
+    }
     return *u;
   }
 
@@ -131,7 +140,7 @@ struct FPHelpers {
       break;
     case 16:
       {
-	val = (t) 1 << mantBitWidth128;
+	val = (t) 1 << mantBitWidth80;
       }
       break;
     default:
@@ -183,7 +192,7 @@ struct FPHelpers {
       break;
     case 16:
       {
-	retVal = ((val >> (128 - expBitWidth128 - 1) & 0x7FFF) - bias128);
+	retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
       }
       break;
     default:
@@ -1100,7 +1109,7 @@ namespace UnitTests{
     }
     return {__func__, retVal};
   }
-  bool RunTests(std::map<std::string, bool> &results, bool detailed = false){
+  void RunTests(std::map<std::string, bool> &results, bool detailed = false){
     typedef float prec;
     if(detailed) info_stream.show(); //reinit(cout.rdbuf());
     cout << "starting unit tests" << endl;
