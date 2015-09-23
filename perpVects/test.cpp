@@ -1160,15 +1160,15 @@ DoTests(size_t iters,
 					       reduction_sort_type));
 					       
   indexer = 0;
-  scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-					       ulp_inc, 
-		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
-					       reduction_sort_type));
-  scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
-  scores.insert(FPTests::DoSimpleRotate90<T>());
-  scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
-  scores.insert(FPTests::RotateFullCircle(iters, min, max));
-  scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
+  // scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
+  // 					       ulp_inc, 
+  // 		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
+  // 					       reduction_sort_type));
+  // scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
+  // scores.insert(FPTests::DoSimpleRotate90<T>());
+  // scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
+  // scores.insert(FPTests::RotateFullCircle(iters, min, max));
+  // scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
   scores.insert(FPTests::DoHariGSBasic<T>());
   scores.insert(FPTests::DoHariGSImproved<T>());
 }
