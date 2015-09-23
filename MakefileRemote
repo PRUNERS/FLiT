@@ -12,7 +12,7 @@ KINGSPEAK := u0422778@kingspeak.chpc.utah.edu 12
 M344 :=  sawaya@ms0236.utah.cloudlab.us 1
 BIHEX := sawaya@bihexal.cs.utah.edu 24
 
-HOSTS := KINGSPEAK M344 BIHEX
+HOSTS := KINGSPEAK BIHEX #M344
 
 TARGETS := $(foreach h, $(HOSTS), $h_exec)
 
@@ -20,7 +20,7 @@ all: $(TARGETS)
 
 define RULE
 $1_exec :
-	ssh $2 'cd QFP && git pull && cd perpVects && make -j $3 -f Makefile2 && cd .. && git add -u && git commit -m "auto commit, test results" && git push'
+	-ssh $2 'cd QFP && git pull && cd perpVects && make -j $3 -f Makefile2 && cd .. && git add -u && git commit -m "auto commit, test results" && git push'
 endef
 
 $(foreach h, $(HOSTS), $(eval $(call RULE, $(strip $h), $(word 1, $($(strip $h))), $(word 2, $($(strip $h))))))
