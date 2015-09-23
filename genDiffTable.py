@@ -16,7 +16,7 @@ count = 0
 for item in filelist:
     diffMap.append([])
     for f in filelist:
-        diffMap[count].append([f, call(["diff", f, item])])
+        diffMap[count].append([f, call(["diff", f, item], stdout=open(os.devnull, 'wb'))])
     count = count + 1
         # diffMap[item].append([f, os.system("diff " + f + " " + item)])
 
