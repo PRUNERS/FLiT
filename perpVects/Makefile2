@@ -2,8 +2,12 @@
 # NOTES: gcc 5.x (apparently) has a problem with shift count for templated types
 # (regarding -Wno-shift-count-overflow)
 
-#the list of compilers to iterate over 
-COMPILERS := $(foreach c, g++ icpc clang++ pgCC, $(if $(shell which $(c)), $c,))
+#the list of compilers to iterate over
+GCC := g++
+CLANG := clang++
+PG := pgCC  #doesn't fully support c++11 (even 15.7!) so not in list
+INTEL := icpc /Qlong‑double
+COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
@@ -78,7 +82,7 @@ $2_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
 	-./$$< $(VERBOSE) > $$@
 
 $2_$(hostname)_$(strip $1) : test.cpp
-	-$(2) $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
+	-$($(2)) $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
 endef
 
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
