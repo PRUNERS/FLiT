@@ -650,7 +650,7 @@ struct FPTests {
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = o12 + o13 + o23) != 0){
+    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
       info_stream << "in: " << __func__ << endl;
       info_stream << "applied gram-schmidt to:" << endl;
       info_stream << "a: " << a << endl;
@@ -687,7 +687,7 @@ struct FPTests {
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = o12 + o13 + o23) != 0){
+    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
       info_stream << "in: " << __func__ << endl;
       info_stream << "applied gram-schmidt to:" << endl;
       info_stream << "a: " << a << endl;
