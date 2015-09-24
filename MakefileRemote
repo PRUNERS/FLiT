@@ -9,7 +9,7 @@ testname ?= general
 .phony: all
 
 KINGSPEAK := u0422778@kingspeak.chpc.utah.edu 12
-M344 :=  sawaya@ms0236.utah.cloudlab.us 1
+M344 :=  sawaya@ms0131.utah.cloudlab.us 1
 BIHEX := sawaya@bihexal.cs.utah.edu 24
 
 HOSTS := KINGSPEAK BIHEX #M344
