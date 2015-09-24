@@ -215,3 +215,30 @@ out <table>
        for y in diffMap[x]
           out <td> y? </td>
 out </table>
+
+** OK, I'm switching to a database.  I know, I spent time making a diff script, but WTH
+
+* decided on postgresql -- it's mature, and it's BSD (and it was developed at Berkeley)
+
+I installed and configured the server.
+
+Now I'm building tables:
+
+* hosts
+** index
+** name
+** cpuinfo
+** fqdn
+
+* tests
+** host
+** compiler
+** switches
+** precision
+** sort
+** score
+
+
+* compilers
+** vendor
+** version
