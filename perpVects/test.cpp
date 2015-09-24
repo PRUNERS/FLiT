@@ -1112,7 +1112,7 @@ namespace UnitTests{
   void RunTests(std::map<std::string, bool> &results, bool detailed = false){
     typedef float prec;
     if(detailed) info_stream.show(); //reinit(cout.rdbuf());
-    cout << "starting unit tests" << endl;
+    //cout << "starting unit tests" << endl;
     results.insert(TestGenOrthoVector<prec>());
     results.insert(TestGenOrthoVector<prec>());
     results.insert(TestL1Distance<prec>());
@@ -1160,15 +1160,15 @@ DoTests(size_t iters,
 					       reduction_sort_type));
 					       
   indexer = 0;
-  // scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-  // 					       ulp_inc, 
-  // 		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
-  // 					       reduction_sort_type));
-  // scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
-  // scores.insert(FPTests::DoSimpleRotate90<T>());
-  // scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
-  // scores.insert(FPTests::RotateFullCircle(iters, min, max));
-  // scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
+  scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
+  					       ulp_inc, 
+  		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
+  					       reduction_sort_type));
+  scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
+  scores.insert(FPTests::DoSimpleRotate90<T>());
+  scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
+  scores.insert(FPTests::RotateFullCircle(iters, min, max));
+  scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
   scores.insert(FPTests::DoHariGSBasic<T>());
   scores.insert(FPTests::DoHariGSImproved<T>());
 }
@@ -1178,13 +1178,13 @@ string
 getSortName(int val){
   switch(val){
   case 0:
-    return "less than";
+    return "lt";
   case 1:
-    return "greater than";
+    return "gt";
   case 2:
-    return "built-in (inner_product)";
+    return "bi";
   case 3:
-    return "default (unsorted)";
+    return "us";
   default:
     return "something bad happened, undefined sort type";
   }
@@ -1200,23 +1200,25 @@ outputResults(size_t iters,
 	      int reduction_sort_type,
 	      T theta,
 	      std::map<string, long double> &scores){
-  cout << "*****************************************" << endl;
-  cout << "Sub test with:" << endl;
-  cout << "precision: " << typeid(T).name() << endl;
-  cout << "iters: " << iters << ", max dim: " << highestDim <<
-    ", ulp_inc: " << ulp_inc << ", min: " << min << ", max: " << max <<
-    ", product sort method: " << getSortName(reduction_sort_type) <<
-    ", theta: " << theta << endl;
+  // cout << "*****************************************" << endl;
+  // cout << "Sub test with:" << endl;
+  // cout << "precision: " << typeid(T).name() << endl;
+  // cout << "iters: " << iters << ", max dim: " << highestDim <<
+  //   ", ulp_inc: " << ulp_inc << ", min: " << min << ", max: " << max <<
+  //   ", product sort method: " << getSortName(reduction_sort_type) <<
+  //   ", theta: " << theta << endl;
   for(auto i: scores){
-    cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
-    cout << "(decimal)\t" << i.second << endl;
+    // cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
+    // cout << "(decimal)\t" << i.second << endl;
+    cout << "HOST,SWITCHES,COMPILER," << typeid(T).name() << "," << getSortName(reduction_sort_type)
+	 << "," << i.second << "," << FPWrap<T>(i.second) << "," << i.first << endl;
   }
-  long double subtotal = 0;
-  for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
-	   {subtotal += p.second;});
-  cout << "subtotal score (bits): " << std::hex << FPWrap<long double>(subtotal) << endl;
-  cout << "(decimal):\t" << subtotal << endl;
-  cout << "*****************************************" << endl;
+  // long double subtotal = 0;
+  // for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
+  // 	   {subtotal += p.second;});
+  // cout << "subtotal score (bits): " << std::hex << FPWrap<long double>(subtotal) << endl;
+  // cout << "(decimal):\t" << subtotal << endl;
+  // cout << "*****************************************" << endl;
 }
 
 template<typename T>
@@ -1267,7 +1269,7 @@ main(int argc, char* argv[]){
   // theta [for rotation tests]
   float theta = M_PI;
   
-  cout.precision(COUT_PREC); //set cout to print many decimal places
+  cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(COUT_PREC);
 
   std::map<string, long double> masterScore;
@@ -1299,14 +1301,14 @@ main(int argc, char* argv[]){
       }
     }
   }
-  long double mScore = 0;
-  std::for_each(masterScore.begin(),
-		masterScore.end(),
-		[&mScore](pair<string, long double> p){mScore += p.second;});
-  cout << "master score is (bits): " << std::hex << FPWrap<long double>(mScore)
-       << endl;
-  cout << "(dec): " << std::dec << mScore << endl;
-  if(mScore != 0) return 1;
+  // long double mScore = 0;
+  // std::for_each(masterScore.begin(),
+  // 		masterScore.end(),
+  // 		[&mScore](pair<string, long double> p){mScore += p.second;});
+  // cout << "master score is (bits): " << std::hex << FPWrap<long double>(mScore)
+  //      << endl;
+  // cout << "(dec): " << std::dec << mScore << endl;
+  // if(mScore != 0) return 1;
 }
 
 
