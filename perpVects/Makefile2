@@ -90,7 +90,7 @@ endef
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
 
 cleanResults : $(TARGETS)
-	$(info "doing clean")
+	$(info doing clean)
 	sed -i 's/FPTests:://' *out_$(VERBOSE)
 	find . -size 0 -exec rm {} \;
 
