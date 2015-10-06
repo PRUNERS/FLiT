@@ -12,7 +12,7 @@ KINGSPEAK := u0422778@kingspeak.chpc.utah.edu 12
 M344 :=  sawaya@ms0131.utah.cloudlab.us 1
 BIHEX := sawaya@bihexal.cs.utah.edu 24
 
-HOSTS := KINGSPEAK BIHEX #M344
+HOSTS := KINGSPEAK BIHEX M344
 
 TARGETS := $(foreach h, $(HOSTS), $h_exec)
 
