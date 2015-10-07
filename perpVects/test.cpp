@@ -99,7 +99,7 @@ struct FPHelpers {
     R* u = reinterpret_cast<R*>(&temp);
     if( sizeof(S) == 16 && std::is_floating_point<S>::value){ //we must be using long double, which is 80 bit extended -- mask out higher bits
       unsigned __int128 zero = 0;
-      //some compilers are leaving garbage in unused bits (not defined behavior
+      //some compilers are leaving garbage in unused bits (not defined behavior)
       *u = (unsigned __int128)*u & (~zero >> 48); //this is really tacky hacky
     }
     result = *u;
@@ -332,6 +332,19 @@ public:
     if(size() & 1) //odd
       retVal[seq[size() - 1]] = 0;
     return retVal;
+  }
+
+  T
+  getLInfNorm(){
+    T retVal;
+    std::pair<int, T> largest;
+    for(int x = 0; x < data.size(); ++x){
+      T abe = fabs(data[x]);
+      if(abe) > largest.second){
+	largest.first = x;
+	largest.second = abe;
+      }
+    }
   }
 
   //returns the angle between vectors using cos^-1 and dot
