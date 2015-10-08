@@ -8,11 +8,11 @@ testname ?= general
 
 .phony: all
 
-KINGSPEAK := u0422778@kingspeak.chpc.utah.edu 12
-M344 :=  sawaya@ms0131.utah.cloudlab.us 1
+KINGSPEAK :whi= u0422778@kingspeak.chpc.utah.edu 12
+CLAB :=  $(CLAB_CONNECT) 8
 BIHEX := sawaya@bihexal.cs.utah.edu 24
 
-HOSTS := KINGSPEAK BIHEX M344
+HOSTS := KINGSPEAK BIHEX CLAB
 
 TARGETS := $(foreach h, $(HOSTS), $h_exec)
 
@@ -20,7 +20,7 @@ all: $(TARGETS) pull_local
 
 define RULE
 $1_exec :
-	-ssh $2 'cd QFP && git pull && cd perpVects && make -j $3 -f Makefile2 && cd .. && git add -u && git commit -m "auto commit, test results" && git push'
+	-ssh $2 'cd QFP && git checkout dumpSQL && git pull && cd perpVects && make -j $3 -f Makefile2 && cd .. && git add -u && git commit -m "auto commit, test results" && git push'
 endef
 
 $(foreach h, $(HOSTS), $(eval $(call RULE, $(strip $h), $(word 1, $($(strip $h))), $(word 2, $($(strip $h))))))
