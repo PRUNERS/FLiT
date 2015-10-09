@@ -52,4 +52,4 @@ for h in hostinfo:
           'cd .. && ' +
           'fi &&' +
           'cd remote_qfp/qfp && ' +
-          './hostCollect.sh ' + h[1]])
+          './hostCollect.sh ' + str(h[1])])
