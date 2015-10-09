@@ -12,13 +12,14 @@ hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
             ['sawaya@gaussr.cs.utah.edu', 4]]
 
 #constants
-git = '/usr/bin/git'
+0git = '/usr/bin/git'
 psql = check_output('which psql', shell=True)[:-1]
 dumpFile = 'db/db_backup/dumpfile'
 
 if len(sys.argv) > 1:
     hostinfo.append([sys.argv[1], int(sys.argv[2])])
-    
+
+call(['rm', 'results/*'])
 ## first: check if git is current (git diff-index --quiet HEAD != 0)    
 ## if not current, exit and require commit / push
 if call([git, 'diff-index', '--quiet', 'HEAD', dumpFile]) != 0:
@@ -56,8 +57,8 @@ for h in hostinfo:
           'git checkout master && ' +
           'git pull && ' +
           './hostCollect.sh ' + str(h[1])])
+    call(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', './'])
 
-call([git, 'pull'])
 chdir('results')
 for f in glob.iglob('masterRes_*'):
-    call([psql, '-d', 'qfp', '-c', '"select importQFPResults(' + f + ');"'])
+    call([psql, '-d', 'qfp', '-c', 'select importQFPResults(' + f + ');'])
