@@ -391,7 +391,7 @@ public:
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
     for(int x = 0; x < size(); ++x){
-      distance += fabs(data[x] - rhs.data[x]);
+      distance += std::abs(data[x] - rhs.data[x]);
     }
     return distance;
   }
@@ -421,10 +421,10 @@ public:
     if(sortType == lt || sortType == gt){
       if(sortType == lt)
 	std::sort(cont.begin(), cont.end(),
-		  [](T a, T b){return fabs(a) < fabs(b);});
+		  [](T a, T b){return std::abs(a) < std::abs(b);});
       else
 	std::sort(cont.begin(), cont.end(),
-		  [](T a, T b){return fabs(a) > fabs(b);});
+		  [](T a, T b){return std::abs(a) > std::abs(b);});
     }
     for_each(cont.begin(), cont.end(), fun);
   }
@@ -448,6 +448,22 @@ public:
     return sum;
   }
 
+  T
+  LInfNorm() const {
+    T retVal = 0;
+    for(auto e: data){
+      T tmp = std::abs(e);
+      if( tmp > retVal) retVal = tmp;
+    }
+    return retVal;
+  }
+
+  T LInfDistance(Vector<T> const &rhs) const {
+    T retVal;
+    auto diff = operator-(rhs);
+    return diff.LInfNorm();
+  }
+
   //L2 norm
   T
   L2Norm() const {
@@ -456,7 +472,7 @@ public:
     vector<T> prods(data); //make a copy of our data for possible sorted reduction
     //will sort reduction if sort
     reduce(prods, [&retVal](T e){retVal += e*e;});
-    return sqrt(retVal);
+    return std::sqrt(retVal);
   }
 
   T
@@ -465,7 +481,7 @@ public:
     auto diff = operator-(rhs);
     //sorts pre-rediction for sortType = gt|lt
     reduce(diff.data, [&retVal](T e){retVal += e*e;});
-    return retVal;
+    return std::sqrt(retVal);
   }
  
   //cross product, only defined here in 3d
@@ -645,8 +661,12 @@ struct FPTests {
   //the next two tests are from Prof Hari Sundar's blog:
   //https://fgiesen.wordpress.com/2013/06/02/modified-gram-schmidt-orthogonalization/
   //we'll follow along and choose the same (relative) epsilons, shoot for same results
+  typedef std::pair<string, std::pair<long double, long double>> resultType;
+
   template<typename T>
-  static pair<string, long double>
+  static
+  resultType
+  // static pair<string, long double>
   DoHariGSBasic(){
     long double score = 0.0;
     T e;
@@ -655,7 +675,6 @@ struct FPTests {
     Vector<T> a = {1, e, e};
     Vector<T> b = {1, e, 0};
     Vector<T> c = {1, 0, e};
-
     auto r1 = a.getUnitVector();
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
     auto r3 = (c - r1 * (c ^ r1) -
@@ -663,7 +682,7 @@ struct FPTests {
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = o12 + o13 + o23) != 0){
+    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
       info_stream << "in: " << __func__ << endl;
       info_stream << "applied gram-schmidt to:" << endl;
       info_stream << "a: " << a << endl;
@@ -677,13 +696,14 @@ struct FPTests {
       info_stream << "score (bits): " << FPWrap<long double>(score) << endl;
       info_stream << "score (dec) :" << score << endl;
     }
-    return {__func__, score};
+    return {__func__, {score, 0.0}};
   }
 
 
   //Hari Sundar's improved Gram-Schmidt
   template<typename T>
-  static pair<string, long double>
+  static resultType
+  //static pair<string, long double>
   DoHariGSImproved(){
     long double score = 0.0;
     T e;
@@ -700,7 +720,7 @@ struct FPTests {
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = o12 + o13 + o23) != 0){
+    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
       info_stream << "in: " << __func__ << endl;
       info_stream << "applied gram-schmidt to:" << endl;
       info_stream << "a: " << a << endl;
@@ -712,17 +732,19 @@ struct FPTests {
       info_stream << "r3: " << r3 << endl;
       info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << endl;
     }
-    return {__func__, score};
+    return {__func__, {score, 0.0}};
   }
 
   //this test takes two random vectors, calculates the required
   //rotation matrix for alignment, and then attempts to align them
   //the score is the distance between the two after the process
   template<typename T>
-  static pair<string, long double>
+  static resultType
+  // static pair<string, long double>
   DoSkewSymCPRotationTest(const T min, const T max){
     info_stream << "entered " << __func__ << endl; 
-    long double score = 0.0;
+    long double L1Score = 0.0;
+    long double LIScore = 0.0;
     auto A = Vector<T>::getRandomVector(3, min, max).getUnitVector();
     info_stream << "A (unit) is: " << endl << A << endl;
     auto B = Vector<T>::getRandomVector(3, min, max).getUnitVector();
@@ -740,21 +762,23 @@ struct FPTests {
     auto result = rMatrix * A;
     info_stream << "rotator: " << endl << rMatrix << endl;
     if(!(result == B)){
-      auto dist = result.L1Distance(B);
+      L1Score = result.L1Distance(B);
+      LIScore = result.LInfDistance(B);
       info_stream << "Skew symmetric cross product rotation failed with ";
-      info_stream << "L1Distance " << dist << endl;
+      info_stream << "L1Distance " << L1Score << endl;
       info_stream << "starting vectors: " << endl;
       info_stream << A << endl;
       info_stream << "...and..." << endl;
       info_stream << B << endl;
       info_stream << "ended up with: " << endl;
-      info_stream << result << endl;
-      score = dist;
+      info_stream << "L1Distance: " << L1Score << endl;
+      info_stream << "LIDistance: " << LIScore << endl;
     }
-    return {__func__, score};
+    return {__func__, {L1Score, LIScore}};
   }
   template<typename T, typename Fun>
-  static pair<string, long double>
+  static resultType
+  // static pair<string, long double>
   DoOrthoPerturbTest(const int iters, const int dim,
 		     const size_t ulp_inc,
 		     Fun f,
@@ -781,9 +805,9 @@ struct FPTests {
 	bool isOrth = a.isOrtho(b);
 	if(isOrth){
 	  orthoCount[r]++;
-	  if(i != 0) score += p - backup; //score should be perturbed amount
+	  if(i != 0) score += std::abs(p - backup); //score should be perturbed amount
 	}else{
-	  if(i == 0) score += (a ^ b);  //if falsely not detecting ortho, should be the dot prod
+	  if(i == 0) score += std::abs(a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
 	info_stream << "a[" << r << "] = " << a[r] << " perp: " << isOrth << endl;
       }
@@ -816,26 +840,24 @@ struct FPTests {
 	   << FPHelpers::getExponent(a[cdim] * b[cdim]) << endl;
       cdim++;
     }
-    return {__func__, score};
+    return {__func__, {score, 0.0}};
   }
 
   template<typename T>
-  static pair<string, long double>
+  static resultType
+  // static pair<string, long double>
   DoMatrixMultSanity(size_t dim, T min, T max){
-    long double score = 0.0;
     Vector<T> b = Vector<T>::getRandomVector(dim, min, max);
     auto c = Matrix<T>::Identity(dim) * b;
     info_stream << "Product is: " << c << endl;
     bool eq = c == b;
     info_stream << "A * b == b? " << eq << endl;
-    if(!eq) score = c.L1Distance(b);
-    return {__func__, score};
+    return {__func__, {c.L1Distance(b), c.LInfDistance(b)}};
   }
 
   template<typename T>
-  static pair<string, long double>
+  static resultType
   DoSimpleRotate90(){
-    long double score = 0.0;
     Vector<T> A = {1, 1, 1};
     Vector<T> expected = {-1, 1, 1};
     info_stream << "Rotating A: " << A << ", 1/4 PI radians " << endl;
@@ -843,8 +865,7 @@ struct FPTests {
     info_stream << "Resulting vector: " << A << endl;
     info_stream << "in " << __func__ << endl;
     A.dumpDistanceMetrics(expected, info_stream);
-    if(!(A == expected))  score = A.L1Distance(expected);
-    return {__func__, score};
+    return {__func__, {A.L1Distance(expected), A.LInfDistance(expected)}};
   }
 
 
@@ -852,7 +873,8 @@ struct FPTests {
   //rotates it again with a theta negative of the previous (unrotates) and
   //then checks their distance (
   template <typename T>
-  static pair<string, long double>
+  static resultType
+  // static pair<string, long double>
   RotateAndUnrotate(T min = -1.0, T max = 1.0, T theta = M_PI){
     auto A = Vector<T>::getRandomVector(3, min, max);
     auto orig = A;
@@ -870,15 +892,15 @@ struct FPTests {
     }
     info_stream << "in " << __func__ << endl;
     A.dumpDistanceMetrics(orig, info_stream);
-    return {__func__, dist};
+    return {__func__, {dist, A.LInfDistance(orig)}};
   }
 
   //this this test creates a random 3d vector, copies it to orig,
   //then rotates n times pi/(n/2) radians, then compares (n * pi/(n/2) = 2pi).
   template <typename T>
-  static pair<string, long double>
+  static resultType
+  // static pair<string, long double>
   RotateFullCircle(size_t n, T min = -1, T max = 1){
-    long double score = 0.0;
     Vector<T> A = Vector<T>::getRandomVector(3, min, max);
     auto orig = A;
     prec theta = 2 * M_PI / n;
@@ -892,11 +914,10 @@ struct FPTests {
     info_stream << "Does rotated vect == starting vect? " << equal << endl;
     if(!equal){
       info_stream << "The (vector) difference is: " << (A - orig) << endl;
-      score = A.L1Distance(orig);
     }
     info_stream << "in " << __func__ << endl;
     A.dumpDistanceMetrics(orig, info_stream);
-    return {__func__, score};
+    return {__func__, {A.L1Distance(orig), A.LInfDistance(orig)}};
   }
 };
 
@@ -1125,7 +1146,7 @@ namespace UnitTests{
   void RunTests(std::map<std::string, bool> &results, bool detailed = false){
     typedef float prec;
     if(detailed) info_stream.show(); //reinit(cout.rdbuf());
-    cout << "starting unit tests" << endl;
+    //cout << "starting unit tests" << endl;
     results.insert(TestGenOrthoVector<prec>());
     results.insert(TestGenOrthoVector<prec>());
     results.insert(TestL1Distance<prec>());
@@ -1165,7 +1186,7 @@ DoTests(size_t iters,
 	T max,
 	typename Vector<T>::sort_t reduction_sort_type,
 	T theta,
-	std::map<string, long double> &scores){
+	std::map<string, std::pair<long double, long double>> &scores){
   size_t indexer = 0;
   scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
 					       ulp_inc,
@@ -1173,15 +1194,15 @@ DoTests(size_t iters,
 					       reduction_sort_type));
 					       
   indexer = 0;
-  // scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-  // 					       ulp_inc, 
-  // 		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
-  // 					       reduction_sort_type));
-  // scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
-  // scores.insert(FPTests::DoSimpleRotate90<T>());
-  // scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
-  // scores.insert(FPTests::RotateFullCircle(iters, min, max));
-  // scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
+  scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
+  					       ulp_inc, 
+  		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
+  					       reduction_sort_type));
+  scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
+  scores.insert(FPTests::DoSimpleRotate90<T>());
+  scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
+  scores.insert(FPTests::RotateFullCircle(iters, min, max));
+  scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
   scores.insert(FPTests::DoHariGSBasic<T>());
   scores.insert(FPTests::DoHariGSImproved<T>());
 }
@@ -1191,13 +1212,13 @@ string
 getSortName(int val){
   switch(val){
   case 0:
-    return "less than";
+    return "lt";
   case 1:
-    return "greater than";
+    return "gt";
   case 2:
-    return "built-in (inner_product)";
+    return "bi";
   case 3:
-    return "default (unsorted)";
+    return "us";
   default:
     return "something bad happened, undefined sort type";
   }
@@ -1212,24 +1233,28 @@ outputResults(size_t iters,
 	      T max,
 	      int reduction_sort_type,
 	      T theta,
-	      std::map<string, long double> &scores){
-  cout << "*****************************************" << endl;
-  cout << "Sub test with:" << endl;
-  cout << "precision: " << typeid(T).name() << endl;
-  cout << "iters: " << iters << ", max dim: " << highestDim <<
-    ", ulp_inc: " << ulp_inc << ", min: " << min << ", max: " << max <<
-    ", product sort method: " << getSortName(reduction_sort_type) <<
-    ", theta: " << theta << endl;
+	      std::map<string, std::pair<long double, long double>> &scores){
+  // cout << "*****************************************" << endl;
+  // cout << "Sub test with:" << endl;
+  // cout << "precision: " << typeid(T).name() << endl;
+  // cout << "iters: " << iters << ", max dim: " << highestDim <<
+  //   ", ulp_inc: " << ulp_inc << ", min: " << min << ", max: " << max <<
+  //   ", product sort method: " << getSortName(reduction_sort_type) <<
+  //   ", theta: " << theta << endl;
   for(auto i: scores){
-    cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
-    cout << "(decimal)\t" << i.second << endl;
+    // cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
+    // cout << "(decimal)\t" << i.second << endl;
+    cout << "HOST,SWITCHES,COMPILER," << typeid(T).name() << "," << getSortName(reduction_sort_type)
+	 << "," << i.second.first << "," << FPWrap<T>(i.second.first) << "," <<
+      i.second.second << "," << FPWrap<T>(i.second.second) << "," << 
+      i.first << endl;
   }
-  long double subtotal = 0;
-  for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
-	   {subtotal += p.second;});
-  cout << "subtotal score (bits): " << std::hex << FPWrap<long double>(subtotal) << endl;
-  cout << "(decimal):\t" << subtotal << endl;
-  cout << "*****************************************" << endl;
+  // long double subtotal = 0;
+  // for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
+  // 	   {subtotal += p.second;});
+  // cout << "subtotal score (bits): " << std::hex << FPWrap<long double>(subtotal) << endl;
+  // cout << "(decimal):\t" << subtotal << endl;
+  // cout << "*****************************************" << endl;
 }
 
 template<typename T>
@@ -1280,11 +1305,11 @@ main(int argc, char* argv[]){
   // theta [for rotation tests]
   float theta = M_PI;
   
-  cout.precision(COUT_PREC); //set cout to print many decimal places
+  cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(COUT_PREC);
 
-  std::map<string, long double> masterScore;
-  std::map<string, long double> scores;
+  //  std::map<string, long double> masterScore;
+  std::map<string, std::pair<long double, long double>> scores;
   for(int ipm = 0; ipm < 4; ++ipm){ //reduction sort pre sum
     for(int p = 0; p < 3; ++p){ //float, double, long double
       switch(p){
@@ -1292,34 +1317,34 @@ main(int argc, char* argv[]){
 	{
 	DoTests<float>(iters, dim, ulp_inc, min, max, getSortT<float>(ipm), theta, scores);
 	outputResults<float>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
-	tabulateSubtest<float>(masterScore, scores);
+	// tabulateSubtest<float>(masterScore, scores);
 	break;
 	}
       case 1:
 	{
 	DoTests<double>(iters, dim, ulp_inc, min, max, getSortT<double>(ipm), theta, scores);
 	outputResults<double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
-	tabulateSubtest<double>(masterScore, scores);
+	// tabulateSubtest<double>(masterScore, scores);
 	break;
 	}
       case 2:
 	{
 	DoTests<long double>(iters, dim, ulp_inc, min, max, getSortT<long double>(ipm), theta, scores);
 	outputResults<long double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
-	tabulateSubtest<long double>(masterScore, scores);
+	// tabulateSubtest<long double>(masterScore, scores);
 	break;
 	}
       }
     }
   }
-  long double mScore = 0;
-  std::for_each(masterScore.begin(),
-		masterScore.end(),
-		[&mScore](pair<string, long double> p){mScore += p.second;});
-  cout << "master score is (bits): " << std::hex << FPWrap<long double>(mScore)
-       << endl;
-  cout << "(dec): " << std::dec << mScore << endl;
-  if(mScore != 0) return 1;
+  // long double mScore = 0;
+  // std::for_each(masterScore.begin(),
+  // 		masterScore.end(),
+  // 		[&mScore](pair<string, long double> p){mScore += p.second;});
+  // cout << "master score is (bits): " << std::hex << FPWrap<long double>(mScore)
+  //      << endl;
+  // cout << "(dec): " << std::dec << mScore << endl;
+  // if(mScore != 0) return 1;
 }
 
 
