@@ -52,4 +52,7 @@ for h in hostinfo:
           'cd .. ; ' +
           'fi && ' +
           'cd remote_qfp/qfp && ' +
+          'git stash && ' +
+          'git checkout master ' +
+          'git pull ' +
           './hostCollect.sh ' + str(h[1])])

@@ -7,9 +7,6 @@ if [[ ! -e "~/.postgresql" ]]; then
 fi
 
 rm results/*
-git stash
-git checkout master
-git pull
 cd perpVects
 make -j $1 -f Makefile2
 
