@@ -12,5 +12,5 @@ make -j $1 -f Makefile2
 
 cd ../results
 cat "*out_" >> masterRes
-$(which psql) -d qfp -c "select importQFPResults('$PWD/masterRes');"
+$(which psql) -d qfp -h bihexal.cs.utah.edu -U sawaya -c "select importQFPResults('$PWD/masterRes');"
 exit $?
