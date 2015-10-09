@@ -48,7 +48,7 @@ for h in hostinfo:
     print('collecting data from ' + h[0])
     call(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then ' +
           'mkdir remote_qfp && cd remote_qfp && ' +
-          'git clone https://github.com/geof23/qfp; &&' +
+          'git clone https://github.com/geof23/qfp && ' +
           'cd .. && ' +
           'fi && ' +
           'cd remote_qfp/qfp && ' +
