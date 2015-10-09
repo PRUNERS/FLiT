@@ -4,7 +4,7 @@ from subprocess import call, check_output
 from os import environ
 import sys
 from datetime import datetime
-
+import glob
 
 
 hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
@@ -56,3 +56,8 @@ for h in hostinfo:
           'git checkout master ' +
           'git pull ' +
           './hostCollect.sh ' + str(h[1])])
+
+call([git, 'pull'])
+os.cwd('results')
+for f in glob.iglob('masterRes_*'):
+    call([psql, '-d', 'qfp', '-c', '"select importQFPResults(' + f + ');"'])
