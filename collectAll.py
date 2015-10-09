@@ -46,10 +46,10 @@ if (call([psql, '-d', 'qfp', '-c', 'ALTER TABLE tests RENAME TO ' + newTable + '
 ## import
 for h in hostinfo:
     print('collecting data from ' + h[0])
-    call(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then' +
+    call(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then ' +
           'mkdir remote_qfp && cd remote_qfp && ' +
           'git clone https://github.com/geof23/qfp; &&' +
           'cd .. && ' +
-          'fi &&' +
+          'fi && ' +
           'cd remote_qfp/qfp && ' +
           './hostCollect.sh ' + str(h[1])])
