@@ -340,7 +340,7 @@ public:
     std::pair<int, T> largest;
     for(int x = 0; x < data.size(); ++x){
       T abe = fabs(data[x]);
-      if(abe) > largest.second){
+      if(abe > largest.second){
 	largest.first = x;
 	largest.second = abe;
       }
