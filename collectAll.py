@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from subprocess import call, check_output
-from os import environ
+from os import chdir
 import sys
 from datetime import datetime
 import glob
@@ -53,11 +53,11 @@ for h in hostinfo:
           'fi && ' +
           'cd remote_qfp/qfp && ' +
           'git stash && ' +
-          'git checkout master ' +
-          'git pull ' +
+          'git checkout master && ' +
+          'git pull && ' +
           './hostCollect.sh ' + str(h[1])])
 
 call([git, 'pull'])
-os.cwd('results')
+chdir('results')
 for f in glob.iglob('masterRes_*'):
     call([psql, '-d', 'qfp', '-c', '"select importQFPResults(' + f + ');"'])
