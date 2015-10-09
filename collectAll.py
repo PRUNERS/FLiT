@@ -46,13 +46,10 @@ if (call([psql, '-d', 'qfp', '-c', 'ALTER TABLE tests RENAME TO ' + newTable + '
 ## import
 for h in hostinfo:
     print('collecting data from ' + h[0])
-    call(['ssh', h[0], 'if [[ ! -e qfp ]]; ' +
-          'then git clone https://github.com/geof23/qfp; ' +
-          'fi ' +
-          '&& rm "qfp/results/*" ; ' |
-          'cd qfp ' +
-          '&& git branch dumpSql origin/dumpSql ' +
-          '&& git checkout dumpSQL ' +
-          '&& git pull && cd ' +
-          'perpVects && make -j ' + str(h[1]) + ' -f Makefile2 ' +
-          '&& ../hostCollect.sh'])
+    call(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then' +
+          'mkdir remote_qfp && cd remote_qfp && ' +
+          'git clone https://github.com/geof23/qfp; &&' +
+          'cd .. && ' +
+          'fi &&' +
+          'cd remote_qfp/qfp && ' +
+          './hostCollect.sh ' + h[1]])
