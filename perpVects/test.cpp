@@ -1312,6 +1312,7 @@ main(int argc, char* argv[]){
   std::map<string, std::pair<long double, long double>> scores;
   for(int ipm = 0; ipm < 4; ++ipm){ //reduction sort pre sum
     for(int p = 0; p < 3; ++p){ //float, double, long double
+      scores.clear();
       switch(p){
       case 0: //float
 	{
