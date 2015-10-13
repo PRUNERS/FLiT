@@ -1,10 +1,16 @@
+
 CREATE FUNCTION importQFPResults(path text) RETURNS integer as $$
+   r = ("SELECT MAX(index)as index from runs;")
+   res = plpy.execute(r)
+   run = res[0]["index"]
    s = ("COPY tests " +
                 "(host, switches, compiler, precision, sort, " +
                 "score0d, score0, score1d, score1, name) " +
                 "FROM '" +
                 path +
-                "' (DELIMITER ',')")
+                "' (DELIMITER ',')")   
+   plpy.execute(s)
+   s = ("UPDATE tests SET run = " + str(run) + " WHERE run IS NULL;")
    res = plpy.execute(s)
    return res.nrows()
 $$ LANGUAGE plpython3u;
