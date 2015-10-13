@@ -79,8 +79,9 @@ for h in hostinfo:
           'git pull && ' +
           'VERBOSE=' + environ["VERBOSE"] + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
-    stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
-    print(stdo)
+    if verbose == False:
+        stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
+        print(stdo)
 
 if verbose == False:
     chdir('results')
