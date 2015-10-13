@@ -1,15 +1,15 @@
 #!/usr/bin/python3
 
 from subprocess import call, check_output
-from os import chdir, getcwd, remove
+from os import chdir, getcwd, remove, environ
 import sys
 import datetime
 import glob
 
 
-hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
-            ['sawaya@bihexal.cs.utah.edu', 24],
-            ['sawaya@gaussr.cs.utah.edu', 4]]
+hostinfo = [['@kingspeak.chpc.utah.edu', 12],
+            [environ["USER"] + '@bihexal.cs.utah.edu', 24],
+            [environ["USER"] + '@gaussr.cs.utah.edu', 4]]
 
 #constants
 git = '/usr/bin/git'
@@ -17,6 +17,10 @@ psql = check_output('which psql', shell=True)[:-1]
 dumpFile = 'db/db_backup/dumpfile'
 notes = ''
 #sed = '/bin/sed'
+verbose = False
+if environ["VERBOSE"] == 'verbose':
+    verbose = True
+    
 
 def usage():
     print('usage: ' + sys.argv[0] + ' notes [optional: fqdn procs, ... ]')
@@ -29,6 +33,10 @@ if len(sys.argv) > 1:
 else:
     usage()
     exit(1)
+
+kp_name = input('Enter your username for kingspeak: ')
+hostinfo[0][0] = kp_name + hostinfo[0][0]
+
 
 for f in glob.iglob('results/*'):
     remove(f);
@@ -69,15 +77,16 @@ for h in hostinfo:
           'git stash && ' +
           'git checkout master && ' +
           'git pull && ' +
-                         './hostCollect.sh ' + str(h[1])])
+          'VERBOSE=' + environ["VERBOSE"] + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
     stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
     print(stdo)
-    
-chdir('results')
-stdo = check_output([psql, '-d', 'qfp', '-c', 'INSERT INTO runs (rdate, notes) VALUES (\'' + str(datetime.date.today())
-                     + '\', \'' + notes + '\');'])
-for f in glob.iglob('masterRes*'):
-    stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'])
-    print(stdo)
+
+if verbose == False:
+    chdir('results')
+    stdo = check_output([psql, '-d', 'qfp', '-c', 'INSERT INTO runs (rdate, notes) VALUES (\'' + str(datetime.date.today())
+                         + '\', \'' + notes + '\');'])
+    for f in glob.iglob('masterRes*'):
+        stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'])
+        print(stdo)
     
