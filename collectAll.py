@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from subprocess import call, check_output
-from os import chdir, getcwd
+from os import chdir, getcwd, remove
 import sys
 import datetime
 import glob
@@ -30,7 +30,8 @@ else:
     usage()
     exit(1)
 
-call(['rm', 'results/*'], shell=True)
+for f in glob.iglob('results/*'):
+    remove(f);
 
 ## first: check if git is current (git diff-index --quiet HEAD != 0)    
 ## if not current, exit and require commit / push
@@ -70,13 +71,13 @@ for h in hostinfo:
           'git pull && ' +
                          './hostCollect.sh ' + str(h[1])])
     print(stdo)
-    stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', './masterRes' + h[0]])
+    stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
     print(stdo)
     
 chdir('results')
 stdo = check_output([psql, '-d', 'qfp', '-c', 'INSERT INTO runs (rdate, notes) VALUES (\'' + str(datetime.date.today())
                      + '\', \'' + notes + '\');'])
-for f in glob.iglob('masterRes_*'):
+for f in glob.iglob('masterRes*'):
     stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'])
     print(stdo)
     

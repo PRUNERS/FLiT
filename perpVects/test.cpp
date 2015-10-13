@@ -391,7 +391,7 @@ public:
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
     for(int x = 0; x < size(); ++x){
-      distance += std::abs(data[x] - rhs.data[x]);
+      distance += fabs(data[x] - rhs.data[x]);
     }
     return distance;
   }
@@ -421,10 +421,10 @@ public:
     if(sortType == lt || sortType == gt){
       if(sortType == lt)
 	std::sort(cont.begin(), cont.end(),
-		  [](T a, T b){return std::abs(a) < std::abs(b);});
+		  [](T a, T b){return fabs(a) < fabs(b);});
       else
 	std::sort(cont.begin(), cont.end(),
-		  [](T a, T b){return std::abs(a) > std::abs(b);});
+		  [](T a, T b){return fabs(a) > fabs(b);});
     }
     for_each(cont.begin(), cont.end(), fun);
   }
@@ -452,7 +452,7 @@ public:
   LInfNorm() const {
     T retVal = 0;
     for(auto e: data){
-      T tmp = std::abs(e);
+      T tmp = fabs(e);
       if( tmp > retVal) retVal = tmp;
     }
     return retVal;
@@ -682,7 +682,7 @@ struct FPTests {
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
+    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
       info_stream << "in: " << __func__ << endl;
       info_stream << "applied gram-schmidt to:" << endl;
       info_stream << "a: " << a << endl;
@@ -720,7 +720,7 @@ struct FPTests {
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
+    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
       info_stream << "in: " << __func__ << endl;
       info_stream << "applied gram-schmidt to:" << endl;
       info_stream << "a: " << a << endl;
@@ -805,9 +805,9 @@ struct FPTests {
 	bool isOrth = a.isOrtho(b);
 	if(isOrth){
 	  orthoCount[r]++;
-	  if(i != 0) score += std::abs(p - backup); //score should be perturbed amount
+	  if(i != 0) score += fabs(p - backup); //score should be perturbed amount
 	}else{
-	  if(i == 0) score += std::abs(a ^ b);  //if falsely not detecting ortho, should be the dot prod
+	  if(i == 0) score += fabs(a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
 	info_stream << "a[" << r << "] = " << a[r] << " perp: " << isOrth << endl;
       }
@@ -1244,7 +1244,7 @@ outputResults(size_t iters,
   for(auto i: scores){
     // cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
     // cout << "(decimal)\t" << i.second << endl;
-    cout << "HOST,SWITCHES,COMPILER" << typeid(T).name() << "," << getSortName(reduction_sort_type)
+    cout << "HOST,SWITCHES,COMPILER," << typeid(T).name() << "," << getSortName(reduction_sort_type)
 	 << "," << i.second.first << "," << FPWrap<long double>(i.second.first) << "," <<
       i.second.second << "," << FPWrap<long double>(i.second.second) << "," << 
       i.first << endl;
