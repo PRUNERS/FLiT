@@ -1,0 +1,11 @@
+CREATE FUNCTION importQFPResults(path text) RETURNS integer as $$
+   s = ("COPY tests " +
+                "(host, switches, compiler, precision, sort, " +
+                "score0d, score0, score1d, score1, name) " +
+                "FROM '" +
+                path +
+                "' (DELIMITER ',')")
+   res = plpy.execute(s)
+   return res.nrows()
+$$ LANGUAGE plpython3u;
+

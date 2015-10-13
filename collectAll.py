@@ -12,7 +12,7 @@ hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
             ['sawaya@gaussr.cs.utah.edu', 4]]
 
 #constants
-0git = '/usr/bin/git'
+git = '/usr/bin/git'
 psql = check_output('which psql', shell=True)[:-1]
 dumpFile = 'db/db_backup/dumpfile'
 
@@ -39,15 +39,15 @@ if (call([git, 'add', 'db/db_backup/dumpfile']) != 0 or
 ## rename tests (tests_[time])
 ## create table tests like [backup table name]
 newTable = 'tests_' + str(datetime.now().microsecond)
-if (call([psql, '-d', 'qfp', '-c', 'ALTER TABLE tests RENAME TO ' + newTable + ';']) != 0 or
-    call([psql, '-d', 'qfp', '-c', 'CREATE TABLE tests (like ' + newTable + ');']) != 0):
-    print('failure renaming old table or creating empty clone')
+if (call([psql, '-d', 'qfp', '-c', 'CREATE TABLE ' + newTable + ' AS TABLE tests;']) != 0 or
+    call([psql, '-d', 'qfp', '-c', 'DELETE FROM tests);']) != 0):
+    print('failure creating backup table for tests or deleting * from tests')
     sys.exit(1)
 
 ## import
 for h in hostinfo:
     print('collecting data from ' + h[0])
-    call(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then ' +
+    stdo = check_output(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then ' +
           'mkdir remote_qfp && cd remote_qfp && ' +
           'git clone https://github.com/geof23/qfp && ' +
           'cd .. ; ' +
@@ -56,9 +56,13 @@ for h in hostinfo:
           'git stash && ' +
           'git checkout master && ' +
           'git pull && ' +
-          './hostCollect.sh ' + str(h[1])])
-    call(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', './'])
-
+                         './hostCollect.sh ' + str(h[1])])
+    print(stdo)
+    stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', './masterRes' + h[0]])
+    print(stdo)
+    
 chdir('results')
 for f in glob.iglob('masterRes_*'):
-    call([psql, '-d', 'qfp', '-c', 'select importQFPResults(' + f + ');'])
+    stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(' + f + ');'])
+    print(stdo)
+    
