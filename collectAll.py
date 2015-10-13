@@ -20,7 +20,7 @@ notes = ''
 
 def usage():
     print('usage: ' + sys.argv[0] + ' notes [optional: fqdn procs, ... ]')
-
+    print('where fqdn = host to run tests on; procs is number of processes to use')
 
 if len(sys.argv) > 1:
     notes = sys.argv[1]
