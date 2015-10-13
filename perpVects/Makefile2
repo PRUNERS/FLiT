@@ -98,8 +98,8 @@ cleanResults : $(TARGETS)
 	find . -size 0 -exec rm {} \;
 
 archive : cleanResults
-	tar -zcf ../results/$(hostname).tgz *$(hostname)*
-	rm *$(hostname)*
+	-tar -zcf ../results/$(hostname).tgz *$(hostname)*
+	-rm *$(hostname)*
 
 .phony : clean
 
