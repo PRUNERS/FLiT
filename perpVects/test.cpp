@@ -1244,7 +1244,7 @@ outputResults(size_t iters,
   for(auto i: scores){
     // cout << i.first << ":(bits)\t" << std::hex << FPWrap<T>(i.second) << endl;
     // cout << "(decimal)\t" << i.second << endl;
-    cout << "HOST,SWITCHES,COMPILER," << typeid(T).name() << "," << getSortName(reduction_sort_type)
+    cout << "HOST,SWITCHES,COMPILER" << typeid(T).name() << "," << getSortName(reduction_sort_type)
 	 << "," << i.second.first << "," << FPWrap<long double>(i.second.first) << "," <<
       i.second.second << "," << FPWrap<long double>(i.second.second) << "," << 
       i.first << endl;

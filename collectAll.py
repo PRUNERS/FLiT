@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
 from subprocess import call, check_output
-from os import chdir
+from os import chdir, getcwd
 import sys
-from datetime import datetime
+import datetime
 import glob
 
 
@@ -15,34 +15,46 @@ hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
 git = '/usr/bin/git'
 psql = check_output('which psql', shell=True)[:-1]
 dumpFile = 'db/db_backup/dumpfile'
+notes = ''
+#sed = '/bin/sed'
+
+def usage():
+    print('usage: ' + sys.argv[0] + ' notes [optional: fqdn procs, ... ]')
+
 
 if len(sys.argv) > 1:
-    hostinfo.append([sys.argv[1], int(sys.argv[2])])
+    notes = sys.argv[1]
+    for x in range(2, len(sys.argv), 2):
+        hostinfo.append([sys.argv[x], int(sys.argv[x+1])])
+else:
+    usage()
+    exit(1)
 
-call(['rm', 'results/*'])
+call(['rm', 'results/*'], shell=True)
+
 ## first: check if git is current (git diff-index --quiet HEAD != 0)    
 ## if not current, exit and require commit / push
-if call([git, 'diff-index', '--quiet', 'HEAD', dumpFile]) != 0:
-    print('Please commit git with ' + dumpFile + ' before continuing')
-    sys.exit(1)
-f = open(dumpFile, 'w')
+# if call([git, 'diff-index', '--quiet', 'HEAD', dumpFile]) != 0:
+#     print('Please commit git with ' + dumpFile + ' before continuing')
+#     sys.exit(1)
+# f = open(dumpFile, 'w')
 ## do db backup
-if call(['/usr/lib/postgresql/9.4/bin/pg_dump', 'qfp'], stdout=f) != 0:
-    print('db backup failed.  please correct problem before continuing . . .')
-    sys.exit(1)
+# if call(['/usr/lib/postgresql/9.4/bin/pg_dump', 'qfp'], stdout=f) != 0:
+#     print('db backup failed.  please correct problem before continuing . . .')
+#     sys.exit(1)
 
 ## do git add dumpfile && git commit -m 'db auto-backup'
-if (call([git, 'add', 'db/db_backup/dumpfile']) != 0 or
-    call([git, 'commit', '-m "db auto-backup"']) != 0):
-    print('problem committing new db backup file')
+# if (call([git, 'add', 'db/db_backup/dumpfile']) != 0 or
+#     call([git, 'commit', '-m "db auto-backup"']) != 0):
+#     print('problem committing new db backup file')
 
 ## rename tests (tests_[time])
 ## create table tests like [backup table name]
-newTable = 'tests_' + str(datetime.now().microsecond)
-if (call([psql, '-d', 'qfp', '-c', 'CREATE TABLE ' + newTable + ' AS TABLE tests;']) != 0 or
-    call([psql, '-d', 'qfp', '-c', 'DELETE FROM tests);']) != 0):
-    print('failure creating backup table for tests or deleting * from tests')
-    sys.exit(1)
+# newTable = 'tests_' + str(datetime.now().microsecond)
+# if (call([psql, '-d', 'qfp', '-c', 'CREATE TABLE ' + newTable + ' AS TABLE tests;']) != 0 or
+#     call([psql, '-d', 'qfp', '-c', 'DELETE FROM tests);']) != 0):
+#     print('failure creating backup table for tests or deleting * from tests')
+#     sys.exit(1)
 
 ## import
 for h in hostinfo:
@@ -62,7 +74,9 @@ for h in hostinfo:
     print(stdo)
     
 chdir('results')
+stdo = check_output([psql, '-d', 'qfp', '-c', 'INSERT INTO runs (rdate, notes) VALUES (\'' + str(datetime.date.today())
+                     + '\', \'' + notes + '\');'])
 for f in glob.iglob('masterRes_*'):
-    stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(' + f + ');'])
+    stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'])
     print(stdo)
     
