@@ -1,5 +1,5 @@
 
-CREATE FUNCTION importQFPResults(path text) RETURNS integer as $$
+CREATE OR REPLACE FUNCTION importQFPResults(path text) RETURNS integer as $$
    r = ("SELECT MAX(index)as index from runs;")
    res = plpy.execute(r)
    run = res[0]["index"]
