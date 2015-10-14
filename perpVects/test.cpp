@@ -436,7 +436,7 @@ public:
   operator^(Vector<T> const &rhs) const {
     T sum = 0;
     if( sortType == bi){
-      sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), 0);
+      sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
       vector<T> prods(data.size());
       for(int i = 0; i < size(); ++i){ 
