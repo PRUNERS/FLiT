@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION importQFPResults(path text) RETURNS integer as $$
    run = res[0]["index"]
    s = ("COPY tests " +
                 "(host, switches, compiler, precision, sort, " +
-                "score0d, score0, score1d, score1, name) " +
+                "score0d, score0, score1d, score1, name, file) " +
                 "FROM '" +
                 path +
                 "' (DELIMITER ',')")   

@@ -82,9 +82,9 @@ all : $(TARGETS) cleanResults archive
 define RULE
 $2_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
 	-./$$< $(VERBOSE) > $$@
-	-sed -i 's/HOST/$(hostname)/' $$@
-	-sed -i 's/SWITCHES/$($(strip $1))/' $$@
-	-sed -i 's/COMPILER/"$($(strip $2))"/' $$@
+	-sed -i 's/HOST/$(hostname)/g' $$@
+	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
+	-sed -i 's/COMPILER/"$($(strip $2))"/g' $$@
 
 $2_$(hostname)_$(strip $1) : test.cpp
 	-$($(strip $2)) $($(strip $1)) $(CC_REQUIRED) $$< -o $$@

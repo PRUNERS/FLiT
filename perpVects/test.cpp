@@ -1248,7 +1248,7 @@ outputResults(size_t iters,
     cout << "HOST,SWITCHES,COMPILER," << typeid(T).name() << "," << getSortName(reduction_sort_type)
 	 << "," << i.second.first << "," << FPWrap<long double>(i.second.first) << "," <<
       i.second.second << "," << FPWrap<long double>(i.second.second) << "," << 
-      i.first << endl;
+      i.first << "," << "COMPILER_HOST_SWITCHES" << endl;
   }
   // long double subtotal = 0;
   // for_each(scores.begin(), scores.end(), [&subtotal](std::pair<string, long double> p)
