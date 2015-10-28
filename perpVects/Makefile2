@@ -16,7 +16,7 @@ COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 VERBOSE ?= 
 
 #CC_GEN_OPTS ?= -O0 -ggdb
-CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
+CC_REQUIRED := -g -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
 
 ##Compiler setting targets
 # taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
