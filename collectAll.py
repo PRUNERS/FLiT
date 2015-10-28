@@ -17,9 +17,9 @@ psql = check_output('which psql', shell=True)[:-1]
 dumpFile = 'db/db_backup/dumpfile'
 notes = ''
 #sed = '/bin/sed'
-verbose = False
-if environ["VERBOSE"] == 'verbose':
-    verbose = True
+verbose = ''
+if environ.get("VERBOSE") == 'verbose':
+    verbose = 'verbose'
     
 
 def usage():
@@ -77,13 +77,13 @@ for h in hostinfo:
           'git stash && ' +
           'git checkout master && ' +
           'git pull && ' +
-          'VERBOSE=' + environ["VERBOSE"] + ' ./hostCollect.sh ' + str(h[1])])
+          'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
-    if verbose == False:
+    if verbose == '':
         stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
         print(stdo)
 
-if verbose == False:
+if verbose == '':
     chdir('results')
     stdo = check_output([psql, '-d', 'qfp', '-c', 'INSERT INTO runs (rdate, notes) VALUES (\'' + str(datetime.date.today())
                          + '\', \'' + notes + '\');'])
