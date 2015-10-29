@@ -4,7 +4,7 @@
 
 #the list of compilers to iterate over
 #compiler specific flags may be set here
-#GCC := g++
+GCC := g++
 CLANG := $(if $(shell which clang++-3.6), clang++-3.6, clang++)
 PG := pgCC  #doesn't fully support c++11 (even 15.7!) so not in list
 INTEL := icpc -mlong-double-80
