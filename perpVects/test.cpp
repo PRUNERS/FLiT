@@ -809,7 +809,7 @@ struct FPTests {
 	}else{
 	  if(i == 0) score += fabs(a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
-	info_stream << "a[" << r << "] = " << a[r] << " perp: " << isOrth << " dot prod: " <<
+	info_stream << "a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " perp: " << isOrth << " dot prod: " <<
 	  FPWrap<T>(a ^ b) << endl;
       }
       info_stream << "next dimension . . . " << endl;
