@@ -13,6 +13,8 @@
 #include <type_traits>
 #include <map>
 #include <float.h>
+#include <cstdlib>
+#include <cstring>
 
 using std::vector;
 using std::cout;
@@ -841,7 +843,9 @@ struct FPTests {
 	   << FPHelpers::getExponent(a[cdim] * b[cdim]) << endl;
       cdim++;
     }
-    return {__func__, {score, 0.0}};
+    std::string name = std::string(__func__);
+    if (a[0] == 0.2 ) name += "N2"; else name += "P2";
+    return {name, {score, 0.0}};
   }
 
   template<typename T>
@@ -1187,25 +1191,36 @@ DoTests(size_t iters,
 	T max,
 	typename Vector<T>::sort_t reduction_sort_type,
 	T theta,
-	std::map<string, std::pair<long double, long double>> &scores){
+	std::map<string, std::pair<long double, long double>> &scores,
+	int test){
   size_t indexer = 0;
-  scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-					       ulp_inc,
-					       [&indexer](){return (T)(1 << indexer++);},
-					       reduction_sort_type));
 					       
   indexer = 0;
-  scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
-  					       ulp_inc, 
-  		[&indexer](){return 0.2 / pow((T)10.0, indexer++);},
-  					       reduction_sort_type));
-  scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
-  scores.insert(FPTests::DoSimpleRotate90<T>());
-  scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
-  scores.insert(FPTests::RotateFullCircle(iters, min, max));
-  scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
-  scores.insert(FPTests::DoHariGSBasic<T>());
-  scores.insert(FPTests::DoHariGSImproved<T>());
+
+  if(test == 0 || test == -1)
+    scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
+						 ulp_inc,
+						 [&indexer](){return (T)(1 << indexer++);},
+						 reduction_sort_type));
+  if(test == 1 || test == -1)
+    scores.insert(FPTests::DoOrthoPerturbTest<T>(iters, highestDim,
+						 ulp_inc, 
+						 [&indexer](){return 0.2 / pow((T)10.0, indexer++);},
+						 reduction_sort_type));
+  if(test == 2 || test == -1)
+    scores.insert(FPTests::DoMatrixMultSanity(highestDim, min, max));
+  if(test == 3 || test == -1)
+    scores.insert(FPTests::DoSimpleRotate90<T>());
+  if(test == 4 || test == -1)
+    scores.insert(FPTests::RotateAndUnrotate(min, max, theta));
+  if(test == 5 || test == -1)
+    scores.insert(FPTests::RotateFullCircle(iters, min, max));
+  if(test == 6 || test == -1)
+    scores.insert(FPTests::DoSkewSymCPRotationTest(min, max));
+  if(test == 7 || test == -1)
+    scores.insert(FPTests::DoHariGSBasic<T>());
+  if(test == 8 || test == -1)
+    scores.insert(FPTests::DoHariGSImproved<T>());
 }
 
 
@@ -1286,9 +1301,67 @@ getSortT(int t){
 }
 }
 
+// void
+// usage(std::string exe){
+//   std::cout << " usage: " << std::endl;
+//   std::cout << exe <<  " [verbose|noverbose [bi|lt|gt|ns] [f|d|e] [testid]]" << std::endl;
+//   std::cout << "\twhere testid is one of: " << std::endl;
+//   std::cout << "\t\t 0: DoOrthoPerturbTest" << std::endl;
+//   std::cout << "\t\t1: DoMatrixMultSanity" << std::endl;
+//   std::cout << "\t\t2: RotateAndUnrotate" << std::endl;
+//   std::cout << "\t\t3: RotateFullCircle" << std::endl;
+//   std::cout << "\t\t4: DoSkewSymPRotationTest" << std::endl;
+//   std::cout << "\t\t5: DoHariGSBasic" << std::endl;
+//   std::cout << "\t\t6: DoHariGSImproved" << std::endl;
+
+// }
+
+int
+getSortID(std::string s){
+  if(s == "lt") return 0;
+  if(s == "gt") return 1;
+  if(s == "bi") return 2;
+  return 3;
+}
+
+int
+getPrecID(std::string s){
+  if(s == "f") return 0;
+  if(s == "d") return 1;
+  return 2;
+}
+
+void
+loadStringFromEnv(std::string &dest, std::string var, std::string defVal){
+  if(std::getenv(var.c_str()) == NULL){
+    dest = defVal;
+  }else{
+    dest = std::getenv(var.c_str());
+  }
+}
+
+void
+loadIntFromEnv(int &dest, std::string var, int defVal){
+  const char* res = std::getenv(var.c_str());
+  if(res == NULL || std::strlen(res) == 0){
+    dest = defVal;
+  }else{
+    dest = std::atoi(std::getenv(var.c_str()));
+  }
+}
+
 int
 main(int argc, char* argv[]){
   if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
+  int TEST;
+  loadIntFromEnv(TEST, "TEST", -1);
+  std::string SORT;
+  loadStringFromEnv(SORT, "SORT", "all");
+  std::string PRECISION;
+  loadStringFromEnv(PRECISION, "PRECISION", "all");
+
+  //THIS EXTERNAL INTERFACE IS A LITTLE SLOPPY -- SHOULD REENGINEER
+
   using namespace fpTestSuite;
   // The params to perturb are:
   // precision := {float | double | long double}
@@ -1311,42 +1384,46 @@ main(int argc, char* argv[]){
 
   //  std::map<string, long double> masterScore;
   std::map<string, std::pair<long double, long double>> scores;
-  for(int ipm = 0; ipm < 4; ++ipm){ //reduction sort pre sum
-    for(int p = 0; p < 3; ++p){ //float, double, long double
+  int firstST = 0;
+  int lastST = 4;
+  int firstP = 0;
+  int lastP = 3;
+  if(SORT != "all"){
+    firstST = getSortID(SORT);
+    lastST = getSortID(SORT) + 1;
+  }
+  if(PRECISION != "all"){
+    firstP = getPrecID(PRECISION);
+    lastP = getPrecID(PRECISION) + 1;
+  }
+  for(int ipm = firstST; ipm < lastST; ++ipm){ //reduction sort pre sum
+    for(int p = firstP; p < lastP; ++p){ //float, double, long double
       scores.clear();
       switch(p){
       case 0: //float
 	{
-	DoTests<float>(iters, dim, ulp_inc, min, max, getSortT<float>(ipm), theta, scores);
-	outputResults<float>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
-	// tabulateSubtest<float>(masterScore, scores);
-	break;
+	  DoTests<float>(iters, dim, ulp_inc, min, max, getSortT<float>(ipm), theta, scores, TEST);
+	  outputResults<float>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
+	  // tabulateSubtest<float>(masterScore, scores);
+	  break;
 	}
       case 1:
 	{
-	DoTests<double>(iters, dim, ulp_inc, min, max, getSortT<double>(ipm), theta, scores);
-	outputResults<double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
-	// tabulateSubtest<double>(masterScore, scores);
-	break;
+	  DoTests<double>(iters, dim, ulp_inc, min, max, getSortT<double>(ipm), theta, scores, TEST);
+	  outputResults<double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
+	  // tabulateSubtest<double>(masterScore, scores);
+	  break;
 	}
       case 2:
 	{
-	DoTests<long double>(iters, dim, ulp_inc, min, max, getSortT<long double>(ipm), theta, scores);
-	outputResults<long double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
-	// tabulateSubtest<long double>(masterScore, scores);
-	break;
+	  DoTests<long double>(iters, dim, ulp_inc, min, max, getSortT<long double>(ipm), theta, scores, TEST);
+	  outputResults<long double>(iters, dim, ulp_inc, min, max, ipm, theta, scores);
+	  // tabulateSubtest<long double>(masterScore, scores);
+	  break;
 	}
       }
     }
   }
-  // long double mScore = 0;
-  // std::for_each(masterScore.begin(),
-  // 		masterScore.end(),
-  // 		[&mScore](pair<string, long double> p){mScore += p.second;});
-  // cout << "master score is (bits): " << std::hex << FPWrap<long double>(mScore)
-  //      << endl;
-  // cout << "(dec): " << std::dec << mScore << endl;
-  // if(mScore != 0) return 1;
 }
 
 
