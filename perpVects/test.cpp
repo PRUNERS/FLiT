@@ -1,5 +1,5 @@
 // This program perturbs perpendicular vectors to see how many can be detected as not orthogonal
-// this supports float, double and long double (128 bit)
+// this supports float, double and long double (80 bit encased in 128 bit)
 // bits from various sources including http://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
 
 #include <iostream>
@@ -75,6 +75,19 @@ struct get_corresponding_type{
 		     typename std::conditional<std::is_floating_point<T>::value && sizeof(T) == 16 ,
 				      unsigned __int128, void>::type>::type>::type;
 };
+
+template<typename T>
+struct Globals{
+  static T sum;
+  static vector<T> prods;
+};
+
+template<class T>
+T Globals<T>::sum;
+
+template<class T>
+std::vector<T> Globals<T>::prods(32, 0.0);
+
 
 ostream& operator<<(ostream& os, const unsigned __int128 &i){
   uint64_t hi = i >> 64;
@@ -237,7 +250,6 @@ template<typename T>
 class Matrix;
 
 std::default_random_engine gen;
-
 
 template <typename T>
 class Vector {
@@ -436,11 +448,15 @@ public:
   //inner product (dot product)
   T
   operator^(Vector<T> const &rhs) const {
-    T sum = 0;
+    Globals<T>::sum = 0.0;
+    T &sum = Globals<T>::sum;
+    auto prods = Globals<T>::prods;
+    volatile T &elm0 = prods.data()[0];
+    info_stream << elm0 << std::endl;
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
-      vector<T> prods(data.size());
+      std::for_each(prods.begin(), prods.end(), [&](T i){i = 0;});
       for(int i = 0; i < size(); ++i){ 
 	prods[i] = data[i] * rhs.data[i]; 
 	//	info_stream << "(" << data[i] << " * " << rhs.data[i] << ") = " << prods[i] << endl;

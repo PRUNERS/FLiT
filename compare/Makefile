@@ -43,10 +43,10 @@ run2 : 	test2
 	./$< verbose > $@
 
 test1 : ../perpVects/test.cpp
-	$(COMPILER1) $(CXX_REQ) $(COMPSW1) $< -o $@
+	$(COMPILER1) $(CXX_REQ) $($(COMPSW1)) $< -o $@
 
 test2 : ../perpVects/test.cpp
-	$(COMPILER2) $(CXX_REQ) $(COMPSW2) $< -o $@
+	$(COMPILER2) $(CXX_REQ) $($(COMPSW2)) $< -o $@
 
 clean:
 	-rm test* run*
