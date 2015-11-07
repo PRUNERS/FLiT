@@ -451,8 +451,6 @@ public:
     Globals<T>::sum = 0.0;
     T &sum = Globals<T>::sum;
     auto prods = Globals<T>::prods;
-    volatile T &elm0 = prods.data()[0];
-    info_stream << elm0 << std::endl;
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
