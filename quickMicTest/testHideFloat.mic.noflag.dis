@@ -1,0 +1,66 @@
+
+testHideFloat.o:     file format elf64-x86-64
+
+
+Disassembly of section .bss:
+
+0000000000000000 <std::__ioinit>:
+   0:	00 00                	add    %al,(%rax)
+	...
+
+Disassembly of section .text:
+
+0000000000000000 <divide(double, double)>:
+   0:	f2 0f 5e c1          	divsd  %xmm1,%xmm0
+   4:	c3                   	retq   
+   5:	0f 1f 40 00          	nopl   0x0(%rax)
+   9:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+0000000000000010 <__sti__$E>:
+  10:	56                   	push   %rsi
+  11:	bf 00 00 00 00       	mov    $0x0,%edi
+  16:	e8 00 00 00 00       	callq  1b <__sti__$E+0xb>
+  1b:	bf 00 00 00 00       	mov    $0x0,%edi
+  20:	be 00 00 00 00       	mov    $0x0,%esi
+  25:	ba 00 00 00 00       	mov    $0x0,%edx
+  2a:	48 83 c4 08          	add    $0x8,%rsp
+  2e:	e9 00 00 00 00       	jmpq   33 <__sti__$E+0x23>
+  33:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+  38:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+  3f:	00 
+
+Disassembly of section .ctors:
+
+0000000000000000 <.ctors>:
+	...
+
+Disassembly of section .eh_frame:
+
+0000000000000000 <.eh_frame>:
+   0:	1c 00                	sbb    $0x0,%al
+   2:	00 00                	add    %al,(%rax)
+   4:	00 00                	add    %al,(%rax)
+   6:	00 00                	add    %al,(%rax)
+   8:	01 7a 50             	add    %edi,0x50(%rdx)
+   b:	00 01                	add    %al,(%rcx)
+   d:	78 10                	js     1f <.eh_frame+0x1f>
+   f:	09 00                	or     %eax,(%rax)
+	...
+  19:	0c 07                	or     $0x7,%al
+  1b:	08 90 01 00 00 1c    	or     %dl,0x1c000001(%rax)
+  21:	00 00                	add    %al,(%rax)
+  23:	00 24 00             	add    %ah,(%rax,%rax,1)
+	...
+  2e:	00 00                	add    %al,(%rax)
+  30:	10 00                	adc    %al,(%rax)
+	...
+  3e:	00 00                	add    %al,(%rax)
+  40:	1c 00                	sbb    $0x0,%al
+  42:	00 00                	add    %al,(%rax)
+  44:	44 00 00             	add    %r8b,(%rax)
+	...
+  4f:	00 30                	add    %dh,(%rax)
+	...
+  59:	41 0e                	rex.B (bad) 
+  5b:	10 5d 0e             	adc    %bl,0xe(%rbp)
+  5e:	08 00                	or     %al,(%rax)
