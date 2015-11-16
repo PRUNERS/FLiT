@@ -1,0 +1,153 @@
+
+testHideFloat.o:     file format elf64-k1om
+
+
+Disassembly of section .bss:
+
+0000000000000000 <std::__ioinit>:
+   0:	00 00                	add    %al,(%rax)
+	...
+
+Disassembly of section .text:
+
+0000000000000000 <divide(double, double)>:
+   0:	62 72 79 08 5a 25 00 	vbroadcasti32x4 0x0(%rip),%zmm12        # a <divide(double, double)+0xa>
+   7:	00 00 00 
+   a:	62 e2 f9 08 5b 15 00 	vbroadcasti64x4 0x0(%rip),%zmm18        # 14 <divide(double, double)+0x14>
+  11:	00 00 00 
+  14:	62 f1 e1 08 ef db    	vpxorq %zmm3,%zmm3,%zmm3
+  1a:	b8 01 00 00 00       	mov    $0x1,%eax
+  1f:	62 f2 79 08 58 15 00 	vpbroadcastd 0x0(%rip),%zmm2        # 29 <divide(double, double)+0x29>
+  26:	00 00 00 
+  29:	62 b1 f9 58 28 f2    	vmovapd %zmm18{bbbb},%zmm6
+  2f:	c5 f8 92 d8          	kmov   %eax,%k3
+  33:	62 72 f9 0b 42 c9    	vgetexppd %zmm1,%zmm9{%k3}
+  39:	62 72 f9 0b 42 c0    	vgetexppd %zmm0,%zmm8{%k3}
+  3f:	62 f3 f9 0b 26 f9 00 	vgetmantpd $0x0,%zmm1,%zmm7{%k3}
+  46:	62 51 b9 0b 5c d1    	vsubpd %zmm9,%zmm8,%zmm10{%k3}
+  4c:	62 52 29 48 39 dc    	vpminsd %zmm12{aaaa},%zmm10,%zmm11
+  52:	62 f1 f9 fb 5a e7    	vcvtpd2ps {rz-sae},%zmm7,%zmm4{%k3}
+  58:	62 52 21 58 3b ec    	vpminud %zmm12{bbbb},%zmm11,%zmm13
+  5e:	62 f2 79 0b ca ec    	vrcp23ps %zmm4,%zmm5{%k3}
+  64:	62 31 91 6b 58 ea    	vaddpd %zmm18{cccc},%zmm13,%zmm13{%k3}
+  6a:	62 f2 f1 0b 55 da    	vfixupnanpd %zmm2,%zmm1,%zmm3{%k3}
+  70:	62 e1 78 0b 5a e5    	vcvtps2pd %ymm5,%zmm20{%k3}
+  76:	62 d1 01 08 72 f5 14 	vpslld $0x14,%zmm13,%zmm15
+  7d:	62 72 f9 08 5b 35 00 	vbroadcasti64x4 0x0(%rip),%zmm14        # 87 <divide(double, double)+0x87>
+  84:	00 00 00 
+  87:	62 f2 f9 0b 55 da    	vfixupnanpd %zmm2,%zmm0,%zmm3{%k3}
+  8d:	62 f2 d9 c3 ac fe    	vfnmadd213pd {rn-sae},%zmm6,%zmm20,%zmm7{%k3}
+  93:	62 d1 49 00 72 e7 01 	vpsrad $0x1,%zmm15,%zmm22
+  9a:	62 f1 e1 0b c2 d3 00 	vcmpeqpd %zmm3,%zmm3,%k2{%k3}
+  a1:	62 f2 c1 cb b8 ff    	vfmadd231pd {rn-sae},%zmm7,%zmm7,%zmm7{%k3}
+  a7:	62 c1 c9 43 db f6    	vpandq %zmm14{aaaa},%zmm22,%zmm22{%k3}
+  ad:	c5 f8 90 ca          	kmov   %k2,%k1
+  b1:	62 e2 79 08 58 2d 00 	vpbroadcastd 0x0(%rip),%zmm21        # bb <divide(double, double)+0xbb>
+  b8:	00 00 00 
+  bb:	62 a2 c1 cb b8 e4    	vfmadd231pd {rn-sae},%zmm20,%zmm7,%zmm20{%k3}
+  c1:	c5 f8 42 cb          	kandn  %k3,%k1
+  c5:	62 e3 f9 0b 26 d8 00 	vgetmantpd $0x0,%zmm0,%zmm19{%k3}
+  cc:	62 a1 01 08 fa c6    	vpsubd %zmm22,%zmm15,%zmm16
+  d2:	62 a1 f9 58 6f ca    	vmovdqa64 %zmm18{bbbb},%zmm17
+  d8:	62 b2 f1 0b 55 cd    	vfixupnanpd %zmm21,%zmm1,%zmm1{%k3}
+  de:	62 21 e1 c2 59 cc    	vmulpd {rn-sae},%zmm20,%zmm19,%zmm25{%k2}
+  e4:	62 21 79 00 fe c1    	vpaddd %zmm17,%zmm16,%zmm24
+  ea:	62 61 f9 c9 59 c9    	vmulpd {rn-sae},%zmm1,%zmm0,%zmm25{%k1}
+  f0:	62 21 b9 43 db c2    	vpandq %zmm18{aaaa},%zmm24,%zmm24{%k3}
+  f6:	62 a1 31 00 fe fe    	vpaddd %zmm22,%zmm25,%zmm23
+  fc:	62 01 c1 82 59 c8    	vmulpd {rn},%zmm24,%zmm23,%zmm25{%k2}
+ 102:	62 01 f9 0b 28 d1    	vmovapd %zmm25,%zmm26{%k3}
+ 108:	62 91 f9 08 28 c2    	vmovapd %zmm26,%zmm0
+ 10e:	c3                   	retq   
+ 10f:	90                   	nop
+
+0000000000000110 <__sti__$E>:
+ 110:	56                   	push   %rsi
+ 111:	bf 00 00 00 00       	mov    $0x0,%edi
+ 116:	e8 00 00 00 00       	callq  11b <__sti__$E+0xb>
+ 11b:	bf 00 00 00 00       	mov    $0x0,%edi
+ 120:	be 00 00 00 00       	mov    $0x0,%esi
+ 125:	ba 00 00 00 00       	mov    $0x0,%edx
+ 12a:	48 83 c4 08          	add    $0x8,%rsp
+ 12e:	e9 00 00 00 00       	jmpq   133 <__sti__$E+0x23>
+ 133:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+ 138:	0f 1f 84 00 00 00 00 	nopl   0x0(%rax,%rax,1)
+ 13f:	00 
+
+Disassembly of section .ctors:
+
+0000000000000000 <.ctors>:
+	...
+
+Disassembly of section .rodata:
+
+0000000000000000 <.L_2il0floatpacket.0>:
+   0:	00 00                	add    %al,(%rax)
+   2:	00 00                	add    %al,(%rax)
+   4:	00 00                	add    %al,(%rax)
+   6:	f0 7f 00             	lock jg 9 <.L_2il0floatpacket.0+0x9>
+   9:	00 00                	add    %al,(%rax)
+   b:	00 00                	add    %al,(%rax)
+   d:	00 f0                	add    %dh,%al
+   f:	3f                   	(bad)  
+  10:	00 00                	add    %al,(%rax)
+  12:	00 00                	add    %al,(%rax)
+  14:	00 00                	add    %al,(%rax)
+  16:	38 41 00             	cmp    %al,0x0(%rcx)
+  19:	00 00                	add    %al,(%rax)
+  1b:	00 02                	add    %al,(%rdx)
+  1d:	fc                   	cld    
+  1e:	37                   	(bad)  
+  1f:	41 00 00             	add    %al,(%r8)
+  22:	00 00                	add    %al,(%rax)
+  24:	00 00                	add    %al,(%rax)
+  26:	f0 ff 01             	lock incl (%rcx)
+  29:	00 00                	add    %al,(%rax)
+  2b:	00 00                	add    %al,(%rax)
+  2d:	00 00                	add    %al,(%rax)
+  2f:	00 3e                	add    %bh,(%rsi)
+  31:	04 00                	add    $0x0,%al
+	...
+  3f:	80 00 08             	addb   $0x8,(%rax)
+  42:	90                   	nop
+  43:	40 00 d4             	add    %dl,%spl
+  46:	90                   	nop
+  47:	c0 00 00             	rolb   $0x0,(%rax)
+  4a:	e0 7f                	loopne cb <.L_2il0floatpacket.0+0xcb>
+  4c:	00 00                	add    %al,(%rax)
+  4e:	50                   	push   %rax
+  4f:	03 45 8b             	add    -0x75(%rbp),%eax
+  52:	02 00                	add    (%rax),%al
+  54:	42 88 01             	rex.X mov %al,(%rcx)
+	...
+
+Disassembly of section .eh_frame:
+
+0000000000000000 <.eh_frame>:
+   0:	1c 00                	sbb    $0x0,%al
+   2:	00 00                	add    %al,(%rax)
+   4:	00 00                	add    %al,(%rax)
+   6:	00 00                	add    %al,(%rax)
+   8:	01 7a 50             	add    %edi,0x50(%rdx)
+   b:	00 01                	add    %al,(%rcx)
+   d:	78 10                	js     1f <.eh_frame+0x1f>
+   f:	09 00                	or     %eax,(%rax)
+	...
+  19:	0c 07                	or     $0x7,%al
+  1b:	08 90 01 00 00 1c    	or     %dl,0x1c000001(%rax)
+  21:	00 00                	add    %al,(%rax)
+  23:	00 24 00             	add    %ah,(%rax,%rax,1)
+	...
+  2e:	00 00                	add    %al,(%rax)
+  30:	10 01                	adc    %al,(%rcx)
+	...
+  3e:	00 00                	add    %al,(%rax)
+  40:	1c 00                	sbb    $0x0,%al
+  42:	00 00                	add    %al,(%rax)
+  44:	44 00 00             	add    %r8b,(%rax)
+	...
+  4f:	00 30                	add    %dh,(%rax)
+	...
+  59:	41 0e                	rex.B (bad) 
+  5b:	10 5d 0e             	adc    %bl,0xe(%rbp)
+  5e:	08 00                	or     %al,(%rax)

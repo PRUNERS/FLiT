@@ -1,0 +1,484 @@
+
+test.O0:     file format elf64-x86-64
+
+
+Disassembly of section .init:
+
+0000000000400878 <_init>:
+  400878:	48 83 ec 08          	sub    $0x8,%rsp
+  40087c:	e8 1b 01 00 00       	callq  40099c <call_gmon_start>
+  400881:	e8 aa 01 00 00       	callq  400a30 <frame_dummy>
+  400886:	e8 45 05 00 00       	callq  400dd0 <__do_global_ctors_aux>
+  40088b:	48 83 c4 08          	add    $0x8,%rsp
+  40088f:	c3                   	retq   
+
+Disassembly of section .plt:
+
+0000000000400890 <std::ostream::operator<<(double)@plt-0x10>:
+  400890:	ff 35 22 0a 20 00    	pushq  0x200a22(%rip)        # 6012b8 <_GLOBAL_OFFSET_TABLE_+0x8>
+  400896:	ff 25 24 0a 20 00    	jmpq   *0x200a24(%rip)        # 6012c0 <_GLOBAL_OFFSET_TABLE_+0x10>
+  40089c:	0f 1f 40 00          	nopl   0x0(%rax)
+
+00000000004008a0 <std::ostream::operator<<(double)@plt>:
+  4008a0:	ff 25 22 0a 20 00    	jmpq   *0x200a22(%rip)        # 6012c8 <_GLOBAL_OFFSET_TABLE_+0x18>
+  4008a6:	68 00 00 00 00       	pushq  $0x0
+  4008ab:	e9 e0 ff ff ff       	jmpq   400890 <_init+0x18>
+
+00000000004008b0 <std::__throw_bad_cast()@plt>:
+  4008b0:	ff 25 1a 0a 20 00    	jmpq   *0x200a1a(%rip)        # 6012d0 <_GLOBAL_OFFSET_TABLE_+0x20>
+  4008b6:	68 01 00 00 00       	pushq  $0x1
+  4008bb:	e9 d0 ff ff ff       	jmpq   400890 <_init+0x18>
+
+00000000004008c0 <std::ctype<char>::_M_widen_init() const@plt>:
+  4008c0:	ff 25 12 0a 20 00    	jmpq   *0x200a12(%rip)        # 6012d8 <_GLOBAL_OFFSET_TABLE_+0x28>
+  4008c6:	68 02 00 00 00       	pushq  $0x2
+  4008cb:	e9 c0 ff ff ff       	jmpq   400890 <_init+0x18>
+
+00000000004008d0 <std::ios_base::Init::Init()@plt>:
+  4008d0:	ff 25 0a 0a 20 00    	jmpq   *0x200a0a(%rip)        # 6012e0 <_GLOBAL_OFFSET_TABLE_+0x30>
+  4008d6:	68 03 00 00 00       	pushq  $0x3
+  4008db:	e9 b0 ff ff ff       	jmpq   400890 <_init+0x18>
+
+00000000004008e0 <__libc_start_main@plt>:
+  4008e0:	ff 25 02 0a 20 00    	jmpq   *0x200a02(%rip)        # 6012e8 <_GLOBAL_OFFSET_TABLE_+0x38>
+  4008e6:	68 04 00 00 00       	pushq  $0x4
+  4008eb:	e9 a0 ff ff ff       	jmpq   400890 <_init+0x18>
+
+00000000004008f0 <__cxa_atexit@plt>:
+  4008f0:	ff 25 fa 09 20 00    	jmpq   *0x2009fa(%rip)        # 6012f0 <_GLOBAL_OFFSET_TABLE_+0x40>
+  4008f6:	68 05 00 00 00       	pushq  $0x5
+  4008fb:	e9 90 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400900 <std::ostream::operator<<(long double)@plt>:
+  400900:	ff 25 f2 09 20 00    	jmpq   *0x2009f2(%rip)        # 6012f8 <_GLOBAL_OFFSET_TABLE_+0x48>
+  400906:	68 06 00 00 00       	pushq  $0x6
+  40090b:	e9 80 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400910 <std::ios_base::Init::~Init()@plt>:
+  400910:	ff 25 ea 09 20 00    	jmpq   *0x2009ea(%rip)        # 601300 <_GLOBAL_OFFSET_TABLE_+0x50>
+  400916:	68 07 00 00 00       	pushq  $0x7
+  40091b:	e9 70 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400920 <std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*)@plt>:
+  400920:	ff 25 e2 09 20 00    	jmpq   *0x2009e2(%rip)        # 601308 <_GLOBAL_OFFSET_TABLE_+0x58>
+  400926:	68 08 00 00 00       	pushq  $0x8
+  40092b:	e9 60 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400930 <std::ostream::operator<<(float)@plt>:
+  400930:	ff 25 da 09 20 00    	jmpq   *0x2009da(%rip)        # 601310 <_GLOBAL_OFFSET_TABLE_+0x60>
+  400936:	68 09 00 00 00       	pushq  $0x9
+  40093b:	e9 50 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400940 <std::ostream::operator<<(std::ostream& (*)(std::ostream&))@plt>:
+  400940:	ff 25 d2 09 20 00    	jmpq   *0x2009d2(%rip)        # 601318 <_GLOBAL_OFFSET_TABLE_+0x68>
+  400946:	68 0a 00 00 00       	pushq  $0xa
+  40094b:	e9 40 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400950 <std::basic_ostream<char, std::char_traits<char> >& std::endl<char, std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&)@plt>:
+  400950:	ff 25 ca 09 20 00    	jmpq   *0x2009ca(%rip)        # 601320 <_GLOBAL_OFFSET_TABLE_+0x70>
+  400956:	68 0b 00 00 00       	pushq  $0xb
+  40095b:	e9 30 ff ff ff       	jmpq   400890 <_init+0x18>
+
+0000000000400960 <__gxx_personality_v0@plt>:
+  400960:	ff 25 c2 09 20 00    	jmpq   *0x2009c2(%rip)        # 601328 <_GLOBAL_OFFSET_TABLE_+0x78>
+  400966:	68 0c 00 00 00       	pushq  $0xc
+  40096b:	e9 20 ff ff ff       	jmpq   400890 <_init+0x18>
+
+Disassembly of section .text:
+
+0000000000400970 <_start>:
+  400970:	31 ed                	xor    %ebp,%ebp
+  400972:	49 89 d1             	mov    %rdx,%r9
+  400975:	5e                   	pop    %rsi
+  400976:	48 89 e2             	mov    %rsp,%rdx
+  400979:	48 83 e4 f0          	and    $0xfffffffffffffff0,%rsp
+  40097d:	50                   	push   %rax
+  40097e:	54                   	push   %rsp
+  40097f:	49 c7 c0 30 0d 40 00 	mov    $0x400d30,%r8
+  400986:	48 c7 c1 40 0d 40 00 	mov    $0x400d40,%rcx
+  40098d:	48 c7 c7 54 0a 40 00 	mov    $0x400a54,%rdi
+  400994:	e8 47 ff ff ff       	callq  4008e0 <__libc_start_main@plt>
+  400999:	f4                   	hlt    
+  40099a:	90                   	nop
+  40099b:	90                   	nop
+
+000000000040099c <call_gmon_start>:
+  40099c:	48 83 ec 08          	sub    $0x8,%rsp
+  4009a0:	48 8b 05 01 09 20 00 	mov    0x200901(%rip),%rax        # 6012a8 <_DYNAMIC+0x1d0>
+  4009a7:	48 85 c0             	test   %rax,%rax
+  4009aa:	74 02                	je     4009ae <call_gmon_start+0x12>
+  4009ac:	ff d0                	callq  *%rax
+  4009ae:	48 83 c4 08          	add    $0x8,%rsp
+  4009b2:	c3                   	retq   
+  4009b3:	90                   	nop
+  4009b4:	90                   	nop
+  4009b5:	90                   	nop
+  4009b6:	90                   	nop
+  4009b7:	90                   	nop
+  4009b8:	90                   	nop
+  4009b9:	90                   	nop
+  4009ba:	90                   	nop
+  4009bb:	90                   	nop
+  4009bc:	90                   	nop
+  4009bd:	90                   	nop
+  4009be:	90                   	nop
+  4009bf:	90                   	nop
+
+00000000004009c0 <__do_global_dtors_aux>:
+  4009c0:	55                   	push   %rbp
+  4009c1:	48 89 e5             	mov    %rsp,%rbp
+  4009c4:	53                   	push   %rbx
+  4009c5:	48 83 ec 08          	sub    $0x8,%rsp
+  4009c9:	80 3d 80 0a 20 00 00 	cmpb   $0x0,0x200a80(%rip)        # 601450 <completed.6349>
+  4009d0:	75 4b                	jne    400a1d <__do_global_dtors_aux+0x5d>
+  4009d2:	bb c8 10 60 00       	mov    $0x6010c8,%ebx
+  4009d7:	48 8b 05 7a 0a 20 00 	mov    0x200a7a(%rip),%rax        # 601458 <dtor_idx.6351>
+  4009de:	48 81 eb c0 10 60 00 	sub    $0x6010c0,%rbx
+  4009e5:	48 c1 fb 03          	sar    $0x3,%rbx
+  4009e9:	48 83 eb 01          	sub    $0x1,%rbx
+  4009ed:	48 39 d8             	cmp    %rbx,%rax
+  4009f0:	73 24                	jae    400a16 <__do_global_dtors_aux+0x56>
+  4009f2:	66 0f 1f 44 00 00    	nopw   0x0(%rax,%rax,1)
+  4009f8:	48 83 c0 01          	add    $0x1,%rax
+  4009fc:	48 89 05 55 0a 20 00 	mov    %rax,0x200a55(%rip)        # 601458 <dtor_idx.6351>
+  400a03:	ff 14 c5 c0 10 60 00 	callq  *0x6010c0(,%rax,8)
+  400a0a:	48 8b 05 47 0a 20 00 	mov    0x200a47(%rip),%rax        # 601458 <dtor_idx.6351>
+  400a11:	48 39 d8             	cmp    %rbx,%rax
+  400a14:	72 e2                	jb     4009f8 <__do_global_dtors_aux+0x38>
+  400a16:	c6 05 33 0a 20 00 01 	movb   $0x1,0x200a33(%rip)        # 601450 <completed.6349>
+  400a1d:	48 83 c4 08          	add    $0x8,%rsp
+  400a21:	5b                   	pop    %rbx
+  400a22:	c9                   	leaveq 
+  400a23:	c3                   	retq   
+  400a24:	66 66 66 2e 0f 1f 84 	data32 data32 nopw %cs:0x0(%rax,%rax,1)
+  400a2b:	00 00 00 00 00 
+
+0000000000400a30 <frame_dummy>:
+  400a30:	48 83 3d 98 06 20 00 	cmpq   $0x0,0x200698(%rip)        # 6010d0 <__JCR_END__>
+  400a37:	00 
+  400a38:	55                   	push   %rbp
+  400a39:	48 89 e5             	mov    %rsp,%rbp
+  400a3c:	74 12                	je     400a50 <frame_dummy+0x20>
+  400a3e:	b8 00 00 00 00       	mov    $0x0,%eax
+  400a43:	48 85 c0             	test   %rax,%rax
+  400a46:	74 08                	je     400a50 <frame_dummy+0x20>
+  400a48:	bf d0 10 60 00       	mov    $0x6010d0,%edi
+  400a4d:	c9                   	leaveq 
+  400a4e:	ff e0                	jmpq   *%rax
+  400a50:	c9                   	leaveq 
+  400a51:	c3                   	retq   
+  400a52:	90                   	nop
+  400a53:	90                   	nop
+
+0000000000400a54 <main>:
+  400a54:	55                   	push   %rbp
+  400a55:	48 89 e5             	mov    %rsp,%rbp
+  400a58:	48 81 ec 90 00 00 00 	sub    $0x90,%rsp
+  400a5f:	48 c7 c0 e8 ff ff ff 	mov    $0xffffffffffffffe8,%rax
+  400a66:	48 03 05 d3 08 20 00 	add    0x2008d3(%rip),%rax        # 601340 <std::cout@@GLIBCXX_3.4>
+  400a6d:	ba 40 13 60 00       	mov    $0x601340,%edx
+  400a72:	48 03 10             	add    (%rax),%rdx
+  400a75:	b8 c8 00 00 00       	mov    $0xc8,%eax
+  400a7a:	48 89 d7             	mov    %rdx,%rdi
+  400a7d:	48 89 c6             	mov    %rax,%rsi
+  400a80:	e8 c3 01 00 00       	callq  400c48 <std::ios_base::precision(long)>
+  400a85:	48 89 85 78 ff ff ff 	mov    %rax,-0x88(%rbp)
+  400a8c:	f3 0f 10 05 cc 03 00 	movss  0x3cc(%rip),%xmm0        # 400e60 <__dso_handle+0x38>
+  400a93:	00 
+  400a94:	f3 0f 11 85 70 ff ff 	movss  %xmm0,-0x90(%rbp)
+  400a9b:	ff 
+  400a9c:	f3 0f 10 05 c0 03 00 	movss  0x3c0(%rip),%xmm0        # 400e64 <__dso_handle+0x3c>
+  400aa3:	00 
+  400aa4:	f3 0f 11 85 74 ff ff 	movss  %xmm0,-0x8c(%rbp)
+  400aab:	ff 
+  400aac:	b8 40 13 60 00       	mov    $0x601340,%eax
+  400ab1:	ba 68 0e 40 00       	mov    $0x400e68,%edx
+  400ab6:	48 89 c7             	mov    %rax,%rdi
+  400ab9:	48 89 d6             	mov    %rdx,%rsi
+  400abc:	e8 5f fe ff ff       	callq  400920 <std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*)@plt>
+  400ac1:	48 89 45 80          	mov    %rax,-0x80(%rbp)
+  400ac5:	48 8b 45 80          	mov    -0x80(%rbp),%rax
+  400ac9:	f3 0f 10 85 70 ff ff 	movss  -0x90(%rbp),%xmm0
+  400ad0:	ff 
+  400ad1:	f3 0f 10 8d 74 ff ff 	movss  -0x8c(%rbp),%xmm1
+  400ad8:	ff 
+  400ad9:	f3 0f 5e c1          	divss  %xmm1,%xmm0
+  400add:	48 89 c7             	mov    %rax,%rdi
+  400ae0:	e8 4b fe ff ff       	callq  400930 <std::ostream::operator<<(float)@plt>
+  400ae5:	48 89 45 88          	mov    %rax,-0x78(%rbp)
+  400ae9:	48 8b 45 88          	mov    -0x78(%rbp),%rax
+  400aed:	ba 50 09 40 00       	mov    $0x400950,%edx
+  400af2:	48 89 c7             	mov    %rax,%rdi
+  400af5:	48 89 d6             	mov    %rdx,%rsi
+  400af8:	e8 43 fe ff ff       	callq  400940 <std::ostream::operator<<(std::ostream& (*)(std::ostream&))@plt>
+  400afd:	48 89 45 90          	mov    %rax,-0x70(%rbp)
+  400b01:	f2 0f 10 05 47 03 00 	movsd  0x347(%rip),%xmm0        # 400e50 <__dso_handle+0x28>
+  400b08:	00 
+  400b09:	f2 0f 11 45 98       	movsd  %xmm0,-0x68(%rbp)
+  400b0e:	f2 0f 10 05 42 03 00 	movsd  0x342(%rip),%xmm0        # 400e58 <__dso_handle+0x30>
+  400b15:	00 
+  400b16:	f2 0f 11 45 a0       	movsd  %xmm0,-0x60(%rbp)
+  400b1b:	b8 40 13 60 00       	mov    $0x601340,%eax
+  400b20:	ba 7c 0e 40 00       	mov    $0x400e7c,%edx
+  400b25:	48 89 c7             	mov    %rax,%rdi
+  400b28:	48 89 d6             	mov    %rdx,%rsi
+  400b2b:	e8 f0 fd ff ff       	callq  400920 <std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*)@plt>
+  400b30:	48 89 45 a8          	mov    %rax,-0x58(%rbp)
+  400b34:	48 8b 45 a8          	mov    -0x58(%rbp),%rax
+  400b38:	f2 0f 10 45 98       	movsd  -0x68(%rbp),%xmm0
+  400b3d:	f2 0f 10 4d a0       	movsd  -0x60(%rbp),%xmm1
+  400b42:	f2 0f 5e c1          	divsd  %xmm1,%xmm0
+  400b46:	48 89 c7             	mov    %rax,%rdi
+  400b49:	e8 52 fd ff ff       	callq  4008a0 <std::ostream::operator<<(double)@plt>
+  400b4e:	48 89 45 b0          	mov    %rax,-0x50(%rbp)
+  400b52:	48 8b 45 b0          	mov    -0x50(%rbp),%rax
+  400b56:	ba 50 09 40 00       	mov    $0x400950,%edx
+  400b5b:	48 89 c7             	mov    %rax,%rdi
+  400b5e:	48 89 d6             	mov    %rdx,%rsi
+  400b61:	e8 da fd ff ff       	callq  400940 <std::ostream::operator<<(std::ostream& (*)(std::ostream&))@plt>
+  400b66:	48 89 45 b8          	mov    %rax,-0x48(%rbp)
+  400b6a:	db 2d c0 02 00 00    	fldt   0x2c0(%rip)        # 400e30 <__dso_handle+0x8>
+  400b70:	db 7d e0             	fstpt  -0x20(%rbp)
+  400b73:	db 2d c7 02 00 00    	fldt   0x2c7(%rip)        # 400e40 <__dso_handle+0x18>
+  400b79:	db 7d f0             	fstpt  -0x10(%rbp)
+  400b7c:	b8 40 13 60 00       	mov    $0x601340,%eax
+  400b81:	ba 90 0e 40 00       	mov    $0x400e90,%edx
+  400b86:	48 89 c7             	mov    %rax,%rdi
+  400b89:	48 89 d6             	mov    %rdx,%rsi
+  400b8c:	e8 8f fd ff ff       	callq  400920 <std::basic_ostream<char, std::char_traits<char> >& std::operator<< <std::char_traits<char> >(std::basic_ostream<char, std::char_traits<char> >&, char const*)@plt>
+  400b91:	48 89 45 c0          	mov    %rax,-0x40(%rbp)
+  400b95:	48 83 c4 f0          	add    $0xfffffffffffffff0,%rsp
+  400b99:	48 8b 45 c0          	mov    -0x40(%rbp),%rax
+  400b9d:	db 6d e0             	fldt   -0x20(%rbp)
+  400ba0:	db 6d f0             	fldt   -0x10(%rbp)
+  400ba3:	de f9                	fdivrp %st,%st(1)
+  400ba5:	db 3c 24             	fstpt  (%rsp)
+  400ba8:	48 89 c7             	mov    %rax,%rdi
+  400bab:	e8 50 fd ff ff       	callq  400900 <std::ostream::operator<<(long double)@plt>
+  400bb0:	48 89 45 c8          	mov    %rax,-0x38(%rbp)
+  400bb4:	48 83 c4 10          	add    $0x10,%rsp
+  400bb8:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
+  400bbc:	ba 50 09 40 00       	mov    $0x400950,%edx
+  400bc1:	48 89 c7             	mov    %rax,%rdi
+  400bc4:	48 89 d6             	mov    %rdx,%rsi
+  400bc7:	e8 74 fd ff ff       	callq  400940 <std::ostream::operator<<(std::ostream& (*)(std::ostream&))@plt>
+  400bcc:	48 89 45 d0          	mov    %rax,-0x30(%rbp)
+  400bd0:	b8 00 00 00 00       	mov    $0x0,%eax
+  400bd5:	c9                   	leaveq 
+  400bd6:	c3                   	retq   
+
+0000000000400bd7 <__sti__$E>:
+  400bd7:	55                   	push   %rbp
+  400bd8:	48 89 e5             	mov    %rsp,%rbp
+  400bdb:	48 83 ec 10          	sub    $0x10,%rsp
+  400bdf:	b8 60 14 60 00       	mov    $0x601460,%eax
+  400be4:	48 89 c7             	mov    %rax,%rdi
+  400be7:	e8 e4 fc ff ff       	callq  4008d0 <std::ios_base::Init::Init()@plt>
+  400bec:	b8 10 09 40 00       	mov    $0x400910,%eax
+  400bf1:	ba 60 14 60 00       	mov    $0x601460,%edx
+  400bf6:	b9 28 0e 40 00       	mov    $0x400e28,%ecx
+  400bfb:	48 89 c7             	mov    %rax,%rdi
+  400bfe:	48 89 d6             	mov    %rdx,%rsi
+  400c01:	48 89 ca             	mov    %rcx,%rdx
+  400c04:	e8 e7 fc ff ff       	callq  4008f0 <__cxa_atexit@plt>
+  400c09:	89 45 f0             	mov    %eax,-0x10(%rbp)
+  400c0c:	c9                   	leaveq 
+  400c0d:	c3                   	retq   
+  400c0e:	90                   	nop
+  400c0f:	90                   	nop
+
+0000000000400c10 <std::char_traits<char>::length(char const*)>:
+  400c10:	55                   	push   %rbp
+  400c11:	48 89 e5             	mov    %rsp,%rbp
+  400c14:	48 83 ec 10          	sub    $0x10,%rsp
+  400c18:	48 89 7d f0          	mov    %rdi,-0x10(%rbp)
+  400c1c:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
+  400c20:	48 89 c1             	mov    %rax,%rcx
+  400c23:	33 c0                	xor    %eax,%eax
+  400c25:	0f b6 14 01          	movzbl (%rcx,%rax,1),%edx
+  400c29:	85 d2                	test   %edx,%edx
+  400c2b:	74 10                	je     400c3d <std::char_traits<char>::length(char const*)+0x2d>
+  400c2d:	0f b6 54 01 01       	movzbl 0x1(%rcx,%rax,1),%edx
+  400c32:	48 83 c0 02          	add    $0x2,%rax
+  400c36:	85 d2                	test   %edx,%edx
+  400c38:	75 eb                	jne    400c25 <std::char_traits<char>::length(char const*)+0x15>
+  400c3a:	48 ff c8             	dec    %rax
+  400c3d:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
+  400c41:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
+  400c45:	c9                   	leaveq 
+  400c46:	c3                   	retq   
+  400c47:	90                   	nop
+
+0000000000400c48 <std::ios_base::precision(long)>:
+  400c48:	55                   	push   %rbp
+  400c49:	48 89 e5             	mov    %rsp,%rbp
+  400c4c:	48 83 ec 20          	sub    $0x20,%rsp
+  400c50:	48 89 7d e0          	mov    %rdi,-0x20(%rbp)
+  400c54:	48 89 75 e8          	mov    %rsi,-0x18(%rbp)
+  400c58:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
+  400c5c:	48 8b 40 08          	mov    0x8(%rax),%rax
+  400c60:	48 89 45 f0          	mov    %rax,-0x10(%rbp)
+  400c64:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
+  400c68:	48 8b 55 e8          	mov    -0x18(%rbp),%rdx
+  400c6c:	48 89 50 08          	mov    %rdx,0x8(%rax)
+  400c70:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
+  400c74:	c9                   	leaveq 
+  400c75:	c3                   	retq   
+  400c76:	90                   	nop
+  400c77:	90                   	nop
+
+0000000000400c78 <std::ctype<char>::widen(char) const>:
+  400c78:	55                   	push   %rbp
+  400c79:	48 89 e5             	mov    %rsp,%rbp
+  400c7c:	48 83 ec 20          	sub    $0x20,%rsp
+  400c80:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
+  400c84:	40 88 75 f0          	mov    %sil,-0x10(%rbp)
+  400c88:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
+  400c8c:	0f be 40 38          	movsbl 0x38(%rax),%eax
+  400c90:	48 0f be c0          	movsbq %al,%rax
+  400c94:	85 c0                	test   %eax,%eax
+  400c96:	74 18                	je     400cb0 <std::ctype<char>::widen(char) const+0x38>
+  400c98:	0f be 45 f0          	movsbl -0x10(%rbp),%eax
+  400c9c:	48 0f be c0          	movsbq %al,%rax
+  400ca0:	0f b6 c0             	movzbl %al,%eax
+  400ca3:	48 03 45 e8          	add    -0x18(%rbp),%rax
+  400ca7:	48 83 c0 39          	add    $0x39,%rax
+  400cab:	0f be 00             	movsbl (%rax),%eax
+  400cae:	c9                   	leaveq 
+  400caf:	c3                   	retq   
+  400cb0:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
+  400cb4:	48 89 c7             	mov    %rax,%rdi
+  400cb7:	e8 04 fc ff ff       	callq  4008c0 <std::ctype<char>::_M_widen_init() const@plt>
+  400cbc:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
+  400cc0:	ba 06 00 00 00       	mov    $0x6,%edx
+  400cc5:	48 63 d2             	movslq %edx,%rdx
+  400cc8:	48 6b d2 08          	imul   $0x8,%rdx,%rdx
+  400ccc:	48 03 10             	add    (%rax),%rdx
+  400ccf:	48 8b 02             	mov    (%rdx),%rax
+  400cd2:	48 8b 55 e8          	mov    -0x18(%rbp),%rdx
+  400cd6:	0f be 4d f0          	movsbl -0x10(%rbp),%ecx
+  400cda:	48 89 d7             	mov    %rdx,%rdi
+  400cdd:	89 ce                	mov    %ecx,%esi
+  400cdf:	ff d0                	callq  *%rax
+  400ce1:	88 45 e0             	mov    %al,-0x20(%rbp)
+  400ce4:	0f be 45 e0          	movsbl -0x20(%rbp),%eax
+  400ce8:	c9                   	leaveq 
+  400ce9:	c3                   	retq   
+  400cea:	90                   	nop
+  400ceb:	90                   	nop
+
+0000000000400cec <std::operator|(std::_Ios_Iostate, std::_Ios_Iostate)>:
+  400cec:	55                   	push   %rbp
+  400ced:	48 89 e5             	mov    %rsp,%rbp
+  400cf0:	48 83 ec 10          	sub    $0x10,%rsp
+  400cf4:	89 7d f0             	mov    %edi,-0x10(%rbp)
+  400cf7:	89 75 f8             	mov    %esi,-0x8(%rbp)
+  400cfa:	8b 45 f8             	mov    -0x8(%rbp),%eax
+  400cfd:	0b 45 f0             	or     -0x10(%rbp),%eax
+  400d00:	c9                   	leaveq 
+  400d01:	c3                   	retq   
+  400d02:	90                   	nop
+  400d03:	90                   	nop
+
+0000000000400d04 <std::ctype<char> const& std::__check_facet<std::ctype<char> >(std::ctype<char> const*)>:
+  400d04:	55                   	push   %rbp
+  400d05:	48 89 e5             	mov    %rsp,%rbp
+  400d08:	48 83 ec 10          	sub    $0x10,%rsp
+  400d0c:	48 89 7d f0          	mov    %rdi,-0x10(%rbp)
+  400d10:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
+  400d14:	48 85 c0             	test   %rax,%rax
+  400d17:	75 05                	jne    400d1e <std::ctype<char> const& std::__check_facet<std::ctype<char> >(std::ctype<char> const*)+0x1a>
+  400d19:	e8 92 fb ff ff       	callq  4008b0 <std::__throw_bad_cast()@plt>
+  400d1e:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
+  400d22:	c9                   	leaveq 
+  400d23:	c3                   	retq   
+  400d24:	90                   	nop
+  400d25:	90                   	nop
+  400d26:	90                   	nop
+  400d27:	90                   	nop
+  400d28:	90                   	nop
+  400d29:	90                   	nop
+  400d2a:	90                   	nop
+  400d2b:	90                   	nop
+  400d2c:	90                   	nop
+  400d2d:	90                   	nop
+  400d2e:	90                   	nop
+  400d2f:	90                   	nop
+
+0000000000400d30 <__libc_csu_fini>:
+  400d30:	f3 c3                	repz retq 
+  400d32:	66 66 66 66 66 2e 0f 	data32 data32 data32 data32 nopw %cs:0x0(%rax,%rax,1)
+  400d39:	1f 84 00 00 00 00 00 
+
+0000000000400d40 <__libc_csu_init>:
+  400d40:	48 89 6c 24 d8       	mov    %rbp,-0x28(%rsp)
+  400d45:	4c 89 64 24 e0       	mov    %r12,-0x20(%rsp)
+  400d4a:	48 8d 2d 53 03 20 00 	lea    0x200353(%rip),%rbp        # 6010a4 <__init_array_end>
+  400d51:	4c 8d 25 4c 03 20 00 	lea    0x20034c(%rip),%r12        # 6010a4 <__init_array_end>
+  400d58:	4c 89 6c 24 e8       	mov    %r13,-0x18(%rsp)
+  400d5d:	4c 89 74 24 f0       	mov    %r14,-0x10(%rsp)
+  400d62:	4c 89 7c 24 f8       	mov    %r15,-0x8(%rsp)
+  400d67:	48 89 5c 24 d0       	mov    %rbx,-0x30(%rsp)
+  400d6c:	48 83 ec 38          	sub    $0x38,%rsp
+  400d70:	4c 29 e5             	sub    %r12,%rbp
+  400d73:	41 89 fd             	mov    %edi,%r13d
+  400d76:	49 89 f6             	mov    %rsi,%r14
+  400d79:	48 c1 fd 03          	sar    $0x3,%rbp
+  400d7d:	49 89 d7             	mov    %rdx,%r15
+  400d80:	e8 f3 fa ff ff       	callq  400878 <_init>
+  400d85:	48 85 ed             	test   %rbp,%rbp
+  400d88:	74 1c                	je     400da6 <__libc_csu_init+0x66>
+  400d8a:	31 db                	xor    %ebx,%ebx
+  400d8c:	0f 1f 40 00          	nopl   0x0(%rax)
+  400d90:	4c 89 fa             	mov    %r15,%rdx
+  400d93:	4c 89 f6             	mov    %r14,%rsi
+  400d96:	44 89 ef             	mov    %r13d,%edi
+  400d99:	41 ff 14 dc          	callq  *(%r12,%rbx,8)
+  400d9d:	48 83 c3 01          	add    $0x1,%rbx
+  400da1:	48 39 eb             	cmp    %rbp,%rbx
+  400da4:	72 ea                	jb     400d90 <__libc_csu_init+0x50>
+  400da6:	48 8b 5c 24 08       	mov    0x8(%rsp),%rbx
+  400dab:	48 8b 6c 24 10       	mov    0x10(%rsp),%rbp
+  400db0:	4c 8b 64 24 18       	mov    0x18(%rsp),%r12
+  400db5:	4c 8b 6c 24 20       	mov    0x20(%rsp),%r13
+  400dba:	4c 8b 74 24 28       	mov    0x28(%rsp),%r14
+  400dbf:	4c 8b 7c 24 30       	mov    0x30(%rsp),%r15
+  400dc4:	48 83 c4 38          	add    $0x38,%rsp
+  400dc8:	c3                   	retq   
+  400dc9:	90                   	nop
+  400dca:	90                   	nop
+  400dcb:	90                   	nop
+  400dcc:	90                   	nop
+  400dcd:	90                   	nop
+  400dce:	90                   	nop
+  400dcf:	90                   	nop
+
+0000000000400dd0 <__do_global_ctors_aux>:
+  400dd0:	55                   	push   %rbp
+  400dd1:	48 89 e5             	mov    %rsp,%rbp
+  400dd4:	53                   	push   %rbx
+  400dd5:	48 83 ec 08          	sub    $0x8,%rsp
+  400dd9:	48 8b 05 d0 02 20 00 	mov    0x2002d0(%rip),%rax        # 6010b0 <__CTOR_LIST__+0x8>
+  400de0:	48 83 f8 ff          	cmp    $0xffffffffffffffff,%rax
+  400de4:	74 19                	je     400dff <__do_global_ctors_aux+0x2f>
+  400de6:	bb b0 10 60 00       	mov    $0x6010b0,%ebx
+  400deb:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)
+  400df0:	48 83 eb 08          	sub    $0x8,%rbx
+  400df4:	ff d0                	callq  *%rax
+  400df6:	48 8b 03             	mov    (%rbx),%rax
+  400df9:	48 83 f8 ff          	cmp    $0xffffffffffffffff,%rax
+  400dfd:	75 f1                	jne    400df0 <__do_global_ctors_aux+0x20>
+  400dff:	48 83 c4 08          	add    $0x8,%rsp
+  400e03:	5b                   	pop    %rbx
+  400e04:	c9                   	leaveq 
+  400e05:	c3                   	retq   
+  400e06:	90                   	nop
+  400e07:	90                   	nop
+
+Disassembly of section .fini:
+
+0000000000400e08 <_fini>:
+  400e08:	48 83 ec 08          	sub    $0x8,%rsp
+  400e0c:	e8 af fb ff ff       	callq  4009c0 <__do_global_dtors_aux>
+  400e11:	48 83 c4 08          	add    $0x8,%rsp
+  400e15:	c3                   	retq   
