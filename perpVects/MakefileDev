@@ -4,12 +4,14 @@ CC_OPTS ?= -O0 -ggdb -Wuninitialized
 
 CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
 
+INC := -I ../gdb/inst
+
 .phony : all
 
 all : test
 
 test : test.cpp
-	$(CC) $(CC_OPTS) $(CC_REQUIRED) $< -o $@
+	$(CC) $(CC_OPTS) $(CC_REQUIRED) $(INC) $< -o $@
 
 .phony : clean
 

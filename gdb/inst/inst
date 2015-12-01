@@ -1,0 +1,21 @@
+// This is the header for the checkpoint instrumentation, which works
+// in tandem with gdb.  gdb will load two versions of the program, and
+// will initiate a (hardware) watchpoint for each address range that is passed
+// in the 'checkpoint' call.  FYI -- there is a platform limit to the number
+// of hardware watchpoints that can be set . . .
+
+#include <iostream>
+
+namespace QFP {
+
+std::string const AFLAG = "***checkAddr:";
+std::string const LFLAG = "***checkLen:";
+
+template<typename T>
+void
+checkpoint(T obj, size_t len){
+  std::cerr << AFLAG << std::addressof(obj) << std::endl;
+  std::cerr << LFLAG << len << std::endl;
+  asm("INT $3");
+}
+}

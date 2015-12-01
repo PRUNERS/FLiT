@@ -16,6 +16,9 @@
 #include <cstdlib>
 #include <cstring>
 
+//QFP
+#include <inst>
+
 using std::vector;
 using std::cout;
 using std::endl;
@@ -450,7 +453,7 @@ public:
   operator^(Vector<T> const &rhs) const {
     Globals<T>::sum = 0.0;
     T &sum = Globals<T>::sum;
-    auto prods = Globals<T>::prods;
+    auto &prods = Globals<T>::prods;
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
@@ -813,6 +816,9 @@ struct FPTests {
     info_stream << a << endl;
     info_stream << b << endl;
     T backup;
+    //setup for debug monitor (QFP_gdb)
+    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum));
+    QFP::checkpoint(Globals<T>::prods.data()[0], sizeof(T) * a.size());
     for(int r = 0; r < dim; ++r){
     T &p = a[r];
       backup = p;
