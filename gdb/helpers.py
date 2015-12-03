@@ -4,17 +4,21 @@ import gdb
 # import testEvents
 # import pprint
 import re
+import _thread
 
 #here are the data structures we need to record watchpoint hit data
 #to determine where execution pairs diverge
 
-infVals = [[]]
-count = [0,0]
+infVals = [[],[]]
 CPERIOD = 100
+
 
 class qfpWatchpoint (gdb.Breakpoint):
     spec = None
     dtype = None
+    count = 0
+    target = -1
+    replay = False
     def __init__(self, spec, dtype):
         super(qfpWatchpoint, self).__init__(spec, gdb.BP_WATCHPOINT,
                                             internal = False)
@@ -22,17 +26,23 @@ class qfpWatchpoint (gdb.Breakpoint):
         dtype = dtype
         
     def stop (self):
+        if self.count == self.target:
+            print('reached divergence point')
+            return true
+        else:
+            if replay:
+                return false
         #print('hit qfpWatchpoint')
-        global infVals, count
+        global infVals
         inf = gdb.selected_inferior().num
-        if count[inf + 1 % 1]
-        count = count + 1
-        return mismatched
+        val = gdb.parse_and_eval('*(' + dtype + ' *)' + spec)
+        infVals[inf].append(val)
+        print('recorded: ' + val)
+        self.count = self.count + 1
+        return true
+        #return mismatched
         #here we hit and we have to decide whether or not to continue
 
-def watch_handler (event):
-    pass
-    #if 
 
 def execCommands(clist):
     for c in clist:
@@ -78,9 +88,9 @@ def catch_trap(event):
         wtype = 'double'
     else:
         wtype = 'float'
-    wplist.append(qfpWatchpoint('*(' + wtype + ' *) ' + addr))
+    wplist.append(qfpWatchpoint('*(' + wtype + ' *) ' + addr, wtype))
 
-    gdb.execute('record full')
+    # gdb.execute('record full')
 
     if trapped1 and trapped2:
         gdb.events.stop.disconnect(catch_trap)
