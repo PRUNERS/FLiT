@@ -1,16 +1,23 @@
 CC := g++
 
-CC_OPTS ?= -O0 -ggdb -Wuninitialized
+CC_OPTS ?= -Wuninitialized
 
 CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
 
-INC := -I ../gdb/inst
+INCFILES := ../gdb/inst
+
+INC := -I $(INCFILES)
+
+
 
 .phony : all
 
-all : test
+all : gcc gcc_g
 
-test : test.cpp
+gcc : test.cpp $(INCFILES)
+	$(CC) $(CC_OPTS) -g $(CC_REQUIRED) $(INC) $< -o $@
+
+gcc_g : test.cpp $(INCFILES)
 	$(CC) $(CC_OPTS) $(CC_REQUIRED) $(INC) $< -o $@
 
 .phony : clean
