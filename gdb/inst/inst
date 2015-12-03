@@ -5,17 +5,26 @@
 // of hardware watchpoints that can be set . . .
 
 #include <iostream>
+#include <unordered_map>
 
 namespace QFP {
 
 std::string const AFLAG = "***checkAddr:";
 std::string const LFLAG = "***checkLen:";
-
+  
+namespace{
+  std::unordered_map<void*, bool> checked;
+}
+  
 template<typename T>
 void
 checkpoint(T obj, size_t len){
-  std::cerr << AFLAG << std::addressof(obj) << std::endl;
-  std::cerr << LFLAG << len << std::endl;
-  asm("INT $3");
+  auto addr = std::addressof(obj);
+  if(checked.count((void*)addr) == 0){
+    std::cerr << AFLAG << addr << std::endl;
+    std::cerr << LFLAG << len << std::endl;
+    asm("INT $3");
+    checked.insert({(void*)addr, true});
+  }
 }
 }
