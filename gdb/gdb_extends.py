@@ -7,48 +7,64 @@ import gdb
 import os
 import sys
 sys.path.append(os.getcwd())
-import helpers
+from helpers import execCommands, inf_terminated, getDivergence,
 
 #data structures
 
 
-
-# if len(gdb.inferiors()) != 1 || !gdb.selected_inferior().is_valid():
-#     print('in ' + __file__ + ' should have one valid inferior, found 0, quitting . . .')
-#     gdb.execute('quit')
-
-# some data structures. 
-## get needed environment info
-# precision = getPrecString(os.environ.get("PREC"))
-# test = os.environ.get("TEST")
-##this is our list of critical data, one list per test
-# criticals = [['Globals<' + precision + '>::sum', '*(' + precision + '*)' +
-#               lookupAddress('Globals<' + precision + '>::prods[0]']),
-#               ['Globals<' + precision + '>::sum', '*(' + precision + '*)' +
-#                lookupAddress('Globals<' + precision + '>::prods[0]')]]
-              
-# the initialization -- load other inferior and setup rewind (i.e. record)
-
+#this is the event handler for the initial setup -- it
+#catches the INT $3 planted in the checkpoint instrumentation
 gdb.events.stop.connect(helpers.catch_trap)
 
-helpers.execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
+execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
                       'inferior 2', 'run 2> inf2.watch'])
+
+#at this point, either:
+## both inferiors have terminated
+## we've just added a watchpoint in each inferior (hopefully the same logical location)
+
+
               
-# init_commands = ['add-inferior -exec inf2', 'run', 'inferior 2', 'run', 'record']
+#this (next) loop will not exit until either:
+## we've exhausted the execution of both inferiors.
 
-# execCommands(init_commands)
 
-# #next we set up the watchpoints
-# ## here we need to use the python extensions for our
-# ## custom qfpWatchpoint and registering callbacks 
-# execCommands(['inferior 1'])
-# for c in criticals[test]:
-#     qfpWatchpoint.__init__(c)
-# execCommands(['inferior 2'])
-# for c in criticals[test]:
-#     qfpWatchpoint.__init__(c)
-                 
-# #we should be ready to go now, and let the watchpoints do their work
+## and no divergence has been found OR
+## 
+## we've identified a (first) divergence location and
+## the gdb context for each inf as at the point of divergence
+## (immediately before writing the divergent results to the
+## watch points
 
-# execCommands(['run', 'inferior 1', 'run'])
+# execution will return here when:
+## 1. the hit count reaches CPERIOD0
+## 2. an inferior terminates
+## 3. the inferior is located at a divergence (i.e. count == target)
 
+while not inf_terminated(1) and not inf_terminated(2)
+    #scan the watchpoints to determine action, either:
+    command = ''
+    for (addr, watches) in helpers.wplist:
+        if len(watches) > 2:
+            print('non-symmetry detected in memory accesses between inferiors.')
+            break
+        if watches[0].count == CPERIOD and watches[1].count == CPERIOD:
+            #time to compare data
+            div = getDivergence(addr)
+            if div > -1:
+                watches[0].target = watches[1].target = div
+                command = ['infer 1', 'run'
+            for w in watches:
+                with w:
+                    masterCount = count + masterCount
+                    count = 0
+            else:
+                for w in watches:
+                    with w:
+                        target = -1
+                        masterCount = count + masterCount
+                        
+                
+#isolated a divergence
+
+#normal termination
