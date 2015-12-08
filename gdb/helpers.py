@@ -9,37 +9,66 @@ import _thread
 #here are the data structures we need to record watchpoint hit data
 #to determine where execution pairs diverge
 
-infVals = [[],[]]
+infVals = {}
 CPERIOD = 100
+
 
 
 class qfpWatchpoint (gdb.Breakpoint):
     spec = None
     dtype = None
+    addr = None
     count = 0
     target = -1
     replay = False
-    def __init__(self, spec, dtype):
-        super(qfpWatchpoint, self).__init__(spec, gdb.BP_WATCHPOINT,
+    inf = 0
+    totalCount = 0
+    label = ''
+    global infVals
+    def __init__(self, addr, dtype, label):
+        self.spec = '*(' + dtype + '*)' + addr
+        super(qfpWatchpoint, self).__init__(self.spec, gdb.BP_WATCHPOINT,
                                             internal = False)
-        spec = spec
-        dtype = dtype
+        self.dtype = dtype
+        self.addr = addr
+        self.inf = gdb.selected_inferior().num
+        self.label = label
+        if addr not in infVals:
+            infVals[addr] = [[],[]]
         
     def stop (self):
+        """
+        self.count counts hits (reset at rerun).
+        self.target is the execution we're trying
+        to locate (after previously detecting a divergence
+        at this point).  CPERIOD is the number of hits
+        where we'll record the watched value. When
+        count == CPERIOD, we'll compare
+        the results.  If no diff is found,
+        then it will continue execution of each inf.
+        if a diff is located, then self.target for
+        each qfpWatchpoint of this address will
+        be set with the desired hit index, their count
+        set to 0 and record will be enabled.  Then each inf
+        will be restarted, and the stop() will
+        return True when count == self.target,
+        putting each inf at the point of divergence and
+        in a gdb context that can be explored.
+        """
         if self.count == self.target:
             print('reached divergence point')
-            return true
+            return True
         else:
-            if replay:
-                return false
+            if self.replay:
+                return False
         #print('hit qfpWatchpoint')
-        global infVals
-        inf = gdb.selected_inferior().num
-        val = gdb.parse_and_eval('*(' + dtype + ' *)' + spec)
-        infVals[inf].append(val)
-        print('recorded: ' + val)
+        print('handling inf: ' + str(self.inf))
+        print(self.spec)
+        val = gdb.parse_and_eval(self.spec)
+        print('new val is: ' + str(val))
+        infVals[self.addr].append(val)
         self.count = self.count + 1
-        return true
+        return True
         #return mismatched
         #here we hit and we have to decide whether or not to continue
 
@@ -56,46 +85,52 @@ def getPrecString(p):
         return 'double'
     return 'long double'
 
-wplist = []
-trapped1 = False
-trapped2 = False
+wplist = {} #(one for each inferior per address)
 
 def catch_trap(event):
-    global trapped1, trapped2, wplist
+    global wplist
     cur = gdb.selected_inferior()
-
-    if cur.num == 1:
-        if trapped1 == True:
-            return
-        trapped1 = True
-    else:
-        if trapped2 == True:
-            return
-        trapped2 = True
-        
 
     print('caught int3 in inf ' + str(cur.num))
     f = open('inf' + str(cur.num) + '.watch', 'r')
     wdata = f.read()
     print('read watch file: ' + wdata)
-    m = re.match(r"[*]+checkAddr:(\w+)\n[*]+checkLen:(\w+)\n",
+    m = re.match(r"[*]+checkAddr:(\w+)\n[*]+checkLen:(\w+)\n" +
+                 "[*]+checkLab:(\w+)\n",
                  wdata)
-    addr = m.group(1)
-    leng = m.group(2)
-    print('addr: ' + addr + '; len: ' + leng)
+    addr = m.group(1).strip()
+    leng = m.group(2).strip()
+    lab  = m.group(3).strip()
+    print('addr: ' + addr + '; len: ' + leng + '; label: ' + lab)
     wtype = ''
+
     if leng == '8':
         wtype = 'double'
     else:
         wtype = 'float'
-    wplist.append(qfpWatchpoint('*(' + wtype + ' *) ' + addr, wtype))
 
-    # gdb.execute('record full')
+    if addr not in wplist:
+        wplist[addr] = []    
 
-    if trapped1 and trapped2:
-        gdb.events.stop.disconnect(catch_trap)
+    wplist[addr].append(qfpWatchpoint(addr, wtype, lab))
+    assert len(wplist[addr] <= 2) #enforce 1 per inf per address
 
-    # pp = pprint.PrettyPrinter()
-    # pp.pprint(event)
-    # testEvents.info(event)
-    #print('caught: ' + event.stop_signal)
+    print('set watchpoint @' + addr + ', type: ' + wtype + ', label: ' + lab)
+
+    f.close()
+    
+    open('inf' + str(cur.num) + '.watch', 'w').close() #erase watch data
+
+def inf_terminated(inf):
+    infs = gdb.inferiors()
+    if len(infs) < inf return False
+    for t in gdb.inferiors()[inf - 1]:
+        if t.is_valid() return False
+    return True
+    
+def toggle_inf():
+    to = (gdb.selected_inferior() + 1) % 1
+    gdb.execute('inferior ' + to)
+
+def 
+    
