@@ -7,7 +7,7 @@ import gdb
 import os
 import sys
 sys.path.append(os.getcwd())
-from helpers import execCommands, inf_terminated, getDivergence,
+from helpers import execCommands, inf_terminated, getDivergence, toggle_inf
 
 #data structures
 
@@ -41,29 +41,41 @@ execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
 ## 2. an inferior terminates
 ## 3. the inferior is located at a divergence (i.e. count == target)
 
-while not inf_terminated(1) and not inf_terminated(2)
+while not inf_terminated(1) and not inf_terminated(2):
     #scan the watchpoints to determine action, either:
     command = ''
-    for (addr, watches) in helpers.wplist:
-        if len(watches) > 2:
-            print('non-symmetry detected in memory accesses between inferiors.')
+    for sub in helpers.subjects:
+        if len(sub.watches) > 2:
+            print('too many watches detected in subject: ' + sub.label)
             break
-        if watches[0].count == CPERIOD and watches[1].count == CPERIOD:
+        if sub.state == subjState.searching:
+            #hit divergence
+            if (sub.watches[0].state == watchState.hitCount and
+                sub.watches[1].state == watchState.hitCount):
+                if not sub.seekDivergence(): #checks for divergence and returns true if we should pursue
             #time to compare data
-            div = getDivergence(addr)
-            if div > -1:
-                watches[0].target = watches[1].target = div
-                command = ['infer 1', 'run'
-            for w in watches:
-                with w:
-                    masterCount = count + masterCount
-                    count = 0
+                    setSearching()
+                    continue
+                else:
+                    sub.setSeeking(div)
             else:
-                for w in watches:
-                    with w:
-                        target = -1
-                        masterCount = count + masterCount
-                        
+                #the sub is searching, but one or more watches haven't hit count
+                #or they've terminated
+                curInf = gdb.selected_inferior()
+                otherInf = sub.getOtherInf()
+                curWatch = sub.getWatch(curInf)
+                if inf_terminated(curInf):
+                    if (sub.getWatch(otherInf).state == watchState.searching or
+                        inf_terminated(otherInf):
+                        sub.toggle_inf()
+                        gdb.execute('continue')
+                    #what else could be the case now?
+                    
+                if (curWatch.state == watchState.hitSeek and
+                    sub.watches[sub.].state == watchState.searching):
+                    sub.toggle_inf()
+                    gdb.execute('continue')
+            
                 
 #isolated a divergence
 

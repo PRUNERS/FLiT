@@ -4,15 +4,27 @@ import gdb
 # import testEvents
 # import pprint
 import re
-import _thread
+#import _thread
+from enum import Enum
 
 #here are the data structures we need to record watchpoint hit data
 #to determine where execution pairs diverge
 
-infVals = {}
-CPERIOD = 100
 
+class subjState(Enum):
+    loading = 1
+    searching = 2
+    seeking = 3
+    hitEDiv = 3
+    hitVDiv = 4
 
+class watchState(Enum):
+    searching = 1
+    seeking = 2
+    hitSeek = 5
+    hitCount = 6
+    
+subjects = {}
 
 class qfpWatchpoint (gdb.Breakpoint):
     spec = None
@@ -24,6 +36,8 @@ class qfpWatchpoint (gdb.Breakpoint):
     inf = 0
     totalCount = 0
     label = ''
+    state = watchState.searching
+    values = []
     global infVals
     def __init__(self, addr, dtype, label):
         self.spec = '*(' + dtype + '*)' + addr
@@ -33,9 +47,20 @@ class qfpWatchpoint (gdb.Breakpoint):
         self.addr = addr
         self.inf = gdb.selected_inferior().num
         self.label = label
-        if addr not in infVals:
-            infVals[addr] = [[],[]]
-        
+
+    def getState(self):
+        return state
+
+    def setSeeking(self, target):
+        self.state = watchState.seeking
+        self.masterCount += w.count
+        self.count = 0
+        self.target = target
+
+    def setHitSeek(self):
+        print('reached divergence point')
+        self.state = watchState.hitSeek
+
     def stop (self):
         """
         self.count counts hits (reset at rerun).
@@ -56,7 +81,7 @@ class qfpWatchpoint (gdb.Breakpoint):
         in a gdb context that can be explored.
         """
         if self.count == self.target:
-            print('reached divergence point')
+            self.setHitSeek()
             return True
         else:
             if self.replay:
@@ -66,13 +91,81 @@ class qfpWatchpoint (gdb.Breakpoint):
         print(self.spec)
         val = gdb.parse_and_eval(self.spec)
         print('new val is: ' + str(val))
-        infVals[self.addr].append(val)
+        self.values.append(val)
         self.count = self.count + 1
         return True
         #return mismatched
         #here we hit and we have to decide whether or not to continue
 
+class qfpSubject:
+    label = ''
+    state = subjState.loading
+    CPERIOD = 100
+    watches = []
+    def __init__(self, label, inf, addr, wtype):
+        self.label =  label
+        self.state = subjState.loading
+        watches.append(qfpWatchpoint(addr, wtype, label))
 
+    def getDivergence(self):
+        for cnt, vals in enumerate(zip(watches[0]values, watches[1].values)):
+            if vals[0].value != vals[1].value:
+                if vals[0].fun != vals[1].fun:
+                    
+                return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
+        return -1
+
+    def seekDivergence(self):
+        div, val0, val1, fun0, fun1 = sub.getDivergence()
+        if div > -1:
+            #TODO this is only handling the first divergence detected.  We should probably return a list
+            choice = input('variable divergence in subject ' + sub.label +
+                           '; iteration: ' + div + '; functions: ' +
+                           fun0 + ':' + fun1 + '; values: ' +
+                           val0 + ':' + val1 + '.  _F_ocus or _I_gnore?')
+            return choice.lower() != 'f' and choice.lower() != 'focus'
+
+        
+    # here we should update watches
+    # clear values, advance masterCount
+    # and zero count
+    # also set the state
+    def setSearching(self):
+        state = subjState.searching
+        for w in watches:
+            w.setSearching()
+            w.masterCount += w.count
+            w.count = 0
+            w.values = []
+            w.target = -1
+                
+    # set record, restart inferiors,
+    # reset counts and targets
+    def setSeeking(self, target):
+        state = subjState.seeking
+        for w in watches:
+            w.setSeeking(target)
+        commands = ['record', 'infer 1', 'run', 'infer 2', 'run']
+        execCommands(commands)
+
+    def getWatch(self, inf):
+        for w in self.watches:
+            if w.inf == inf:
+                return w
+        gdb.error('inf ' + inf ' not found in getWatch()')
+
+    def getOtherInf():
+        cur = gdb.selected_inferior()
+        for w in self.watches:
+            if w.inf != cur:
+                return w.inf
+        gdb.error('couldn\'t locate other inf in subject: ' +
+                  sub.label)
+        
+    def toggle_inf(self):
+        gdb.execute('inferior ' + self.getOtherInf())
+    
+    gdb.execute('inferior ' + to)
 def execCommands(clist):
     for c in clist:
         print('executing: ' + c)
@@ -85,7 +178,9 @@ def getPrecString(p):
         return 'double'
     return 'long double'
 
-wplist = {} #(one for each inferior per address)
+#wplist = {} #(one for each inferior per address)
+
+
 
 def catch_trap(event):
     global wplist
@@ -109,11 +204,10 @@ def catch_trap(event):
     else:
         wtype = 'float'
 
-    if addr not in wplist:
-        wplist[addr] = []    
+    if lab in subjects:
+        subjects[lab].setSearching()
 
-    wplist[addr].append(qfpWatchpoint(addr, wtype, lab))
-    assert len(wplist[addr] <= 2) #enforce 1 per inf per address
+    subjects[lab].watches.append(qfpSubject(lab, cur.num, addr, wtype))
 
     print('set watchpoint @' + addr + ', type: ' + wtype + ', label: ' + lab)
 
@@ -128,9 +222,5 @@ def inf_terminated(inf):
         if t.is_valid() return False
     return True
     
-def toggle_inf():
-    to = (gdb.selected_inferior() + 1) % 1
-    gdb.execute('inferior ' + to)
 
-def 
     
