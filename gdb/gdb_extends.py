@@ -7,7 +7,8 @@ import gdb
 import os
 import sys
 sys.path.append(os.getcwd())
-from helpers import execCommands, inf_terminated, getDivergence, toggle_inf
+import helpers
+from enum import Enum
 
 #data structures
 
@@ -16,7 +17,10 @@ from helpers import execCommands, inf_terminated, getDivergence, toggle_inf
 #catches the INT $3 planted in the checkpoint instrumentation
 gdb.events.stop.connect(helpers.catch_trap)
 
-execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
+#this event handler notifies us when an inferior exits
+gdb.events.exited.connect(helpers.catch_term)
+
+helpers.execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
                       'inferior 2', 'run 2> inf2.watch'])
 
 #at this point, either:
@@ -40,41 +44,138 @@ execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
 ## 1. the hit count reaches CPERIOD0
 ## 2. an inferior terminates
 ## 3. the inferior is located at a divergence (i.e. count == target)
+## 4. a signal was caught
 
-while not inf_terminated(1) and not inf_terminated(2):
-    #scan the watchpoints to determine action, either:
-    command = ''
-    for sub in helpers.subjects:
-        if len(sub.watches) > 2:
-            print('too many watches detected in subject: ' + sub.label)
-            break
-        if sub.state == subjState.searching:
-            #hit divergence
-            if (sub.watches[0].state == watchState.hitCount and
-                sub.watches[1].state == watchState.hitCount):
-                if not sub.seekDivergence(): #checks for divergence and returns true if we should pursue
-            #time to compare data
-                    setSearching()
-                    continue
+#this should be the beginning
+
+#here are our exec states
+class execState(Enum):
+    init = 1
+    search1 = 2
+    search2 = 3
+    analyze = 4
+    seek1 = 5
+    seek2 = 6
+    user = 7
+
+#sub = helpers.subjects[0]
+estate = execState.init
+
+#print('subject state is: ' + str(sub.state))
+
+#res = input('would you like to return to user control? [y|n]')
+res = 'n'
+for lab, sub in helpers.subjects.items():
+    if res.lower() == 'n' and sub.state == helpers.subjState.searching:
+        estate = execState.search1
+        inf1 = gdb.selected_inferior().num
+        watch1 = sub.getWatch(inf1)
+        inf2 = sub.getOtherInf()
+        watch2 = sub.getWatch(inf2)
+        curInf = inf1
+        curW = watch1
+        #we're ready to search
+        print('inf1 is: ' + str(inf1) + ' and inf2 is: ' + str(inf2))
+        print('watch1 inf is: ' + str(watch1.inf) + ' and watch2 inf is: ' +
+              str(watch2.inf))
+        while True:
+            if estate == execState.search1:
+                print('handling search1 state')
+                helpers.execCommands(['continue'])
+                if (watch1.state == helpers.watchState.hitCount or
+                    watch1.state == helpers.watchState.infExited):
+                    estate = execState.search2
+                    sub.toggle_inf()  #activates the other inferior
                 else:
+                    gdb.error('reached unknown state after execState.search1')
+                    break
+            if estate == execState.search2:
+                print('handling search2 state')
+                helpers.execCommands(['continue'])
+                if (watch2.state == helpers.watchState.hitCount or
+                    watch2.state == helpers.watchState.infExited):
+                    estate = execState.analyze
+                    sub.toggle_inf()  #activates the other inferior
+                else:
+                    gdb.error('reached unknown state after execState.search2')
+                    break
+            if estate == execState.analyze:
+                print('handling analyze state')
+                div = sub.seekDivergence()
+                print('hit analyze state with div = ' + str(div))
+                if div != -1: #means that the user chose to focus on identified div
                     sub.setSeeking(div)
-            else:
-                #the sub is searching, but one or more watches haven't hit count
-                #or they've terminated
-                curInf = gdb.selected_inferior()
-                otherInf = sub.getOtherInf()
-                curWatch = sub.getWatch(curInf)
-                if inf_terminated(curInf):
-                    if (sub.getWatch(otherInf).state == watchState.searching or
-                        inf_terminated(otherInf):
-                        sub.toggle_inf()
-                        gdb.execute('continue')
-                    #what else could be the case now?
-                    
-                if (curWatch.state == watchState.hitSeek and
-                    sub.watches[sub.].state == watchState.searching):
+                    estate = execState.seek1
                     sub.toggle_inf()
-                    gdb.execute('continue')
+                else:
+                    if (watch1.state == helpers.watchState.infExited or
+                        watch2.state == helpers.watchState.infExited):
+                        print('hit infExited in main control loop')
+                        #helpers.execCommands(['quit'])
+                        break
+                    else:
+                        sub.setSearching()
+                        estate = execState.search1
+                #sub.toggle_inf()
+            if estate == execState.seek1:
+                print('handling seek1 state')
+                helpers.execCommands(['record', 'run'])
+                if watch1.state == helpers.watchState.hitSeek:
+                    estate = execState.seek2
+                    sub.togggle_inf()
+                else:
+                    gdb.error('couldn\'t reach target in seek of inf ' + inf1)
+                    break
+            if estate == execState.seek2:
+                print('handling seek2 state')
+                helpers.execCommands(['record', 'run'])
+                if watch2.state == helpers.watchState.hitSeek:
+                    estate = execState.user
+                    sub.togggle_inf()
+                else:
+                    gdb.error('couldn\'t reach target in seek of inf ' + inf2)
+                    break
+            if estate == execState.user:
+                continue        
+        
+        
+    
+    
+
+# while not inf_terminated(1) and not inf_terminated(2):
+#     #scan the watchpoints to determine action, either:
+#     command = ''
+#     for sub in helpers.subjects:
+#         if len(sub.watches) > 2:
+#             print('too many watches detected in subject: ' + sub.label)
+#             break
+#         if sub.state == subjState.searching:
+#             #hit divergence
+#             if (sub.watches[0].state == watchState.hitCount and
+#                 sub.watches[1].state == watchState.hitCount):
+#                 if not sub.seekDivergence(): #checks for divergence and returns true if we should pursue
+#             #time to compare data
+#                     setSearching()
+#                     continue
+#                 else:
+#                     sub.setSeeking(div)
+#             else:
+#                 #the sub is searching, but one or more watches haven't hit count
+#                 #or they've terminated
+#                 curInf = gdb.selected_inferior()
+#                 otherInf = sub.getOtherInf()
+#                 curWatch = sub.getWatch(curInf)
+#                 if inf_terminated(curInf):
+#                     if (sub.getWatch(otherInf).state == watchState.searching or
+#                         inf_terminated(otherInf):
+#                         sub.toggle_inf()
+#                         execCommands(['continue'])
+#                     #what else could be the case now?
+                    
+#                 if (curWatch.state == watchState.hitSeek and
+#                     sub.watches[sub.].state == watchState.searching):
+#                     sub.toggle_inf()
+#                     execCommands(['continue'])
             
                 
 #isolated a divergence

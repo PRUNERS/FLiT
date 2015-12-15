@@ -15,7 +15,7 @@
 #include <float.h>
 #include <cstdlib>
 #include <cstring>
-
+#include <unordered_map>
 //QFP
 #include <inst>
 
@@ -52,6 +52,18 @@ public:
   hide(){reinit(new NullBuffer());}
 };
 
+
+static 
+void
+printOnce(std::string s, void* addr){
+  return;
+  static std::unordered_map<void*, std::string> seen;
+  if(seen.count(addr) == 0){
+    seen.insert({addr, s});
+    cout << s << " at: " << addr << endl;
+    asm("int $3");
+  }
+}
 //SETTINGS
 //NullBuffer null_buffer;
 //std::ostream info_stream(&null_buffer);
@@ -82,6 +94,7 @@ struct get_corresponding_type{
 template<typename T>
 struct Globals{
   static T sum;
+  //  static T prods[32];
   static vector<T> prods;
 };
 
@@ -434,6 +447,8 @@ public:
   template<typename F, class C>
   void
   reduce(C &cont, F const &fun) const {
+    printOnce(__FUNCTION__, &cont.data()[0]);
+
     T retVal;
     if(sortType == lt || sortType == gt){
       if(sortType == lt)
@@ -454,13 +469,13 @@ public:
     Globals<T>::sum = 0.0;
     T &sum = Globals<T>::sum;
     auto &prods = Globals<T>::prods;
+    printOnce(__FUNCTION__, &prods.data()[0]);
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
-      std::for_each(prods.begin(), prods.end(), [&](T i){i = 0;});
+      std::for_each(prods.begin(), prods.end(), [&](T i){i = 0.0;});
       for(int i = 0; i < size(); ++i){ 
 	prods[i] = data[i] * rhs.data[i]; 
-	//	info_stream << "(" << data[i] << " * " << rhs.data[i] << ") = " << prods[i] << endl;
       }
       reduce(prods, [&sum](T e){sum += e;});
     }
@@ -817,8 +832,10 @@ struct FPTests {
     info_stream << b << endl;
     T backup;
     //setup for debug monitor (QFP_gdb)
-    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum));
-    QFP::checkpoint(Globals<T>::prods.data()[0], sizeof(T) * a.size());
+    //    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum), "sum");
+    printOnce(__FUNCTION__, &Globals<T>::prods.data()[0]);
+    QFP::checkpoint(Globals<T>::prods.data()[0], sizeof(T), "product");
+    
     for(int r = 0; r < dim; ++r){
     T &p = a[r];
       backup = p;

@@ -23,6 +23,7 @@ class watchState(Enum):
     seeking = 2
     hitSeek = 5
     hitCount = 6
+    infExited = 7
     
 subjects = {}
 
@@ -32,34 +33,42 @@ class qfpWatchpoint (gdb.Breakpoint):
     addr = None
     count = 0
     target = -1
-    replay = False
     inf = 0
-    totalCount = 0
-    label = ''
+    masterCount = 0
     state = watchState.searching
     values = []
+    funcs = []
+    subject = None
     global infVals
-    def __init__(self, addr, dtype, label):
+    def __init__(self, addr, dtype, label, subject):
         self.spec = '*(' + dtype + '*)' + addr
         super(qfpWatchpoint, self).__init__(self.spec, gdb.BP_WATCHPOINT,
                                             internal = False)
         self.dtype = dtype
         self.addr = addr
         self.inf = gdb.selected_inferior().num
-        self.label = label
+        self.subject = subject
 
-    def getState(self):
-        return state
+    def setSearching(self):
+        self.masterCount += self.count
+        self.count = 0
+        self.values = []
+        self.target = -1
 
     def setSeeking(self, target):
         self.state = watchState.seeking
-        self.masterCount += w.count
+        self.masterCount += self.count
         self.count = 0
         self.target = target
 
     def setHitSeek(self):
         print('reached divergence point')
         self.state = watchState.hitSeek
+
+    def setHitCount(self):
+        self.state = watchState.hitCount
+        self.masterCount += self.count
+        self.count = 0
 
     def stop (self):
         """
@@ -84,16 +93,20 @@ class qfpWatchpoint (gdb.Breakpoint):
             self.setHitSeek()
             return True
         else:
-            if self.replay:
+            if self.state == watchState.seeking:
                 return False
-        #print('hit qfpWatchpoint')
-        print('handling inf: ' + str(self.inf))
+        print('handling inf: ' + str(self.inf) + ' at count: ' + str(self.count))
         print(self.spec)
         val = gdb.parse_and_eval(self.spec)
         print('new val is: ' + str(val))
         self.values.append(val)
+        self.funcs.append(gdb.newest_frame().name())
         self.count = self.count + 1
-        return True
+        if self.count == self.subject.CPERIOD:
+            self.setHitCount()
+            return True
+        else:
+            return False
         #return mismatched
         #here we hit and we have to decide whether or not to continue
 
@@ -105,57 +118,59 @@ class qfpSubject:
     def __init__(self, label, inf, addr, wtype):
         self.label =  label
         self.state = subjState.loading
-        watches.append(qfpWatchpoint(addr, wtype, label))
+        self.watches.append(qfpWatchpoint(addr, wtype, label, self))
 
     def getDivergence(self):
-        for cnt, vals in enumerate(zip(watches[0]values, watches[1].values)):
-            if vals[0].value != vals[1].value:
-                if vals[0].fun != vals[1].fun:
-                    
-                return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
-        return -1
+        vals = []
+        funs = []
+        divs = []
+        for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values, self.watches[0].funcs, self.watches[1].funcs)):
+            print('comparing v1 v2, f1, f2:' + str(vals[0]) + ':' + str(vals[1]) +
+                  ':' + str(vals[2]) + ':' + str(vals[3]))
+            if vals[0] != vals[1] or vals[2] != vals[3]:
+                vals.append([vals[0], vals[1]])
+                funs.append([vals[2], vals[3]])
+                divs.append(cnt)
+#                    return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
+        return vals, funs, divs
 
     def seekDivergence(self):
-        div, val0, val1, fun0, fun1 = sub.getDivergence()
-        if div > -1:
-            #TODO this is only handling the first divergence detected.  We should probably return a list
-            choice = input('variable divergence in subject ' + sub.label +
-                           '; iteration: ' + div + '; functions: ' +
-                           fun0 + ':' + fun1 + '; values: ' +
-                           val0 + ':' + val1 + '.  _F_ocus or _I_gnore?')
-            return choice.lower() != 'f' and choice.lower() != 'focus'
-
+        vals, funs, divs = self.getDivergence()
+        print('in seekDivergence, vals is: ' + str(vals))
+        if len(vals) > 0:
+            for v,f,d in zip(vals, funs, divs):
+                # choice = input('variable divergence in subject ' + sub.label +
+                #                '; iteration: ' + d + '; functions: ' +
+                #                f[0] + ':' + f[1] + '; values: ' +
+                #                v[0] + ':' + v[1] + '.  _F_ocus or _I_gnore?')
+                # if choice.lower() != 'f' and choice.lower() != 'focus':
+                    return d
+        return -1
         
     # here we should update watches
     # clear values, advance masterCount
     # and zero count
     # also set the state
     def setSearching(self):
-        state = subjState.searching
-        for w in watches:
+        self.state = subjState.searching
+        for w in self.watches:
             w.setSearching()
-            w.masterCount += w.count
-            w.count = 0
-            w.values = []
-            w.target = -1
                 
     # set record, restart inferiors,
     # reset counts and targets
     def setSeeking(self, target):
-        state = subjState.seeking
-        for w in watches:
+        self.state = subjState.seeking
+        for w in self.watches:
             w.setSeeking(target)
-        commands = ['record', 'infer 1', 'run', 'infer 2', 'run']
-        execCommands(commands)
 
     def getWatch(self, inf):
         for w in self.watches:
             if w.inf == inf:
                 return w
-        gdb.error('inf ' + inf ' not found in getWatch()')
+        gdb.error('inf ' + inf + ' not found in getWatch()')
 
-    def getOtherInf():
-        cur = gdb.selected_inferior()
+    def getOtherInf(self):
+        cur = gdb.selected_inferior().num
         for w in self.watches:
             if w.inf != cur:
                 return w.inf
@@ -163,13 +178,17 @@ class qfpSubject:
                   sub.label)
         
     def toggle_inf(self):
-        gdb.execute('inferior ' + self.getOtherInf())
+        execCommands(['inferior ' + str(self.getOtherInf())])
     
-    gdb.execute('inferior ' + to)
 def execCommands(clist):
     for c in clist:
         print('executing: ' + c)
-        gdb.execute(c)
+        gdb.flush()
+        try:
+            gdb.execute(c)
+        except gdb.error as e:
+            print('caught gdb.error: ' + str(e) + ' on gdb.execute(' +
+                  c + ')')
 
 def getPrecString(p):
     if p == 'f':
@@ -183,9 +202,12 @@ def getPrecString(p):
 
 
 def catch_trap(event):
-    global wplist
+    global subjects
     cur = gdb.selected_inferior()
-
+    if type(event) == gdb.BreakpointEvent:
+        return
+    print('stop caught: ' + str(event))
+    print('event type: ' + str(type(event)))
     print('caught int3 in inf ' + str(cur.num))
     f = open('inf' + str(cur.num) + '.watch', 'r')
     wdata = f.read()
@@ -203,11 +225,20 @@ def catch_trap(event):
         wtype = 'double'
     else:
         wtype = 'float'
+    print('hit next print')
 
-    if lab in subjects:
-        subjects[lab].setSearching()
+    if lab not in subjects:
+        subjects[lab] = qfpSubject(lab, cur.num, addr, wtype)
+    else:
+        subjects[lab].watches.append(qfpWatchpoint(addr, wtype, lab,
+                                              subjects[lab]))
 
-    subjects[lab].watches.append(qfpSubject(lab, cur.num, addr, wtype))
+    print('subjects length is: ' + str(len(subjects)))
+
+    if len(subjects[lab].watches) == 2:
+       subjects[lab].setSearching()
+       #TODO need to handle this better
+       gdb.events.stop.disconnect(catch_trap)
 
     print('set watchpoint @' + addr + ', type: ' + wtype + ', label: ' + lab)
 
@@ -217,10 +248,18 @@ def catch_trap(event):
 
 def inf_terminated(inf):
     infs = gdb.inferiors()
-    if len(infs) < inf return False
+    if len(infs) < inf: return False
     for t in gdb.inferiors()[inf - 1]:
-        if t.is_valid() return False
+        if t.is_valid(): return False
     return True
-    
 
-    
+def catch_term(event):
+    global subjects
+    inf = event.inferior.num
+    print('caught term signal in inf ' + str(inf))
+    for k, s in subjects.items():
+        for w in s.watches:
+            print('checking if ' + str(w.inf) + ' matches ' + str(inf))
+            if w.inf == inf:
+                w.state = watchState.infExited
+            
