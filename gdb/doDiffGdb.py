@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 # this is the launcher for QFP_gdb
 # where: testid is one of:

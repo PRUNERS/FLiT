@@ -16,6 +16,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
+
+//DELME
+#include <time.h>
+#include <unistd.h>
+
 //QFP
 #include <inst>
 
@@ -810,6 +815,7 @@ struct FPTests {
     }
     return {__func__, {L1Score, LIScore}};
   }
+  
   template<typename T, typename Fun>
   static resultType
   // static pair<string, long double>
@@ -834,7 +840,13 @@ struct FPTests {
     //setup for debug monitor (QFP_gdb)
     //    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum), "sum");
     printOnce(__FUNCTION__, &Globals<T>::prods.data()[0]);
+    //DELME
+    T temp = (T)(rand() % 100);
+
+    //
     QFP::checkpoint(Globals<T>::prods.data()[0], sizeof(T), "product");
+
+    Globals<T>::prods.data()[0] += temp;
     
     for(int r = 0; r < dim; ++r){
     T &p = a[r];
@@ -1389,6 +1401,10 @@ loadIntFromEnv(int &dest, std::string var, int defVal){
 
 int
 main(int argc, char* argv[]){
+    //DELME
+  srand(time(NULL));
+  sleep(1);
+
   if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
   int TEST;
   loadIntFromEnv(TEST, "TEST", -1);

@@ -1,10 +1,8 @@
 #here are the helper functions / classes for geb_extends
 
 import gdb
-# import testEvents
-# import pprint
 import re
-#import _thread
+import copy
 from enum import Enum
 
 #here are the data structures we need to record watchpoint hit data
@@ -27,6 +25,15 @@ class watchState(Enum):
     
 subjects = {}
 
+def copy_qfpWatchpoint(orig):
+    c = copy.deepcopy(orig)
+    return qfpWatchpoint(orig.addr, orig.dtype,
+                         orig.label, orig.subject,
+                         orig.spec, orig.count,
+                         orig.target, orig.inf,
+                         orig.masterCount, orig.state,
+                         orig.values, orig.funcs)
+
 class qfpWatchpoint (gdb.Breakpoint):
     spec = None
     dtype = None
@@ -39,15 +46,31 @@ class qfpWatchpoint (gdb.Breakpoint):
     values = []
     funcs = []
     subject = None
-    global infVals
-    def __init__(self, addr, dtype, label, subject):
-        self.spec = '*(' + dtype + '*)' + addr
-        super(qfpWatchpoint, self).__init__(self.spec, gdb.BP_WATCHPOINT,
-                                            internal = False)
+    def __init__(self, addr, dtype, label, subject, spec=None,
+                 count=0, target=-1, inf=-1, masterCount=0,
+                 state=watchState.searching, values=[], funcs=[]):
+        if spec == None:
+            self.spec = '*(' + dtype + '*)' + addr
+        else:
+            self.spec = spec
+
+        if inf == -1:
+            self.inf = gdb.selected_inferior().num
+        else:
+            self.inf = inf
+        
         self.dtype = dtype
         self.addr = addr
-        self.inf = gdb.selected_inferior().num
         self.subject = subject
+        self.count = count
+        self.target = target
+        self.masterCount = masterCount
+        self.state = state
+        self.values = copy.copy(values)
+        self.funcs = copy.copy(funcs)
+            
+        super(qfpWatchpoint, self).__init__(self.spec, gdb.BP_WATCHPOINT,
+                                            internal = False)
 
     def setSearching(self):
         self.masterCount += self.count
@@ -56,7 +79,7 @@ class qfpWatchpoint (gdb.Breakpoint):
         self.target = -1
 
     def setSeeking(self, target):
-        self.state = watchState.seeking
+        #self.state = watchState.seeking
         self.masterCount += self.count
         self.count = 0
         self.target = target
@@ -119,20 +142,26 @@ class qfpSubject:
         self.label =  label
         self.state = subjState.loading
         self.watches.append(qfpWatchpoint(addr, wtype, label, self))
-
+        
+    def replaceWatch(self, inf):
+        for c, w in enumerate(self.watches):
+            if w.inf == inf:
+                watches[c] = copy_qfpWatchpoint(w)
+                watches[c].state = watchState.seeking
+                
     def getDivergence(self):
-        vals = []
+        values = []
         funs = []
         divs = []
         for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values, self.watches[0].funcs, self.watches[1].funcs)):
-            print('comparing v1 v2, f1, f2:' + str(vals[0]) + ':' + str(vals[1]) +
-                  ':' + str(vals[2]) + ':' + str(vals[3]))
+            #print('comparing v1 v2, f1, f2:' + str(vals[0]) + ':' + str(vals[1]) +
+                  #':' + str(vals[2]) + ':' + str(vals[3]))
             if vals[0] != vals[1] or vals[2] != vals[3]:
-                vals.append([vals[0], vals[1]])
+                values.append([vals[0], vals[1]])
                 funs.append([vals[2], vals[3]])
-                divs.append(cnt)
+                divs.append(cnt + self.watches[0].masterCount)
 #                    return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
-        return vals, funs, divs
+        return values, funs, divs
 
     def seekDivergence(self):
         vals, funs, divs = self.getDivergence()
@@ -202,6 +231,7 @@ def getPrecString(p):
 
 
 def catch_trap(event):
+    print('entered catch_trap')
     global subjects
     cur = gdb.selected_inferior()
     if type(event) == gdb.BreakpointEvent:
@@ -226,19 +256,24 @@ def catch_trap(event):
     else:
         wtype = 'float'
     print('hit next print')
-
+    
     if lab not in subjects:
         subjects[lab] = qfpSubject(lab, cur.num, addr, wtype)
     else:
-        subjects[lab].watches.append(qfpWatchpoint(addr, wtype, lab,
+        if subjects[lab].state == subjState.seeking:
+            subjects[lab].replaceWatch(cur.num)
+        else:
+            subjects[lab].watches.append(qfpWatchpoint(addr, wtype, lab,
                                               subjects[lab]))
 
     print('subjects length is: ' + str(len(subjects)))
 
-    if len(subjects[lab].watches) == 2:
-       subjects[lab].setSearching()
-       #TODO need to handle this better
-       gdb.events.stop.disconnect(catch_trap)
+    if (len(subjects[lab].watches) == 2 and
+        (not (subjects[lab].watches[0].state == watchState.seeking) !=
+         (subjects[lab].watches[1].state == watchState.seeking))):
+        if subjects[lab].state == subjState.loading:
+            subjects[lab].setSearching()
+        gdb.events.stop.disconnect(catch_trap)
 
     print('set watchpoint @' + addr + ', type: ' + wtype + ', label: ' + lab)
 
@@ -247,6 +282,7 @@ def catch_trap(event):
     open('inf' + str(cur.num) + '.watch', 'w').close() #erase watch data
 
 def inf_terminated(inf):
+    print('entered inf_terminated')
     infs = gdb.inferiors()
     if len(infs) < inf: return False
     for t in gdb.inferiors()[inf - 1]:
@@ -254,6 +290,7 @@ def inf_terminated(inf):
     return True
 
 def catch_term(event):
+    print('entered catch_term')
     global subjects
     inf = event.inferior.num
     print('caught term signal in inf ' + str(inf))
@@ -262,4 +299,7 @@ def catch_term(event):
             print('checking if ' + str(w.inf) + ' matches ' + str(inf))
             if w.inf == inf:
                 w.state = watchState.infExited
+                w.delete()
+                #this may be bad, but trying to delete the watchpoint but keep
+                #our (subclass) data.  Docs say this deletes the super : P
             

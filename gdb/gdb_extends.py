@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # to begin, we will do sanity checks.
 # at this point, we should have gdb loaded, this should be pulled
 # in after, and we can process.  But let's be sure that we have 
@@ -21,7 +23,7 @@ gdb.events.stop.connect(helpers.catch_trap)
 gdb.events.exited.connect(helpers.catch_term)
 
 helpers.execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
-                      'inferior 2', 'run 2> inf2.watch'])
+                       'inferior 2', 'run 2> inf2.watch'])
 
 #at this point, either:
 ## both inferiors have terminated
@@ -63,10 +65,11 @@ estate = execState.init
 
 #print('subject state is: ' + str(sub.state))
 
-#res = input('would you like to return to user control? [y|n]')
+res = input('would you like to return to user control? [y|n]')
 res = 'n'
 for lab, sub in helpers.subjects.items():
     if res.lower() == 'n' and sub.state == helpers.subjState.searching:
+        sub.toggle_inf()
         estate = execState.search1
         inf1 = gdb.selected_inferior().num
         watch1 = sub.getWatch(inf1)
@@ -82,6 +85,10 @@ for lab, sub in helpers.subjects.items():
             if estate == execState.search1:
                 print('handling search1 state')
                 helpers.execCommands(['continue'])
+                # if (watch1.state == helpers.watchState.infExited or
+                #     watch2.state == helpers.watchState.infExited):
+                #     print('an inf exited from search1')
+                #     break
                 if (watch1.state == helpers.watchState.hitCount or
                     watch1.state == helpers.watchState.infExited):
                     estate = execState.search2
@@ -90,16 +97,21 @@ for lab, sub in helpers.subjects.items():
                     gdb.error('reached unknown state after execState.search1')
                     break
             if estate == execState.search2:
+                # if watch1.state == helpers.watchState.infExited:
+                #     print('returning control to console, watch1 exited')
+                #     break
                 print('handling search2 state')
                 helpers.execCommands(['continue'])
                 if (watch2.state == helpers.watchState.hitCount or
                     watch2.state == helpers.watchState.infExited):
                     estate = execState.analyze
-                    sub.toggle_inf()  #activates the other inferior
+                    #sub.toggle_inf()  #activates the other inferior
                 else:
                     gdb.error('reached unknown state after execState.search2')
                     break
             if estate == execState.analyze:
+                # print('returning to console')
+                # break
                 print('handling analyze state')
                 div = sub.seekDivergence()
                 print('hit analyze state with div = ' + str(div))
@@ -108,32 +120,42 @@ for lab, sub in helpers.subjects.items():
                     estate = execState.seek1
                     sub.toggle_inf()
                 else:
-                    if (watch1.state == helpers.watchState.infExited or
+                    if (watch1.state == helpers.watchState.infExited and
                         watch2.state == helpers.watchState.infExited):
                         print('hit infExited in main control loop')
+                        print('no divergence detected in specified regions')
+                        estate = execState.user
                         #helpers.execCommands(['quit'])
-                        break
                     else:
                         sub.setSearching()
                         estate = execState.search1
+                    if (watch1.state == helpers.watchState.infExited or
+                        watch2.state == helpers.watchState.infExited):
+                        break
                 #sub.toggle_inf()
             if estate == execState.seek1:
                 print('handling seek1 state')
-                helpers.execCommands(['record', 'run'])
+                #DELME
+                print('returning control at seek1')
+                break
+                ##
+                gdb.events.stop.connect(helpers.catch_trap)
+                #TODO: should we do this way? or is it better to break main; run; record; del break?
+                #So this will rerun, hit the int3, return control where we 'record' and then 'continue'
+                helpers.execCommands(['run 2> inf' + str(inf2) + '.watch', 'record', 'continue'])
                 if watch1.state == helpers.watchState.hitSeek:
                     estate = execState.seek2
                     sub.togggle_inf()
                 else:
-                    gdb.error('couldn\'t reach target in seek of inf ' + inf1)
+                    gdb.error('couldn\'t reach target in seek of inf ' + str(inf1))
                     break
             if estate == execState.seek2:
                 print('handling seek2 state')
-                helpers.execCommands(['record', 'run'])
+                helpers.execCommands(['run 2> inf' + str(inf2) + '.watch', 'record', 'continue'])
                 if watch2.state == helpers.watchState.hitSeek:
                     estate = execState.user
-                    sub.togggle_inf()
                 else:
-                    gdb.error('couldn\'t reach target in seek of inf ' + inf2)
+                    gdb.error('couldn\'t reach target in seek of inf ' + str(inf2))
                     break
             if estate == execState.user:
                 continue        
