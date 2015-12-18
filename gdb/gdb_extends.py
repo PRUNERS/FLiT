@@ -85,38 +85,33 @@ for lab, sub in helpers.subjects.items():
             if estate == execState.search1:
                 print('handling search1 state')
                 helpers.execCommands(['continue'])
-                # if (watch1.state == helpers.watchState.infExited or
-                #     watch2.state == helpers.watchState.infExited):
-                #     print('an inf exited from search1')
-                #     break
                 if (watch1.state == helpers.watchState.hitCount or
                     watch1.state == helpers.watchState.infExited):
                     estate = execState.search2
                     sub.toggle_inf()  #activates the other inferior
                 else:
                     gdb.error('reached unknown state after execState.search1')
-                    break
             if estate == execState.search2:
-                # if watch1.state == helpers.watchState.infExited:
-                #     print('returning control to console, watch1 exited')
-                #     break
                 print('handling search2 state')
                 helpers.execCommands(['continue'])
                 if (watch2.state == helpers.watchState.hitCount or
                     watch2.state == helpers.watchState.infExited):
                     estate = execState.analyze
-                    #sub.toggle_inf()  #activates the other inferior
                 else:
                     gdb.error('reached unknown state after execState.search2')
                     break
             if estate == execState.analyze:
-                # print('returning to console')
-                # break
                 print('handling analyze state')
                 div = sub.seekDivergence()
                 print('hit analyze state with div = ' + str(div))
                 if div != -1: #means that the user chose to focus on identified div
+                    gdb.events.exited.disconnect(helpers.catch_term)
                     sub.setSeeking(div)
+                    gdb.events.exited.connect(helpers.catch_term)
+                    watch1 = sub.watches[0]
+                    watch2 = sub.watches[1]
+                    inf1 = watch1.inf
+                    inf2 = watch2.inf
                     estate = execState.seek1
                 else:
                     if (watch1.state == helpers.watchState.infExited and
@@ -130,32 +125,38 @@ for lab, sub in helpers.subjects.items():
                         estate = execState.search1
                     if (watch1.state == helpers.watchState.infExited or
                         watch2.state == helpers.watchState.infExited):
+                        gdb.error('something wrong -- after analyze one terminated inferior')
                         break
                 #sub.toggle_inf()
             if estate == execState.seek1:
                 print('handling seek1 state')
+                #break
                 # #DELME
                 # print('returning control at seek1')
                 # break
                 # ##
                 helpers.execCommands(['continue'])
+                #DELME
+                print('after continue, watch1.state and watch2.state are: ' +
+                      str(watch1.state) + ' and ' + str(watch2.state))
+                #
                 if watch1.state == helpers.watchState.hitSeek:
                     estate = execState.seek2
-                    sub.togggle_inf()
+                    sub.toggle_inf()
                 else:
                     gdb.error('couldn\'t reach target in seek of inf ' + str(inf1))
                     break
             if estate == execState.seek2:
                 print('handling seek2 state')
-                helpers.execCommands(['continue'])
+                #break
+                helperers.execCommands(['continue'])
                 if watch2.state == helpers.watchState.hitSeek:
                     estate = execState.user
                 else:
                     gdb.error('couldn\'t reach target in seek of inf ' + str(inf2))
                     break
             if estate == execState.user:
-                continue        
-        
+                break
         
     
     
