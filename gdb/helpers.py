@@ -116,10 +116,11 @@ class qfpWatchpoint (gdb.Breakpoint):
         print('hit qfpWatch.stop')
         if self.count == self.target:
             self.setHitSeek()
-            if self.subject.allAtSeek():
-                return True
-            else:
-                return False
+            return True
+            # if self.subject.allAtSeek():
+            #     return True
+            # else:
+            #     return False
         else:
             if self.state == watchState.seeking:
                 count += 1
@@ -215,11 +216,14 @@ class qfpSubject:
         print('set catch_trap')
         self.toggle_inf()
         print('running 1 to establish watch')
-        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch', 'record'])
+        #TODO we removed record, I suspect at switching inf for next seek,
+        #we'll have to save the state, stop, and rerecord for inf2
+        #(there is a problem with threads disappearing in inf2)
+        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch'])
         print('finished 1 for watch')
         self.toggle_inf()
         print('running 2 to establish watch')
-        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch', 'record'])
+        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch'])
         print('finished 2 to watch')
         self.toggle_inf()
         for w in self.watches:
@@ -243,7 +247,8 @@ class qfpSubject:
         execCommands(['inferior ' + str(self.getOtherInf())])
         
     def allAtSeek(self):
-        print('in allAtSeek, w1 state, w2 state: ' + watches[0].state, watches[1].state)
+        print('in allAtSeek, w1 state, w2 state: ' + str(self.watches[0].state),
+              str(self.watches[1].state))
         for w in self.watches:
             if w.state != watchState.hitSeek:
                 return False
