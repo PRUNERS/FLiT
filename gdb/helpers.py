@@ -26,9 +26,9 @@ class watchState(Enum):
 subjects = {}
 
 def copy_qfpWatchpoint(orig):
-    c = copy.deepcopy(orig)
+    print('hit copy_qfpWatchpoint')
     return qfpWatchpoint(orig.addr, orig.dtype,
-                         orig.label, orig.subject,
+                         orig.subject,
                          orig.spec, orig.count,
                          orig.target, orig.inf,
                          orig.masterCount, orig.state,
@@ -46,9 +46,10 @@ class qfpWatchpoint (gdb.Breakpoint):
     values = []
     funcs = []
     subject = None
-    def __init__(self, addr, dtype, label, subject, spec=None,
+    def __init__(self, addr, dtype, subject, spec=None,
                  count=0, target=-1, inf=-1, masterCount=0,
                  state=watchState.searching, values=[], funcs=[]):
+        print('hit qfpWatchpointr.__init__')
         if spec == None:
             self.spec = '*(' + dtype + '*)' + addr
         else:
@@ -85,7 +86,7 @@ class qfpWatchpoint (gdb.Breakpoint):
         self.target = target
 
     def setHitSeek(self):
-        print('reached divergence point')
+        print('reached divergence point in inf ' + str(self.inf))
         self.state = watchState.hitSeek
 
     def setHitCount(self):
@@ -112,19 +113,25 @@ class qfpWatchpoint (gdb.Breakpoint):
         putting each inf at the point of divergence and
         in a gdb context that can be explored.
         """
+        print('hit qfpWatch.stop')
         if self.count == self.target:
             self.setHitSeek()
-            return True
+            if self.subject.allAtSeek():
+                return True
+            else:
+                return False
         else:
             if self.state == watchState.seeking:
+                count += 1
                 return False
         print('handling inf: ' + str(self.inf) + ' at count: ' + str(self.count))
+        print('in func: ' + gdb.newest_frame().name())
         print(self.spec)
         val = gdb.parse_and_eval(self.spec)
         print('new val is: ' + str(val))
         self.values.append(val)
         self.funcs.append(gdb.newest_frame().name())
-        self.count = self.count + 1
+        self.count += 1
         if self.count == self.subject.CPERIOD:
             self.setHitCount()
             return True
@@ -141,13 +148,14 @@ class qfpSubject:
     def __init__(self, label, inf, addr, wtype):
         self.label =  label
         self.state = subjState.loading
-        self.watches.append(qfpWatchpoint(addr, wtype, label, self))
+        self.watches.append(qfpWatchpoint(addr, wtype, self))
         
     def replaceWatch(self, inf):
+        print('hit replaceWatch')
         for c, w in enumerate(self.watches):
             if w.inf == inf:
-                watches[c] = copy_qfpWatchpoint(w)
-                watches[c].state = watchState.seeking
+                self.watches[c] = copy_qfpWatchpoint(w)
+                self.watches[c].state = watchState.seeking
                 
     def getDivergence(self):
         values = []
@@ -156,10 +164,20 @@ class qfpSubject:
         for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values, self.watches[0].funcs, self.watches[1].funcs)):
             #print('comparing v1 v2, f1, f2:' + str(vals[0]) + ':' + str(vals[1]) +
                   #':' + str(vals[2]) + ':' + str(vals[3]))
-            if vals[0] != vals[1] or vals[2] != vals[3]:
+            # print('cnt + self.watches[0].masterCount: ' +
+            #       str(cnt + self.watches[0].masterCount - self.CPERIOD))
+            if (vals[0] != vals[1] or
+                ((vals[2].find(vals[3])) == -1 and
+                (vals[3].find(vals[2])) == -1)):
+                print('vals[0]:vals[1], ' +
+                      '2.find3:3.find2; ' +
+                      str(vals[0]) + ":" + str(vals[1]) + "; " +
+                      str(vals[2].find(vals[3])) + ":" +
+                      str(vals[3].find(vals[2])))
+                
                 values.append([vals[0], vals[1]])
                 funs.append([vals[2], vals[3]])
-                divs.append(cnt + self.watches[0].masterCount)
+                divs.append(cnt + self.watches[0].masterCount - self.CPERIOD)
 #                    return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
         return values, funs, divs
 
@@ -189,6 +207,21 @@ class qfpSubject:
     # reset counts and targets
     def setSeeking(self, target):
         self.state = subjState.seeking
+        #we need to rest things -- delete watch points and let
+        #catch_trap add the new watchpoints that are
+        #copied from the old ones
+        print('connecting catch_trap in setSeeking')
+        gdb.events.stop.connect(catch_trap)
+        print('set catch_trap')
+        self.toggle_inf()
+        print('running 1 to establish watch')
+        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch', 'record'])
+        print('finished 1 for watch')
+        self.toggle_inf()
+        print('running 2 to establish watch')
+        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch', 'record'])
+        print('finished 2 to watch')
+        self.toggle_inf()
         for w in self.watches:
             w.setSeeking(target)
 
@@ -204,10 +237,17 @@ class qfpSubject:
             if w.inf != cur:
                 return w.inf
         gdb.error('couldn\'t locate other inf in subject: ' +
-                  sub.label)
+                  self.label)
         
     def toggle_inf(self):
         execCommands(['inferior ' + str(self.getOtherInf())])
+        
+    def allAtSeek(self):
+        print('in allAtSeek, w1 state, w2 state: ' + watches[0].state, watches[1].state)
+        for w in self.watches:
+            if w.state != watchState.hitSeek:
+                return False
+        return True
     
 def execCommands(clist):
     for c in clist:
@@ -263,7 +303,7 @@ def catch_trap(event):
         if subjects[lab].state == subjState.seeking:
             subjects[lab].replaceWatch(cur.num)
         else:
-            subjects[lab].watches.append(qfpWatchpoint(addr, wtype, lab,
+            subjects[lab].watches.append(qfpWatchpoint(addr, wtype, 
                                               subjects[lab]))
 
     print('subjects length is: ' + str(len(subjects)))

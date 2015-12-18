@@ -118,7 +118,6 @@ for lab, sub in helpers.subjects.items():
                 if div != -1: #means that the user chose to focus on identified div
                     sub.setSeeking(div)
                     estate = execState.seek1
-                    sub.toggle_inf()
                 else:
                     if (watch1.state == helpers.watchState.infExited and
                         watch2.state == helpers.watchState.infExited):
@@ -135,14 +134,11 @@ for lab, sub in helpers.subjects.items():
                 #sub.toggle_inf()
             if estate == execState.seek1:
                 print('handling seek1 state')
-                #DELME
-                print('returning control at seek1')
-                break
-                ##
-                gdb.events.stop.connect(helpers.catch_trap)
-                #TODO: should we do this way? or is it better to break main; run; record; del break?
-                #So this will rerun, hit the int3, return control where we 'record' and then 'continue'
-                helpers.execCommands(['run 2> inf' + str(inf2) + '.watch', 'record', 'continue'])
+                # #DELME
+                # print('returning control at seek1')
+                # break
+                # ##
+                helpers.execCommands(['continue'])
                 if watch1.state == helpers.watchState.hitSeek:
                     estate = execState.seek2
                     sub.togggle_inf()
@@ -151,7 +147,7 @@ for lab, sub in helpers.subjects.items():
                     break
             if estate == execState.seek2:
                 print('handling seek2 state')
-                helpers.execCommands(['run 2> inf' + str(inf2) + '.watch', 'record', 'continue'])
+                helpers.execCommands(['continue'])
                 if watch2.state == helpers.watchState.hitSeek:
                     estate = execState.user
                 else:
