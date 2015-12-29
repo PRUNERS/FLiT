@@ -84,6 +84,10 @@ const bool STD_DOTP = true;
 const bool SORTED_SUM = false; //sorts by magnitude (fabs)
 const bool REVERSE_SORT = false;
 const bool NO_SUBNORMALS = true;
+namespace {
+bool NO_WATCH;
+}
+#define VOLATILE
 //END SETTINGS
 
 //returns a bitlength equivalent unsigned type
@@ -98,13 +102,13 @@ struct get_corresponding_type{
 
 template<typename T>
 struct Globals{
-  static T sum;
+  static VOLATILE T sum;
   //  static T prods[32];
   static vector<T> prods;
 };
 
 template<class T>
-T Globals<T>::sum;
+T VOLATILE Globals<T>::sum;
 
 template<class T>
 std::vector<T> Globals<T>::prods(32, 0.0);
@@ -472,7 +476,7 @@ public:
   T
   operator^(Vector<T> const &rhs) const {
     Globals<T>::sum = 0.0;
-    T &sum = Globals<T>::sum;
+    T VOLATILE &sum = Globals<T>::sum;
     auto &prods = Globals<T>::prods;
     printOnce(__FUNCTION__, &prods.data()[0]);
     if( sortType == bi){
@@ -825,7 +829,10 @@ struct FPTests {
 		     const typename Vector<T>::sort_t
 		     st = Vector<T>::def){
     long double score = 0.0;
-    std::vector<unsigned> orthoCount(dim, 0);
+    std::vector<unsigned> orthoCount(dim, 0.0);
+    //we use a double literal above as a workaround for Intel 15-16
+    //compierr bug:
+    //https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
     size_t indexer = 0;
     Vector<T> a(dim, f);
     a.setSort(st);
@@ -838,16 +845,12 @@ struct FPTests {
     info_stream << b << endl;
     T backup;
     //setup for debug monitor (QFP_gdb)
-    //    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum), "sum");
-    printOnce(__FUNCTION__, &Globals<T>::prods.data()[0]);
-    //DELME
-    T temp = (T)(rand() % 100);
+    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum), "sum", NO_WATCH);
+    //printOnce(__FUNCTION__, &Globals<T>::prods.data()[0]);
 
-    //
-    QFP::checkpoint(Globals<T>::prods.data()[0], sizeof(T), "product");
-
-    Globals<T>::prods.data()[0] += temp;
     
+    //QFP::checkpoint(Globals<T>::prods.data()[2], sizeof(T), "product", NO_WATCH);
+
     for(int r = 0; r < dim; ++r){
     T &p = a[r];
       backup = p;
@@ -860,7 +863,7 @@ struct FPTests {
 	}else{
 	  if(i == 0) score += fabs(a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
-	info_stream << "a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " perp: " << isOrth << " dot prod: " <<
+	info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
 	  FPWrap<T>(a ^ b) << endl;
       }
       info_stream << "next dimension . . . " << endl;
@@ -1401,9 +1404,6 @@ loadIntFromEnv(int &dest, std::string var, int defVal){
 
 int
 main(int argc, char* argv[]){
-    //DELME
-  srand(time(NULL));
-  sleep(1);
 
   if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
   int TEST;
@@ -1412,7 +1412,8 @@ main(int argc, char* argv[]){
   loadStringFromEnv(SORT, "SORT", "all");
   std::string PRECISION;
   loadStringFromEnv(PRECISION, "PRECISION", "all");
-
+  std::string NO_WATCHS;
+  loadStringFromEnv(NO_WATCHS, "NO_WATCH", "false");
   //THIS EXTERNAL INTERFACE IS A LITTLE SLOPPY -- SHOULD REENGINEER
 
   using namespace fpTestSuite;
@@ -1448,6 +1449,9 @@ main(int argc, char* argv[]){
   if(PRECISION != "all"){
     firstP = getPrecID(PRECISION);
     lastP = getPrecID(PRECISION) + 1;
+  }
+  if(NO_WATCHS != "false"){
+    NO_WATCH = true;
   }
   for(int ipm = firstST; ipm < lastST; ++ipm){ //reduction sort pre sum
     for(int p = firstP; p < lastP; ++p){ //float, double, long double

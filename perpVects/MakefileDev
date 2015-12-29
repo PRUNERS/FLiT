@@ -13,13 +13,13 @@ INC := -I $(INCFILES)
 
 .phony : all
 
-all : gcc gcc_g
+all : gcc #gcc_g
 
 gcc : test.cpp $(INCFILES)
 	$(CC) $(CC_OPTS) $(CC_REQUIRED) $(INC) $< -o $@
 
-gcc_g : test.cpp $(INCFILES)
-	$(CC) $(CC_OPTS) -g $(CC_REQUIRED) $(INC) $< -o $@
+# gcc_g : test.cpp $(INCFILES)
+# 	$(CC) $(CC_OPTS) -g $(CC_REQUIRED) $(INC) $< -o $@
 
 .phony : clean
 

@@ -19,7 +19,8 @@ namespace {
   
 template<typename T>
 void
-checkpoint(T &obj, size_t len, std::string label){
+checkpoint(T &obj, size_t len, std::string const label, bool NO_WATCH){
+  if (NO_WATCH) return;
   auto addr = std::addressof(obj);
   if(checked.count(label) == 0){
 //    std::cout << std::addressof(checked) << " (checked)" << std::endl;
