@@ -1,0 +1,17 @@
+CC := g++
+
+CC_OPTS ?= -Wuninitialized
+
+CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
+
+.phony : all
+
+all : test
+
+test : test.cpp
+	$(CC) $(CC_OPTS) $(CC_REQUIRED) $< -o $@
+
+.phony : clean
+
+clean :
+	-rm $(CC)*
