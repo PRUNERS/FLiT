@@ -1,0 +1,11 @@
+#!/bin/bash
+
+export TEST=0
+export PRECISION=d
+export SORT=us
+export NO_WATCH=true
+
+(../../intel_O2_g verbose) 2>&1 | tee intel_out &
+(../../g++_O2_g verbose) 2>&1 | tee g++_out &
+
+wait
