@@ -34,6 +34,19 @@ def copy_qfpWatchpoint(orig):
                          orig.masterCount, orig.state,
                          orig.values, orig.funcs)
 
+def infBeyondMain():
+    # we need to walk the stack to the bottom to make sure we
+    # haven't returned from main.  May be expensive
+    curFrame = gdb.newest_frame()
+    while curFrame != None:
+#        print('infBeyondMain(): frame is ' + curFrame.function().name)
+        if (curFrame.function().name == 'main' or
+            curFrame.function().name == 'main(int, char**)'):
+            return False
+        else:
+            curFrame = curFrame.older()
+    return True
+    
 class qfpWatchpoint (gdb.Breakpoint):
     spec = None
     dtype = None
@@ -81,9 +94,10 @@ class qfpWatchpoint (gdb.Breakpoint):
 
     def setSeeking(self, target):
         #self.state = watchState.seeking
-        self.masterCount += self.count
+        #self.masterCount += self.count
         self.count = 0
         self.target = target
+        self.masterCount = 0
 
     def setHitSeek(self):
         print('reached divergence point in inf ' + str(self.inf))
@@ -91,7 +105,7 @@ class qfpWatchpoint (gdb.Breakpoint):
 
     def setHitCount(self):
         self.state = watchState.hitCount
-        self.masterCount += self.count
+        # self.masterCount += self.count
         self.count = 0
 
     def stop (self):
@@ -114,6 +128,12 @@ class qfpWatchpoint (gdb.Breakpoint):
         in a gdb context that can be explored.
         """
         print('hit qfpWatch.stop')
+        print('count is ' + str(self.count) + ', masterCount is ' + str(self.masterCount))
+        print('target is ' + str(self.target))
+        # We need to ignore changes made outside of main (i.e. after main exits)
+        if infBeyondMain():
+            print('detected that main has returned in qfpWatch.stop()')
+            return True
         if self.count == self.target:
             self.setHitSeek()
             return True
@@ -123,9 +143,10 @@ class qfpWatchpoint (gdb.Breakpoint):
             #     return False
         else:
             if self.state == watchState.seeking:
-                count += 1
+                self.count += 1
                 return False
-        print('handling inf: ' + str(self.inf) + ' at count: ' + str(self.count))
+        print('handling inf: ' + str(self.inf) + ' at count: ' +
+              str(self.count + self.masterCount))
         print('in func: ' + gdb.newest_frame().name())
         print(self.spec)
         val = gdb.parse_and_eval(self.spec)
@@ -178,7 +199,8 @@ class qfpSubject:
                 
                 values.append([vals[0], vals[1]])
                 funs.append([vals[2], vals[3]])
-                divs.append(cnt + self.watches[0].masterCount - self.CPERIOD)
+                divs.append(cnt + self.watches[0].masterCount)
+                break
 #                    return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
         return values, funs, divs
 
@@ -345,6 +367,7 @@ def catch_term(event):
             if w.inf == inf:
                 w.state = watchState.infExited
                 w.delete()
+                return
                 #this may be bad, but trying to delete the watchpoint but keep
                 #our (subclass) data.  Docs say this deletes the super : P
             

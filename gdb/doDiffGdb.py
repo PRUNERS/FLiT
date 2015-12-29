@@ -36,6 +36,7 @@ inf2 = os.path.realpath(sys.argv[2])
 os.environ['TEST'] = sys.argv[3]
 os.environ['PRECISION'] = sys.argv[4]
 os.environ['SORT'] = sys.argv[5]
+os.environ['NO_WATCH'] = 'false'
 NW = True
 if len(sys.argv) >= 7:
     if sys.argv[6] == 'f':

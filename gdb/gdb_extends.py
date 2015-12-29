@@ -84,6 +84,7 @@ for lab, sub in helpers.subjects.items():
         while True:
             if estate == execState.search1:
                 print('handling search1 state')
+                print('inf1 masterCount is: ' + str(watch1.masterCount))
                 helpers.execCommands(['continue'])
                 if (watch1.state == helpers.watchState.hitCount or
                     watch1.state == helpers.watchState.infExited):
@@ -93,6 +94,7 @@ for lab, sub in helpers.subjects.items():
                     gdb.error('reached unknown state after execState.search1')
             if estate == execState.search2:
                 print('handling search2 state')
+                print('inf2 masterCount is: ' + str(watch2.masterCount))
                 helpers.execCommands(['continue'])
                 if (watch2.state == helpers.watchState.hitCount or
                     watch2.state == helpers.watchState.infExited):
@@ -102,6 +104,8 @@ for lab, sub in helpers.subjects.items():
                     break
             if estate == execState.analyze:
                 print('handling analyze state')
+                print('inf1 masterCount is: ' + str(watch1.masterCount))
+                print('inf2 masterCount is: ' + str(watch2.masterCount))
                 div = sub.seekDivergence()
                 print('hit analyze state with div = ' + str(div))
                 if div != -1: #means that the user chose to focus on identified div
@@ -122,6 +126,7 @@ for lab, sub in helpers.subjects.items():
                         #helpers.execCommands(['quit'])
                     else:
                         sub.setSearching()
+                        sub.toggle_inf()
                         estate = execState.search1
                     if (watch1.state == helpers.watchState.infExited or
                         watch2.state == helpers.watchState.infExited):
@@ -149,7 +154,7 @@ for lab, sub in helpers.subjects.items():
             if estate == execState.seek2:
                 print('handling seek2 state')
                 #break
-                helperers.execCommands(['continue'])
+                helpers.execCommands(['continue'])
                 if watch2.state == helpers.watchState.hitSeek:
                     estate = execState.user
                 else:
