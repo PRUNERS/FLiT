@@ -65,7 +65,7 @@ estate = execState.init
 
 #print('subject state is: ' + str(sub.state))
 
-res = input('would you like to return to user control? [y|n]')
+#res = input('would you like to return to user control? [y|n]')
 res = 'n'
 for lab, sub in helpers.subjects.items():
     if res.lower() == 'n' and sub.state == helpers.subjState.searching:
@@ -140,6 +140,8 @@ for lab, sub in helpers.subjects.items():
                 # print('returning control at seek1')
                 # break
                 # ##
+                # TODO -- testing 'record'
+                #helpers.execCommands(['record', 'continue'])
                 helpers.execCommands(['continue'])
                 #DELME
                 print('after continue, watch1.state and watch2.state are: ' +
@@ -147,6 +149,8 @@ for lab, sub in helpers.subjects.items():
                 #
                 if watch1.state == helpers.watchState.hitSeek:
                     estate = execState.seek2
+                    #TODO testing record on inf1
+ #                   helpers.execCommands(['record stop', 'record save inf1.rec'])
                     sub.toggle_inf()
                 else:
                     gdb.error('couldn\'t reach target in seek of inf ' + str(inf1))

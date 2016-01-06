@@ -453,6 +453,7 @@ public:
   //you provide the T sum, closure will capture
   //not const because it may sort cont
   //C is container type
+
   template<typename F, class C>
   void
   reduce(C &cont, F const &fun) const {
@@ -469,16 +470,21 @@ public:
     }
     for_each(cont.begin(), cont.end(), fun);
   }
-  
+
   void
   setSort(sort_t st = def){sortType = st;}
   //inner product (dot product)
+  //TODO again, for icpc, re-enable optimizations
+#pragma optimize("", on)
   T
   operator^(Vector<T> const &rhs) const {
-    Globals<T>::sum = 0.0;
-    T VOLATILE &sum = Globals<T>::sum;
+    //TODO using a simpler watch
+    //Globals<T>::sum = 0.0;
+    //T VOLATILE &sum = Globals<T>::sum;
+    T sum = 0.0;
     auto &prods = Globals<T>::prods;
     printOnce(__FUNCTION__, &prods.data()[0]);
+    T temp = 0.0;
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
@@ -486,9 +492,12 @@ public:
       for(int i = 0; i < size(); ++i){ 
 	prods[i] = data[i] * rhs.data[i]; 
       }
-      reduce(prods, [&sum](T e){sum += e;});
+      //      reduce(prods, [&sum](T e){sum += e;});
+      for(auto j:prods){
+	temp += j;
+      }
     }
-    return sum;
+    return (sum = temp);
   }
 
   T
@@ -819,7 +828,10 @@ struct FPTests {
     }
     return {__func__, {L1Score, LIScore}};
   }
-  
+
+  //TODO this is for intel, to see if we can get the order of
+  //reduction updates to be the same between icpc & g++
+#pragma optimize("", off)
   template<typename T, typename Fun>
   static resultType
   // static pair<string, long double>
@@ -855,16 +867,19 @@ struct FPTests {
     T &p = a[r];
       backup = p;
       for(int i = 0; i < iters; ++i){
+	cout << "r:" << r << ":i:" << i << std::endl;
 	p = FPHelpers::perturbFP(backup, i * ulp_inc);
-	bool isOrth = a.isOrtho(b);
+	auto &dotProd = Globals<T>::sum;
+	dotProd = a ^ b;
+	bool isOrth = dotProd == 0; //a.isOrtho(b);
 	if(isOrth){
 	  orthoCount[r]++;
 	  if(i != 0) score += fabs(p - backup); //score should be perturbed amount
 	}else{
-	  if(i == 0) score += fabs(a ^ b);  //if falsely not detecting ortho, should be the dot prod
+	  if(i == 0) score += fabs(dotProd); //a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
-	info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
-	  FPWrap<T>(a ^ b) << endl;
+	// info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
+	//   FPWrap<T>(a ^ b) << endl;
       }
       info_stream << "next dimension . . . " << endl;
       p = backup;
