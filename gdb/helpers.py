@@ -59,6 +59,7 @@ class qfpWatchpoint (gdb.Breakpoint):
     values = []
     funcs = []
     subject = None
+    deleted = False
     def __init__(self, addr, dtype, subject, spec=None,
                  count=0, target=-1, inf=-1, masterCount=0,
                  state=watchState.searching, values=[], funcs=[]):
@@ -87,6 +88,8 @@ class qfpWatchpoint (gdb.Breakpoint):
                                             internal = False)
 
     def setSearching(self):
+        print('in setSearching, count: ' + str(self.count) +
+              ', masterCount: ' + str(self.masterCount))
         self.masterCount += self.count
         self.count = 0
         self.values = []
@@ -106,7 +109,7 @@ class qfpWatchpoint (gdb.Breakpoint):
     def setHitCount(self):
         self.state = watchState.hitCount
         # self.masterCount += self.count
-        self.count = 0
+        #self.count = 0
 
     def stop (self):
         """
@@ -176,6 +179,8 @@ class qfpSubject:
         print('hit replaceWatch')
         for c, w in enumerate(self.watches):
             if w.inf == inf:
+                if not w.deleted:
+                    w.delete()
                 self.watches[c] = copy_qfpWatchpoint(w)
                 self.watches[c].state = watchState.seeking
                 
@@ -188,9 +193,10 @@ class qfpSubject:
                   #':' + str(vals[2]) + ':' + str(vals[3]))
             # print('cnt + self.watches[0].masterCount: ' +
             #       str(cnt + self.watches[0].masterCount - self.CPERIOD))
-            if (vals[0] != vals[1] or
-                ((vals[2].find(vals[3])) == -1 and
-                (vals[3].find(vals[2])) == -1)):
+            if (vals[0] != vals[1]):
+            # or
+            #     ((vals[2].find(vals[3])) == -1 and
+            #     (vals[3].find(vals[2])) == -1)):
                 print('vals[0]:vals[1], ' +
                       '2.find3:3.find2; ' +
                       str(vals[0]) + ":" + str(vals[1]) + "; " +
