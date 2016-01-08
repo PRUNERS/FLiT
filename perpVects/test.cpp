@@ -843,7 +843,7 @@ struct FPTests {
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0.0);
     //we use a double literal above as a workaround for Intel 15-16
-    //compierr bug:
+    //compiler bug:
     //https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
     size_t indexer = 0;
     Vector<T> a(dim, f);
