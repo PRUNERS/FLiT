@@ -863,13 +863,17 @@ struct FPTests {
     
     //QFP::checkpoint(Globals<T>::prods.data()[2], sizeof(T), "product", NO_WATCH);
 
+    auto &dotProd = Globals<T>::sum;
+
     for(int r = 0; r < dim; ++r){
     T &p = a[r];
       backup = p;
       for(int i = 0; i < iters; ++i){
-	cout << "r:" << r << ":i:" << i << std::endl;
+	//	cout << "r:" << r << ":i:" << i << std::endl;
 	p = FPHelpers::perturbFP(backup, i * ulp_inc);
-	auto &dotProd = Globals<T>::sum;
+	//Added this for force watchpoint hits every cycle (well, two).  We shouldn't really
+	//be hitting float min
+	dotProd = FLT_MIN;
 	dotProd = a ^ b;
 	bool isOrth = dotProd == 0; //a.isOrtho(b);
 	if(isOrth){
@@ -878,8 +882,8 @@ struct FPTests {
 	}else{
 	  if(i == 0) score += fabs(dotProd); //a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
-	// info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
-	//   FPWrap<T>(a ^ b) << endl;
+	info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
+	  FPWrap<T>(a ^ b) << endl;
       }
       info_stream << "next dimension . . . " << endl;
       p = backup;
