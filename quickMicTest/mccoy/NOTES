@@ -1,0 +1,9 @@
+To build, simply 'make'.
+
+This will work if your compiler was built for target mic.
+
+It will produce two binaries: test3.O2 and test3.O2.mic (first for native, 2nd for phi).
+
+To use, log into interactive node with 'idev'.
+
+Then, just run ./execute.bash.
