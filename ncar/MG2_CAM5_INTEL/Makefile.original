@@ -5,8 +5,8 @@ FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume b
 
 ALL_OBJS := kernel_driver.i.o int3.i.o micro_mg_cam.i.o wv_sat_methods.i.o shr_spfn_mod.i.o shr_kind_mod.i.o micro_mg2_0.i.o micro_mg_utils.i.o 
 
-# run: build
-# 	./$(EXE)
+run: build
+	./$(EXE)
 
 build: ${ALL_OBJS}
 	${FC} ${FC_FLAGS}   -o $(EXE) $^

@@ -1,38 +1,42 @@
 # Makefile for KGEN-generated kernel
 
 #FC := ifort
+EXE := kernel.gcc
 FC := gfortran
 #FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost -O2
-FC_FLAGS := -ffree-form -ffree-line-length-none -D__GFORTRAN__ -I./ -O2 -cpp -DQFPC
+FC_FLAGS := -ffree-form -ffree-line-length-none -D__GFORTRAN__ -I./ -O2 -cpp -DQFPD
 
-ALL_OBJS := kernel_driver.o micro_mg_cam.o wv_sat_methods.o shr_spfn_mod.o shr_kind_mod.o micro_mg2_0.o micro_mg_utils.o
+ALL_OBJS := kernel_driver.g.o int3.g.o micro_mg_cam.g.o wv_sat_methods.g.o shr_spfn_mod.g.o shr_kind_mod.g.o micro_mg2_0.g.o micro_mg_utils.g.o
 
-run: build
-	./kernel.exe
+# run: build
+# 	./$(EXE)
 
 build: ${ALL_OBJS}
-	${FC} ${FC_FLAGS}   -o kernel.exe $^
+	${FC} ${FC_FLAGS}   -o $(EXE) $^
 
-kernel_driver.o: kernel_driver.f90 micro_mg_cam.o wv_sat_methods.o shr_spfn_mod.o shr_kind_mod.o micro_mg2_0.o micro_mg_utils.o
+int3.g.o: int3.c
+	gcc -O2 -c -o $@ $<
+
+kernel_driver.g.o: kernel_driver.f90 micro_mg_cam.g.o wv_sat_methods.g.o shr_spfn_mod.g.o shr_kind_mod.g.o micro_mg2_0.g.o micro_mg_utils.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
-micro_mg_cam.o: micro_mg_cam.F90 micro_mg2_0.o shr_kind_mod.o
+micro_mg_cam.g.o: micro_mg_cam.F90 micro_mg2_0.g.o shr_kind_mod.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
-wv_sat_methods.o: wv_sat_methods.F90 
+wv_sat_methods.g.o: wv_sat_methods.F90 
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
-shr_spfn_mod.o: shr_spfn_mod.F90 shr_kind_mod.o
+shr_spfn_mod.g.o: shr_spfn_mod.F90 shr_kind_mod.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
-shr_kind_mod.o: shr_kind_mod.F90 
+shr_kind_mod.g.o: shr_kind_mod.F90 
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
-micro_mg2_0.o: micro_mg2_0.F90 micro_mg_utils.o wv_sat_methods.o shr_spfn_mod.o
+micro_mg2_0.g.o: micro_mg2_0.F90 micro_mg_utils.g.o wv_sat_methods.g.o shr_spfn_mod.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
-micro_mg_utils.o: micro_mg_utils.F90 shr_spfn_mod.o
+micro_mg_utils.g.o: micro_mg_utils.F90 shr_spfn_mod.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
 clean:
-	rm -f kernel.exe *.mod *.o
+	rm -f $(EXE) *.mod *.g.o
