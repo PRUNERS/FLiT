@@ -975,8 +975,8 @@
                      END IF
 #endif
 #ifdef QFPD
-                     IF ( printvar == watchv.var ) then
-                        CALL checkpoint(var(watchv.indx1, watchv.indx2), watchv.var)
+                     IF ( printvar == watchv%var ) then
+                        CALL checkpoint(LOC(var(watchv%indx1, watchv%indx2)), watchv%var)
                      END IF
 #endif
                 END IF
@@ -1052,8 +1052,8 @@
                    END IF
 #endif
 #ifdef QFPD
-                   IF ( printvar == watchv.var ) then
-                      CALL checkpoint(var(watchv.indx1, watchv.indx2), watchv.var)
+                   IF ( printvar == watchv%var ) then
+                      CALL checkpoint(LOC(var(watchv%indx1)), watchv%var)
                    END IF
 #endif
                 END IF
@@ -1243,13 +1243,13 @@
 #ifdef QFPD
         SUBROUTINE checkpoint(addr, label)
           character(*), intent(in) :: label
-          real(KIND=r8), intent(in), pointer :: addr
-          EXTERNAL INT13
+          integer(8), intent(in) :: addr
+          EXTERNAL int3
           
-          WRITE(0,*) "***checkAddr:", LOC(addr)
+          WRITE(0,*) "***checkAddr:", addr
           WRITE(0,*) "***checkLen: 8"
-          WRITE(0,*) "***checkLab:", label
-          CALL INT3()
+          WRITE(0,*) "***checkLab:", TRIM(label)
+          CALL int3()
         END SUBROUTINE checkpoint
 #endif
 

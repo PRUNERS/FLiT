@@ -28,15 +28,15 @@ PROGRAM kernel_driver
     REAL(KIND=r8) :: dtime
 #ifdef QFPD
     type(watch) :: watchv
-    character(*) :: temp
-    character(*) :: input_set
-    
-    GET_COMMAND_ARGUMENT(1, watchv.var)
-    GET_COMMAND_ARGUMENT(2, temp)
-    READ( temp, '(i10)') watchv.indx1
-    GET_COMMAND_ARGUMENT(3, temp)
-    READ( temp, '(i10)') watchv.indx2
-    GET_COMMAND_ARGUMENT(4, input_set)
+    character(128) :: temp
+    character(128) :: input_set
+    !we're passing VAR INDX1 INDX2 DATASET
+    CALL GET_COMMAND_ARGUMENT(1, watchv%var)
+    CALL GET_COMMAND_ARGUMENT(2, temp)
+    READ( temp, '(i10)') watchv%indx1
+    CALL GET_COMMAND_ARGUMENT(3, temp)
+    READ( temp, '(i10)') watchv%indx2
+    CALL GET_COMMAND_ARGUMENT(4, input_set)
 #endif
 
     

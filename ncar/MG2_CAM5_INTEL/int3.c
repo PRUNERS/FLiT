@@ -1,3 +1,3 @@
-void INT3(){
+void int3_(){
   asm("INT $3");
 }
