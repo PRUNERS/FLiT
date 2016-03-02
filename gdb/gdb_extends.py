@@ -8,12 +8,12 @@
 import gdb
 import os
 import sys
+print('python version is: ' + str(sys.version_info))
 sys.path.append(os.getcwd())
-import helpers
 from enum import Enum
+import helpers
 
 #data structures
-
 
 #this is the event handler for the initial setup -- it
 #catches the INT $3 planted in the checkpoint instrumentation
@@ -21,9 +21,14 @@ gdb.events.stop.connect(helpers.catch_trap)
 
 #this event handler notifies us when an inferior exits
 gdb.events.exited.connect(helpers.catch_term)
+infCmdLine = os.environ['PARAMS'] + ' 2> '
+cl1 = infCmdLine + 'inf1.watch'
+cl2 = infCmdLine + 'inf2.watch'
 
-helpers.execCommands(['run 2> inf1.watch', 'add-inferior -exec inf2',
-                       'inferior 2', 'run 2> inf2.watch'])
+print('cl1 & cl2 are:' + cl1 + ';' + cl2)
+
+helpers.execCommands(['run ' + cl1, 'add-inferior -exec inf2',
+                       'inferior 2', 'run ' + cl2])
 
 #at this point, either:
 ## both inferiors have terminated

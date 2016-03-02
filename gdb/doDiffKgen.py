@@ -8,11 +8,11 @@ import sys
 from subprocess import check_output
 import os
 
-def usage():          #  1      2      3         4       5       6
-    print(sys.argv[0] + '[exe0] [exe1] [varname] [indx0] [indx1] [emacsNoWindow = t|f]')
+def usage():          #  1      2      3         4       5       6         7
+    print(sys.argv[0] + '[exe0] [exe1] [varname] [indx0] [indx1] [dataset] [emacsNoWindow = t|f]')
 
 
-if len(sys.argv) < 6 or len(sys.argv) > 7:
+if len(sys.argv) < 7 or len(sys.argv) > 8:
     usage()
     exit(1)
 
@@ -23,13 +23,14 @@ ln = check_output('which ln', shell=True)[:-1]
 topDir = os.path.dirname(__file__)
 inf1 = os.path.realpath(sys.argv[1])
 inf2 = os.path.realpath(sys.argv[2])
-var = sys.argv[3]
-i1 = sys.argv[4]
-i2 = sys.argv[5]
+os.environ['PARAMS'] = sys.argv[3] + ' ' + sys.argv[4] + ' ' + sys.argv[5] + ' ' + sys.argv[6]
+# var = sys.argv[3]
+# i1 = sys.argv[4]
+# i2 = sys.argv[5]
 
 NW = True
-if len(sys.argv) == 7:
-    if sys.argv[6] == 'f':
+if len(sys.argv) == 8:
+    if sys.argv[7] == 'f':
         NW = False
 
 sys.path.append(topDir)
@@ -42,7 +43,7 @@ try:
     print(check_output([ln, '-sf', inf1, 'inf1']))
     print(check_output([ln, '-sf', inf2, 'inf2']))
     print('--eval="(gdb \"gdb -i=mi\")"')
-    cmd = [emacs, '--eval=(gdb "gdb -i=mi --args inf1 ' + var + ' ' + i1 + ' ' + i2 + '")']
+    cmd = [emacs, '--eval=(gdb "gdb -i=mi inf1")']
     if NW:
         cmd.append('-nw')
     cmd_out = check_output(cmd)
