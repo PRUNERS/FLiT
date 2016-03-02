@@ -1,7 +1,9 @@
 # Makefile for KGEN-generated kernel
 EXE := kernel.intel
+MODDIR := ./intel_mod
 FC := ifort
-FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost -O2 -fpp -DQFPD
+FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost -fpp -DQFPD -g -module $(MODDIR) -debug all
+C_FLAGS := -ggdb -O2
 
 ALL_OBJS := kernel_driver.i.o int3.i.o micro_mg_cam.i.o wv_sat_methods.i.o shr_spfn_mod.i.o shr_kind_mod.i.o micro_mg2_0.i.o micro_mg_utils.i.o 
 
@@ -12,7 +14,7 @@ build: ${ALL_OBJS}
 	${FC} ${FC_FLAGS}   -o $(EXE) $^
 
 int3.i.o: int3.c
-	icc -c -o $@ $<
+	icc $(C_FLAGS) -c -o $@ $<
 
 kernel_driver.i.o: kernel_driver.f90 micro_mg_cam.i.o wv_sat_methods.i.o shr_spfn_mod.i.o shr_kind_mod.i.o micro_mg2_0.i.o micro_mg_utils.i.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
@@ -36,4 +38,4 @@ micro_mg_utils.i.o: micro_mg_utils.F90 shr_spfn_mod.i.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
 clean:
-	rm -f $(EXE) *.mod *.i.o
+	rm -f $(EXE) $(MODDIR)/*.mod *.i.o

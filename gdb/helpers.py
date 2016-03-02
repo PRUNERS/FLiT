@@ -37,11 +37,15 @@ def copy_qfpWatchpoint(orig):
 def infBeyondMain():
     # we need to walk the stack to the bottom to make sure we
     # haven't returned from main.  May be expensive
-    curFrame = gdb.newest_frame()
-    while curFrame != None:
+    curFrame = gdb.newest_frame()  
+    while curFrame != None and curFrame.function() != None:
+        print('in infBeyondMain, curFrame: ' + str(curFrame), ' name: ' + str(curFrame.name()))
 #        print('infBeyondMain(): frame is ' + curFrame.function().name)
+# This is a total hack for NCAR KGen.  ifort doesn't have a frame named main, so we'll
+# cheat and use the top level function in a KGen kernel: kernel_driver
         if (curFrame.function().name == 'main' or
-            curFrame.function().name == 'main(int, char**)'):
+            curFrame.function().name == 'main(int, char**)' or
+            curFrame.function().name == 'kernel_driver'):
             return False
         else:
             curFrame = curFrame.older()
@@ -150,12 +154,12 @@ class qfpWatchpoint (gdb.Breakpoint):
                 return False
         print('handling inf: ' + str(self.inf) + ' at count: ' +
               str(self.count + self.masterCount))
-        print('in func: ' + gdb.newest_frame().name())
+        print('in func: ' + str(gdb.newest_frame().name))
         print(self.spec)
         val = gdb.parse_and_eval(self.spec)
         print('new val is: ' + str(val))
         self.values.append(val)
-        self.funcs.append(gdb.newest_frame().name())
+        self.funcs.append(gdb.newest_frame().name)
         self.count += 1
         if self.count == self.subject.CPERIOD:
             self.setHitCount()
@@ -183,11 +187,21 @@ class qfpSubject:
                     w.delete()
                 self.watches[c] = copy_qfpWatchpoint(w)
                 self.watches[c].state = watchState.seeking
+
+    def printValues(self):
+        print('printValues:')
+        for v1, v2 in zip(self.watches[0].values, self.watches[1].values):
+            print(str(v1) + ':' + str(v2))
                 
     def getDivergence(self):
         values = []
         funs = []
         divs = []
+        print('in getDivergence, len(watches[0].values) is: '
+
+              + str(len(self.watches[0].values)))
+        self.printValues()
+        print('\tlen(watches[1].values) is: ' + str(len(self.watches[1].values)))
         for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values, self.watches[0].funcs, self.watches[1].funcs)):
             #print('comparing v1 v2, f1, f2:' + str(vals[0]) + ':' + str(vals[1]) +
                   #':' + str(vals[2]) + ':' + str(vals[3]))
@@ -315,8 +329,8 @@ def catch_trap(event):
     f = open('inf' + str(cur.num) + '.watch', 'r')
     wdata = f.read()
     print('read watch file: ' + wdata)
-    m = re.match(r"[*]+checkAddr:(\w+)\n[*]+checkLen:(\w+)\n" +
-                 "[*]+checkLab:(\w+)\n",
+    m = re.match(r"[*\s]+checkAddr:[\s]*(\w+)\n[*\s]+checkLen:[\s]*(\w+)\n" +
+                 "[*\s]+checkLab:[\s]*(\w+)\n",
                  wdata)
     addr = m.group(1).strip()
     leng = m.group(2).strip()

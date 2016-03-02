@@ -2,9 +2,11 @@
 
 #FC := ifort
 EXE := kernel.gcc
+MODDIR := ./gcc_modfiles
 FC := gfortran
-#FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost -O2
-FC_FLAGS := -ffree-form -ffree-line-length-none -D__GFORTRAN__ -I./ -O2 -cpp -DQFPD
+#FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost 
+FC_FLAGS := -ffree-form -ffree-line-length-none -D__GFORTRAN__ -I./ -O2 -cpp -DQFPD -ggdb -J $(MODDIR)
+C_FLAGS := -O2 -ggdb
 
 ALL_OBJS := kernel_driver.g.o int3.g.o micro_mg_cam.g.o wv_sat_methods.g.o shr_spfn_mod.g.o shr_kind_mod.g.o micro_mg2_0.g.o micro_mg_utils.g.o
 
@@ -15,7 +17,7 @@ build: ${ALL_OBJS}
 	${FC} ${FC_FLAGS}   -o $(EXE) $^
 
 int3.g.o: int3.c
-	gcc -O2 -c -o $@ $<
+	gcc $(C_FLAGS) -c -o $@ $<
 
 kernel_driver.g.o: kernel_driver.f90 micro_mg_cam.g.o wv_sat_methods.g.o shr_spfn_mod.g.o shr_kind_mod.g.o micro_mg2_0.g.o micro_mg_utils.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
@@ -39,4 +41,4 @@ micro_mg_utils.g.o: micro_mg_utils.F90 shr_spfn_mod.g.o
 	${FC} ${FC_FLAGS} -c -o $@ $<
 
 clean:
-	rm -f $(EXE) *.mod *.g.o
+	rm -f $(EXE) $(MODDIR)/*.mod *.g.o
