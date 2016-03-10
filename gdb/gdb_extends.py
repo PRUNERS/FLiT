@@ -115,7 +115,7 @@ for lab, sub in helpers.subjects.items():
                 print('hit analyze state with div = ' + str(div))
                 if div != -1: #means that the user chose to focus on identified div
                     gdb.events.exited.disconnect(helpers.catch_term)
-                    sub.setSeeking(div)
+                    sub.setSeeking(div, cl1, cl2)
                     gdb.events.exited.connect(helpers.catch_term)
                     watch1 = sub.watches[0]
                     watch2 = sub.watches[1]

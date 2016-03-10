@@ -37,15 +37,21 @@ def copy_qfpWatchpoint(orig):
 def infBeyondMain():
     # we need to walk the stack to the bottom to make sure we
     # haven't returned from main.  May be expensive
-    curFrame = gdb.newest_frame()  
-    while curFrame != None and curFrame.function() != None:
+    curFrame = gdb.newest_frame()
+    print('in infBeyondMain, curFrame is: ' + str(curFrame) + ', curFrame.name:' + curFrame.name())
+    print('\t and curFrame.function() is: ' + str(curFrame.function()))
+#    while curFrame != None and curFrame.function() != None:
+    while curFrame != None and curFrame.name() != None:
         print('in infBeyondMain, curFrame: ' + str(curFrame), ' name: ' + str(curFrame.name()))
 #        print('infBeyondMain(): frame is ' + curFrame.function().name)
 # This is a total hack for NCAR KGen.  ifort doesn't have a frame named main, so we'll
 # cheat and use the top level function in a KGen kernel: kernel_driver
-        if (curFrame.function().name == 'main' or
-            curFrame.function().name == 'main(int, char**)' or
-            curFrame.function().name == 'kernel_driver'):
+        if (curFrame.name() == 'main' or
+            curFrame.name() == 'main(int, char**)' or
+            curFrame.name() == 'kernel_driver'):
+        # if (curFrame.function().name == 'main' or
+        #     curFrame.function().name == 'main(int, char**)' or
+        #     curFrame.function().name == 'kernel_driver'):
             return False
         else:
             curFrame = curFrame.older()
@@ -182,10 +188,15 @@ class qfpSubject:
     def replaceWatch(self, inf):
         print('hit replaceWatch')
         for c, w in enumerate(self.watches):
+            print('replaceWatch, watch: ' + str(w))
             if w.inf == inf:
+                tmp = copy_qfpWatchpoint(w)
                 if not w.deleted:
-                    w.delete()
-                self.watches[c] = copy_qfpWatchpoint(w)
+                    print('not deleted')
+ #                   w.delete()
+#                self.watches[c] = copy_qfpWatchpoint(w)
+                self.watches[c] = tmp
+                print('copied watch')
                 self.watches[c].state = watchState.seeking
 
     def printValues(self):
@@ -211,11 +222,11 @@ class qfpSubject:
             # or
             #     ((vals[2].find(vals[3])) == -1 and
             #     (vals[3].find(vals[2])) == -1)):
-                print('vals[0]:vals[1], ' +
-                      '2.find3:3.find2; ' +
-                      str(vals[0]) + ":" + str(vals[1]) + "; " +
-                      str(vals[2].find(vals[3])) + ":" +
-                      str(vals[3].find(vals[2])))
+                # print('vals[0]:vals[1], ' +
+                #       '2.find3:3.find2; ' +
+                #       str(vals[0]) + ":" + str(vals[1]) + "; " +
+                #       str(vals[2].find(vals[3])) + ":" +
+                #       str(vals[3].find(vals[2])))
                 
                 values.append([vals[0], vals[1]])
                 funs.append([vals[2], vals[3]])
@@ -248,7 +259,7 @@ class qfpSubject:
                 
     # set record, restart inferiors,
     # reset counts and targets
-    def setSeeking(self, target):
+    def setSeeking(self, target, cmdLine1, cmdLine2):
         self.state = subjState.seeking
         #we need to rest things -- delete watch points and let
         #catch_trap add the new watchpoints that are
@@ -261,11 +272,13 @@ class qfpSubject:
         #TODO we removed record, I suspect at switching inf for next seek,
         #we'll have to save the state, stop, and rerecord for inf2
         #(there is a problem with threads disappearing in inf2)
-        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch'])
+#        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch'])
+        execCommands(['run ' + cmdLine1])
         print('finished 1 for watch')
         self.toggle_inf()
         print('running 2 to establish watch')
-        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch'])
+#        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch'])
+        execCommands(['run ' + cmdLine2])
         print('finished 2 to watch')
         self.toggle_inf()
         for w in self.watches:
