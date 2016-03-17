@@ -88,11 +88,15 @@
             real(kind=kgen_dp) :: tolerance
             real(kind=kgen_dp) :: minvalue
          end type check_t
+         
+         ! New for QFP
          type, public :: watch
             character(len=128) :: var
             integer :: indx1
             integer :: indx2
          end type watch
+         ! END QFP
+         
         ! Version number for MG.
         ! Second part of version number.
         ! type of precipitation fraction method
@@ -189,7 +193,7 @@
 
         !===============================================================================
 
-        SUBROUTINE micro_mg_cam_tend(dtime, kgen_unit, watchvar)
+        SUBROUTINE micro_mg_cam_tend(dtime, kgen_unit, test_file, watchvar)
             USE micro_mg2_0, ONLY: micro_mg_tend2_0 => micro_mg_tend
             integer, intent(in) :: kgen_unit
             INTEGER*8 :: kgen_intvar, start_clock, stop_clock, rate_clock
@@ -197,6 +201,7 @@
             REAL(KIND=kgen_dp) :: tolerance
             REAL(KIND=r8), intent(in) :: dtime
             type(watch), intent(in), optional :: watchvar
+            CHARACTER(*), intent(in), optional :: test_file
             ! Local variables
             ! ice nucleation number
             ! ice nucleation number (homogeneous)
@@ -775,91 +780,91 @@
                         ! call to kernel
                         CALL micro_mg_tend2_0(mgncol, nlev, dtime / num_steps, packed_t, packed_q, packed_qc, packed_qi, packed_nc, packed_ni, packed_qr, packed_qs, packed_nr, packed_ns, packed_relvar, packed_accre_enhan, packed_p, packed_pdel, packed_cldn, packed_liqcldf, packed_icecldf, packed_rate1ord_cw2pr_st, packed_naai, packed_npccn, packed_rndst, packed_nacon, packed_tlat, packed_qvlat, packed_qctend, packed_qitend, packed_nctend, packed_nitend, packed_qrtend, packed_qstend, packed_nrtend, packed_nstend, packed_rel, rel_fn_dum, packed_rei, packed_prect, packed_preci, packed_nevapr, packed_evapsnow, packed_prain, packed_prodsnow, packed_cmeout, packed_dei, packed_mu, packed_lambdac, packed_qsout, packed_des, packed_rflx, packed_sflx, packed_qrout, reff_rain_dum, reff_snow_dum, packed_qcsevap, packed_qisevap, packed_qvres, packed_cmei, packed_vtrmc, packed_vtrmi, packed_umr, packed_ums, packed_qcsedten, packed_qisedten, packed_qrsedten, packed_qssedten, packed_pra, packed_prc, packed_mnuccc, packed_mnucct, packed_msacwi, packed_psacws, packed_bergs, packed_berg, packed_melt, packed_homo, packed_qcres, packed_prci, packed_prai, packed_qires, packed_mnuccr, packed_pracs, packed_meltsdt, packed_frzrdt, packed_mnuccd, packed_nrout, packed_nsout, packed_refl, packed_arefl, packed_areflz, packed_frefl, packed_csrfl, packed_acsrfl, packed_fcsrfl, packed_rercld, packed_ncai, packed_ncal, packed_qrout2, packed_qsout2, packed_nrout2, packed_nsout2, drout_dum, dsout2_dum, packed_freqs, packed_freqr, packed_nfice, packed_qcrat, errstring, packed_tnd_qsnow, packed_tnd_nsnow, packed_re_ice, packed_prer_evap, packed_frzimm, packed_frzcnt, packed_frzdep)
                         ! kernel verification for output variables
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rate1ord_cw2pr_st", check_status, packed_rate1ord_cw2pr_st, ref_packed_rate1ord_cw2pr_st)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_tlat", check_status, packed_tlat, ref_packed_tlat)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qvlat", check_status, packed_qvlat, ref_packed_qvlat)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qctend", check_status, packed_qctend, ref_packed_qctend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qitend", check_status, packed_qitend, ref_packed_qitend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nctend", check_status, packed_nctend, ref_packed_nctend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nitend", check_status, packed_nitend, ref_packed_nitend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrtend", check_status, packed_qrtend, ref_packed_qrtend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qstend", check_status, packed_qstend, ref_packed_qstend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nrtend", check_status, packed_nrtend, ref_packed_nrtend)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nstend", check_status, packed_nstend, ref_packed_nstend)
-                        CALL kgen_verify_real_r8_dim1_alloc( "packed_prect", check_status, packed_prect, ref_packed_prect)
-                        CALL kgen_verify_real_r8_dim1_alloc( "packed_preci", check_status, packed_preci, ref_packed_preci)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nevapr", check_status, packed_nevapr, ref_packed_nevapr)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_evapsnow", check_status, packed_evapsnow, ref_packed_evapsnow)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prain", check_status, packed_prain, ref_packed_prain)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prodsnow", check_status, packed_prodsnow, ref_packed_prodsnow)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_cmeout", check_status, packed_cmeout, ref_packed_cmeout)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qsout", check_status, packed_qsout, ref_packed_qsout)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rflx", check_status, packed_rflx, ref_packed_rflx)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_sflx", check_status, packed_sflx, ref_packed_sflx)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrout", check_status, packed_qrout, ref_packed_qrout)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcsevap", check_status, packed_qcsevap, ref_packed_qcsevap)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qisevap", check_status, packed_qisevap, ref_packed_qisevap)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qvres", check_status, packed_qvres, ref_packed_qvres)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_cmei", check_status, packed_cmei, ref_packed_cmei)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_vtrmc", check_status, packed_vtrmc, ref_packed_vtrmc)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_vtrmi", check_status, packed_vtrmi, ref_packed_vtrmi)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcsedten", check_status, packed_qcsedten, ref_packed_qcsedten)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qisedten", check_status, packed_qisedten, ref_packed_qisedten)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrsedten", check_status, packed_qrsedten, ref_packed_qrsedten)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qssedten", check_status, packed_qssedten, ref_packed_qssedten)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_umr", check_status, packed_umr, ref_packed_umr)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_ums", check_status, packed_ums, ref_packed_ums)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_pra", check_status, packed_pra, ref_packed_pra)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prc", check_status, packed_prc, ref_packed_prc)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnuccc", check_status, packed_mnuccc, ref_packed_mnuccc)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnucct", check_status, packed_mnucct, ref_packed_mnucct)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_msacwi", check_status, packed_msacwi, ref_packed_msacwi)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_psacws", check_status, packed_psacws, ref_packed_psacws)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_bergs", check_status, packed_bergs, ref_packed_bergs)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_berg", check_status, packed_berg, ref_packed_berg)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_melt", check_status, packed_melt, ref_packed_melt)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_homo", check_status, packed_homo, ref_packed_homo)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcres", check_status, packed_qcres, ref_packed_qcres)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prci", check_status, packed_prci, ref_packed_prci)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prai", check_status, packed_prai, ref_packed_prai)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qires", check_status, packed_qires, ref_packed_qires)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnuccr", check_status, packed_mnuccr, ref_packed_mnuccr)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_pracs", check_status, packed_pracs, ref_packed_pracs)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_meltsdt", check_status, packed_meltsdt, ref_packed_meltsdt)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_frzrdt", check_status, packed_frzrdt, ref_packed_frzrdt)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnuccd", check_status, packed_mnuccd, ref_packed_mnuccd)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nrout", check_status, packed_nrout, ref_packed_nrout)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nsout", check_status, packed_nsout, ref_packed_nsout)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_refl", check_status, packed_refl, ref_packed_refl)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_arefl", check_status, packed_arefl, ref_packed_arefl)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_areflz", check_status, packed_areflz, ref_packed_areflz)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_frefl", check_status, packed_frefl, ref_packed_frefl)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_csrfl", check_status, packed_csrfl, ref_packed_csrfl)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_acsrfl", check_status, packed_acsrfl, ref_packed_acsrfl)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_fcsrfl", check_status, packed_fcsrfl, ref_packed_fcsrfl)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rercld", check_status, packed_rercld, ref_packed_rercld)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_ncai", check_status, packed_ncai, ref_packed_ncai)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_ncal", check_status, packed_ncal, ref_packed_ncal)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrout2", check_status, packed_qrout2, ref_packed_qrout2)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qsout2", check_status, packed_qsout2, ref_packed_qsout2)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nrout2", check_status, packed_nrout2, ref_packed_nrout2)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nsout2", check_status, packed_nsout2, ref_packed_nsout2)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_freqs", check_status, packed_freqs, ref_packed_freqs)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_freqr", check_status, packed_freqr, ref_packed_freqr)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nfice", check_status, packed_nfice, ref_packed_nfice)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prer_evap", check_status, packed_prer_evap, ref_packed_prer_evap)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcrat", check_status, packed_qcrat, ref_packed_qcrat)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rel", check_status, packed_rel, ref_packed_rel)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rei", check_status, packed_rei, ref_packed_rei)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_lambdac", check_status, packed_lambdac, ref_packed_lambdac)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mu", check_status, packed_mu, ref_packed_mu)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_des", check_status, packed_des, ref_packed_des)
-                        CALL kgen_verify_real_r8_dim2_alloc( "packed_dei", check_status, packed_dei, ref_packed_dei)
-                        CALL kgen_verify_real_r8_dim2_alloc( "rel_fn_dum", check_status, rel_fn_dum, ref_rel_fn_dum)
-                        CALL kgen_verify_real_r8_dim2_alloc( "dsout2_dum", check_status, dsout2_dum, ref_dsout2_dum)
-                        CALL kgen_verify_real_r8_dim2_alloc( "drout_dum", check_status, drout_dum, ref_drout_dum)
-                        CALL kgen_verify_real_r8_dim2_alloc( "reff_rain_dum", check_status, reff_rain_dum, ref_reff_rain_dum)
-                        CALL kgen_verify_real_r8_dim2_alloc( "reff_snow_dum", check_status, reff_snow_dum, ref_reff_snow_dum)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rate1ord_cw2pr_st", check_status, packed_rate1ord_cw2pr_st, ref_packed_rate1ord_cw2pr_st, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_tlat", check_status, packed_tlat, ref_packed_tlat, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qvlat", check_status, packed_qvlat, ref_packed_qvlat, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qctend", check_status, packed_qctend, ref_packed_qctend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qitend", check_status, packed_qitend, ref_packed_qitend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nctend", check_status, packed_nctend, ref_packed_nctend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nitend", check_status, packed_nitend, ref_packed_nitend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrtend", check_status, packed_qrtend, ref_packed_qrtend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qstend", check_status, packed_qstend, ref_packed_qstend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nrtend", check_status, packed_nrtend, ref_packed_nrtend, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nstend", check_status, packed_nstend, ref_packed_nstend, test_file)
+                        CALL kgen_verify_real_r8_dim1_alloc( "packed_prect", check_status, packed_prect, ref_packed_prect, test_file)
+                        CALL kgen_verify_real_r8_dim1_alloc( "packed_preci", check_status, packed_preci, ref_packed_preci, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nevapr", check_status, packed_nevapr, ref_packed_nevapr, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_evapsnow", check_status, packed_evapsnow, ref_packed_evapsnow, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prain", check_status, packed_prain, ref_packed_prain, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prodsnow", check_status, packed_prodsnow, ref_packed_prodsnow, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_cmeout", check_status, packed_cmeout, ref_packed_cmeout, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qsout", check_status, packed_qsout, ref_packed_qsout, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rflx", check_status, packed_rflx, ref_packed_rflx, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_sflx", check_status, packed_sflx, ref_packed_sflx, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrout", check_status, packed_qrout, ref_packed_qrout, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcsevap", check_status, packed_qcsevap, ref_packed_qcsevap, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qisevap", check_status, packed_qisevap, ref_packed_qisevap, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qvres", check_status, packed_qvres, ref_packed_qvres, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_cmei", check_status, packed_cmei, ref_packed_cmei, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_vtrmc", check_status, packed_vtrmc, ref_packed_vtrmc, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_vtrmi", check_status, packed_vtrmi, ref_packed_vtrmi, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcsedten", check_status, packed_qcsedten, ref_packed_qcsedten, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qisedten", check_status, packed_qisedten, ref_packed_qisedten, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrsedten", check_status, packed_qrsedten, ref_packed_qrsedten, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qssedten", check_status, packed_qssedten, ref_packed_qssedten, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_umr", check_status, packed_umr, ref_packed_umr, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_ums", check_status, packed_ums, ref_packed_ums, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_pra", check_status, packed_pra, ref_packed_pra, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prc", check_status, packed_prc, ref_packed_prc, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnuccc", check_status, packed_mnuccc, ref_packed_mnuccc, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnucct", check_status, packed_mnucct, ref_packed_mnucct, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_msacwi", check_status, packed_msacwi, ref_packed_msacwi, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_psacws", check_status, packed_psacws, ref_packed_psacws, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_bergs", check_status, packed_bergs, ref_packed_bergs, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_berg", check_status, packed_berg, ref_packed_berg, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_melt", check_status, packed_melt, ref_packed_melt, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_homo", check_status, packed_homo, ref_packed_homo, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcres", check_status, packed_qcres, ref_packed_qcres, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prci", check_status, packed_prci, ref_packed_prci, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prai", check_status, packed_prai, ref_packed_prai, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qires", check_status, packed_qires, ref_packed_qires, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnuccr", check_status, packed_mnuccr, ref_packed_mnuccr, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_pracs", check_status, packed_pracs, ref_packed_pracs, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_meltsdt", check_status, packed_meltsdt, ref_packed_meltsdt, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_frzrdt", check_status, packed_frzrdt, ref_packed_frzrdt, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mnuccd", check_status, packed_mnuccd, ref_packed_mnuccd, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nrout", check_status, packed_nrout, ref_packed_nrout, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nsout", check_status, packed_nsout, ref_packed_nsout, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_refl", check_status, packed_refl, ref_packed_refl, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_arefl", check_status, packed_arefl, ref_packed_arefl, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_areflz", check_status, packed_areflz, ref_packed_areflz, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_frefl", check_status, packed_frefl, ref_packed_frefl, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_csrfl", check_status, packed_csrfl, ref_packed_csrfl, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_acsrfl", check_status, packed_acsrfl, ref_packed_acsrfl, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_fcsrfl", check_status, packed_fcsrfl, ref_packed_fcsrfl, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rercld", check_status, packed_rercld, ref_packed_rercld, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_ncai", check_status, packed_ncai, ref_packed_ncai, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_ncal", check_status, packed_ncal, ref_packed_ncal, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qrout2", check_status, packed_qrout2, ref_packed_qrout2, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qsout2", check_status, packed_qsout2, ref_packed_qsout2, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nrout2", check_status, packed_nrout2, ref_packed_nrout2, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nsout2", check_status, packed_nsout2, ref_packed_nsout2, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_freqs", check_status, packed_freqs, ref_packed_freqs, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_freqr", check_status, packed_freqr, ref_packed_freqr, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_nfice", check_status, packed_nfice, ref_packed_nfice, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_prer_evap", check_status, packed_prer_evap, ref_packed_prer_evap, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_qcrat", check_status, packed_qcrat, ref_packed_qcrat, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rel", check_status, packed_rel, ref_packed_rel, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_rei", check_status, packed_rei, ref_packed_rei, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_lambdac", check_status, packed_lambdac, ref_packed_lambdac, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_mu", check_status, packed_mu, ref_packed_mu, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_des", check_status, packed_des, ref_packed_des, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "packed_dei", check_status, packed_dei, ref_packed_dei, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "rel_fn_dum", check_status, rel_fn_dum, ref_rel_fn_dum, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "dsout2_dum", check_status, dsout2_dum, ref_dsout2_dum, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "drout_dum", check_status, drout_dum, ref_drout_dum, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "reff_rain_dum", check_status, reff_rain_dum, ref_reff_rain_dum, test_file)
+                        CALL kgen_verify_real_r8_dim2_alloc( "reff_snow_dum", check_status, reff_snow_dum, ref_reff_snow_dum, test_file)
                         CALL kgen_verify_character( "errstring", check_status, errstring, ref_errstring)
                         CALL kgen_print_check("micro_mg_tend", check_status)
                         CALL system_clock(start_clock, rate_clock)
@@ -1063,9 +1068,10 @@
 
 
         ! verify subroutines
-            SUBROUTINE kgen_verify_real_r8_dim2_alloc( varname, check_status, var, ref_var)
+            SUBROUTINE kgen_verify_real_r8_dim2_alloc( varname, check_status, var, ref_var, test_file)
                 character(*), intent(in) :: varname
                 type(check_t), intent(inout) :: check_status
+                character(*), intent(in), OPTIONAL :: test_file
                 real(KIND=r8), intent(in), DIMENSION(:,:), ALLOCATABLE :: var, ref_var
                 real(KIND=r8) :: nrmsdiff, rmsdiff
                 real(KIND=r8), allocatable, DIMENSION(:,:) :: temp, temp2
@@ -1074,7 +1080,7 @@
                 integer :: vi, vj
 #endif
                 IF ( ALLOCATED(var) ) THEN
-                check_status%numTotal = check_status%numTotal + 1
+                   check_status%numTotal = check_status%numTotal + 1
                 IF ( ALL( var == ref_var ) ) THEN
                 
                    check_status%numIdentical = check_status%numIdentical + 1
@@ -1125,7 +1131,7 @@
                         DO vi = 1, size(var, 1)
                            DO vj = 1, size(var, 2) 
                               if(sqrt(temp2(vi, vj)) > check_status%tolerance) then
-                                 write(*,*) trim(adjustl(varname)), " ", vi, " ", vj
+                                 write(*,*) '["', trim(test_file), '","', trim(varname), '",', vi, ',', vj, ',', sqrt(temp2(vi, vj)), '],'
                               endif
                            end do
                         end do
@@ -1139,10 +1145,11 @@
                 END IF
             END SUBROUTINE kgen_verify_real_r8_dim2_alloc
 
-            SUBROUTINE kgen_verify_real_r8_dim1_alloc( varname, check_status, var, ref_var)
+            SUBROUTINE kgen_verify_real_r8_dim1_alloc( varname, check_status, var, ref_var, test_file)
                 character(*), intent(in) :: varname
                 type(check_t), intent(inout) :: check_status
                 real(KIND=r8), intent(in), DIMENSION(:), ALLOCATABLE :: var, ref_var
+                character(*), intent(in), OPTIONAL :: test_file
                 real(KIND=r8) :: nrmsdiff, rmsdiff
                 real(KIND=r8), allocatable, DIMENSION(:) :: temp, temp2
                 integer :: n
@@ -1200,7 +1207,7 @@
                         !Question here is: norm diff > tolerance ok for singleton?
                         DO vi = 1, size(var, 1)
                            if(sqrt(temp2(vi)) > check_status%tolerance) then
-                              write(*,*) trim(adjustl(varname)), " ", vi
+                              write(*,*) '["', trim(test_file), '","', trim(varname), '",', vi, ',', -1, ',', sqrt(temp2(vi)), '],'
                            endif
                         end do
 #endif
