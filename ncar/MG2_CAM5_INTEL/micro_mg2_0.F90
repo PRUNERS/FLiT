@@ -1903,25 +1903,25 @@
                     ! cloud ice effective radius
                     !-----------------------------------------------------------------
                     IF (do_cldice) THEN
-                        IF (dumi(i,k).ge.qsmall) THEN
-                            dum_2d(i,k) = dumni(i,k)
-                            CALL size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), lami(i,k))
-                            IF (dumni(i,k) /=dum_2d(i,k)) THEN
-                                ! adjust number conc if needed to keep mean size in reasonable range
-                                nitend(i,k) = (dumni(i,k)*icldm(i,k)-ni(i,k))/deltat
-                            END IF 
-                            effi(i,k) = 1.5_r8/lami(i,k)*1.e6_r8
-                            ELSE
-                            effi(i,k) = 25._r8
-                        END IF 
-                        ! ice effective diameter for david mitchell's optics
-                        deffi(i,k) = effi(i,k)*rhoi/rhows*2._r8
-                        ELSE
-                        ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
-                        ! radius has already been determined from the size distribution.
-                        effi(i,k) = re_ice(i,k) * 1.e6_r8 ! m -> um
-                        deffi(i,k) = effi(i,k) * 2._r8
-                    END IF 
+                       IF (dumi(i,k).ge.qsmall) THEN
+                          dum_2d(i,k) = dumni(i,k)
+                          CALL size_dist_param_basic(mg_ice_props, dumi(i,k), dumni(i,k), lami(i,k))
+                          IF (dumni(i,k) /=dum_2d(i,k)) THEN
+                             ! adjust number conc if needed to keep mean size in reasonable range
+                             nitend(i,k) = (dumni(i,k)*icldm(i,k)-ni(i,k))/deltat
+                          END IF
+                          effi(i,k) = 1.5_r8/lami(i,k)*1.e6_r8
+                       ELSE
+                          effi(i,k) = 25._r8
+                       END IF
+                       ! ice effective diameter for david mitchell's optics
+                       deffi(i,k) = effi(i,k)*rhoi/rhows*2._r8
+                    ELSE
+                       ! NOTE: If CARMA is doing the ice microphysics, then the ice effective
+                       ! radius has already been determined from the size distribution.
+                       effi(i,k) = re_ice(i,k) * 1.e6_r8 ! m -> um
+                       deffi(i,k) = effi(i,k) * 2._r8
+                    END IF
                     ! cloud droplet effective radius
                     !-----------------------------------------------------------------
                     IF (dumc(i,k).ge.qsmall) THEN
