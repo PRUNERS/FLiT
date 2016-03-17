@@ -5,7 +5,7 @@ EXE := kernel.gcc
 MODDIR := ./gcc_mod
 FC := gfortran
 #FC_FLAGS := -no-opt-dynamic-align -fp-model source -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -xHost 
-FC_FLAGS := -ffree-form -ffree-line-length-none -D__GFORTRAN__ -I./ -O2 -cpp -DQFPD -ggdb -J $(MODDIR)
+FC_FLAGS := -ffree-form -ffree-line-length-none -D__GFORTRAN__ -I./ -O2 -cpp -DQFPC -ggdb -J $(MODDIR)
 C_FLAGS := -O2 -ggdb
 
 ALL_OBJS := kernel_driver.g.o int3.g.o micro_mg_cam.g.o wv_sat_methods.g.o shr_spfn_mod.g.o shr_kind_mod.g.o micro_mg2_0.g.o micro_mg_utils.g.o

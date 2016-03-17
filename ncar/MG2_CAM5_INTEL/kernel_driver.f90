@@ -41,6 +41,9 @@ PROGRAM kernel_driver
 
     
 #ifndef QFPD
+#ifdef QFPC
+    WRITE (*,*) "["
+#endif
     DO kgen_repeat_counter = 0, 8
         kgen_counter = kgen_counter_at(mod(kgen_repeat_counter, 3)+1)
         WRITE( kgen_counter_conv, * ) kgen_counter
@@ -52,17 +55,20 @@ PROGRAM kernel_driver
 #endif
         kgen_unit = kgen_get_newunit()
         OPEN (UNIT=kgen_unit, FILE=kgen_filepath, STATUS="OLD", ACCESS="STREAM", FORM="UNFORMATTED", ACTION="READ", IOSTAT=kgen_ierr, CONVERT="BIG_ENDIAN")
+#ifndef QFPC
         WRITE (*,*)
+#endif
         IF ( kgen_ierr /= 0 ) THEN
             CALL kgen_error_stop( "FILE OPEN ERROR: " // trim(adjustl(kgen_filepath)) )
          END IF
 #ifndef QFPC         
         WRITE (*,*)
         WRITE (*,*) "************ Verification against '" // trim(adjustl(kgen_filepath)) // "' ************"
-#else
-        WRITE (*,*)
-        write (*,*) trim(adjustl(kgen_filepath))
 #endif
+! #else
+!         WRITE (*,*)
+!         write (*,*) trim(adjustl(kgen_filepath))
+! #endif
             CALL kgen_read_externs_micro_mg_cam(kgen_unit)
             CALL kgen_read_externs_micro_mg_utils(kgen_unit)
             CALL kgen_read_externs_micro_mg2_0(kgen_unit)
@@ -70,14 +76,17 @@ PROGRAM kernel_driver
 
             ! driver variables
             READ(UNIT=kgen_unit) dtime
-#ifndef QFPD
-            call micro_mg_cam_tend(dtime, kgen_unit)
+#ifdef QFPD
+            call micro_mg_cam_tend(dtime, kgen_unit, kgen_filepath, watchv)
 #else
-            call micro_mg_cam_tend(dtime, kgen_unit, watchv)
+            call micro_mg_cam_tend(dtime, kgen_unit, kgen_filepath)
 #endif
             CLOSE (UNIT=kgen_unit)
 #ifndef QFPD
          END DO
+#ifdef QFPC
+         WRITE(*,*) "]"
+#endif
 #endif
     CONTAINS
 
