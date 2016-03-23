@@ -25,6 +25,9 @@ class watchState(Enum):
     
 subjects = {}
 
+divergencies = []
+analyzed = []
+
 def copy_qfpWatchpoint(orig):
     print('hit copy_qfpWatchpoint')
     return qfpWatchpoint(orig.addr, orig.dtype,
@@ -143,6 +146,13 @@ class qfpWatchpoint (gdb.Breakpoint):
         print('hit qfpWatch.stop')
         print('count is ' + str(self.count) + ', masterCount is ' + str(self.masterCount))
         print('target is ' + str(self.target))
+
+        #DELME later
+        symtab = gdb.selected_frame().find_sal().symtab
+        linetable = symtab.linetable()
+        for line in linetable:
+            print "Line: "+str(line.line)+" Address: "+hex(line.pc)#end DELME
+        
         # We need to ignore changes made outside of main (i.e. after main exits)
         if infBeyondMain():
             print('detected that main has returned in qfpWatch.stop()')
@@ -167,11 +177,8 @@ class qfpWatchpoint (gdb.Breakpoint):
         self.values.append(val)
         self.funcs.append(gdb.newest_frame().name)
         self.count += 1
-        if self.count == self.subject.CPERIOD:
-            self.setHitCount()
-            return True
-        else:
-            return False
+        gdb.post_event(CurrentLocation
+        return True
         #return mismatched
         #here we hit and we have to decide whether or not to continue
 
@@ -403,4 +410,68 @@ def catch_term(event):
                 return
                 #this may be bad, but trying to delete the watchpoint but keep
                 #our (subclass) data.  Docs say this deletes the super : P
+
+divLayout = [0,1,2,3,4,5,6,7]
+def getDivHeader():
+    return "id\tifile\tvar\ti1\ti2\terror\tsource line\taddress"
+def getDivStr(num, div):
+    #this is the layout:
+    # num ifile var i1 i2 diff file line addr
+    retVal = str(num)
+    for i in divLayout:
+        retval = retVal + " " + div[i]
+    return retVal
+
             
+# Here are our command definitions (for navigating divergencies)
+
+class InfoDivergenciesCommand (gdb.Command):
+    """List information on divergence locations"""
+
+    def __init__ (self):
+        super(InfoDivergenciesCommand, self).__init__ ("info divergencies",
+                                                       gdb.COMMAND_SUPPORT,
+                                                       gdb.COMPLETE_NONE)
+
+    def invoke(self, arg, from_tty):
+        ifile = None
+        varName = None
+        args = gdb.string_to_argv(arg)
+        if len(args) == 2:
+            ifile = args[1]
+        if len(args) > 0:
+            varName = args[0]
+        print(getDivHeader()
+        for i, div in enumerate(divergencies):
+            if (ifile != None && ifile in div[1) ||
+                ifile == None:
+              if (varName != None && varName in div[2]) ||
+                varName == None:
+                print(getDivStr(i, div))
+        
+class SeekDivergenceCommand(gdb.Command):
+    """Go to point of divergence in full gdb context"""
+
+    def __init__ (self):
+        super(SeekDivergenceCommand, self).__init__ ("seek",
+                                                     gdb.COMMAND_SUPPORT,
+                                                     gdb.COMPLETE_NONE)
+    def invoke(self, arg, from_tty):
+        args = gdb.string_to_argv(arg)
+        if len(args) == 1:
+            seekDiv(args[0]))
+        else:
+            raise.gdb.GdbError("seek takes one argument: divergence number.")
+
+class CurrentLocation():
+    def __init__(self, watchpoint):
+        gdb.write('inside CurrentLocation.__init__\n')
+        self.watchpoint = watchpoint
+    def __call__(self):
+        print('our event was taken from the queue!\n')
+        print(gdb.decode_line()[1][0])
+        print('wp count,CP is: ' + str(self.watchpoint.count) +
+              ',' + str(self.watchpoint.subject.CPERIOD))
+        if self.watchpoint.count == self.watchpoint.subject.CPERIOD:
+            self.watchpoinst.setHitCount()
+

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3)
 
 # to begin, we will do sanity checks.
 # at this point, we should have gdb loaded, this should be pulled
@@ -11,7 +11,14 @@ import sys
 print('python version is: ' + str(sys.version_info))
 sys.path.append(os.getcwd())
 from enum import Enum
+from operator import itemgetter
+
 import helpers
+from helpers import divergencies, analyzed
+
+#register commands
+
+
 
 #data structures
 
@@ -21,14 +28,22 @@ gdb.events.stop.connect(helpers.catch_trap)
 
 #this event handler notifies us when an inferior exits
 gdb.events.exited.connect(helpers.catch_term)
-infCmdLine = os.environ['PARAMS'] + ' 2> '
-cl1 = infCmdLine + 'inf1.watch'
-cl2 = infCmdLine + 'inf2.watch'
+#infoFile = os.environ['PARAMS']
+# cl1 = infCmdLine + 'inf1.watch'
+# cl2 = infCmdLine + 'inf2.watch'
 
 print('cl1 & cl2 are:' + cl1 + ';' + cl2)
 
-helpers.execCommands(['run ' + cl1, 'add-inferior -exec inf2',
-                       'inferior 2', 'run ' + cl2])
+#this is list of divergent locations detected with
+#run of QC
+
+# with open('GQD') as myfile:
+#     divergeinces = eval(myfile.read().replace('\n', '').replace(' ', ''))
+# #sort by relative error than input file
+# divergencies = sorted(divergencies, key=itemgetter(4,0))
+    
+# helpers.execCommands(['run ' + cl1, 'add-inferior -exec inf2',
+#                        'inferior 2', 'run ' + cl2])
 
 #at this point, either:
 ## both inferiors have terminated
@@ -171,46 +186,94 @@ for lab, sub in helpers.subjects.items():
                     break
             if estate == execState.user:
                 break
-        
-    
-    
 
-# while not inf_terminated(1) and not inf_terminated(2):
-#     #scan the watchpoints to determine action, either:
-#     command = ''
-#     for sub in helpers.subjects:
-#         if len(sub.watches) > 2:
-#             print('too many watches detected in subject: ' + sub.label)
-#             break
-#         if sub.state == subjState.searching:
-#             #hit divergence
-#             if (sub.watches[0].state == watchState.hitCount and
-#                 sub.watches[1].state == watchState.hitCount):
-#                 if not sub.seekDivergence(): #checks for divergence and returns true if we should pursue
-#             #time to compare data
-#                     setSearching()
-#                     continue
-#                 else:
-#                     sub.setSeeking(div)
-#             else:
-#                 #the sub is searching, but one or more watches haven't hit count
-#                 #or they've terminated
-#                 curInf = gdb.selected_inferior()
-#                 otherInf = sub.getOtherInf()
-#                 curWatch = sub.getWatch(curInf)
-#                 if inf_terminated(curInf):
-#                     if (sub.getWatch(otherInf).state == watchState.searching or
-#                         inf_terminated(otherInf):
-#                         sub.toggle_inf()
-#                         execCommands(['continue'])
-#                     #what else could be the case now?
-                    
-#                 if (curWatch.state == watchState.hitSeek and
-#                     sub.watches[sub.].state == watchState.searching):
-#                     sub.toggle_inf()
-#                     execCommands(['continue'])
-            
+
+def analyze_div(num, div):
+    sub = helpers.subjects[0]
+    #set command lines
+    #start infs
+        estate = execState.search1
+        inf1 = gdb.selected_inferior().num
+        watch1 = sub.getWatch(inf1)
+        inf2 = sub.getOtherInf()
+        watch2 = sub.getWatch(inf2)
+        curInf = inf1
+        curW = watch1
+        #we're ready to search
+        print('inf1 is: ' + str(inf1) + ' and inf2 is: ' + str(inf2))
+        print('watch1 inf is: ' + str(watch1.inf) + ' and watch2 inf is: ' +
+              str(watch2.inf))
+        while True:
+            if estate == execState.search1:
+                print('handling search1 state')
+                print('inf1 masterCount is: ' + str(watch1.masterCount))
+                helpers.execCommands(['continue'])
+                if (watch1.state == helpers.watchState.hitCount or
+                    watch1.state == helpers.watchState.infExited):
+                    estate = execState.search2
+                    sub.toggle_inf()  #activates the other inferior
+                else:
+                    gdb.error('reached unknown state after execState.search1')
+            if estate == execState.search2:
+                print('handling search2 state')
+                print('inf2 masterCount is: ' + str(watch2.masterCount))
+                helpers.execCommands(['continue'])
+                if (watch2.state == helpers.watchState.hitCount or
+                    watch2.state == helpers.watchState.infExited):
+                    estate = execState.analyze
+                else:
+                    gdb.error('reached unknown state after execState.search2')
+                    break
+            if estate == execState.analyze:
+                print('handling analyze state')
+                #TODO we need to get the first divergence here and construct
+                #a new record (from QC data to analyzed)
+                #need to get source file, source line, and memory address (instruction location)
+                adiv = sub.seekDivergence
+                if adiv != None:
+                    div.extend(adiv)
+                else:
+                    raise gdb.error('A divergence was indicated by Classifier; none found @: ' +
+                                    div)
                 
-#isolated a divergence
+def register_commands():
+    InfoDivergenciesCommand()
 
-#normal termination
+def write_QD_file(filename):
+    with open(filename) as f:
+        f.write(repr(divergencies))
+
+def read_file(filename):
+    global divergencies
+    with open(filename) as f:
+        return eval(myfile.read().replace('\n', '').replace(' ', ''))
+
+def prep_watches(div):
+    helpers.execCommands(['run ' + div[1] + ' ' + div[2] + ' ' +
+                          div[3] + ' ' + div[0]] + ' &> inf1.watch')
+    if len(gdb.inferiors) == 1:
+        helpers.execCommands(['add-inferior -exec inf2'])
+    helpers.execCommands(['infer 2', 'run ' + div[1] + ' ' + div[2] + ' ' +
+                          div[3] + ' ' + div[0]] + ' &> inf2.watch']
+
+def analyze_all(div_info):
+    for i, div in enumerate(div_info):
+        prep_watches(div)
+        divergencies.append(analyze_div(i, div))
+    
+        
+def main():
+    register_commands()
+    
+    div_info = read_file(os.environ['PARAMS'])
+    if analyzed(div_info): #is this a C or D file (D is already analyzed)
+        #this means there's nothing to do and users
+        #can use commands they like, such as 'seek' or 'info diver'
+        divergencies.extend(div_info)
+    else:
+        analyze_all(div_info)
+    #return to user prompt
+    
+if __name__ == "__main__":
+    main()
+
