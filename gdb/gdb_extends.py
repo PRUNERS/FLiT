@@ -86,6 +86,9 @@ def register_commands():
     helpers.SeekDivergenceCommand()
     helpers.WriteQDDataCommand()
     helpers.LoadQDDataCommand()
+    helpers.LookupParamCommand()
+    helpers.WhatPrefixCommand()
+    helpers.WhatDivergeCommand()
 
 def write_QD_file(filename):
     with open(filename) as f:
@@ -102,7 +105,7 @@ def analyze_all(div_info):
     for i, div in enumerate(div_info):
         helpers.prep_watches(div)
         divergencies.append(analyze_div(i, div))
-        #if i == 10: break
+        if i == 10: break
         
 def analyzed(div_info):
     if len(div_info) > 0:

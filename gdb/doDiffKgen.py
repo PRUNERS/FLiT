@@ -7,11 +7,11 @@ import sys
 from subprocess import check_output
 import os
 
-def usage():          #  1      2       3                   4
-    print(sys.argv[0] + '[exe0] [exe1] [qc_file | divFile] [emacsNoWindow = t|f]')
+def usage():          #  1      2       3                     4
+    print(sys.argv[0] + '[exe0] [exe1] [emacsNoWindow = t|f] [qc_file | divFile]')
 
 
-if len(sys.argv) < 4 or len(sys.argv) > 5:
+if len(sys.argv) < 3 or len(sys.argv) > 5:
     usage()
     exit(1)
 
@@ -22,11 +22,12 @@ ln = check_output('which ln', shell=True)[:-1]
 topDir = os.path.dirname(__file__)
 inf1 = os.path.realpath(sys.argv[1])
 inf2 = os.path.realpath(sys.argv[2])
-os.environ['PARAMS'] = sys.argv[3]
+if len(sys.argv) == 5:
+    os.environ['PARAMS'] = sys.argv[4]
 
 NW = True
-if len(sys.argv) == 5:
-    if sys.argv[4] == 'f':
+if len(sys.argv) > 3:
+    if sys.argv[3] == 'f':
         NW = False
 
 sys.path.append(topDir)

@@ -448,7 +448,7 @@ def seekDiv(num):
             execCommands(['continue'])
             if watch2.state == watchState.hitSeek:
                 estate = execState.user
-                break
+                return True
             # else:
             #     raise gdb.error('couldn\'t reach target in seek of inf ' + str(inf2))
 
@@ -459,31 +459,58 @@ def read_file(filename):
     
             
 # Here are our command definitions (for navigating divergencies)
-
+class WhatPrefixCommand(gdb.Command):
+    """Prefix command for looking into current state"""
+    def __init__(self):
+        super(WhatPrefixCommand, self).__init__("what",
+                                                gdb.COMMAND_SUPPORT,
+                                                gdb.COMPLETE_NONE,
+        True)
+        
 class InfoDivergenciesCommand (gdb.Command):
-    """List information on divergence locations"""
+    """List information on divergence locations.
+    Usage: [cmd] [div # | var name] """
 
     def __init__ (self):
         super(InfoDivergenciesCommand, self).__init__ ("info divergencies",
-                                                       gdb.COMMAND_SUPPORT,
-                                                       gdb.COMPLETE_NONE)
+                                                       gdb.COMMAND_SUPPORT)
 
     def invoke(self, arg, from_tty):
         ifile = None
         varName = None
         args = gdb.string_to_argv(arg)
-        if len(args) == 2:
-            ifile = args[1]
-        if len(args) > 0:
-            varName = args[0]
-        print(getDivHeader())
-        for i, div in enumerate(divergencies):
-            if ((ifile != None and ifile in div[1]) or
-                ifile == None):
-              if ((varName != None and varName in div[2]) or
-                varName == None):
-                print(getDivStr(i, div))
+        if len(divergencies) == 0:
+            raise gdb.GdbError('No divergencies.')
+        if len(args) == 1:
+            divnum = None
+            try:
+                divnum = int(args[0])
+                print(divergencies[divnum])
+                return
+            except IndexError:
+                raise gdb.GdbError('Index out of range -- use number from 0 to ' + str(len(divergencies) - 1))
+            except ValueError:
+                pass
+            tp = []
+            for i,d in enumerate(divergencies):
+                if args[0] in d[1]:
+                   tp.append((i,d))
+            if len(tp) > 0:
+                print(getDivHeader())
+                for i,d in tp:
+                    print(getDivStr(i,d))
+        else:
+            if len(args) == 0:
+                print(getDivHeader())
+                for i,d in enumerate(divergencies):
+                    print(getDivStr(i,d))
+            else:
+                raise gdb.GdbError('info divergencies takes 0 or 1 argument')
+            
+    def complete(self, text, word):
+        return [ d[1] for d in divergencies if word in d[1] ]
         
+curDiv = None
 class SeekDivergenceCommand(gdb.Command):
     """Go to point of divergence in full gdb context"""
 
@@ -492,9 +519,11 @@ class SeekDivergenceCommand(gdb.Command):
                                                      gdb.COMMAND_SUPPORT,
                                                      gdb.COMPLETE_NONE)
     def invoke(self, arg, from_tty):
+        global curDiv
         args = gdb.string_to_argv(arg)
         if len(args) == 1:
-            seekDiv(args[0])
+            if seekDiv(int(args[0])):
+                curDiv = int(args[0])
         else:
             raise gdb.GdbError("seek takes one argument: divergence number.")
 
@@ -503,7 +532,7 @@ class WriteQDDataCommand(gdb.Command):
     def __init__(self):
         super(WriteQDDataCommand, self).__init__("write",
                                                      gdb.COMMAND_SUPPORT,
-                                                     gdb.COMPLETE_NONE)
+                                                     gdb.COMPLETE_FILENAME)
 
     def invoke(self, arg, from_tty):
         args = gdb.string_to_argv(arg)
@@ -513,12 +542,26 @@ class WriteQDDataCommand(gdb.Command):
         else:
             raise gdb.GdbError("You must supply a filename to write")
 
+
+class WhatDivergeCommand(gdb.Command):
+    """Displays the current divergence"""
+    def __init__(self):
+        super(WhatDivergeCommand, self).__init__("what div",
+                                                     gdb.COMMAND_SUPPORT,
+                                                     gdb.COMPLETE_NONE)
+    def invoke(self, arg, from_tty):
+        if not curDiv == None:
+            print(getDivHeader())
+            print(getDivStr(curDiv, divergencies[curDiv]))
+        else:
+            raise gdb.GdbError('There is no current divergence')
+                  
 class LoadQDDataCommand(gdb.Command):
     """Loads a file with QD data (analyzed divergency list)"""
     def __init__(self):
         super(LoadQDDataCommand, self).__init__("load",
                                                      gdb.COMMAND_SUPPORT,
-                                                     gdb.COMPLETE_NONE)
+                                                     gdb.COMPLETE_FILENAME)
 
     def invoke(self, arg, from_tty):
         args = gdb.string_to_argv(arg)
@@ -528,7 +571,30 @@ class LoadQDDataCommand(gdb.Command):
         else:
             raise gdb.GdbError("You must supply a filename to load")
 
-    
+class LookupParamCommand(gdb.Command):
+    """Takes a variable specified in QC/QD data, and locates the name
+    inside the kernel function."""
+    externs = ['mgncol', 'nlev', 'dtime / num_steps', 'packed_t', 'packed_q', 'packed_qc', 'packed_qi', 'packed_nc', 'packed_ni', 'packed_qr', 'packed_qs', 'packed_nr', 'packed_ns', 'packed_relvar', 'packed_accre_enhan', 'packed_p', 'packed_pdel', 'packed_cldn', 'packed_liqcldf', 'packed_icecldf', 'packed_rate1ord_cw2pr_st', 'packed_naai', 'packed_npccn', 'packed_rndst', 'packed_nacon', 'packed_tlat', 'packed_qvlat', 'packed_qctend', 'packed_qitend', 'packed_nctend', 'packed_nitend', 'packed_qrtend', 'packed_qstend', 'packed_nrtend', 'packed_nstend', 'packed_rel', 'rel_fn_dum', 'packed_rei', 'packed_prect', 'packed_preci', 'packed_nevapr', 'packed_evapsnow', 'packed_prain', 'packed_prodsnow', 'packed_cmeout', 'packed_dei', 'packed_mu', 'packed_lambdac', 'packed_qsout', 'packed_des', 'packed_rflx', 'packed_sflx', 'packed_qrout', 'reff_rain_dum', 'reff_snow_dum', 'packed_qcsevap', 'packed_qisevap', 'packed_qvres', 'packed_cmei', 'packed_vtrmc', 'packed_vtrmi', 'packed_umr', 'packed_ums', 'packed_qcsedten', 'packed_qisedten', 'packed_qrsedten', 'packed_qssedten', 'packed_pra', 'packed_prc', 'packed_mnuccc', 'packed_mnucct', 'packed_msacwi', 'packed_psacws', 'packed_bergs', 'packed_berg', 'packed_melt', 'packed_homo', 'packed_qcres', 'packed_prci', 'packed_prai', 'packed_qires', 'packed_mnuccr', 'packed_pracs', 'packed_meltsdt', 'packed_frzrdt', 'packed_mnuccd', 'packed_nrout', 'packed_nsout', 'packed_refl', 'packed_arefl', 'packed_areflz', 'packed_frefl', 'packed_csrfl', 'packed_acsrfl', 'packed_fcsrfl', 'packed_rercld', 'packed_ncai', 'packed_ncal', 'packed_qrout2', 'packed_qsout2', 'packed_nrout2', 'packed_nsout2', 'drout_dum', 'dsout2_dum', 'packed_freqs', 'packed_freqr', 'packed_nfice', 'packed_qcrat', 'errstring', 'packed_tnd_qsnow', 'packed_tnd_nsnow', 'packed_re_ice', 'packed_prer_evap', 'packed_frzimm', 'packed_frzcnt', 'packed_frzdep']
+    params = ['mgncol', 'nlev', 'deltatin', 't', 'q', 'qcn', 'qin', 'ncn', 'nin', 'qrn', 'qsn', 'nrn', 'nsn', 'relvar', 'accre_enhan', 'p', 'pdel', 'cldn', 'liqcldf', 'icecldf', 'qcsinksum_rate1ord', 'naai', 'npccn', 'rndst', 'nacon', 'tlat', 'qvlat', 'qctend', 'qitend', 'nctend', 'nitend', 'qrtend', 'qstend', 'nrtend', 'nstend', 'effc', 'effc_fn', 'effi', 'prect', 'preci', 'nevapr', 'evapsnow', 'prain', 'prodsnow', 'cmeout', 'deffi', 'pgamrad', 'lamcrad', 'qsout', 'dsout', 'rflx', 'sflx', 'qrout', 'reff_rain', 'reff_snow', 'qcsevap', 'qisevap', 'qvres', 'cmeitot', 'vtrmc', 'vtrmi', 'umr', 'ums', 'qcsedten', 'qisedten', 'qrsedten', 'qssedten', 'pratot', 'prctot', 'mnuccctot', 'mnuccttot', 'msacwitot', 'psacwstot', 'bergstot', 'bergtot', 'melttot', 'homotot', 'qcrestot', 'prcitot', 'praitot', 'qirestot', 'mnuccrtot', 'pracstot', 'meltsdttot', 'frzrdttot', 'mnuccdtot', 'nrout', 'nsout', 'refl', 'arefl', 'areflz', 'frefl', 'csrfl', 'acsrfl', 'fcsrfl', 'rercld', 'ncai', 'ncal', 'qrout2', 'qsout2', 'nrout2', 'nsout2', 'drout2', 'dsout2', 'freqs', 'freqr', 'nfice', 'qcrat', 'errstring', 'tnd_qsnow', 'tnd_nsnow', 're_ice', 'prer_evap', 'frzimm', 'frzcnt', 'frzdep']
+    def __init__(self):
+        super(LookupParamCommand, self).__init__("lookup",
+                                                 gdb.COMMAND_SUPPORT)
+
+    def invoke(self, arg, from_tty):
+        args = gdb.string_to_argv(arg)
+        if len(args) == 1:
+            for i, v in enumerate(self.externs):
+                if v == args[0]:
+                    print(self.params[i])
+        else:
+            raise gdb.GdbError("You must supply a var name to lookup")
+
+    def complete(self, text, word):
+        retVal = []
+        for w in self.externs:
+            if word in w:
+                retVal.append(w)
+        return retVal
         
 class CurrentLocation():
     """This is the event that allows us to get accurate location information
