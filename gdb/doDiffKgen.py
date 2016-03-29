@@ -26,7 +26,7 @@ os.environ['PARAMS'] = sys.argv[3]
 
 NW = True
 if len(sys.argv) == 5:
-    if sys.argv[7] == 'f':
+    if sys.argv[4] == 'f':
         NW = False
 
 sys.path.append(topDir)

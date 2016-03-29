@@ -4,7 +4,7 @@ import gdb
 import re
 import copy
 from enum import Enum
-
+from os import path
 #here are the data structures we need to record watchpoint hit data
 #to determine where execution pairs diverge
 
@@ -23,11 +23,38 @@ class watchState(Enum):
     hitCount = 6
     infExited = 7
     
-subjects = {}
+subjects = None
 
 divergencies = []
 analyzed = []
 
+def prep_watches(div):
+    """This function sets up the inferiors, and hands them off to the 
+    handlers for int3, thereby setting up the watchpoints"""
+
+    for w in subjects.watches:
+        if w.is_valid():
+            w.delete()
+    subjects.watches = []
+    
+
+    execCommands(['inferior 1'])
+        #this is the watchpoint setup routine
+    gdb.events.stop.connect(catch_trap)
+    #this is disconnected when the watch is set
+    print('in prep_watches, div is: ' + str(div))
+    execCommands(['run ' + div[1] + ' ' + str(div[2]) + ' ' +
+                          str(div[3]) + ' ' + div[0] + ' 2> inf1.watch'])
+
+    execCommands(['inferior 2'])
+    #this is the watchpoint setup routine
+    gdb.events.stop.connect(catch_trap)
+    #this is disconnected when the watch is set
+
+    execCommands(['run ' + div[1] + ' ' + str(div[2]) + ' ' +
+                          str(div[3]) + ' ' + div[0] + ' 2> inf2.watch'])
+    execCommands(['infer 1'])
+    
 def copy_qfpWatchpoint(orig):
     print('hit copy_qfpWatchpoint')
     return qfpWatchpoint(orig.addr, orig.dtype,
@@ -37,29 +64,6 @@ def copy_qfpWatchpoint(orig):
                          orig.masterCount, orig.state,
                          orig.values, orig.funcs)
 
-def infBeyondMain():
-    # we need to walk the stack to the bottom to make sure we
-    # haven't returned from main.  May be expensive
-    curFrame = gdb.newest_frame()
-    print('in infBeyondMain, curFrame is: ' + str(curFrame) + ', curFrame.name:' + curFrame.name())
-    print('\t and curFrame.function() is: ' + str(curFrame.function()))
-#    while curFrame != None and curFrame.function() != None:
-    while curFrame != None and curFrame.name() != None:
-        print('in infBeyondMain, curFrame: ' + str(curFrame), ' name: ' + str(curFrame.name()))
-#        print('infBeyondMain(): frame is ' + curFrame.function().name)
-# This is a total hack for NCAR KGen.  ifort doesn't have a frame named main, so we'll
-# cheat and use the top level function in a KGen kernel: kernel_driver
-        if (curFrame.name() == 'main' or
-            curFrame.name() == 'main(int, char**)' or
-            curFrame.name() == 'kernel_driver'):
-        # if (curFrame.function().name == 'main' or
-        #     curFrame.function().name == 'main(int, char**)' or
-        #     curFrame.function().name == 'kernel_driver'):
-            return False
-        else:
-            curFrame = curFrame.older()
-    return True
-    
 class qfpWatchpoint (gdb.Breakpoint):
     spec = None
     dtype = None
@@ -111,9 +115,11 @@ class qfpWatchpoint (gdb.Breakpoint):
     def setSeeking(self, target):
         #self.state = watchState.seeking
         #self.masterCount += self.count
+        print('in setSeeking, target is: ' + str(target))
         self.count = 0
         self.target = target
         self.masterCount = 0
+        self.state = watchState.seeking
 
     def setHitSeek(self):
         print('reached divergence point in inf ' + str(self.inf))
@@ -144,30 +150,17 @@ class qfpWatchpoint (gdb.Breakpoint):
         in a gdb context that can be explored.
         """
         print('hit qfpWatch.stop')
-        print('count is ' + str(self.count) + ', masterCount is ' + str(self.masterCount))
-        print('target is ' + str(self.target))
-
-        #DELME later
-        symtab = gdb.selected_frame().find_sal().symtab
-        linetable = symtab.linetable()
-        for line in linetable:
-            print "Line: "+str(line.line)+" Address: "+hex(line.pc)#end DELME
-        
-        # We need to ignore changes made outside of main (i.e. after main exits)
         if infBeyondMain():
             print('detected that main has returned in qfpWatch.stop()')
             return True
         if self.count == self.target:
             self.setHitSeek()
             return True
-            # if self.subject.allAtSeek():
-            #     return True
-            # else:
-            #     return False
         else:
             if self.state == watchState.seeking:
                 self.count += 1
                 return False
+        print('before handling inf')
         print('handling inf: ' + str(self.inf) + ' at count: ' +
               str(self.count + self.masterCount))
         print('in func: ' + str(gdb.newest_frame().name))
@@ -175,22 +168,49 @@ class qfpWatchpoint (gdb.Breakpoint):
         val = gdb.parse_and_eval(self.spec)
         print('new val is: ' + str(val))
         self.values.append(val)
-        self.funcs.append(gdb.newest_frame().name)
+        gdb.post_event(CurrentLocation(self.count, self.values))
         self.count += 1
-        gdb.post_event(CurrentLocation
+        if self.count == self.target:
+            self.setHitSeek()
         return True
-        #return mismatched
-        #here we hit and we have to decide whether or not to continue
+
+def infBeyondMain():
+    # we need to walk the stack to the bottom to make sure we
+    # haven't returned from main.  May be expensive
+    #TODO for now we're skipping this check -- it should be ok if
+    #we're only looking for the FIRST divergence
+    return False
+    curFrame = gdb.newest_frame()
+    print('hi from infbeyondmain')
+    print('curFrame is: ' + str(curFrame))
+    #delme
+    #raise gdb.error('we\'re stopping in infBeyondMain')
+    if curFrame == None:
+        print('curFrame is None')
+
+    print('cf.name() is: ' + str(curFrame.name()))
+    print('in infBeyondMain, curFrame is: ' + str(curFrame) + ', curFrame.name:' + str(curFrame.name()))
+    print('\t and curFrame.function() is: ' + str(curFrame.function()))
+    while curFrame != None and curFrame.name() != None:
+        print('in infBeyondMain, curFrame: ' + str(curFrame), ' name: ' + str(curFrame.name()))
+        if (curFrame.name() == 'main' or
+            curFrame.name() == 'main(int, char**)' or
+            curFrame.name() == 'kernel_driver'):
+            return False
+        else:
+            curFrame = curFrame.older()
+    return True
 
 class qfpSubject:
-    label = ''
+    #label = ''
     state = subjState.loading
     CPERIOD = 100
     watches = []
-    def __init__(self, label, inf, addr, wtype):
-        self.label =  label
-        self.state = subjState.loading
-        self.watches.append(qfpWatchpoint(addr, wtype, self))
+    def __init__(self):
+        self.watches = []
+        # self.label =  label
+        # self.state = subjState.loading
+        #self.watches.append(qfpWatchpoint(addr, wtype, self))
         
     def replaceWatch(self, inf):
         print('hit replaceWatch')
@@ -211,49 +231,24 @@ class qfpSubject:
         for v1, v2 in zip(self.watches[0].values, self.watches[1].values):
             print(str(v1) + ':' + str(v2))
                 
-    def getDivergence(self):
-        values = []
-        funs = []
-        divs = []
-        print('in getDivergence, len(watches[0].values) is: '
-
-              + str(len(self.watches[0].values)))
-        self.printValues()
-        print('\tlen(watches[1].values) is: ' + str(len(self.watches[1].values)))
-        for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values, self.watches[0].funcs, self.watches[1].funcs)):
-            #print('comparing v1 v2, f1, f2:' + str(vals[0]) + ':' + str(vals[1]) +
-                  #':' + str(vals[2]) + ':' + str(vals[3]))
-            # print('cnt + self.watches[0].masterCount: ' +
-            #       str(cnt + self.watches[0].masterCount - self.CPERIOD))
-            if (vals[0] != vals[1]):
-            # or
-            #     ((vals[2].find(vals[3])) == -1 and
-            #     (vals[3].find(vals[2])) == -1)):
-                # print('vals[0]:vals[1], ' +
-                #       '2.find3:3.find2; ' +
-                #       str(vals[0]) + ":" + str(vals[1]) + "; " +
-                #       str(vals[2].find(vals[3])) + ":" +
-                #       str(vals[3].find(vals[2])))
-                
-                values.append([vals[0], vals[1]])
-                funs.append([vals[2], vals[3]])
-                divs.append(cnt + self.watches[0].masterCount)
-                break
-#                    return cnt, vals[0].value, vals[1].value, vals[0].fun, vals[1].fun
-        return values, funs, divs
+    # def getDivergence(self):
+    #     values = []
+    #     print('in getDivergence, len(watches[0].values) is: '
+    #           + str(len(self.watches[0].values)))
+    #     self.printValues()
+    #     print('\tlen(watches[1].values) is: ' + str(len(self.watches[1].values)))
+    #     for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values)):
+    #         if (vals[0] != vals[1]):
+    #             values.append([vals[0], vals[1]])
+    #             divs.append(cnt + self.watches[0].masterCount)
+    #             break
+    #     return values, divs
 
     def seekDivergence(self):
-        vals, funs, divs = self.getDivergence()
-        print('in seekDivergence, vals is: ' + str(vals))
-        if len(vals) > 0:
-            for v,f,d in zip(vals, funs, divs):
-                # choice = input('variable divergence in subject ' + sub.label +
-                #                '; iteration: ' + d + '; functions: ' +
-                #                f[0] + ':' + f[1] + '; values: ' +
-                #                v[0] + ':' + v[1] + '.  _F_ocus or _I_gnore?')
-                # if choice.lower() != 'f' and choice.lower() != 'focus':
-                    return d
-        return -1
+        for i, div in enumerate(zip(self.watches[0].values, self.watches[1].values)):
+            if div[0][1] != div[1][1]:
+                return [div[0],div[1]]
+        return None
         
     # here we should update watches
     # clear values, advance masterCount
@@ -266,43 +261,45 @@ class qfpSubject:
                 
     # set record, restart inferiors,
     # reset counts and targets
-    def setSeeking(self, target, cmdLine1, cmdLine2):
+    def setSeeking(self, target):
         self.state = subjState.seeking
         #we need to rest things -- delete watch points and let
         #catch_trap add the new watchpoints that are
         #copied from the old ones
-        print('connecting catch_trap in setSeeking')
-        gdb.events.stop.connect(catch_trap)
-        print('set catch_trap')
-        self.toggle_inf()
-        print('running 1 to establish watch')
-        #TODO we removed record, I suspect at switching inf for next seek,
-        #we'll have to save the state, stop, and rerecord for inf2
-        #(there is a problem with threads disappearing in inf2)
-#        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch'])
-        execCommands(['run ' + cmdLine1])
-        print('finished 1 for watch')
-        self.toggle_inf()
-        print('running 2 to establish watch')
-#        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch'])
-        execCommands(['run ' + cmdLine2])
-        print('finished 2 to watch')
-        self.toggle_inf()
+        prep_watches(target)
+#         print('connecting catch_trap in setSeeking')
+#         gdb.events.stop.connect(catch_trap)
+#         print('set catch_trap')
+#         self.toggle_inf()
+#         print('running 1 to establish watch')
+#         #TODO we removed record, I suspect at switching inf for next seek,
+#         #we'll have to save the state, stop, and rerecord for inf2
+#         #(there is a problem with threads disappearing in inf2)
+# #        execCommands(['run 2> inf' + str(self.watches[0].inf) + '.watch'])
+#         execCommands(['run ' + cmdLine1])
+#         print('finished 1 for watch')
+#         self.toggle_inf()
+#         print('running 2 to establish watch')
+# #        execCommands(['run 2> inf' + str(self.watches[1].inf) + '.watch'])
+#         execCommands(['run ' + cmdLine2])
+#         print('finished 2 to watch')
+#         self.toggle_inf()
+        print('executed prep watches')
         for w in self.watches:
-            w.setSeeking(target)
+            w.setSeeking(target[5][0])
 
     def getWatch(self, inf):
         for w in self.watches:
             if w.inf == inf:
                 return w
-        gdb.error('inf ' + inf + ' not found in getWatch()')
+        raise gdb.error('inf ' + inf + ' not found in getWatch()')
 
     def getOtherInf(self):
         cur = gdb.selected_inferior().num
         for w in self.watches:
             if w.inf != cur:
                 return w.inf
-        gdb.error('couldn\'t locate other inf in subject: ' +
+        raise gdb.error('couldn\'t locate other inf in subject: ' +
                   self.label)
         
     def toggle_inf(self):
@@ -338,6 +335,10 @@ def getPrecString(p):
 
 
 def catch_trap(event):
+    """This handler sets up watchpoints.  
+    A precondition is that inf1 must be set before
+    inf2.
+    """
     print('entered catch_trap')
     global subjects
     cur = gdb.selected_inferior()
@@ -346,8 +347,8 @@ def catch_trap(event):
     print('stop caught: ' + str(event))
     print('event type: ' + str(type(event)))
     print('caught int3 in inf ' + str(cur.num))
-    f = open('inf' + str(cur.num) + '.watch', 'r')
-    wdata = f.read()
+    with open('inf' + str(cur.num) + '.watch', 'r') as f:
+        wdata = f.read()
     print('read watch file: ' + wdata)
     m = re.match(r"[*\s]+checkAddr:[\s]*(\w+)\n[*\s]+checkLen:[\s]*(\w+)\n" +
                  "[*\s]+checkLab:[\s]*(\w+)\n",
@@ -363,37 +364,24 @@ def catch_trap(event):
     else:
         wtype = 'float'
     print('hit next print')
-    
-    if lab not in subjects:
-        subjects[lab] = qfpSubject(lab, cur.num, addr, wtype)
-    else:
-        if subjects[lab].state == subjState.seeking:
-            subjects[lab].replaceWatch(cur.num)
-        else:
-            subjects[lab].watches.append(qfpWatchpoint(addr, wtype, 
-                                              subjects[lab]))
 
-    print('subjects length is: ' + str(len(subjects)))
+    # if subjects == None:
+    #     subjects = qfpSubject()
+    subjects.watches.append(qfpWatchpoint(addr, wtype, 
+                                          subjects))
 
-    if (len(subjects[lab].watches) == 2 and
-        (not (subjects[lab].watches[0].state == watchState.seeking) !=
-         (subjects[lab].watches[1].state == watchState.seeking))):
-        if subjects[lab].state == subjState.loading:
-            subjects[lab].setSearching()
-        gdb.events.stop.disconnect(catch_trap)
-
+    gdb.events.stop.disconnect(catch_trap)
     print('set watchpoint @' + addr + ', type: ' + wtype + ', label: ' + lab)
 
-    f.close()
-    
-    open('inf' + str(cur.num) + '.watch', 'w').close() #erase watch data
+    with open('inf' + str(cur.num) + '.watch', 'w') as f:
+        f.close() #erase watch data
 
 def inf_terminated(inf):
     print('entered inf_terminated')
     infs = gdb.inferiors()
     if len(infs) < inf: return False
     for t in gdb.inferiors()[inf - 1]:
-        if t.is_valid(): return False
+        return not t.is_valid()
     return True
 
 def catch_term(event):
@@ -401,27 +389,74 @@ def catch_term(event):
     global subjects
     inf = event.inferior.num
     print('caught term signal in inf ' + str(inf))
-    for k, s in subjects.items():
-        for w in s.watches:
-            print('checking if ' + str(w.inf) + ' matches ' + str(inf))
-            if w.inf == inf:
-                w.state = watchState.infExited
-                w.delete()
-                return
+    subjects.watches[inf-1].state = watchState.infExited
+    subjects.watches[inf-1].delete()
+    #for k, s in subjects.items():
+    # for w in subjects.watches:
+    #     print('checking if ' + str(w.inf) + ' matches ' + str(inf))
+    #     if w.inf == inf:
+    #         w.state = watchState.infExited
+    #         w.delete()
+    #         return
                 #this may be bad, but trying to delete the watchpoint but keep
                 #our (subclass) data.  Docs say this deletes the super : P
 
-divLayout = [0,1,2,3,4,5,6,7]
 def getDivHeader():
-    return "id\tifile\tvar\ti1\ti2\terror\tsource line\taddress"
-def getDivStr(num, div):
+    return "id\tifile\tvar\ti1\ti2\terror\tsource File\tsource line\tiaddress"
+
+def getDivStr(num, div): #used for the command
     #this is the layout:
-    # num ifile var i1 i2 diff file line addr
-    retVal = str(num)
-    for i in divLayout:
-        retval = retVal + " " + div[i]
+    # num e1 e2 ifile var i1 i2 v1 v2 sfile sline iaddr
+    retVal = (str(num) + '\t' +
+              path.basename(div[0]) + '\t' +
+              str(div[1]) + '\t' +
+              str(div[2]) + '\t' +
+              str(div[3]) + '\t' +
+              str(div[4]) + '\t' +
+              str(div[5][2]) + '\t' +
+              str(div[5][4]) + '\t' +
+              str(format(div[5][3], '#08x')))
     return retVal
 
+def seekDiv(num):
+    print('handling seek1 state')
+    gdb.events.exited.disconnect(catch_term)
+    subjects.setSeeking(divergencies[int(num)])
+    gdb.events.exited.connect(catch_term)
+    print('executed subjects setSeeking')
+    watch1 = subjects.watches[0]
+    watch2 = subjects.watches[1]
+    inf1 = watch1.inf
+    inf2 = watch2.inf
+    estate = execState.seek1
+    # watch1.state = watchState.seeking
+    # watch2.state = watchState.seeking
+    # watch1.target = 
+    execCommands(['continue'])
+                #DELME
+    print('after continue, watch1.state and watch2.state are: ' +
+        str(watch1.state) + ' and ' + str(watch2.state))
+    while True:
+        if watch1.state == watchState.hitSeek:
+            estate = execState.seek2
+            subjects.toggle_inf()
+        # else:
+        #     raise gdb.error('couldn\'t reach target in seek of inf ' + str(inf1))
+        if estate == execState.seek2:
+            print('handling seek2 state')
+            #break
+            execCommands(['continue'])
+            if watch2.state == watchState.hitSeek:
+                estate = execState.user
+                break
+            # else:
+            #     raise gdb.error('couldn\'t reach target in seek of inf ' + str(inf2))
+
+def read_file(filename):
+    with open(filename) as f:
+        return eval(f.read().replace('\n', '').replace(' ', ''))
+
+    
             
 # Here are our command definitions (for navigating divergencies)
 
@@ -441,12 +476,12 @@ class InfoDivergenciesCommand (gdb.Command):
             ifile = args[1]
         if len(args) > 0:
             varName = args[0]
-        print(getDivHeader()
+        print(getDivHeader())
         for i, div in enumerate(divergencies):
-            if (ifile != None && ifile in div[1) ||
-                ifile == None:
-              if (varName != None && varName in div[2]) ||
-                varName == None:
+            if ((ifile != None and ifile in div[1]) or
+                ifile == None):
+              if ((varName != None and varName in div[2]) or
+                varName == None):
                 print(getDivStr(i, div))
         
 class SeekDivergenceCommand(gdb.Command):
@@ -459,19 +494,78 @@ class SeekDivergenceCommand(gdb.Command):
     def invoke(self, arg, from_tty):
         args = gdb.string_to_argv(arg)
         if len(args) == 1:
-            seekDiv(args[0]))
+            seekDiv(args[0])
         else:
-            raise.gdb.GdbError("seek takes one argument: divergence number.")
+            raise gdb.GdbError("seek takes one argument: divergence number.")
 
+class WriteQDDataCommand(gdb.Command):
+    """writes the current divergencies data to file"""
+    def __init__(self):
+        super(WriteQDDataCommand, self).__init__("write",
+                                                     gdb.COMMAND_SUPPORT,
+                                                     gdb.COMPLETE_NONE)
+
+    def invoke(self, arg, from_tty):
+        args = gdb.string_to_argv(arg)
+        if len(args) == 1:
+            with open(args[0], 'w') as f:
+                f.write(repr(divergencies))
+        else:
+            raise gdb.GdbError("You must supply a filename to write")
+
+class LoadQDDataCommand(gdb.Command):
+    """Loads a file with QD data (analyzed divergency list)"""
+    def __init__(self):
+        super(LoadQDDataCommand, self).__init__("load",
+                                                     gdb.COMMAND_SUPPORT,
+                                                     gdb.COMPLETE_NONE)
+
+    def invoke(self, arg, from_tty):
+        args = gdb.string_to_argv(arg)
+        global divergencies
+        if len(args) == 1:
+            divergencies = read_file(args[0])
+        else:
+            raise gdb.GdbError("You must supply a filename to load")
+
+    
+        
 class CurrentLocation():
-    def __init__(self, watchpoint):
+    """This is the event that allows us to get accurate location information
+    when one of our watchpoints is hit.  If we try to access this from within
+    Breakpoint.stop(), we get very inaccurate information.  We have to
+    add this to the gdb event queue"""
+    def __init__(self, hit_count, values):
         gdb.write('inside CurrentLocation.__init__\n')
-        self.watchpoint = watchpoint
+        self.count = hit_count
+        self.values = values
     def __call__(self):
         print('our event was taken from the queue!\n')
         print(gdb.decode_line()[1][0])
-        print('wp count,CP is: ' + str(self.watchpoint.count) +
-              ',' + str(self.watchpoint.subject.CPERIOD))
-        if self.watchpoint.count == self.watchpoint.subject.CPERIOD:
-            self.watchpoinst.setHitCount()
+        print('wp count is: ' + str(self.count))
+        file = gdb.decode_line()[1][0].symtab.filename
+        line = gdb.decode_line()[1][0].line
+        iaddr = gdb.decode_line()[1][0].symtab.linetable().line(line)[0].pc
+        # print('file, line and iaddr are: ' + str(file) + ':' + str(line) + ':'
+        #       + str(iaddr))
+        # print('values len is: ' + str(len(self.values)))
+        # print('values is: ' + str(self.values))
+        #self.values[self.count].fetch_lazy()
+        self.values[self.count] = [self.count, float(self.values[self.count]), file, iaddr, line]
+        # print('after assignment, values is: ' + str(self.values))
+        # print('just added: ' + self.values[self.count])
+        # if self.watchpoint.count == self.watchpoint.subject.CPERIOD:
+        #     self.watchpoinst.setHitCount()
 
+#here are our exec states
+class execState(Enum):
+    init = 1
+    search1 = 2
+    search2 = 3
+    analyze = 4
+    seek1 = 5
+    seek2 = 6
+    user = 7
+
+#sub = subjects[0]
+estate = execState.init

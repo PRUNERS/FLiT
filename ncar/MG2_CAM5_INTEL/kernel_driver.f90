@@ -49,7 +49,8 @@ PROGRAM kernel_driver
         WRITE( kgen_counter_conv, * ) kgen_counter
         kgen_mpi_rank = kgen_mpi_rank_at(mod(kgen_repeat_counter, 3)+1)
         WRITE( kgen_mpi_rank_conv, * ) kgen_mpi_rank
-        kgen_filepath = "./micro_mg_tend2_0." // trim(adjustl(kgen_counter_conv)) // "." // trim(adjustl(kgen_mpi_rank_conv))
+        CALL GETCWD(kgen_filepath)
+        kgen_filepath = trim(kgen_filepath) // "/micro_mg_tend2_0." // trim(adjustl(kgen_counter_conv)) // "." // trim(adjustl(kgen_mpi_rank_conv))
 #else
         kgen_filepath = input_set
 #endif
