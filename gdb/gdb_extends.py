@@ -34,8 +34,7 @@ def analyze_div(num, div):
     watch2 = sub.getWatch(inf2)
     curInf = inf1
     curW = watch1
-    #we're ready to search
-    helpers.execCommands(['set logging file /dev/null', 'set logging redirect on', 'set logging on'])
+   #we're ready to search
     helpers.execCommands(['inferior 1'])
     print('inf1 is: ' + str(inf1) + ' and inf2 is: ' + str(inf2))
     print('watch1 inf is: ' + str(watch1.inf) + ' and watch2 inf is: ' +
@@ -78,7 +77,6 @@ def analyze_div(num, div):
                                     str(div))
                 else:
                     sub.setSearching() #search the next block
-    helpers.execCommands(['set logging off'])
     return retVal
                 
 def register_commands():
@@ -89,7 +87,10 @@ def register_commands():
     helpers.LookupParamCommand()
     helpers.WhatPrefixCommand()
     helpers.WhatDivergeCommand()
-
+    helpers.SetDivSortCommand()
+    helpers.ShowDivSortCommand()
+    helpers.ToggleRevDivSortCommand()
+    
 def write_QD_file(filename):
     with open(filename) as f:
         f.write(repr(divergencies))
@@ -102,10 +103,12 @@ def init_inferiors():
                           'add-inferior -exec inf2'])
 
 def analyze_all(div_info):
+    helpers.execCommands(['set logging file /dev/null', 'set logging redirect on', 'set logging on'])
     for i, div in enumerate(div_info):
         helpers.prep_watches(div)
         divergencies.append(analyze_div(i, div))
-        if i == 10: break
+        #if i == 10: break
+    helpers.execCommands(['set logging off'])
         
 def analyzed(div_info):
     if len(div_info) > 0:

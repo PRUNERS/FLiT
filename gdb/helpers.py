@@ -5,8 +5,25 @@ import re
 import copy
 from enum import Enum
 from os import path
+import functools
 #here are the data structures we need to record watchpoint hit data
 #to determine where execution pairs diverge
+
+
+#These are the basic record formats:
+
+#QC file (returned from the classifier, fed into QD to generate QD records):
+
+# [input data file, variable, index1, index2, relative error]
+
+#infer record:
+
+#[watch hit at divergence, value at divergence, source file, instruction address, source line]
+
+#QD File:
+
+# [ QC File [inf1], [inf2]]
+
 
 
 class subjState(Enum):
@@ -231,19 +248,6 @@ class qfpSubject:
         for v1, v2 in zip(self.watches[0].values, self.watches[1].values):
             print(str(v1) + ':' + str(v2))
                 
-    # def getDivergence(self):
-    #     values = []
-    #     print('in getDivergence, len(watches[0].values) is: '
-    #           + str(len(self.watches[0].values)))
-    #     self.printValues()
-    #     print('\tlen(watches[1].values) is: ' + str(len(self.watches[1].values)))
-    #     for cnt, vals in enumerate(zip(self.watches[0].values, self.watches[1].values)):
-    #         if (vals[0] != vals[1]):
-    #             values.append([vals[0], vals[1]])
-    #             divs.append(cnt + self.watches[0].masterCount)
-    #             break
-    #     return values, divs
-
     def seekDivergence(self):
         for i, div in enumerate(zip(self.watches[0].values, self.watches[1].values)):
             if div[0][1] != div[1][1]:
@@ -402,21 +406,24 @@ def catch_term(event):
                 #our (subclass) data.  Docs say this deletes the super : P
 
 def getDivHeader():
-    return "id\tifile\tvar\ti1\ti2\terror\tsource File\tsource line\tiaddress"
+    return "num ifile var i1 i2 error hit source_file source_line iaddress"
 
-def getDivStr(num, div): #used for the command
+def getDivStr(num_div): #used for the command
     #this is the layout:
-    # num e1 e2 ifile var i1 i2 v1 v2 sfile sline iaddr
-    retVal = (str(num) + '\t' +
-              path.basename(div[0]) + '\t' +
-              str(div[1]) + '\t' +
-              str(div[2]) + '\t' +
-              str(div[3]) + '\t' +
-              str(div[4]) + '\t' +
-              str(div[5][2]) + '\t' +
-              str(div[5][4]) + '\t' +
-              str(format(div[5][3], '#08x')))
-    return retVal
+    num = num_div[0]
+    div = num_div[1]
+    items = (str(num) + ' ' +
+              path.basename(div[0]) + ' ' +
+              str(div[1]) + ' ' +
+              str(div[2]) + ' ' +
+              str(div[3]) + ' ' +
+              str(div[4]) + ' ' +
+              str(div[6][0]) + ' ' + 
+              str(div[6][2]) + ' ' +
+              str(div[6][4]) + ' ' +
+              str(format(div[6][3], '#016x')))
+
+    return items
 
 def seekDiv(num):
     print('handling seek1 state')
@@ -456,9 +463,94 @@ def read_file(filename):
     with open(filename) as f:
         return eval(f.read().replace('\n', '').replace(' ', ''))
 
-    
+def getMaxLenList(lineList):
+    retVal = [0] * len(lineList[0].split(' '))
+    for i in lineList:
+        for i,l in enumerate(i.split(' ')):
+            if len(str(l)) > retVal[i]:
+                retVal[i] = len(str(l))
+    return retVal
+
+def spaceLine(line, lenList, space):
+    retVal = ''
+    for i,w in zip(line.split(' '), lenList):
+        # print('i is: ' + str(i))
+        # print('w is: ' + str(w))
+        spaces = ' ' * (w + space - len(i))
+        retVal = retVal + i + spaces
+    return retVal
+
+def printDivList(dlist):
+    # print('dlist[0] is: ' + str(dlist[0]))
+    slist = list(map(lambda d: getDivStr(d), dlist))
+    # print('slist[0].split len is: ' + str(len(slist[0].split(' '))))
+    # print('header len is: ' + str(getDivHeader().split(' ')))
+    lens = getMaxLenList(slist + [getDivHeader()])
+    # print('lens is: ' + str(lens))
+    space = 2
+    print(spaceLine(getDivHeader(), lens, space))
+    print('-' * (functools.reduce(lambda x, y: x+y, lens) + len(lens) * space))
+    for i in slist:
+        print(spaceLine(i, lens, space))
+        
             
 # Here are our command definitions (for navigating divergencies)
+## Command related global data
+curDiv = None
+curSort = 'none'
+revSort = False
+
+DivSorts = {'none':[(None,None)], 'input-file':[(0,None)], 'var-name':[(1,None)], 'rel-error':[(4,None)],
+            'source-loc':[(5,2), (5,3)], 'inst-addr':[(5,4)], 'hit':[(5,0)]}
+    
+class ShowDivSortCommand(gdb.Command):
+    """Shows the sort for 'info divergencies', can be one of:
+    input-file, var-name, rel-error, source-loc, inst-addr"""
+    
+    def __init__ (self):
+        super(ShowDivSortCommand, self).__init__ ("show sort",
+                                                 gdb.COMMAND_SUPPORT,
+                                                 gdb.COMPLETE_NONE)
+
+    def invoke(self, arg, from_tty):
+        print(curSort)
+
+class ToggleRevDivSortCommand(gdb.Command):
+    """This command toggles reverse of info divergencies sort order"""
+    
+    def __init__ (self):
+        super(ToggleRevDivSortCommand, self).__init__ ("toggle-rev-sort",
+                                                       gdb.COMMAND_SUPPORT)
+    def invoke(self, arg, from_tty):
+        global revSort
+        revSort = not revSort
+        
+class SetDivSortCommand(gdb.Command):
+    """Determines the sort for 'info divergencies', can be one of:
+    input-file, var-name, rel-error, source-loc, inst-addr"""
+    
+    def __init__ (self):
+        super(SetDivSortCommand, self).__init__ ("set sort",
+                                                       gdb.COMMAND_SUPPORT)
+
+    def invoke(self, arg, from_tty):
+        global curSort
+        args = gdb.string_to_argv(arg)
+        if len(args) == 1:
+            if args[0] in DivSorts:
+                curSort = args[0]
+            else:
+                raise gdb.GdbError('choose one of: ' + str(list(DivSorts.keys())))
+        else:
+            raise gdb.GdbError('set sort takes one argument')
+
+    def complete(self, text, word):
+        retVal = []
+        for w in DivSorts.keys():
+            if word in w:
+                retVal.append(w)
+        return retVal
+        
 class WhatPrefixCommand(gdb.Command):
     """Prefix command for looking into current state"""
     def __init__(self):
@@ -469,7 +561,7 @@ class WhatPrefixCommand(gdb.Command):
         
 class InfoDivergenciesCommand (gdb.Command):
     """List information on divergence locations.
-    Usage: [cmd] [div # | var name] """
+    Usage: [cmd] optional: [div # | var name] """
 
     def __init__ (self):
         super(InfoDivergenciesCommand, self).__init__ ("info divergencies",
@@ -485,10 +577,11 @@ class InfoDivergenciesCommand (gdb.Command):
             divnum = None
             try:
                 divnum = int(args[0])
-                print(divergencies[divnum])
+                printDivList([(divnum, divergencies[divnum])])
                 return
             except IndexError:
-                raise gdb.GdbError('Index out of range -- use number from 0 to ' + str(len(divergencies) - 1))
+                raise gdb.GdbError('Index out of range -- use number from 0 to '
+                                   + str(len(divergencies) - 1))
             except ValueError:
                 pass
             tp = []
@@ -496,21 +589,48 @@ class InfoDivergenciesCommand (gdb.Command):
                 if args[0] in d[1]:
                    tp.append((i,d))
             if len(tp) > 0:
-                print(getDivHeader())
-                for i,d in tp:
-                    print(getDivStr(i,d))
+                if revSort:
+                    printDivList(list(reversed(sorted(enumerate(tp), key=lambda d:
+                                                         getDivSortKey(d[1])))))
+                else:
+                    printDivList(list(sorted(enumerate(tp), key=lambda d:
+                                                         getDivSortKey(d[1]))))
         else:
             if len(args) == 0:
-                print(getDivHeader())
-                for i,d in enumerate(divergencies):
-                    print(getDivStr(i,d))
+                if revSort:
+                    printDivList(list(reversed(sorted(enumerate(divergencies), key=lambda d:
+                                                         getDivSortKey(d[1])))))
+                else:
+                    printDivList(list(sorted(enumerate(divergencies), key=lambda d:
+                                                         getDivSortKey(d[1]))))
             else:
                 raise gdb.GdbError('info divergencies takes 0 or 1 argument')
             
     def complete(self, text, word):
         return [ d[1] for d in divergencies if word in d[1] ]
+
+def getDivSortKey(div):
+    slist = DivSorts[curSort]
+    key = None
+    if len(slist) > 1:
+        key = ' '
+        for s in slist:
+            print('s is: ' + str(s))
+            if not s[0] == None:
+                if not s[1] == None :
+                    key = key + str(div[s[0]][s[1]])
+                else:
+                    key = key + str(div[s[0]])
+    else:
+        if not slist[0][0] == None:
+            if not slist[0][1] == None :
+                key = div[slist[0][0]][slist[0][1]]
+            else:
+                key = div[slist[0][0]]
+        else:
+            key = ' '
+    return key
         
-curDiv = None
 class SeekDivergenceCommand(gdb.Command):
     """Go to point of divergence in full gdb context"""
 
@@ -551,8 +671,7 @@ class WhatDivergeCommand(gdb.Command):
                                                      gdb.COMPLETE_NONE)
     def invoke(self, arg, from_tty):
         if not curDiv == None:
-            print(getDivHeader())
-            print(getDivStr(curDiv, divergencies[curDiv]))
+            printDivList(divergencies[curDiv])
         else:
             raise gdb.GdbError('There is no current divergence')
                   
