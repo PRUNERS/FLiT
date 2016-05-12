@@ -29,17 +29,17 @@ tests may also execute and return data to the _primary_.
 ### Software ###
 
 These are required on the primary host; entries demarcated with
-a ***** are required on the _remote_ hosts.
+a *** are required on the _remote_ hosts.
 
 * python3*
 * gcc 5.2+*
+* git (used from 1.7.1 to 2.5)*
 * gdb 7.11 
 ** The bleeding-edge is a little unstable (esp regarding the python API interface),
    but this version works (and earlier
    ones do not)
 * PostgreSQL 9.4.7
 ** not sure how version variance affects things such as importing QC database
-* git (used from 1.7.1 to 2.5)
 
 On Ubuntu 15.10, everything was obtained with apt-get satisfactorily,
 except we have to build gdb from binutils-gdb.  Hopefully the gdb-python
@@ -76,11 +76,13 @@ As previously mentioned, the parameters are **t**est, **c**ompiler, **f**lags, *
 
 This table explains the parameters.  Some can be specified by a file, others
 will be explored in full (i.e. {configurable set} x {precision} x {sort}).
-Configurable parameter files are prepopulated, and you may comment a line with a '#'.
+Configurable parameter files are prepopulated, and you may comment a line with a '#' in
+the first column.
 
 | parameter | file | example | notes |
 ---|---|---|---
 compiler | compilers | clang-3.6 | compiler path
 compiler flag | Makefile.switches | FPMODFST2 := -fp-model fast=2 | [unique name] := [flag] <br> also add name to **SWITCHES** list declaration in file
 host name | hosts | youruname@kingspeak2.chpc.utah.edu | username@FQDN of host
-test name | tests | 
+test name | tests | fpTestSuite::MyTest | the namespace qualified name of your test.<br> You should
+subclass fpTestSuite::TestSuper
