@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
+#include <functional>
 
 //DELME
 #include <time.h>
@@ -1314,7 +1315,7 @@ getSortName(int val){
 template<typename T>
 void
 outputResults(size_t iters,
-	      size_t highestDim,
+	      size_t highestDim,dfd
 	      size_t ulp_inc,
 	      T min,
 	      T max,
@@ -1502,26 +1503,12 @@ main(int argc, char* argv[]){
   }
 }
 
+// this is the master test function vector -- add your function here, and when
+// it comes time to rerun in QFD (debugger), it will be referred to by its array index
 
-//this executes unit tests
-// int main(){
-//   cout.precision(100);
-//   using namespace UnitTests;
-//   return DoTests();
-// }
+vector<std::function<size_t, size_t, size_t, long double, long double,
+		     typename Vector<T>::sort_t, long double,
+		     std::map<string, std::pair<long double, long double>>,
+		     int> Functions = {
 
 
-// int main(){
-//   Vector<float> X = {1, 2, 3};
-//   Vector<float> Y = {4, 5, 6};
-
-//   cout << "starting with vectors:" << endl;
-//   cout << X << endl << Y << endl;
-//   cout << "normalize X: " << endl;
-//   X = X.getUnitVector();
-//   cout << X << endl;
-//   cout << "X . Y:" << endl << (X ^ Y) << endl;
-//   cout << "Y(X.Y)" << endl << Y * (X ^ Y) << endl;
-//   cout << "unitVect(Y - (X.Y)Y)" << endl;
-//   cout << (Y - Y * (X ^ Y)).getUnitVector() << endl;
-// }
