@@ -79,8 +79,8 @@ for h in hostinfo:
           'cd remote_qfp/qfp && ' +
           'git stash && ' +
 #          'git checkout master  && ' +
-          'git checkout e2ed778d0ea36cd550db005f81ad3b52152d6652 && ' +
-#          'git pull && ' +
+          'git branch lt_rel && ' +
+          'git pull && ' +
           'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
     if verbose == '':
