@@ -7,9 +7,12 @@ import datetime
 import glob
 
 
-hostinfo = [['@kingspeak.chpc.utah.edu', 12],
-            [environ["USER"] + '@bihexal.cs.utah.edu', 24],
-            [environ["USER"] + '@gaussr.cs.utah.edu', 4]]
+hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
+            ['sawaya@bihexal.cs.utah.edu', 24],
+            ['sawaya@gaussr.cs.utah.edu', 4],
+            ['sawaya@ms0123.utah.cloudlab.us', 1]]
+            # [environ["USER"] + 'sawaya@bihexal.cs.utah.edu', 24],
+            # [environ["USER"] + 'sawaya@gaussr.cs.utah.edu', 4]]
 
 #constants
 git = '/usr/bin/git'
@@ -34,8 +37,8 @@ else:
     usage()
     exit(1)
 
-kp_name = input('Enter your username for kingspeak: ')
-hostinfo[0][0] = kp_name + hostinfo[0][0]
+# kp_name = input('Enter your username for kingspeak: ')
+# hostinfo[0][0] = kp_name + hostinfo[0][0]
 
 
 for f in glob.iglob('results/*'):
@@ -75,8 +78,9 @@ for h in hostinfo:
           'fi && ' +
           'cd remote_qfp/qfp && ' +
           'git stash && ' +
-          'git checkout master && ' +
-          'git pull && ' +
+#          'git checkout master  && ' +
+          'git checkout e2ed778d0ea36cd550db005f81ad3b52152d6652 && ' +
+#          'git pull && ' +
           'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
     if verbose == '':
