@@ -79,7 +79,7 @@ for h in hostinfo:
           'cd remote_qfp/qfp && ' +
           'git stash && ' +
 #          'git checkout master  && ' +
-          'git branch lt_rel && ' +
+          'git checkout lt_rel && ' +
           'git pull && ' +
           'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
