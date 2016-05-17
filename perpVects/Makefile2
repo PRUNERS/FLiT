@@ -16,7 +16,7 @@ COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 VERBOSE ?= 
 
 #CC_GEN_OPTS ?= -O0 -ggdb
-CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst
+CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst -DQC
 
 include ../Makefile.switches
 

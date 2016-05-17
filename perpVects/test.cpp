@@ -857,7 +857,9 @@ struct FPTests {
     info_stream << b << endl;
     T backup;
     //setup for debug monitor (QFP_gdb)
+#ifndef QC
     QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum), "sum", NO_WATCH);
+#endif
     //printOnce(__FUNCTION__, &Globals<T>::prods.data()[0]);
 
     
