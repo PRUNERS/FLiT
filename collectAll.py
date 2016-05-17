@@ -71,17 +71,17 @@ for f in glob.iglob('results/*'):
 ## import
 for h in hostinfo:
     print('collecting data from ' + h[0])
-    stdo = check_output(['ssh', h[0], 'if [[ ! -e remote_qfp ]]; then ' +
-          'mkdir remote_qfp && cd remote_qfp && ' +
-          'git clone https://github.com/geof23/qfp && ' +
-          'cd .. ; ' +
-          'fi && ' +
-          'cd remote_qfp/qfp && ' +
-          'git stash && ' +
-#          'git checkout master  && ' +
-          'git checkout rel_lt && ' +
-          'git pull && ' +
-          'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
+    stdo = check_output(['ssh', h[0], 'if [[ -e remote_qfp ]]; then ' +
+                         'rm -fr remote_qfp; && ' +
+                         'fi && ' +
+                         'mkdir remote_qfp && cd remote_qfp && ' +
+                         'git clone https://github.com/geof23/qfp && ' +
+                         'cd qfp' +
+                         'git stash && ' +
+                         #          'git checkout master  && ' +
+                         'git checkout rel_lt && ' +
+                         'git pull && ' +
+                         'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
     if verbose == '':
         stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
