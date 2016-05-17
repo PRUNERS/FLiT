@@ -84,3 +84,85 @@ compiler flag | Makefile.switches | FPMODFST2 := -fp-model fast=2 | [unique name
 host name | collectAll.py | youruname@kingspeak2.chpc.utah.edu | username@FQDN of host, added to hostinfo var (at top of file)
 test name |  | perpTest/test.cpp | There are three steps to adding your own test.  See below
 
+
+#### adding a new test ####
+
+As an example, examine the function _DoSkewSymCPRotationTest_ in perpVects/test.cpp.
+You need the following features:
+
+* return FPTests::resultType
+* should be a **template<typename T>**, allowing for multiple precision (T is the main float type used in your computation)
+* you should accumulate results, or have another key FP type that is used in your computation, be a global value
+* add a line in this form:
+
+```
+#ifndef QC
+    QFP::checkpoint(Globals<T>::sum, sizeof(Globals<T>::sum), "sum", NO_WATCH);
+#endif
+
+```
+
+Where the parameters to _checkpoint_ are:
+
+1 global variable reference
+1 size of variable
+1 a name tag for variable
+1 boolean, whether to ignore watch (for QC)
+
+
+#### Database configuration ####
+
+After you have set up your PosgreSQL database, you may initialize the database (add the required tables)
+with these commands:
+
+```
+cd db/db_backups
+psql qfp < dumpfile
+cd ../psql_commands
+psql qfp < create_importQFPResults
+```
+
+## Running QFPC (or QC -- the classifier) ##
+
+execute _collectAll.py_
+
+This script will push the project out to the hosts that you indicate in this datastructure (as noted above):
+
+```
+hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
+            ['sawaya@bihexal.cs.utah.edu', 24],
+            ['sawaya@gaussr.cs.utah.edu', 4],
+            ['sawaya@ms0123.utah.cloudlab.us', 1]]
+```
+
+For each host, the _hostCollect.py_ script is executed, running the makefile, which
+builds and runs the tests for all configurations.  Results are groomed and collected
+in the results directory (on the remote), which is then pulled back to the master host
+(where _collectAll.py_ was executed).
+
+After all results are collected, this script then runs the stored function in the database,
+_importQFPResults_, on the data collected from all hosts.  It is then available to query.
+
+
+### sample query ###
+
+You may log into the PostgreSQL client, and examine your data:
+
+```
+qsql qfp
+select * from tests;
+```
+
+More sample queries are available at: https://github.com/Geof23/QFP/wiki/Some-Analysis
+
+
+## QD ##
+
+To execute QD, you should take the following steps:
+
+* Log onto a host that you'd like to examine a pair of tests (for instance, kingspeak2.chpc.utah.edu:/remote_qfp)
+[for example]:
+* cd qfp/perpVects
+* make -f MakefileQD -j 12
+* runQD [test1] [test2] [precision1] [sort1] [precision2] [sort2]
+
