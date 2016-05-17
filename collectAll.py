@@ -76,7 +76,7 @@ for h in hostinfo:
                          'fi && ' +
                          'mkdir remote_qfp && cd remote_qfp && ' +
                          'git clone https://github.com/geof23/qfp && ' +
-                         'cd qfp' +
+                         'cd qfp && ' +
                          'git stash && ' +
                          #          'git checkout master  && ' +
                          'git checkout rel_lt && ' +
