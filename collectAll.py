@@ -72,7 +72,7 @@ for f in glob.iglob('results/*'):
 for h in hostinfo:
     print('collecting data from ' + h[0])
     stdo = check_output(['ssh', h[0], 'if [[ -e remote_qfp ]]; then ' +
-                         'rm -fr remote_qfp; && ' +
+                         'rm -fr remote_qfp; ' +
                          'fi && ' +
                          'mkdir remote_qfp && cd remote_qfp && ' +
                          'git clone https://github.com/geof23/qfp && ' +
