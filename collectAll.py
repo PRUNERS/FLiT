@@ -41,8 +41,8 @@ else:
 # hostinfo[0][0] = kp_name + hostinfo[0][0]
 
 
-for f in glob.iglob('results/*'):
-    remove(f);
+# for f in glob.iglob('results/*'):
+#     remove(f);
 
 ## first: check if git is current (git diff-index --quiet HEAD != 0)    
 ## if not current, exit and require commit / push
@@ -69,23 +69,23 @@ for f in glob.iglob('results/*'):
 #     sys.exit(1)
 
 ## import
-for h in hostinfo:
-    print('collecting data from ' + h[0])
-    stdo = check_output(['ssh', h[0], 'if [[ -e remote_qfp ]]; then ' +
-                         'rm -fr remote_qfp; ' +
-                         'fi && ' +
-                         'mkdir remote_qfp && cd remote_qfp && ' +
-                         'git clone https://github.com/geof23/qfp && ' +
-                         'cd qfp && ' +
-                         'git stash && ' +
-                         #          'git checkout master  && ' +
-                         'git checkout rel_lt && ' +
-                         'git pull && ' +
-                         'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
-    print(stdo)
-    if verbose == '':
-        stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
-        print(stdo)
+# for h in hostinfo:
+#     print('collecting data from ' + h[0])
+#     stdo = check_output(['ssh', h[0], 'if [[ -e remote_qfp ]]; then ' +
+#                          'rm -fr remote_qfp; ' +
+#                          'fi && ' +
+#                          'mkdir remote_qfp && cd remote_qfp && ' +
+#                          'git clone https://github.com/geof23/qfp && ' +
+#                          'cd qfp && ' +
+#                          'git stash && ' +
+#                          #          'git checkout master  && ' +
+#                          'git checkout rel_lt && ' +
+#                          'git pull && ' +
+#                          'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
+#     print(stdo)
+#     if verbose == '':
+#         stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
+#         print(stdo)
 
 if verbose == '':
     chdir('results')
