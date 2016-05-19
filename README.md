@@ -21,25 +21,25 @@ and currently, are limited to running on the same host.
 Contents:
 
 * [Prerequisites and Setup](#prerequisites-and-setup)
-** [Software](#software)
-*** [python3](#install-python3)
-*** [gcc 5.2+](#install-gcc)
-*** [git (used from 1.7.1 to 2.5)](#install-git)
-*** [gdb 7.11 ](#install-gdb)
-*** [PostgreSQL 9.4.7+](#configuring-postgresql-database)
-*** [QFP](#clone-and-configure-qfp-git)
-** [Configuring QC](#configuring-test-(qc)-run)
-*** [Adding a new test](#adding-a-new-test)
+  ** [Software](#software)
+    *** [python3](#install-python3)
+    *** [gcc 5.2+](#install-gcc)
+    *** [git (used from 1.7.1 to 2.5)](#install-git)
+    *** [gdb 7.11 ](#install-gdb)
+    *** [PostgreSQL 9.4.7+](#configuring-postgresql-database)
+    *** [QFP](#clone-and-configure-qfp-git)
+  ** [Configuring QC](#configuring-test-(qc)-run)
+    *** [Adding a new test](#adding-a-new-test)
 * [Running QC (QFPC Classifier)](#running-qc)
-** [Examining data -- a sample query](#sample-query)
-* [QD -- the Differential Debugger](qd)
+  ** [Examining data &mdash; a sample query](#sample-query)
+* [QD &mdash; the Differential Debugger](qd)
 
 
 ## Prerequisites and Setup ##
 
 QFP-LT is designed to build and excute its test suite on a variety of
 hosts and compilers.  However, there are two types of hosts whose
-environments must be considered -- the _primary_ host, from which you
+environments must be considered &mdash; the _primary_ host, from which you
 will be envoking the tests, and zero or more  _remote_ hosts, where
 tests may also execute and return data to the _primary_.
 
@@ -71,7 +71,7 @@ Here is the software required on the primary host:
 * [gcc 5.2+](#install-gcc)
 * [git (used from 1.7.1 to 2.5)](#install-git)
 * [gdb 7.11 ](#install-gdb)
-** This is required, and at this writing, is the latest stable release.
+  ** This is required, and at this writing, is the latest stable release.
 * [PostgreSQL 9.4.7+](#configuring-postgresql-database)
 * [QFP](#clone-and-configure-qfp-git)
 
@@ -94,7 +94,7 @@ Many systems will already provide _python3_.
 
 #### Install gcc ####
 
-Again, recent systems already have a new enough one.
+Again, recent systems already have a new enough version.
 The required version isn't as high for remote hosts,
 but this is a minimum.
 
