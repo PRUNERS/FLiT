@@ -18,6 +18,23 @@ Pairs of tests can be chosen to run in the differential debugger (QD).
 Of course, the test pairs should be based on the same litmus test (t),
 and currently, are limited to running on the same host.
 
+Contents:
+
+* [Prerequisites and Setup](#prerequisites-and-setup)
+** [Software](#software)
+*** [python3](#install-python3)
+*** [gcc 5.2+](#install-gcc)
+*** [git (used from 1.7.1 to 2.5)](#install-git)
+*** [gdb 7.11 ](#install-gdb)
+*** [PostgreSQL 9.4.7+](#configuring-postgresql-database)
+*** [QFP](#clone-and-configure-qfp-git)
+** [Configuring QC](#configuring-test-(qc)-run)
+*** [Adding a new test](#adding-a-new-test)
+* [Running QC (QFPC Classifier)](#running-qc)
+** [Examining data -- a sample query](#sample-query)
+* [QD -- the Differential Debugger](qd)
+
+
 ## Prerequisites and Setup ##
 
 QFP-LT is designed to build and excute its test suite on a variety of
@@ -50,13 +67,20 @@ show the _apt-get_ tool's use for obtaining our dependencies.
 
 Here is the software required on the primary host:
 
-* [python3](#install python3)
-* [gcc 5.2+](#install gcc)
-* [git (used from 1.7.1 to 2.5)](#install git)
-* [gdb 7.11 ](#install gdb)
+* [python3](#install-python3)
+* [gcc 5.2+](#install-gcc)
+* [git (used from 1.7.1 to 2.5)](#install-git)
+* [gdb 7.11 ](#install-gdb)
 ** This is required, and at this writing, is the latest stable release.
-* [PostgreSQL 9.4.7+](#configuring postgresql database)
-* [QFP](#clone and configure qfp git)
+* [PostgreSQL 9.4.7+](#configuring-postgresql-database)
+* [QFP](#clone-and-configure-qfp-git)
+
+. . . and the list for remote/secondary hosts:
+
+* [python3](#install-python3)
+* [gcc 4.9+](#install-gcc)
+* [git (used from 1.7.1 to 2.5)](#install-git)
+
 
 On Ubuntu 15.10, everything was obtained with apt-get satisfactorily,
 except we have to build gdb from the binutils-gdb (unless your package
@@ -71,8 +95,10 @@ Many systems will already provide _python3_.
 #### Install gcc ####
 
 Again, recent systems already have a new enough one.
+The required version isn't as high for remote hosts,
+but this is a minimum.
 
-```sudo apt-get install gcc-5.2```
+```sudo apt-get install gcc-[5.2|4.9]```
 
 #### Clone and Configure QFP git ####
 
@@ -98,6 +124,9 @@ system.  Other approaches are possible such as using other package managers,
 or building from source.
 
 ##### Install PostgreSql #####
+
+Note, you will need equivalent to the following packages, be it through
+another package system or building from source.
 
 ```
 sudo apt-get install postgresql-9.4 postgresql-plpython3-9.4
@@ -222,7 +251,9 @@ Where the parameters to _checkpoint_ are:
 
 
 
-## Running QFPC (or QC -- the classifier) ##
+## Running QC ##
+
+(the QFPC Classifier)
 
 execute _collectAll.py_
 
@@ -253,7 +284,7 @@ qsql qfp
 select * from tests;
 ```
 
-More sample queries are available at: https://github.com/Geof23/QFP/wiki/Some-Analysis
+More sample queries are available [at the wiki](https://github.com/Geof23/QFP/wiki/Some-Analysis).
 
 
 ## QD ##
