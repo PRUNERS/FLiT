@@ -221,17 +221,6 @@ Where the parameters to _checkpoint_ are:
 1 boolean, whether to ignore watch (for QC)
 
 
-#### Database configuration ####
-
-After you have set up your PosgreSQL database, you may initialize the database (add the required tables)
-with these commands:
-
-```
-cd db/db_backups
-psql qfp < dumpfile
-cd ../psql_commands
-psql qfp < create_importQFPResults
-```
 
 ## Running QFPC (or QC -- the classifier) ##
 
