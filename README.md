@@ -26,24 +26,135 @@ environments must be considered -- the _primary_ host, from which you
 will be envoking the tests, and zero or more  _remote_ hosts, where
 tests may also execute and return data to the _primary_.
 
+Also, these instructions assume mostly that you have *root* access
+on your system.  It is possible with many package managers and
+source builds to install locally, but is beyond the scope of
+these instructions.
+
+Our demonstration system for these instructions is Ubuntu &mdash;
+other Unix based systems should work similarly (including Mac OSX 10).
+
 ### Software ###
 
-These are required on the primary host; entries demarcated with
-a *** are required on the _remote_ hosts.
+Here we'll describe the dependencies that you must have on your
+systems to use QFP.  There are again, two types of systems:
+the primary system that you will directly execute commands
+from and the remote systems that will collect data.
 
-* python3*
-* gcc 5.2+*
-* git (used from 1.7.1 to 2.5)*
-* gdb 7.11 
-** The bleeding-edge is a little unstable (esp regarding the python API interface),
-   but this version works (and earlier
-   ones do not)
-* PostgreSQL 9.4.7
-** not sure how version variance affects things such as importing QC database
+Most of these tools are very recent versions and you may have
+challenges using QFP on an older system, or you will have to
+build from source a number of tools and libraries.
+
+We won't go into detail how to build anything but binutils-gdb, but
+show the _apt-get_ tool's use for obtaining our dependencies.
+
+Here is the software required on the primary host:
+
+* [python3](#install python3)
+* [gcc 5.2+](#install gcc)
+* [git (used from 1.7.1 to 2.5)](#install git)
+* [gdb 7.11 ](#install gdb)
+** This is required, and at this writing, is the latest stable release.
+* [PostgreSQL 9.4.7+](#configuring postgresql database)
+* [QFP](#clone and configure qfp git)
 
 On Ubuntu 15.10, everything was obtained with apt-get satisfactorily,
-except we have to build gdb from binutils-gdb.  Hopefully the gdb-python
-API will stabilize in the next release.
+except we have to build gdb from the binutils-gdb (unless your package
+manager provides at least 7.11).
+
+#### Install python3 ####
+
+Many systems will already provide _python3_.
+
+```sudo apt-get install python3```
+
+#### Install gcc ####
+
+Again, recent systems already have a new enough one.
+
+```sudo apt-get install gcc-5.2```
+
+#### Clone and Configure QFP git ####
+
+```
+cd [location for QFP to live]
+git clone https://github.com/Geof23/QFP.git
+git branch rel_lt
+```
+
+#### Install git ####
+
+It is hard to find a system without git.  But:
+
+```sudo apt-get install git```
+
+#### Configuring PosgreSQL Database ####
+
+To take advantage of the query and analysis capabilities of a SQL database
+consisting of the QC (classifier) data, you will need to install PostgreSQL.
+
+Here are instructions that work on a Debian (apt-get) package management
+system.  Other approaches are possible such as using other package managers,
+or building from source.
+
+##### Install PostgreSql #####
+
+```
+sudo apt-get install postgresql-9.4 postgresql-plpython3-9.4
+```
+After this step, you should have a running DB server, and a new user
+account on your system, _postgres_.
+
+Try `ps aux | grep postgres` to see if your DB is running.  You will see
+something similar to:
+
+```
+you@somemachine$ ps aux | grep postgres
+postgres  3062  0.0  0.2 288160 24196 ?        S    May17   0:00 /usr/lib/postgresql/9.4/bin/postgres -D /var/lib/postgresql/9.4/main -c config_file=/etc/postgresql/9.4/main/postgresql.conf
+postgres  3064  0.0  0.1 288296 10580 ?        Ss   May17   0:00 postgres: checkpointer process                                                                                              
+postgres  3065  0.0  0.0 288160  5612 ?        Ss   May17   0:00 postgres: writer process                                                                                                    
+postgres  3066  0.0  0.0 288160  8620 ?        Ss   May17   0:00 postgres: wal writer process                                                                                                
+postgres  3067  0.0  0.0 288584  6428 ?        Ss   May17   0:00 postgres: autovacuum launcher process                                                                                       
+postgres  3068  0.0  0.0 143416  4276 ?        Ss   May17   0:00 postgres: stats collector process                                                                                           
+you   15850  0.0  0.0   8216  2164 pts/8    R+   17:18   0:00 grep --color=auto postgres
+```
+
+Also, this output shows that the _postgres_ user has been added to the system.
+
+##### Configure Database #####
+
+The next step is to add your user name to the database, and create the _qfp_ database,
+owned by you, and install python support:
+
+
+```
+sudo su postgres
+psql
+create user [your system username];
+create database qfp owner [your system username];
+\q
+exit
+psql qfp
+create language plpython3u;
+\q
+```
+
+##### Modify the restoration file #####
+
+This is necessary to make you the owner of the tables, etc.
+
+```
+cd qfp/db/db_backup
+sed -i 's/sawaya/[your system username]/g' dumpfile
+```
+
+##### Import the Database #####
+
+This will set up the actual tables and sequences used by QC:
+
+```
+psql qfp < dumpfile
+```
 
 #### Building binutils-gdb ####
 
@@ -56,9 +167,9 @@ Here are the steps:
 {} = optional; [] = fill in the blank
 ```
 cd [build location]
-wget https://github.com/bminor/binutils-gdb/archive/gdb-7.11-release.tar.gz
-tar xf gdb-7.11-release.tar.gz
-cd binutils-gdb-gdb-7.11-release
+wget http://ftp.gnu.org/gnu/gdb/gdb-7.11.tar.gz
+tar xf gdb-7.11.tar.gz
+cd binutils-gdb-gdb-7.11-release [or something like that]
 mkdir build && cd build
 ../configure --with-python=$(which python3) {--prefix=/home/you/mysoftware}
 make -j [num procs]
