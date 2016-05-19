@@ -21,17 +21,17 @@ and currently, are limited to running on the same host.
 Contents:
 
 * [Prerequisites and Setup](#prerequisites-and-setup)
-  ** [Software](#software)
-    *** [python3](#install-python3)
-    *** [gcc 5.2+](#install-gcc)
-    *** [git (used from 1.7.1 to 2.5)](#install-git)
-    *** [gdb 7.11 ](#install-gdb)
-    *** [PostgreSQL 9.4.7+](#configuring-postgresql-database)
-    *** [QFP](#clone-and-configure-qfp-git)
-  ** [Configuring QC](#configuring-test-(qc)-run)
-    *** [Adding a new test](#adding-a-new-test)
+  * [Software](#software)
+    * [python3](#install-python3)
+    * [gcc 5.2+](#install-gcc)
+    * [git (used from 1.7.1 to 2.5)](#install-git)
+    * [gdb 7.11 ](#install-gdb)
+    * [PostgreSQL 9.4.7+](#configuring-postgresql-database)
+    * [QFP](#clone-and-configure-qfp-git)
+  * [Configuring QC](#configuring-test-(qc)-run)
+    * [Adding a new test](#adding-a-new-test)
 * [Running QC (QFPC Classifier)](#running-qc)
-  ** [Examining data &mdash; a sample query](#sample-query)
+  * [Examining data &mdash; a sample query](#sample-query)
 * [QD &mdash; the Differential Debugger](qd)
 
 
@@ -71,7 +71,7 @@ Here is the software required on the primary host:
 * [gcc 5.2+](#install-gcc)
 * [git (used from 1.7.1 to 2.5)](#install-git)
 * [gdb 7.11 ](#install-gdb)
-  ** This is required, and at this writing, is the latest stable release.
+  * This is required, and at this writing, is the latest stable release.
 * [PostgreSQL 9.4.7+](#configuring-postgresql-database)
 * [QFP](#clone-and-configure-qfp-git)
 
