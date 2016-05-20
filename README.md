@@ -4,7 +4,7 @@ A project to quickly detect discrepancies in floating point computation across h
 This project has taken on two or three approaches (branches).  Here, however, we will discuss the 'litmus test' version and detail how to get it set up.
 
 QFP consists of two parts: QC, or 'quick classifier'; and QD, 'quick differential
-debugger.
+debugger'.
 
 QFP-LT (litmus test) works by running the test set on a cross product
 set of compilers, flags, precisions and hosts, where each test generates
@@ -22,7 +22,7 @@ Contents:
 
 * [Prerequisites and Setup](#prerequisites-and-setup)
   * [Software](#software)
-    * [python3](#install-python3)
+    * [python3, including the _dev_ package](#install-python3)
     * [gcc 5.2+](#install-gcc)
     * [git (used from 1.7.1 to 2.5)](#install-git)
     * [gdb 7.11 ](#install-gdb)
@@ -67,7 +67,7 @@ show the _apt-get_ tool's use for obtaining our dependencies.
 
 Here is the software required on the primary host:
 
-* [python3](#install-python3)
+* [python3, python3-dev](#install-python3)
 * [gcc 5.2+](#install-gcc)
 * [git (used from 1.7.1 to 2.5)](#install-git)
 * [gdb 7.11 ](#install-gdb)
@@ -90,7 +90,7 @@ manager provides at least 7.11).
 
 Many systems will already provide _python3_.
 
-```sudo apt-get install python3```
+```sudo apt-get install python3 python3-dev```
 
 #### Install gcc ####
 
