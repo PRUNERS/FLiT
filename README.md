@@ -28,11 +28,11 @@ Contents:
     * [gdb 7.11 ](#install-gdb)
     * [PostgreSQL 9.4.7+](#configuring-postgresql-database)
     * [QFP](#clone-and-configure-qfp-git)
-  * [Configuring QC](#configuring-test-(qc)-run)
+  * [Configuring QC](#configuring-test-qc-run)
     * [Adding a new test](#adding-a-new-test)
 * [Running QC (QFPC Classifier)](#running-qc)
   * [Examining data &mdash; a sample query](#sample-query)
-* [QD &mdash; the Differential Debugger](qd)
+* [QD &mdash; the Differential Debugger](#qd)
 
 
 ## Prerequisites and Setup ##
