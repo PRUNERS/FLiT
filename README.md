@@ -114,7 +114,7 @@ It is hard to find a system without git.  But:
 
 ```sudo apt-get install git```
 
-#### Configuring PosgreSQL Database ####
+#### Configuring PostgreSQL Database ####
 
 To take advantage of the query and analysis capabilities of a SQL database
 consisting of the QC (classifier) data, you will need to install PostgreSQL.
@@ -185,7 +185,7 @@ This will set up the actual tables and sequences used by QC:
 psql qfp < dumpfile
 ```
 
-#### Building binutils-gdb ####
+#### Install gdb ####
 
 This describes a global installation.  You may use **--prefix=[path]**
 on the  configure command line to install to a different root
