@@ -14,11 +14,9 @@ hostinfo = [
 #['u0422778@kingspeak2.chpc.utah.edu', 12],
 
 #constants
-git = '/usr/bin/git'
+git = check_output('which git', shell=True)[:-1]
 psql = check_output('which psql', shell=True)[:-1]
-dumpFile = 'db/db_backup/dumpfile'
 notes = ''
-#sed = '/bin/sed'
 verbose = ''
 if environ.get("VERBOSE") == 'verbose':
     verbose = 'verbose'
@@ -36,38 +34,10 @@ else:
     usage()
     exit(1)
 
-# kp_name = input('Enter your username for kingspeak: ')
-# hostinfo[0][0] = kp_name + hostinfo[0][0]
-
-
 for f in glob.iglob('results/*'):
     remove(f);
 
-## first: check if git is current (git diff-index --quiet HEAD != 0)    
-## if not current, exit and require commit / push
-# if call([git, 'diff-index', '--quiet', 'HEAD', dumpFile]) != 0:
-#     print('Please commit git with ' + dumpFile + ' before continuing')
-#     sys.exit(1)
-# f = open(dumpFile, 'w')
-## do db backup
-# if call(['/usr/lib/postgresql/9.4/bin/pg_dump', 'qfp'], stdout=f) != 0:
-#     print('db backup failed.  please correct problem before continuing . . .')
-#     sys.exit(1)
 
-## do git add dumpfile && git commit -m 'db auto-backup'
-# if (call([git, 'add', 'db/db_backup/dumpfile']) != 0 or
-#     call([git, 'commit', '-m "db auto-backup"']) != 0):
-#     print('problem committing new db backup file')
-
-## rename tests (tests_[time])
-## create table tests like [backup table name]
-# newTable = 'tests_' + str(datetime.now().microsecond)
-# if (call([psql, '-d', 'qfp', '-c', 'CREATE TABLE ' + newTable + ' AS TABLE tests;']) != 0 or
-#     call([psql, '-d', 'qfp', '-c', 'DELETE FROM tests);']) != 0):
-#     print('failure creating backup table for tests or deleting * from tests')
-#     sys.exit(1)
-
-## import
 for h in hostinfo:
     print('collecting data from ' + h[0])
     stdo = check_output(['ssh', h[0], 'if [[ -e remote_qfp ]]; then ' +
@@ -76,8 +46,6 @@ for h in hostinfo:
                          'mkdir remote_qfp && cd remote_qfp && ' +
                          'git clone https://github.com/geof23/qfp && ' +
                          'cd qfp && ' +
-                         'git stash && ' +
-                         #          'git checkout master  && ' +
                          'git checkout rel_lt && ' +
                          'git pull && ' +
                          'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
