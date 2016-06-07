@@ -18,6 +18,10 @@ checkpoint(T &obj, std::string const label){
   std::cerr << AFLAG  << addr << std::endl;
   std::cerr << LFLAG  << sizeof(T) << std::endl;
   std::cerr << LAFLAG << label << std::endl;
+#ifndef __aarch64__
   asm("INT $3");
+#else
+  asm("svc 0");
+#endif
 }
 }
