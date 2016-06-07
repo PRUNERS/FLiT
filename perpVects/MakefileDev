@@ -1,7 +1,7 @@
 #CC := clang++
 CC := g++
 
-CPPFLAGS ?= -Wuninitialized
+CPPFLAGS ?= -Wuninitialized -g
 
 CPPFLAGS += -std=c++11 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I.
 
