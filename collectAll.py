@@ -10,7 +10,7 @@ import glob
 hostinfo = [
             ['sawaya@bihexal.cs.utah.edu', 24],
             ['sawaya@gaussr.cs.utah.edu', 8],
-            ['sawaya@ms0133.utah.cloudlab.us', 8]]
+            ['sawaya@ms0217.utah.cloudlab.us', 8]]
 #['u0422778@kingspeak2.chpc.utah.edu', 12],
 
 #constants
