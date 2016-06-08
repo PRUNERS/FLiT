@@ -200,12 +200,15 @@ std::ostream& operator<<(std::ostream& os, const FPWrap<U> &w){
   return os;
 }
 
- enum sort_t{
+enum sort_t{
    lt, //manual lt magnitude sort
    gt, //manual gt magnitude sort
    bi, //built-in (std::inner_product) [only for ^, assumes def otherwise]
    def //default (manual unsorted)
- };
+};
+
+std::string
+getSortName(sort_t val);
 
 template<typename T>
 class Matrix;
@@ -319,8 +322,8 @@ public:
 
   void
   rotateAboutZ_3d(T rads){
-    Matrix<T> t = {{cos(rads), -sin(rads), 0},
-		{sin(rads), cos(rads), 0},
+    Matrix<T> t = {{(T)cos(rads), (T)-sin(rads), 0},
+		   {(T)sin(rads), (T)cos(rads), 0},
 		{0, 0, 1}};
     info_stream << "rotation matrix is: " << t << std::endl;
     Vector<T> tmp(*this);
@@ -396,7 +399,7 @@ public:
   T
   operator^(Vector<T> const &rhs) const {
     T sum = 0.0;
-    auto prods = std::vector<T>(sizeof(data.size()));
+    auto prods = std::vector<T>(data.size());
     T temp = 0.0;
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
@@ -617,5 +620,6 @@ public:
 };
 
 }
+
 
 #endif

@@ -54,8 +54,7 @@ public:
   virtual resultType doubleTest(const testInput&) = 0;
   virtual resultType longTest(const testInput&) = 0;
   static std::map<std::string, TestFactory*> tests;  
-private:
-  std::string id;
+  const std::string id;
 };
 
  
@@ -71,4 +70,17 @@ private:
   }; \
   static klass##Factory global_##klass##Factory;
 }
+
+#define FUNC_OP_OVERRIDE_CALLERS(klass)	\
+  klass():TestBase(#klass){} \
+  resultType floatTest(const testInput& ti) override { \
+    return operator()<float>(ti); \
+  } \
+  resultType doubleTest(const testInput& ti) override { \
+    return operator()<double>(ti); \
+  } \
+  resultType longTest(const testInput& ti) override { \
+    return operator()<long double>(ti); \
+  } \
+
 #endif

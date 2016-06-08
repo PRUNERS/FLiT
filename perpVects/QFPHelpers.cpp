@@ -37,4 +37,19 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
 
 std::default_random_engine gen;
 
+std::string
+getSortName(sort_t val){
+  switch(val){
+  case lt:
+    return "lt";
+  case gt:
+    return "gt";
+  case bi:
+    return "bi";
+  case def:
+    return "us";
+  default:
+    return "something bad happened, undefined sort type";
+  }
+}
 }
