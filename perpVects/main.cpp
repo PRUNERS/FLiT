@@ -56,28 +56,12 @@ getSortT(int t){
   }
 }
 
-std::string
-getSortName(int val){
-  switch(val){
-  case 0:
-    return "lt";
-  case 1:
-    return "gt";
-  case 2:
-    return "bi";
-  case 3:
-    return "us";
-  default:
-    return "something bad happened, undefined sort type";
-  }
-}
-
 int
 getSortID(std::string s){
-  if(s == "lt") return 0;
-  if(s == "gt") return 1;
-  if(s == "bi") return 2;
-  return 3;
+  if(s == "lt") return lt;
+  if(s == "gt") return gt;
+  if(s == "bi") return bi;
+  return def;
 }
 
 int
