@@ -47,13 +47,16 @@ public:
  TestBase(std::string id):id(id){}
   static inline
     void registerTest(const std::string& name, TestFactory *factory){
-    tests[name] = factory;
+    getTests()[name] = factory;
   }
   
   virtual resultType floatTest(const testInput&) = 0;
   virtual resultType doubleTest(const testInput&) = 0;
   virtual resultType longTest(const testInput&) = 0;
-  static std::map<std::string, TestFactory*> tests;  
+  static std::map<std::string, TestFactory*>& getTests(){
+    static std::map<std::string, TestFactory*> tests;
+    return tests;
+  }
   const std::string id;
 };
 
