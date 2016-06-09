@@ -18,19 +18,19 @@ template<typename T>
 void
 DoTests(const testInput& ti, score_t &scores){
   if(typeid(float) == typeid(T)){
-    for(auto &tfact: TestBase::tests){
+    for(auto &tfact: TestBase::getTests()){
       scores.insert(tfact.second->create()->floatTest(ti));
     }
     return;
   }
   if(typeid(double) == typeid(T)){
-    for(auto &tfact: TestBase::tests){
+    for(auto &tfact: TestBase::getTests()){
       scores.insert(tfact.second->create()->doubleTest(ti));
     }
     return;
   }
   if(typeid(long double) == typeid(T)){
-    for(auto &tfact: TestBase::tests){
+    for(auto &tfact: TestBase::getTests()){
       scores.insert(tfact.second->create()->longTest(ti));
     }
     return;
@@ -157,7 +157,7 @@ main(int argc, char* argv[]){
 	  QFPTest:: testInput ip{iters, dim, ulp_inc, min, max,
 	      getSortT(ipm)};	  
 	  if (TEST != "all"){
-	    scores.insert(TestBase::tests[TEST]->create()->floatTest(ip));
+	    scores.insert(TestBase::getTests()[TEST]->create()->floatTest(ip));
 	  }else{
 	    DoTests<float>(ip, scores);
 	  }
@@ -169,7 +169,7 @@ main(int argc, char* argv[]){
 	  QFPTest:: testInput ip{iters, dim, ulp_inc, min, max,
 	      getSortT(ipm)};
 	  if (TEST != "all"){
-	    scores.insert(TestBase::tests[TEST]->create()->doubleTest(ip));
+	    scores.insert(TestBase::getTests()[TEST]->create()->doubleTest(ip));
 	  }else{
 	    DoTests<double>(ip, scores);
 	  }
@@ -181,7 +181,7 @@ main(int argc, char* argv[]){
 	  QFPTest:: testInput ip{iters, dim, ulp_inc, min, max,
 	      getSortT(ipm)};
 	  if (TEST != "all"){
-	    scores.insert(TestBase::tests[TEST]->create()->longTest(ip));
+	    scores.insert(TestBase::getTests()[TEST]->create()->longTest(ip));
 	  }else{
 	    DoTests<long double>(ip, scores);
 	  }

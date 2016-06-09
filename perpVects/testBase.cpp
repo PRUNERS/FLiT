@@ -92,6 +92,6 @@ setWatching(bool watch){
   watching = watch;
 }
 
-std::map<std::string, TestFactory*> TestBase::tests;  
+  //std::map<std::string, TestFactory*> TestBase::tests;  
   
 }

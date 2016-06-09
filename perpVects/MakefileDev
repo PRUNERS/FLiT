@@ -1,5 +1,7 @@
 #CC := clang++
-CC := g++
+#CC := g++
+CC := icpc
+
 
 CPPFLAGS ?= -Wuninitialized -g
 
@@ -23,4 +25,4 @@ test :	$(OBJ)
 .phony : clean
 
 clean :
-	-rm *.o test *.d
+	rm -f *.o test *.d
