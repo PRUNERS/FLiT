@@ -68,7 +68,9 @@ public:
       TestBase::registerTest(#klass, this);	  \
     } \
     virtual TestBase *create(){ \
-      return new klass(); \
+      return {new klass<float>(), \
+	  new klass<double>(),	  \
+	  new klass<long double>()}; \
     } \
   }; \
   static klass##Factory global_##klass##Factory;

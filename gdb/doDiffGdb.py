@@ -19,7 +19,7 @@ from subprocess import check_output
 import os
 
 def usage():             #  1         2           3        4              5                   6
-    print(sys.argv[0] + '[bin1 path] [bin2 path] [testid] [prec = f|d|e] [sort = lt|gt|ns|bi] [emacsNoWindow = t|f]')
+    print(sys.argv[0] + '[bin1 path] [bin2 path] [testid] [prec1 = f|d|e] [sort1 = lt|gt|ns|bi] [prec2] [sort2] [emacsNoWindow = t|f]')
 
 
 if len(sys.argv) < 6 or len(sys.argv) > 7:
@@ -36,10 +36,12 @@ inf2 = os.path.realpath(sys.argv[2])
 os.environ['TEST'] = sys.argv[3]
 os.environ['PRECISION'] = sys.argv[4]
 os.environ['SORT'] = sys.argv[5]
+os.environ['PRECISION2'] = sys.argv[6]
+os.environ['SORT2'] = sys.argv[7]
 os.environ['NO_WATCH'] = 'false'
 NW = True
-if len(sys.argv) >= 7:
-    if sys.argv[6] == 'f':
+if len(sys.argv) >= 9:
+    if sys.argv[8] == 'f':
         NW = False
 
 sys.path.append(topDir)
