@@ -8,9 +8,11 @@ import glob
 
 
 hostinfo = [
-            ['sawaya@bihexal.cs.utah.edu', 24],
-            ['sawaya@gaussr.cs.utah.edu', 8],
-            ['sawaya@ms0217.utah.cloudlab.us', 8]]
+#            ['u0422778@kingspeak2.chpc.utah.edu', 12],
+#            ['sawaya@bihexal.cs.utah.edu', 24],
+#            ['sawaya@gaussr.cs.utah.edu', 8],
+            ['sawaya@ms0141.utah.cloudlab.us', 8]
+]
 #['u0422778@kingspeak2.chpc.utah.edu', 12],
 
 #constants
@@ -34,8 +36,8 @@ else:
     usage()
     exit(1)
 
-for f in glob.iglob('results/*'):
-    remove(f);
+# for f in glob.iglob('results/*'):
+#     remove(f);
 
 
 for h in hostinfo:

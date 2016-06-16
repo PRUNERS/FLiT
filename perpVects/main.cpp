@@ -103,13 +103,14 @@ outputResults(const QFPTest::testInput& ti, score_t &scores){
 
 int
 main(int argc, char* argv[]){
+  char sfx = argv[0][std::strlen(argv[0]) - 1]; //to diff btw inf1 & inf2
   if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
   std::string TEST;
   loadStringFromEnv(TEST, "TEST", "all");
   std::string SORT;
-  loadStringFromEnv(SORT, "SORT", "all");
+  loadStringFromEnv(SORT, std::string("SORT") + sfx, "all");
   std::string PRECISION;
-  loadStringFromEnv(PRECISION, "PRECISION", "all");
+  loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
   std::string NO_WATCHS;
   loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
   //THIS EXTERNAL INTERFACE IS A LITTLE SLOPPY -- SHOULD REENGINEER

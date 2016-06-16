@@ -67,6 +67,7 @@ public:
 
   template <typename T>
   resultType operator()(const testInput& ti) {
+    auto& crit = getWatchData<T>();
     long double score = 0.0;
     T e;
     sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
@@ -75,12 +76,18 @@ public:
     Vector<T> b = {1, e, 0};
     Vector<T> c = {1, 0, e};
     auto r1 = a.getUnitVector();
+    crit = r1[0];
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
+    crit =r2[0];
     auto r3 = (c - r1 * (c ^ r1) -
 	       r2 * (c ^ r2)).getUnitVector();
+    crit = r3[0];
     T o12 = r1 ^ r2;
+    crit = o12;
     T o13 = r1 ^ r3;
+    crit = o13;
     T o23 = r2 ^ r3;
+    crit = 023;
     if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
       info_stream << "in: " << __func__ << std::endl;
       info_stream << "applied gram-schmidt to:" << std::endl;
@@ -313,4 +320,78 @@ public:
   
 REGISTER_TYPE(RotateFullCircle)
 
+//Triangle area functions
+// For simplicity, we assume that
+// line ab is along x axis @ y = 0
+//     c
+//
+//  a        b
+
+template <typename T>
+class Triangles {
+
+protected:
+  T a, b, c;
+  
+  //computes using Heron's formula
+  T
+  getTArea_heron(T& const a,
+		 T& const b,
+		 T& const c){
+    T s = (a + b + c ) / 2;
+    return sqrt(s* (s-a) * (s-b) * (s-c));
+  }
+  
+  virtual
+  T getArea(T& const a, T& const b, T& const c) = 0;
+
+  resultType perturbTriangle(const testInput& ti){
+    auto& ulp_inc = ti.ulp_inc;
+    auto& iters = ti.iters;
+    auto& A = Vector<T>{0.0, 0.0};
+    auto& B = Vector<T>{ti.max, 0.0};
+    auto& C = Vector<T>{0.0, ti.max};
+
+    auto& crit = getWatchData<T>();
+
+    for (size_t x = 0; x < iters; ++x){
+      auto newx = FPHelpers:perturbFP(c[0], x * ulp_inc);
+      crit = getArea(A, B, C);
+    }
+  }
+}
+
+class TrianglePHeron: public TestBase, Triangle{
+public:
+  FUNC_OP_OVERRIDE_CALLERS(TrianglePHeron)
+
+  template <typename T>
+  resultType operator()(const testInput& ti){
+    return perturbTriangle(ti, getTArea_heron);
+  }
+};
+
+REGISTER_TYPE(TrianglePHeron)
+
+class TrianglePSylv: public TestBase, Triangle{
+public:
+  FUNC_OP_OVERRIDE_CALLERS(TrianglePHeron)
+  
+  T
+  getTArea_sylv(T& const a,
+		T& const b,
+		T& const c){
+    return (pow(2.0, -2) -
+	    2*sqrt((a+(b+c))*(a+(b-c))*(c+(a-b))*(c-(a-b))));
+  }
+
+  template <typename T>
+  resultType operator()(const testInput& ti){
+    return perturbTriangle(ti, getTArea_sylv);
+  }
+};
+
+REGISTER_TYPE(TrianglePSylv)
+
+  
 } //namespace QFPTest

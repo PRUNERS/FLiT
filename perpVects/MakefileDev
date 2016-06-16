@@ -1,11 +1,13 @@
 #CC := clang++
 #CC := g++
-CC := icpc
-
+CC ?= icpc
+FFLAGS ?= 
+TARGET ?= test
 
 CPPFLAGS ?= -Wuninitialized -g
 
-CPPFLAGS += -std=c++11 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I.
+CPPFLAGS += -std=c++11 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I. \
+	 $(FFLAGS)
 
 INCFILES := $(wildcard *.h)
 
@@ -14,9 +16,9 @@ OBJ := $(SOURCE:.cpp=.o)
 
 .phony : all
 
-all :  test
+all :  $(TARGET)
 
-test :	$(OBJ)
+$(TARGET) : $(OBJ)
 	$(CC) $(CPPFLAGS)   -o $@ $^ 
 
 %.o : %.cpp $(INCFILES)
