@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <typeinfo>
+#include <tuple>
 
 #include "testBase.h"
 #include "QFPHelpers.h"
@@ -11,33 +12,8 @@
 using namespace QFPHelpers;
 using namespace QFPTest;
 
-typedef std::map<std::string,
+typedef std::map<std::pair<std::string, std::string>,
 		 std::pair<long double, long double>> score_t;
-
-template<typename T>
-void
-DoTests(const testInput& ti, score_t &scores){
-  if(typeid(float) == typeid(T)){
-    for(auto &tfact: TestBase::getTests()){
-      scores.insert(tfact.second->create()->floatTest(ti));
-    }
-    return;
-  }
-  if(typeid(double) == typeid(T)){
-    for(auto &tfact: TestBase::getTests()){
-      scores.insert(tfact.second->create()->doubleTest(ti));
-    }
-    return;
-  }
-  if(typeid(long double) == typeid(T)){
-    for(auto &tfact: TestBase::getTests()){
-      scores.insert(tfact.second->create()->longTest(ti));
-    }
-    return;
-  }
-  throw std::string("unknown type instantiation of ") +
-    std::string(__func__);
-}
 
 
 typename QFPHelpers::sort_t
@@ -90,16 +66,26 @@ loadIntFromEnv(int &dest, std::string var, int defVal){
   }
 }
 
-template<typename T>
 void
-outputResults(const QFPTest::testInput& ti, score_t &scores){
-  for(auto i: scores){
-    std::cout << "HOST,SWITCHES,COMPILER," << typeid(T).name() << "," << getSortName(ti.reduction_sort_type)
+outputResults(const QFPTest::testInput& ti, const score_t& scores){
+  for(const auto& i: scores){
+    std::cout << "HOST,SWITCHES,COMPILER," << i.first.second << "," << getSortName(ti.reduction_sort_type)
 	 << "," << i.second.first << "," << FPWrap<long double>(i.second.first) << "," <<
       i.second.second << "," << FPWrap<long double>(i.second.second) << "," << 
-      i.first << "," << "FILENAME" << std::endl;
+      i.first.first << "," << "FILENAME" << std::endl;
   }
 }
+
+void
+doTestSet(std::vector<TestBase*> pSet,
+	  QFPTest::testInput &ip,
+	  score_t& scores,
+	  int prec = -1){
+  if(prec == -1){
+    
+  }
+}
+
 
 int
 main(int argc, char* argv[]){
@@ -113,17 +99,17 @@ main(int argc, char* argv[]){
   loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
   std::string NO_WATCHS;
   loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
-  //THIS EXTERNAL INTERFACE IS A LITTLE SLOPPY -- SHOULD REENGINEER
+  //TODO really, let's clean up.  We don't need to worry about
+  // defaults.  Either we're running a single test, with
+  // watch enabled, or we're running them all, I think.
+  // Unless we want to rerun a single test without watch
+  // (and update DB).
 
-  //  using namespace fpTestSuite;
-  //using namespace QFP;
-  // The params to perturb are:
   size_t iters = 200;
   size_t dim = 16;
   size_t ulp_inc = 1;
   float min = -6.0;
   float max = 6.0;
-  // theta [for rotation tests]
   float theta = M_PI;
   
   std::cout.precision(1000); //set cout to print many decimal places
@@ -131,66 +117,53 @@ main(int argc, char* argv[]){
 
   score_t scores;
 
-  int firstST = 0;
-  int lastST = 4;
-  int firstP = 0;
-  int lastP = 3;
-  if(SORT != "all"){
-    firstST = getSortID(SORT);
-    lastST = getSortID(SORT) + 1;
-  }
-  if(PRECISION != "all"){
-    firstP = getPrecID(PRECISION);
-    lastP = getPrecID(PRECISION) + 1;
-  }
+  scores.clear();
+
+  int firstST;
+  int lastST;
   if(NO_WATCHS != "true"){
     QFPTest::setWatching();
   }
-  //TODO we need to add the next conditional to someplace in the loop;
-  //I suppose that this means we let the loop bounds guide how many
-  //further types we run
+  if(SORT != "all") {
+    firstST = getSortID(SORT);
+    lastST = getSortID(SORT) + 1;
+  }else{
+    firstST = 0;
+    lastST = 4;
+  }
+
+  // std::cout << "size of getTests return: " << TestBase::getTests().size() << std::endl;
+  auto &testSet = TestBase::getTests();
+  if(TEST != "all"){
+    testSet = {{TEST, TestBase::getTests()[TEST]}};
+  }
+  //DELME
+  //lastST = 
+  
   for(int ipm = firstST; ipm < lastST; ++ipm){ //reduction sort pre sum
-    for(int p = firstP; p < lastP; ++p){ //float, double, long double
+    //std::cout << "starting test set on precision: " << ipm << std::endl;
+    QFPTest::testInput ip{iters, dim, ulp_inc, min, max,
+	getSortT(ipm)};
+    for(auto& t : testSet){
       scores.clear();
-      switch(p){
-      case 0: //float
-	{
-	  QFPTest:: testInput ip{iters, dim, ulp_inc, min, max,
-	      getSortT(ipm)};	  
-	  if (TEST != "all"){
-	    scores.insert(TestBase::getTests()[TEST]->create()->floatTest(ip));
-	  }else{
-	    DoTests<float>(ip, scores);
-	  }
-	  outputResults<float>(ip, scores);
-	  break;
-	}
-      case 1:
-	{
-	  QFPTest:: testInput ip{iters, dim, ulp_inc, min, max,
-	      getSortT(ipm)};
-	  if (TEST != "all"){
-	    scores.insert(TestBase::getTests()[TEST]->create()->doubleTest(ip));
-	  }else{
-	    DoTests<double>(ip, scores);
-	  }
-	  outputResults<double>(ip, scores);
-	  break;
-	}
-      case 2:
-	{
-	  QFPTest:: testInput ip{iters, dim, ulp_inc, min, max,
-	      getSortT(ipm)};
-	  if (TEST != "all"){
-	    scores.insert(TestBase::getTests()[TEST]->create()->longTest(ip));
-	  }else{
-	    DoTests<long double>(ip, scores);
-	  }
-	  outputResults<long double>(ip, scores);
-	  break;
+      auto plist = t.second->create();
+      // std::cout << "running precision set on " << t.first << std::endl;
+      // std::cout << "size of plist is: " << plist.size() << std::endl;
+      if(PRECISION != "all"){
+	auto score = (*plist[getPrecID(PRECISION)])(ip);
+	scores.insert(score);
+	// std::cout << score << std::endl;
+      }else{
+	for(auto pt : plist){
+	  auto score = (*pt)(ip);
+	  scores.insert(score);
+	  // std::cout << score << std::endl;
 	}
       }
+      for(auto t : plist) delete t;
+      outputResults(ip, scores);
     }
   }
 }
+
 
