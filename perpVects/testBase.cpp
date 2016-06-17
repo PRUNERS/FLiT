@@ -92,6 +92,16 @@ setWatching(bool watch){
   watching = watch;
 }
 
-  //std::map<std::string, TestFactory*> TestBase::tests;  
-  
+  //output operator for resultType
+std::ostream&
+operator<<(std::ostream& os, const resultType& r) {
+  // std::string name = r.first;
+  // std::string prec;
+  // long double s1;
+  // long double s2;
+  // std::tie(prec, s1, s2) = r.second;
+  os << r.first.first << ":" << r.first.second << ","
+		   << r.second.first << "," << r.second.second;
+  return os;
+}
 }

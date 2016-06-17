@@ -7,6 +7,8 @@
 
 #include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "QFPHelpers.h"
 
@@ -14,8 +16,11 @@ namespace QFPTest {
   
 void setWatching(bool watch = true);
 
-typedef std::pair<std::string, std::pair<long double, long double> > resultType;
+  typedef std::pair<std::pair<const std::string, const std::string>,
+		    std::pair<long double, long double> > resultType;
 
+std::ostream&
+operator<<(std::ostream&, const resultType&);
   
 struct testInput {
   size_t iters;
@@ -39,20 +44,18 @@ class TestBase;
 
 class TestFactory{
  public:
-  virtual TestBase *create() = 0;
+  virtual std::vector<TestBase *> create() = 0;
 };
 
 class TestBase {
 public:
- TestBase(std::string id):id(id){}
+  TestBase(std::string id):id(id){}
   static inline
     void registerTest(const std::string& name, TestFactory *factory){
     getTests()[name] = factory;
   }
-  
-  virtual resultType floatTest(const testInput&) = 0;
-  virtual resultType doubleTest(const testInput&) = 0;
-  virtual resultType longTest(const testInput&) = 0;
+  virtual
+  resultType operator()(const testInput&) = 0;
   static std::map<std::string, TestFactory*>& getTests(){
     static std::map<std::string, TestFactory*> tests;
     return tests;
@@ -67,25 +70,13 @@ public:
     klass##Factory() {				  \
       TestBase::registerTest(#klass, this);	  \
     } \
-    virtual TestBase *create(){ \
-      return {new klass<float>(), \
-	  new klass<double>(),	  \
-	  new klass<long double>()}; \
+    virtual std::vector<TestBase *> create(){	\
+      return {new klass<float>(#klass), \
+	  new klass<double>(#klass),	  \
+	  new klass<long double>(#klass)}; \
     } \
   }; \
   static klass##Factory global_##klass##Factory;
 }
-
-#define FUNC_OP_OVERRIDE_CALLERS(klass)	\
-  klass():TestBase(#klass){} \
-  resultType floatTest(const testInput& ti) override { \
-    return operator()<float>(ti); \
-  } \
-  resultType doubleTest(const testInput& ti) override { \
-    return operator()<double>(ti); \
-  } \
-  resultType longTest(const testInput& ti) override { \
-    return operator()<long double>(ti); \
-  } \
 
 #endif

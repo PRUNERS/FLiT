@@ -12,17 +12,15 @@ namespace QFPTest {
 
 using namespace QFPHelpers;
 
+template <typename T>
 class DoSkewSymCPRotationTest: public TestBase {
 public:
-
-FUNC_OP_OVERRIDE_CALLERS(DoSkewSymCPRotationTest)
-
-  template <typename T>
+  DoSkewSymCPRotationTest(std::string id):TestBase(id){}
   resultType operator()(const testInput& ti) {
     auto& min = ti.min;
     auto& max = ti.max;
     auto& crit = getWatchData<T>();
-    info_stream << "entered " << __func__ << std::endl; 
+    info_stream << "entered " << id << std::endl; 
     long double L1Score = 0.0;
     long double LIScore = 0.0;
     auto A = Vector<T>::getRandomVector(3, min, max).getUnitVector();
@@ -54,18 +52,17 @@ FUNC_OP_OVERRIDE_CALLERS(DoSkewSymCPRotationTest)
       info_stream << "L1Distance: " << L1Score << std::endl;
       info_stream << "LIDistance: " << LIScore << std::endl;
     }
-    return {id, {L1Score, LIScore}};
+    return {{id, typeid(T).name()}, {L1Score, LIScore}};
   }
 };
 
 REGISTER_TYPE(DoSkewSymCPRotationTest)
-  
+
+template <typename T>
 class DoHariGSBasic: public TestBase {
 public:
+  DoHariGSBasic(std::string id):TestBase(id){}
 
-  FUNC_OP_OVERRIDE_CALLERS(DoHariGSBasic)
-
-  template <typename T>
   resultType operator()(const testInput& ti) {
     auto& crit = getWatchData<T>();
     long double score = 0.0;
@@ -89,7 +86,7 @@ public:
     T o23 = r2 ^ r3;
     crit = 023;
     if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
-      info_stream << "in: " << __func__ << std::endl;
+      info_stream << "in: " << id << std::endl;
       info_stream << "applied gram-schmidt to:" << std::endl;
       info_stream << "a: " << a << std::endl;
       info_stream << "b: " << b << std::endl;
@@ -102,18 +99,17 @@ public:
       info_stream << "score (bits): " << FPWrap<long double>(score) << std::endl;
       info_stream << "score (dec) :" << score << std::endl;
     }
-    return {id, {score, 0.0}};
+    return {{id, typeid(T).name()}, {score, 0.0}};
   }
 };
 
 REGISTER_TYPE(DoHariGSBasic)
 
+template <typename T>
 class DoHariGSImproved: public TestBase {
 public:
+  DoHariGSImproved(std::string id):TestBase(id){}
 
-  FUNC_OP_OVERRIDE_CALLERS(DoHariGSImproved)
-
-  template <typename T>
   resultType operator()(const testInput& ti) {
     long double score = 0.0;
     T e;
@@ -131,7 +127,7 @@ public:
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
     if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
-      info_stream << "in: " << __func__ << std::endl;
+      info_stream << "in: " << id << std::endl;
       info_stream << "applied gram-schmidt to:" << std::endl;
       info_stream << "a: " << a << std::endl;
       info_stream << "b: " << b << std::endl;
@@ -142,18 +138,17 @@ public:
       info_stream << "r3: " << r3 << std::endl;
       info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
     }
-    return {__func__, {score, 0.0}};
+    return {{id, typeid(T).name()}, {score, 0.0}};
   }
 };
 
 REGISTER_TYPE(DoHariGSImproved)
 
+template <typename T>
 class DoOrthoPerturbTest: public TestBase {
 public:
+  DoOrthoPerturbTest(std::string id):TestBase(id){}
 
-  FUNC_OP_OVERRIDE_CALLERS(DoOrthoPerturbTest)
-
-  template <typename T>
   resultType operator()(const testInput& ti) {
     auto iters = ti.iters;
     auto dim = ti.highestDim;
@@ -215,16 +210,17 @@ public:
 	   << FPHelpers::getExponent(a[cdim] * b[cdim]) << std::endl;
       cdim++;
     }
-    return {id, {score, 0.0}};
+    return {{id, typeid(T).name()}, {score, 0.0}};
   }
 };
 
 REGISTER_TYPE(DoOrthoPerturbTest)
 
+template <typename T>
 class DoMatrixMultSanity: public TestBase {
 public:
-  FUNC_OP_OVERRIDE_CALLERS(DoMatrixMultSanity)
-  template <typename T>
+  DoMatrixMultSanity(std::string id):TestBase(id){}
+  
   resultType operator()(const testInput& ti) {
     auto dim = ti.highestDim;
     T min = ti.min;
@@ -234,35 +230,35 @@ public:
     info_stream << "Product is: " << c << std::endl;
     bool eq = c == b;
     info_stream << "A * b == b? " << eq << std::endl;
-    return {id, {c.L1Distance(b), c.LInfDistance(b)}};
+    return {{id, typeid(T).name()}, {c.L1Distance(b), c.LInfDistance(b)}};
   }
 };
 REGISTER_TYPE(DoMatrixMultSanity)
 
+template <typename T>
 class DoSimpleRotate90: public TestBase {
 public:
-  FUNC_OP_OVERRIDE_CALLERS(DoSimpleRotate90)
+  DoSimpleRotate90(std::string id):TestBase(id){}
 
-  template <typename T>
   resultType operator()(const testInput& ti) {
     Vector<T> A = {1, 1, 1};
     Vector<T> expected = {-1, 1, 1};
     info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;
     A.rotateAboutZ_3d(M_PI/2);
     info_stream << "Resulting vector: " << A << std::endl;
-    info_stream << "in " << __func__ << std::endl;
+    info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(expected, info_stream);
-    return {id, {A.L1Distance(expected), A.LInfDistance(expected)}};
+    return {{id, typeid(T).name()}, {A.L1Distance(expected), A.LInfDistance(expected)}};
   }  
 };
 
 REGISTER_TYPE(DoSimpleRotate90)
 
-class RotateAndUnrotate: public TestBase{
+template <typename T>
+class RotateAndUnrotate: public TestBase {
 public:
-  FUNC_OP_OVERRIDE_CALLERS(RotateAndUnrotate)
+  RotateAndUnrotate(std::string id):TestBase(id){}
 
-  template <typename T>
   resultType operator()(const testInput& ti) {
     T min = ti.min;
     T max = ti.max;
@@ -281,19 +277,19 @@ public:
       info_stream << "error in L1 distance is: " << dist << std::endl;
       info_stream << "difference between: " << (A - orig) << std::endl;
     }
-    info_stream << "in " << __func__ << std::endl;
+    info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, info_stream);
-    return {id, {dist, A.LInfDistance(orig)}};
+    return {{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}};
   }
 };
 
 REGISTER_TYPE(RotateAndUnrotate)
 
-class RotateFullCircle: public TestBase{
+template <typename T>
+class RotateFullCircle: public TestBase {
 public:
-  FUNC_OP_OVERRIDE_CALLERS(RotateFullCircle)
+  RotateFullCircle(std::string id):TestBase(id){}
 
-  template <typename T>
   resultType operator()(const testInput& ti) {
     auto n = ti.iters;
     T min = ti.min;
@@ -312,83 +308,73 @@ public:
     if(!equal){
       info_stream << "The (vector) difference is: " << (A - orig) << std::endl;
     }
-    info_stream << "in " << __func__ << std::endl;
+    info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, info_stream);
-    return {id, {A.L1Distance(orig), A.LInfDistance(orig)}};
+    return {{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}};
   }
 };
   
 REGISTER_TYPE(RotateFullCircle)
 
-//Triangle area functions
-// For simplicity, we assume that
-// line ab is along x axis @ y = 0
-//     c
-//
-//  a        b
-
 template <typename T>
-class Triangles {
-
+class Triangle: public TestBase {
 protected:
-  T a, b, c;
   
-  //computes using Heron's formula
-  T
-  getTArea_heron(T& const a,
-		 T& const b,
-		 T& const c){
-    T s = (a + b + c ) / 2;
-    return sqrt(s* (s-a) * (s-b) * (s-c));
-  }
-  
+  Triangle(std::string id):TestBase(id){}
   virtual
-  T getArea(T& const a, T& const b, T& const c) = 0;
-
-  resultType perturbTriangle(const testInput& ti){
-    auto& ulp_inc = ti.ulp_inc;
-    auto& iters = ti.iters;
-    auto& A = Vector<T>{0.0, 0.0};
-    auto& B = Vector<T>{ti.max, 0.0};
-    auto& C = Vector<T>{0.0, ti.max};
-
+  T getArea(const T a, const T b, const T c) = 0;
+public:
+  resultType
+  operator()(const testInput& ti){
+    T a = ti.max;
+    T b = ti.max;
+    T c = std::sqrt(std::pow(a,2) + std::pow(b, 2));
+    const T delta = ti.max / (T)ti.iters;
+    
     auto& crit = getWatchData<T>();
 
-    for (size_t x = 0; x < iters; ++x){
-      auto newx = FPHelpers:perturbFP(c[0], x * ulp_inc);
-      crit = getArea(A, B, C);
+    for(T pos = 0; pos <= a; pos += delta){
+      crit += getArea(a,b,c);
+      b = std::sqrt(std::pow(pos, 2) +
+		    std::pow(ti.max, 2));
+      c = std::sqrt(std::pow(a - pos, 2) +
+		    std::pow(ti.max, 2));
     }
+    long double score = crit;
+    return {{id, typeid(T).name()}, {score, 0.0}};
   }
-}
+};
 
-class TrianglePHeron: public TestBase, Triangle{
+template <typename T>
+class TrianglePHeron: public Triangle<T> {
 public:
-  FUNC_OP_OVERRIDE_CALLERS(TrianglePHeron)
-
-  template <typename T>
-  resultType operator()(const testInput& ti){
-    return perturbTriangle(ti, getTArea_heron);
-  }
+  TrianglePHeron(std::string id):Triangle<T>(id){}
+  //computes using Heron's formula
+  T
+  getArea(const T a,
+	  const T b,
+	  const T c){
+    T s = (a + b + c ) / 2;
+    return sqrt(s* (s-a) * (s-b) * (s-c));
+  }  
 };
 
 REGISTER_TYPE(TrianglePHeron)
 
-class TrianglePSylv: public TestBase, Triangle{
+template <typename T>
+class TrianglePSylv: public Triangle<T> {
 public:
-  FUNC_OP_OVERRIDE_CALLERS(TrianglePHeron)
+public:
+  TrianglePSylv(std::string id):Triangle<T>(id){}
   
   T
-  getTArea_sylv(T& const a,
-		T& const b,
-		T& const c){
+  getArea(const T a,
+	  const T b,
+	  const T c){
     return (pow(2.0, -2) -
 	    2*sqrt((a+(b+c))*(a+(b-c))*(c+(a-b))*(c-(a-b))));
   }
 
-  template <typename T>
-  resultType operator()(const testInput& ti){
-    return perturbTriangle(ti, getTArea_sylv);
-  }
 };
 
 REGISTER_TYPE(TrianglePSylv)

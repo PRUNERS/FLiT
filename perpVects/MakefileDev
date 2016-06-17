@@ -1,6 +1,6 @@
 #CC := clang++
 #CC := g++
-CC ?= icpc
+CC := g++
 FFLAGS ?= 
 TARGET ?= test
 
