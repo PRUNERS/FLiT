@@ -333,14 +333,19 @@ public:
     
     auto& crit = getWatchData<T>();
 
+    // 1/2 b*h = A
+    T checkVal = 0.5 * b * a;  //all perturbations will have the same base and height
+
+    long double score = 0;
+
     for(T pos = 0; pos <= a; pos += delta){
-      crit += getArea(a,b,c);
+      crit = getArea(a,b,c);
       b = std::sqrt(std::pow(pos, 2) +
 		    std::pow(ti.max, 2));
       c = std::sqrt(std::pow(a - pos, 2) +
 		    std::pow(ti.max, 2));
+      score += std::abs(crit - checkVal);
     }
-    long double score = crit;
     return {{id, typeid(T).name()}, {score, 0.0}};
   }
 };
@@ -371,8 +376,7 @@ public:
   getArea(const T a,
 	  const T b,
 	  const T c){
-    return (pow(2.0, -2) -
-	    2*sqrt((a+(b+c))*(a+(b-c))*(c+(a-b))*(c-(a-b))));
+    return (pow(2.0, -2)*sqrt((a+(b+c))*(a+(b-c))*(c+(a-b))*(c-(a-b))));
   }
 
 };
