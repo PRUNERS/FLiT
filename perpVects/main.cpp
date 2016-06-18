@@ -137,8 +137,6 @@ main(int argc, char* argv[]){
   if(TEST != "all"){
     testSet = {{TEST, TestBase::getTests()[TEST]}};
   }
-  //DELME
-  //lastST = 
   
   for(int ipm = firstST; ipm < lastST; ++ipm){ //reduction sort pre sum
     //std::cout << "starting test set on precision: " << ipm << std::endl;
