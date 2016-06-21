@@ -184,6 +184,10 @@ public:
 	//be hitting float min
 	watchPoint = FLT_MIN;
 	watchPoint = a ^ b;
+	
+	//DELME debug
+	//std::cout << watchPoint << std::endl;
+	
 	bool isOrth = watchPoint == 0; //a.isOrtho(b);
 	if(isOrth){
 	  orthoCount[r]++;
@@ -334,11 +338,11 @@ public:
     auto& crit = getWatchData<T>();
 
     // 1/2 b*h = A
-    T checkVal = 0.5 * b * a;  //all perturbations will have the same base and height
+    const T checkVal = 0.5 * b * a;  //all perturbations will have the same base and height
 
     long double score = 0;
 
-    for(T pos = 0; pos <= a; pos += delta){
+    for(T pos = 1; pos <= a; pos += delta){
       crit = getArea(a,b,c);
       b = std::sqrt(std::pow(pos, 2) +
 		    std::pow(ti.max, 2));

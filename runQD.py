@@ -56,7 +56,8 @@ prec2 = d2['precision']
 sort2 = d2['sort']
 tname2 = d2['name']
 
-assert tname2 == tname
+# print(tname + ":" + tname2)
+# assert tname2 == tname
 
 
 #build required tests
@@ -69,7 +70,9 @@ print('with CC = ' + comp1 + ', FFLAGS = ' + flags1 + ', TARGET = ' +
 environ['CC'] = comp1
 environ['FFLAGS'] = flags1
 environ['TARGET'] = tpath1
-print(check_output(['make', '-f', 'MakefileDev']))
+#DEBUG uncomment next line
+#print(check_output(['make', '-f', 'MakefileDev', 'clean']))
+print(check_output(['make', '-j', '8', '-f', 'MakefileDev']))
 
 print('building test2')
 print('with CC = ' + comp2 + ', FFLAGS = ' + flags2 + ', TARGET = ' +
@@ -77,11 +80,13 @@ print('with CC = ' + comp2 + ', FFLAGS = ' + flags2 + ', TARGET = ' +
 environ['CC'] = comp2
 environ['FFLAGS'] = flags2
 environ['TARGET'] = tpath2
-print(check_output(['make', '-f', 'MakefileDev']))
+#DEBUG uncomment next line
+#print(check_output(['make', '-f', 'MakefileDev', 'clean']))
+print(check_output(['make', '-j', '8', '-f', 'MakefileDev']))
 
 #invoke doDiffGdb
 
 chdir('..')
 print(check_output(['gdb/doDiffGdb.py', tpath1, tpath2, tname, prec1,
-                    sort1, prec2, sort2]))
+                    sort1, tname2, prec2, sort2]))
 
