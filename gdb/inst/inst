@@ -15,7 +15,10 @@ template<typename T>
 void
 checkpoint(T &obj, std::string const label){
   auto addr = std::addressof(obj);
-  std::cerr << AFLAG  << addr << std::endl;
+  //DELME
+  std::cout << "addrof: " << (long)addr << ":" << (long)&obj << std::endl;
+  
+  std::cerr << AFLAG  << (long)addr << std::endl;
   std::cerr << LFLAG  << sizeof(T) << std::endl;
   std::cerr << LAFLAG << label << std::endl;
 #ifndef __aarch64__

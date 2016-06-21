@@ -63,7 +63,7 @@ popWatchData<long double>(){
 template<>
 volatile float& getWatchData<float>(){
   if(!fReg && watching){
-    checkpoint(baseF, "testBase float watch");
+    checkpoint(baseF, "testBase_float_watch");
     fReg = true;
   }
   return baseF;
@@ -72,7 +72,7 @@ volatile float& getWatchData<float>(){
 template<>
 volatile double& getWatchData<double>(){
   if(!dReg && watching){
-    checkpoint(baseD, "testBase double watch");
+    checkpoint(baseD, "testBase_double_watch");
     dReg = true;
   }
   return baseD;
@@ -81,7 +81,7 @@ volatile double& getWatchData<double>(){
 template<>
 volatile long double& getWatchData<long double>(){
   if(!lReg && watching){
-    checkpoint(baseL, "testBase long double watch");
+    checkpoint(baseL, "testBase_long_double_watch");
     lReg = true;
   }
   return baseL;
