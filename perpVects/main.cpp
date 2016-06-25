@@ -49,13 +49,13 @@ getPrecID(std::string s){
 
 void
 loadStringFromEnv(std::string &dest, std::string var, std::string defVal){
-  std::cout << "in lsfe, var is: " << var << std::endl;
+  // std::cout << "in lsfe, var is: " << var << std::endl;
   if(std::getenv(var.c_str()) == NULL){
     dest = defVal;
   }else{
     dest = std::getenv(var.c_str());
   }
-  std::cout << "env is: " << dest << std::endl;
+  // std::cout << "env is: " << dest << std::endl;
 }
 
 void
@@ -101,8 +101,8 @@ main(int argc, char* argv[]){
   loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
   std::string NO_WATCHS;
   loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
-  std::cout << sfx << ":" << TEST << "," << SORT << "," <<
-    PRECISION << "," << NO_WATCHS << std::endl;
+  // std::cout << sfx << ":" << TEST << "," << SORT << "," <<
+  //   PRECISION << "," << NO_WATCHS << std::endl;
   //TODO really, let's clean up.  We don't need to worry about
   // defaults.  Either we're running a single test, with
   // watch enabled, or we're running them all, I think.
