@@ -396,23 +396,24 @@ public:
   void
   setSort(sort_t st = def){sortType = st;}
   //inner product (dot product)
+  
   T
   operator^(Vector<T> const &rhs) const {
     T sum = 0.0;
-    auto prods = std::vector<T>(data.size());
-    T temp = 0.0;
+    /* auto prods = std::vector<T>(data.size()); */
+    /* T temp = 0.0; */
     if( sortType == bi){
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
-      std::for_each(prods.begin(), prods.end(), [&](T i){i = 0.0;});
+      /* std::for_each(prods.begin(), prods.end(), [&](T i){i = 0.0;}); */
       for(int i = 0; i < size(); ++i){ 
-	prods[i] = data[i] * rhs.data[i]; 
+	sum += data[i] * rhs.data[i]; 
       }
-      for(auto j:prods){
-	temp += j;
-      }
+      /* for(auto j:prods){ */
+      /* 	temp += j; */
+      /* } */
     }
-    return (sum = temp);
+    return sum;
   }
 
   T
