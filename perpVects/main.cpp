@@ -13,7 +13,7 @@ using namespace QFPHelpers;
 using namespace QFPTest;
 
 typedef std::map<std::pair<std::string, std::string>,
-		 std::pair<long double, long double>> score_t;
+                 std::pair<long double, long double>> score_t;
 
 
 typename QFPHelpers::sort_t
@@ -72,7 +72,7 @@ void
 outputResults(const QFPTest::testInput& ti, const score_t& scores){
   for(const auto& i: scores){
     std::cout << "HOST,SWITCHES,COMPILER," << i.first.second << "," << getSortName(ti.reduction_sort_type)
-	 << "," << i.second.first << "," << FPWrap<long double>(i.second.first) << "," <<
+         << "," << i.second.first << "," << FPWrap<long double>(i.second.first) << "," <<
       i.second.second << "," << FPWrap<long double>(i.second.second) << "," << 
       i.first.first << "," << "FILENAME" << std::endl;
   }
@@ -80,9 +80,9 @@ outputResults(const QFPTest::testInput& ti, const score_t& scores){
 
 void
 doTestSet(std::vector<TestBase*> pSet,
-	  QFPTest::testInput &ip,
-	  score_t& scores,
-	  int prec = -1){
+          QFPTest::testInput &ip,
+          score_t& scores,
+          int prec = -1){
   if(prec == -1){
     
   }
@@ -145,22 +145,22 @@ main(int argc, char* argv[]){
   for(int ipm = firstST; ipm < lastST; ++ipm){ //reduction sort pre sum
     //std::cout << "starting test set on precision: " << ipm << std::endl;
     QFPTest::testInput ip{iters, dim, ulp_inc, min, max,
-	getSortT(ipm)};
+        getSortT(ipm)};
     for(auto& t : testSet){
       scores.clear();
       auto plist = t.second->create();
       // std::cout << "running precision set on " << t.first << std::endl;
       // std::cout << "size of plist is: " << plist.size() << std::endl;
       if(PRECISION != "all"){
-	auto score = (*plist[getPrecID(PRECISION)])(ip);
-	scores.insert(score);
-	// std::cout << score << std::endl;
+        auto score = (*plist[getPrecID(PRECISION)])(ip);
+        scores.insert(score);
+        // std::cout << score << std::endl;
       }else{
-	for(auto pt : plist){
-	  auto score = (*pt)(ip);
-	  scores.insert(score);
-	  // std::cout << score << std::endl;
-	}
+        for(auto pt : plist){
+          auto score = (*pt)(ip);
+          scores.insert(score);
+          // std::cout << score << std::endl;
+        }
       }
       for(auto t : plist) delete t;
       outputResults(ip, scores);

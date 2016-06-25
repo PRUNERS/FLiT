@@ -373,7 +373,6 @@ REGISTER_TYPE(TrianglePHeron)
 template <typename T>
 class TrianglePSylv: public Triangle<T> {
 public:
-public:
   TrianglePSylv(std::string id):Triangle<T>(id){}
   
   T
@@ -387,5 +386,34 @@ public:
 
 REGISTER_TYPE(TrianglePSylv)
 
-  
+template <typename T>
+class DistributivityOfMultiplication : public TestBase {
+public:
+  DistributivityOfMultiplication(std::string id):TestBase(id){}
+
+  resultType operator()(const testInput& ti) {
+    T a = 3.36736864456782105775439872e+26;
+    T b = 1.09822961058807457775616000e+23;
+    T c = 1.89503425000000000000000000e+06;
+
+    auto& crit = getWatchData<T>();
+
+    T first = (a + b) * c;
+    T second = (a * c) + (b * c);
+    auto first_int  = FPHelpers::projectType<T>(first);
+    auto second_int = FPHelpers::projectType<T>(second);
+    auto difference = first_int - second_int;
+    crit = difference;
+
+    long double score = fabs(difference);
+
+    info_stream << "DistributivityOfMultiplication: sizeof(T):  " << sizeof(T) << " bytes" << std::endl;
+    info_stream << "DistributivityOfMultiplication: difference: " << score << " ULPs" << std::endl;
+
+    return {{id, typeid(T).name()}, {score, 0.0}};
+  }
+};
+
+REGISTER_TYPE(DistributivityOfMultiplication)
+
 } //namespace QFPTest
