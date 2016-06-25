@@ -120,14 +120,14 @@ namespace UnitTests{
   MplusM(){
     bool result = true;
     Matrix<T> A = {{1, 2, 3},
-		   {4, 5, 6},
-		   {7, 8, 9}};
+                   {4, 5, 6},
+                   {7, 8, 9}};
     Matrix<T> B = {{9, 8, 7},
-		   {6, 5, 4},
-		   {3, 2, 1}};
+                   {6, 5, 4},
+                   {3, 2, 1}};
     Matrix<T> expected = {{10, 10, 10},
-			  {10, 10, 10},
-			  {10, 10, 10}};
+                          {10, 10, 10},
+                          {10, 10, 10}};
     if(!(A + B == expected)) result = false;
     return {__func__, result};
   }
@@ -137,8 +137,8 @@ namespace UnitTests{
   MxV(){
     bool result = true;
     Matrix<T> A = {{77, 16.23, 99},
-		   {17.7777, -23.3, 11},
-		   {131, 134, 137}};
+                   {17.7777, -23.3, 11},
+                   {131, 134, 137}};
     Vector<T> b = {-18, 374, 12};
     Vector<T> expected = {5872.02, -8902.199, 49402};
     auto output = A * b;
@@ -158,14 +158,14 @@ namespace UnitTests{
   MxM(){
     bool result = true;
     Matrix<T> A = {{1,2,3},
-		   {.25, .5, .75},
-		   {4,5,6}};
+                   {.25, .5, .75},
+                   {4,5,6}};
     Matrix<T> B = {{7,8,9},
-		   {11,12,13},
-		   {8,7,5}};
+                   {11,12,13},
+                   {8,7,5}};
     Matrix<T> expected = {{53, 53, 50},
-			  {13.25, 13.25, 12.5},
-			  {131, 134, 131}};
+                          {13.25, 13.25, 12.5},
+                          {131, 134, 131}};
     auto output = A * B;
     if(!(output == expected)){
       result = false;
@@ -185,8 +185,8 @@ namespace UnitTests{
     info_stream << "in " << __func__ << ":" << std::endl;
     auto ident = Matrix<T>::Identity(3);
     Matrix<T> M = {{1, 2, 3},
-		   {4, 5, 6},
-		   {7, 8, 9}};
+                   {4, 5, 6},
+                   {7, 8, 9}};
     info_stream << "Multiplying matrices: " << std::endl;
     info_stream << M << std::endl;
     info_stream << "and..." << std::endl;
@@ -207,11 +207,11 @@ namespace UnitTests{
     bool retVal = true;
     info_stream << "in " << __func__ << ":" << std::endl;
     Matrix<T> M = {{1,2,3},
-		   {4,5,6},
-		   {7,8,9}};
+                   {4,5,6},
+                   {7,8,9}};
     Matrix<T> const target = {{10, 20, 30},
-			      {40, 50, 60},
-			      {70, 80, 90}};
+                              {40, 50, 60},
+                              {70, 80, 90}};
     info_stream << M << std::endl;
     T scalar = 10;
     info_stream << "and scalar: " << scalar << std::endl;
@@ -247,7 +247,7 @@ namespace UnitTests{
     RunTests(results);
     if(std::any_of(results.begin(), results.end(), [](UnitTests::results x){return x.second;})){
       for(auto i: results){
-	std::cout << i.first << "\t" << i.second << std::endl;
+        std::cout << i.first << "\t" << i.second << std::endl;
       }
       retVal = 1;
       std::cout << "here are the details:" << std::endl;

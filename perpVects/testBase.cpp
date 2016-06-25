@@ -101,7 +101,7 @@ operator<<(std::ostream& os, const resultType& r) {
   // long double s2;
   // std::tie(prec, s1, s2) = r.second;
   os << r.first.first << ":" << r.first.second << ","
-		   << r.second.first << "," << r.second.second;
+     << r.second.first << "," << r.second.second;
   return os;
 }
 }
