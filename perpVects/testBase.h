@@ -28,7 +28,6 @@ struct testInput {
   size_t ulp_inc;
   float min;
   float max;
-  QFPHelpers::sort_t reduction_sort_type;
 };
 
 template<typename T>
