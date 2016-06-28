@@ -3,7 +3,9 @@
 
 #include <cstring>
 #include <typeinfo>
-#include <tuple>
+#include <future>
+#include <chrono>
+#include <list>
 
 #include "testBase.h"
 #include "QFPHelpers.h"
@@ -12,9 +14,9 @@
 using namespace QFPHelpers;
 using namespace QFPTest;
 
+// typedef std::map<int,int> score_t;
 typedef std::map<std::pair<std::string, std::string>,
                  std::pair<long double, long double>> score_t;
-
 
 typename QFPHelpers::sort_t
 getSortT(int t){
@@ -78,16 +80,24 @@ outputResults(const QFPTest::testInput& ti, const score_t& scores){
   }
 }
 
-void
-doTestSet(std::vector<TestBase*> pSet,
-          QFPTest::testInput &ip,
-          score_t& scores,
-          int prec = -1){
-  if(prec == -1){
-    
+//typedef std::list<std::future<std::pair<int,int>>> future_collection_t;
+typedef std::list<std::future<QFPTest::resultType>> future_collection_t;
+typedef std::chrono::milliseconds const timeout_t;
+
+void checkFutures(future_collection_t& fc, const timeout_t& to, score_t& scores){
+  for(auto it=fc.begin(); it!=fc.end(); ++it){
+    // std::cout << "waiting on future . . ." << std::endl;
+    if(it->wait_for(to) != std::future_status::timeout){
+      // std::cout << "finished wait, no timeout" << std::endl;
+      // std::cout << "future valid: " << it->valid() << std::endl;
+      auto val = it->get();
+      // std::cout << val << std::endl;
+      scores.insert(val);
+      // std::cout << "fetched result (get())" << std::endl;
+      it = fc.erase(it);
+    }
   }
 }
-
 
 int
 main(int argc, char* argv[]){
@@ -101,14 +111,24 @@ main(int argc, char* argv[]){
   loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
   std::string NO_WATCHS;
   loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
-  // std::cout << sfx << ":" << TEST << "," << SORT << "," <<
-  //   PRECISION << "," << NO_WATCHS << std::endl;
-  //TODO really, let's clean up.  We don't need to worry about
-  // defaults.  Either we're running a single test, with
-  // watch enabled, or we're running them all, I think.
-  // Unless we want to rerun a single test without watch
-  // (and update DB).
-
+  bool doOne = TEST != "all";
+  std::cout << TEST << ":" << SORT << ":" << PRECISION << std::endl;
+  if(TEST == "all"){
+    if(SORT != "all" || PRECISION != "all"){ //all or one
+    std::cerr << argv[0] << " must be ran with one or all tests selected." << std::endl;
+    return 0;
+    }
+  }else{
+    if(SORT == "all" || PRECISION == "all"){
+      std::cerr << argv[0] << " must be ran with one or all tests selected." << std::endl;
+      return 0;
+    }
+  }
+  
+  int DEGP; //degree of parallelism, or current tasks
+  loadIntFromEnv(DEGP, "DEGP", 8);
+  std::chrono::milliseconds const timeout (100);
+  
   size_t iters = 200;
   size_t dim = 16;
   size_t ulp_inc = 1;
@@ -123,46 +143,42 @@ main(int argc, char* argv[]){
 
   scores.clear();
 
-  int firstST;
-  int lastST;
   if(NO_WATCHS != "true"){
     QFPTest::setWatching();
   }
-  if(SORT != "all") {
-    firstST = getSortID(SORT);
-    lastST = getSortID(SORT) + 1;
-  }else{
-    firstST = 0;
-    lastST = 4;
-  }
 
-  // std::cout << "size of getTests return: " << TestBase::getTests().size() << std::endl;
-  auto &testSet = TestBase::getTests();
-  if(TEST != "all"){
-    testSet = {{TEST, TestBase::getTests()[TEST]}};
-  }
-  
-  for(int ipm = firstST; ipm < lastST; ++ipm){ //reduction sort pre sum
-    //std::cout << "starting test set on precision: " << ipm << std::endl;
+  //singleton
+  if(doOne){
     QFPTest::testInput ip{iters, dim, ulp_inc, min, max,
-        getSortT(ipm)};
-    for(auto& t : testSet){
+        getSortT(getSortID(SORT))};
+    auto plist = TestBase::getTests()[TEST]->create();
+    auto score = (*plist[getPrecID(PRECISION)])(ip);
+    for(auto& p: plist) delete p;
+    scores.insert(score);
+    outputResults(ip, scores);
+  }else{
+
+    future_collection_t futures;
+  
+    for(int ipm = 0; ipm < 4; ++ipm){ //reduction sort pre sum
+      //std::cout << "starting test set on precision: " << ipm << std::endl;
+      QFPTest::testInput ip{iters, dim, ulp_inc, min, max,
+	  getSortT(ipm)};
       scores.clear();
-      auto plist = t.second->create();
-      // std::cout << "running precision set on " << t.first << std::endl;
-      // std::cout << "size of plist is: " << plist.size() << std::endl;
-      if(PRECISION != "all"){
-        auto score = (*plist[getPrecID(PRECISION)])(ip);
-        scores.insert(score);
-        // std::cout << score << std::endl;
-      }else{
-        for(auto pt : plist){
-          auto score = (*pt)(ip);
-          scores.insert(score);
-          // std::cout << score << std::endl;
-        }
+      for(auto& t : TestBase::getTests()){
+	auto plist = t.second->create();
+	while(DEGP - futures.size() < plist.size()) checkFutures(futures, timeout, scores);
+	for(auto pt : plist){
+	  //futures.push_back(std::move(std::async(&QFPTest::TestBase::operator(), pt, ip)));
+	  futures.push_back(std::move(std::async(std::launch::async, [pt,ip]{auto retVal =   (*pt)(ip);
+		  delete pt; return retVal;})));
+	  //futures.push_back(std::move(std::async([pt,ip]{return (QFPTest::resultType){{std::string("hi"), std::string("there")},{0.0,0.0}};})));
+	  // scores.insert((*pt)(ip));
+	  // scores.insert([pt,ip]{return (*pt)(ip);}());
+	}
+	//for(auto t : plist) delete t;
       }
-      for(auto t : plist) delete t;
+      while(futures.size() > 0) checkFutures(futures, timeout, scores);
       outputResults(ip, scores);
     }
   }
