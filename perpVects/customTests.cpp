@@ -156,7 +156,6 @@ public:
     auto ulp_inc = ti.ulp_inc;
     auto fun = [&indexer](){return (T)(1 << indexer++);};
     //    auto fun = [&indexer](){return 2.0 / pow((T)10.0, indexer++);};
-    auto sort = ti.reduction_sort_type;
     auto& watchPoint = getWatchData<T>();
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0.0);
@@ -164,7 +163,6 @@ public:
     //compiler bug:
     //https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
     Vector<T> a(dim, fun);
-    a.setSort(sort);
     Vector<T> b = a.genOrthoVector();
   
     info_stream << "starting dot product orthogonality test with a, b = " << std::endl;
@@ -205,8 +203,6 @@ public:
     info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
     info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
     info_stream << '\t' << "dimensions: " << dim << std::endl;
-    std::string sType = getSortName(sort);
-    info_stream << '\t' << "sort: " << sType << std::endl;
     info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
     int cdim = 0;
     for(auto d: orthoCount){
