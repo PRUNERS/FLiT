@@ -99,7 +99,7 @@ def run1S(e):
 #        execCommands(['continue']) #I don't know why this is necessary, but the first continue is ignored
     else:
         handleEventError(e, inspect.stack()[0][3])
-        
+
 def run2S(e):
     debugMsg('hit ' + str(inspect.stack()[0][3]) + ' with event: ' + str(e))
     global state
@@ -131,11 +131,11 @@ def analyzeS(e):
             print(str(i) + ":")
             print(str(elem[0][0]) + ',' + elem[0][1] + ':')
             print(str(elem[1][0]) + ',' + elem[1][1])
-        
+
 def seekS(e):
     debugMsg('hit ' + str(inspect.stack()[0][3]) + ' with event: ' + str(e))
     raise gdb.error('seekS not implemented')
-        
+
 def termS(e):
     debugMsg('hit ' + str(inspect.stack()[0][3]) + ' with event: ' + str(e))
     gdb.events.stop.disconnect(catchInt3)
@@ -185,16 +185,16 @@ def createWatch(inf):
     addr = ''
     leng = ''
     lab = ''
-    file = 'inf' + str(inf) + '.watch'
+    filename = 'inf' + str(inf) + '.watch'
     f = None
     try:
-        f = open(file, 'r')
+        f = open(filename, 'r')
         try:
             wdata = f.read()
         finally:
             f.close()
     except IOError:
-        raise gdb.error('*****Error opening file: ' + file)
+        raise gdb.error('*****Error opening file: ' + filename)
     match = re.match(r"[*]+checkAddr:(\w+)\n[*]+checkLen:(\w+)\n" +
                      "[*]+checkLab:(\w+)\n",
                      wdata)
@@ -203,7 +203,7 @@ def createWatch(inf):
         leng = match.group(2).strip()
         lab  = match.group(3).strip()
     else:
-        raise gdb.error('*****Error matching re in watch file: ' + file)
+        raise gdb.error('*****Error matching re in watch file: ' + filename)
     watches.append(qdWatchpoint(addr, lab, leng, inf))
 
 def getTypeStr(s):
@@ -213,7 +213,7 @@ def getTypeStr(s):
         return 'double'
     else:
         return 'long double'
-    
+
 
 # Here are external event handlers, int3 and term.  Watch
 # hits are handled by qdWatchpoint class
@@ -233,13 +233,13 @@ def catchTerm(event):
         handleEvent(events.i1Term)
     else:
         handleEvent(events.i2Term)
-        
+
 class qdWatchpoint (gdb.Breakpoint):
     def __init__(self, addr, descr, leng, inf):
         print('in qdWatchpoint init, leng is: ' + leng + ' getTypeStr(leng) is: ' + getTypeStr(int(leng)))
         self.spec = '*(' + getTypeStr(int(leng)) + '*)' + addr
         self.descr = descr
-        self.inf = inf        
+        self.inf = inf
         super(qdWatchpoint, self).__init__(self.spec, gdb.BP_WATCHPOINT, gdb.WP_WRITE,
                                            internal = False)
     def stop (self):
@@ -249,7 +249,7 @@ class qdWatchpoint (gdb.Breakpoint):
         else:
             handleEvent(events.i2Watch)
         return False
-    
+
     def delete (self):
         gdb.Breakpoint.delete(self)
 
@@ -272,7 +272,7 @@ class CommandEvent():
 def main():
     debugMsg('cwd is: ' + getcwd())
     global state
-    state = states.initial 
+    state = states.initial
     handleEvent(events.startup)
 
 if __name__ == "__main__":
