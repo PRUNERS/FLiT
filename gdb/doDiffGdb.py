@@ -6,10 +6,17 @@ import sys
 from subprocess import check_output
 import os
 
-def usage():             #  1         2           3        4              5                   6
-    print(sys.argv[0] + '[bin1 path] [bin2 path] [testid1] [prec1 = f|d|e] [sort1 = lt|gt|ns|bi] [testid2] [prec2] [sort2] [emacsNoWindow = t|f]')
+def usage():
+    'Prints usage information'
+    print('Usage:\n')
+    print(sys.argv[0] + ' [bin1 path] [bin2 path] [testid1] [prec1 = f|d|e]\n'
+          + '             [sort1 = lt|gt|ns|bi] [testid2] [prec2] [sort2]\n'
+          + '             [emacsNoWindow = t|f]\n'
+          )
 
-
+if '-h' in sys.argv or '--help' in sys.argv:
+    usage()
+    exit(0)
 if len(sys.argv) < 8 or len(sys.argv) > 9:
     usage()
     exit(1)
@@ -46,10 +53,10 @@ try:
     cmd = [emacs, '--eval=(gdb "gdb -i=mi inf1")']
     if NW:
         cmd.append('-nw')
-    cmd_out = check_output(cmd)
-    
-except CalledProcessError:
-    print(cmd_out)
+    check_output(cmd)
+
+except CalledProcessError as ex:
+    print(ex.output)
     exit(1)
 
 exit(0)

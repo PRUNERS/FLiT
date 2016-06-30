@@ -40,7 +40,7 @@ Here are the main components of QFP_gdb:
 
 * The extension code
 ** contains the breakpoint overloads
-*** the setup breakpoing, for creating watchpoints
+*** the setup breakpoint, for creating watchpoints
 *** the running breakpoint, which handles our watchpoints
 **** performs the comparison of corresponding writes between inferiors
 **** rewinds executions as necessary to align execution points of A and B
