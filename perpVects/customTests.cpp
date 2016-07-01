@@ -8,9 +8,14 @@
 #include <cmath>
 #include <typeinfo>
 
+//setup for Eigen library test suite
+//there's a race on this container -- switching to 1 concurrency
+QFPTest::resultType eigenResults;
+#include "eigen/main.h"
+
 namespace QFPTest {
 
-using namespace QFPHelpers;
+  //using namespace QFPHelpers;
 
 template <typename T>
 class DoSkewSymCPRotationTest: public TestBase {
@@ -20,39 +25,40 @@ public:
     auto& min = ti.min;
     auto& max = ti.max;
     auto& crit = getWatchData<T>();
-    info_stream << "entered " << id << std::endl; 
+    QFPHelpers::info_stream << "entered " << id << std::endl; 
     long double L1Score = 0.0;
     long double LIScore = 0.0;
-    auto A = Vector<T>::getRandomVector(3, min, max).getUnitVector();
-    info_stream << "A (unit) is: " << std::endl << A << std::endl;
-    auto B = Vector<T>::getRandomVector(3, min, max).getUnitVector();
-    info_stream << "B (unit): " << std::endl  << B << std::endl;
+    auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
+    QFPHelpers::info_stream << "A (unit) is: " << std::endl << A << std::endl;
+    auto B = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
+    QFPHelpers::info_stream << "B (unit): " << std::endl  << B << std::endl;
     auto cross = A.cross(B); //cross product
-    info_stream << "cross: " << std::endl << cross << std::endl;
+    QFPHelpers::info_stream << "cross: " << std::endl << cross << std::endl;
     auto sine = cross.L2Norm();
-    info_stream << "sine: " << std::endl << sine << std::endl;
+    QFPHelpers::info_stream << "sine: " << std::endl << sine << std::endl;
     crit = A ^ B; //dot product
-    info_stream << "cosine: " << std::endl << crit << std::endl;
-    auto sscpm = Matrix<T>::SkewSymCrossProdM(cross);
-    info_stream << "sscpm: " << std::endl << sscpm << std::endl;
-    auto rMatrix = Matrix<T>::Identity(3) +
+    QFPHelpers::info_stream << "cosine: " << std::endl << crit << std::endl;
+    auto sscpm = QFPHelpers::Matrix<T>::SkewSymCrossProdM(cross);
+    QFPHelpers::info_stream << "sscpm: " << std::endl << sscpm << std::endl;
+    auto rMatrix = QFPHelpers::Matrix<T>::Identity(3) +
       sscpm + (sscpm * sscpm) * ((1 - crit)/(sine * sine));
     auto result = rMatrix * A;
-    info_stream << "rotator: " << std::endl << rMatrix << std::endl;
+    QFPHelpers::info_stream << "rotator: " << std::endl << rMatrix << std::endl;
     if(!(result == B)){
       L1Score = result.L1Distance(B);
       LIScore = result.LInfDistance(B);
-      info_stream << "Skew symmetric cross product rotation failed with ";
-      info_stream << "L1Distance " << L1Score << std::endl;
-      info_stream << "starting vectors: " << std::endl;
-      info_stream << A << std::endl;
-      info_stream << "...and..." << std::endl;
-      info_stream << B << std::endl;
-      info_stream << "ended up with: " << std::endl;
-      info_stream << "L1Distance: " << L1Score << std::endl;
-      info_stream << "LIDistance: " << LIScore << std::endl;
+      QFPHelpers::info_stream << "Skew symmetric cross product rotation failed with ";
+      QFPHelpers::info_stream << "L1Distance " << L1Score << std::endl;
+      QFPHelpers::info_stream << "starting vectors: " << std::endl;
+      QFPHelpers::info_stream << A << std::endl;
+      QFPHelpers::info_stream << "...and..." << std::endl;
+      QFPHelpers::info_stream << B << std::endl;
+      QFPHelpers::info_stream << "ended up with: " << std::endl;
+      QFPHelpers::info_stream << "L1Distance: " << L1Score << std::endl;
+      QFPHelpers::info_stream << "LIDistance: " << LIScore << std::endl;
     }
-    return {{id, typeid(T).name()}, {L1Score, LIScore}};
+    return {{{id, typeid(T).name()},
+	  {L1Score, LIScore}}};
   }
 };
 
@@ -69,9 +75,9 @@ public:
     T e;
     sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
     //matrix = {a, b, c};
-    Vector<T> a = {1, e, e};
-    Vector<T> b = {1, e, 0};
-    Vector<T> c = {1, 0, e};
+    QFPHelpers::Vector<T> a = {1, e, e};
+    QFPHelpers::Vector<T> b = {1, e, 0};
+    QFPHelpers::Vector<T> c = {1, 0, e};
     auto r1 = a.getUnitVector();
     crit = r1[0];
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -86,20 +92,20 @@ public:
     T o23 = r2 ^ r3;
     crit = 023;
     if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
-      info_stream << "in: " << id << std::endl;
-      info_stream << "applied gram-schmidt to:" << std::endl;
-      info_stream << "a: " << a << std::endl;
-      info_stream << "b: " << b << std::endl;
-      info_stream << "c: " << c << std::endl;
-      info_stream << "resulting vectors were: " << std::endl;
-      info_stream << "r1: " << r1 << std::endl;
-      info_stream << "r2: " << r2 << std::endl;
-      info_stream << "r3: " << r3 << std::endl;
-      info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
-      info_stream << "score (bits): " << FPWrap<long double>(score) << std::endl;
-      info_stream << "score (dec) :" << score << std::endl;
+      QFPHelpers::info_stream << "in: " << id << std::endl;
+      QFPHelpers::info_stream << "applied gram-schmidt to:" << std::endl;
+      QFPHelpers::info_stream << "a: " << a << std::endl;
+      QFPHelpers::info_stream << "b: " << b << std::endl;
+      QFPHelpers::info_stream << "c: " << c << std::endl;
+      QFPHelpers::info_stream << "resulting vectors were: " << std::endl;
+      QFPHelpers::info_stream << "r1: " << r1 << std::endl;
+      QFPHelpers::info_stream << "r2: " << r2 << std::endl;
+      QFPHelpers::info_stream << "r3: " << r3 << std::endl;
+      QFPHelpers::info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
+      QFPHelpers::info_stream << "score (bits): " << QFPHelpers::FPWrap<long double>(score) << std::endl;
+      QFPHelpers::info_stream << "score (dec) :" << score << std::endl;
     }
-    return {{id, typeid(T).name()}, {score, 0.0}};
+    return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
 };
 
@@ -115,9 +121,9 @@ public:
     T e;
     sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
     //matrix = {a, b, c};
-    Vector<T> a = {1, e, e};
-    Vector<T> b = {1, e, 0};
-    Vector<T> c = {1, 0, e};
+    QFPHelpers::Vector<T> a = {1, e, e};
+    QFPHelpers::Vector<T> b = {1, e, 0};
+    QFPHelpers::Vector<T> c = {1, 0, e};
 
     auto r1 = a.getUnitVector();
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -127,18 +133,18 @@ public:
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
     if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
-      info_stream << "in: " << id << std::endl;
-      info_stream << "applied gram-schmidt to:" << std::endl;
-      info_stream << "a: " << a << std::endl;
-      info_stream << "b: " << b << std::endl;
-      info_stream << "c: " << c << std::endl;
-      info_stream << "resulting vectors were: " << std::endl;
-      info_stream << "r1: " << r1 << std::endl;
-      info_stream << "r2: " << r2 << std::endl;
-      info_stream << "r3: " << r3 << std::endl;
-      info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
+      QFPHelpers::info_stream << "in: " << id << std::endl;
+      QFPHelpers::info_stream << "applied gram-schmidt to:" << std::endl;
+      QFPHelpers::info_stream << "a: " << a << std::endl;
+      QFPHelpers::info_stream << "b: " << b << std::endl;
+      QFPHelpers::info_stream << "c: " << c << std::endl;
+      QFPHelpers::info_stream << "resulting vectors were: " << std::endl;
+      QFPHelpers::info_stream << "r1: " << r1 << std::endl;
+      QFPHelpers::info_stream << "r2: " << r2 << std::endl;
+      QFPHelpers::info_stream << "r3: " << r3 << std::endl;
+      QFPHelpers::info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
     }
-    return {{id, typeid(T).name()}, {score, 0.0}};
+    return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
 };
 
@@ -162,14 +168,14 @@ public:
     //we use a double literal above as a workaround for Intel 15-16
     //compiler bug:
     //https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    Vector<T> a(dim, fun);
-    Vector<T> b = a.genOrthoVector();
+    QFPHelpers::Vector<T> a(dim, fun);
+    QFPHelpers::Vector<T> b = a.genOrthoVector();
   
-    info_stream << "starting dot product orthogonality test with a, b = " << std::endl;
-    for(int x = 0; x < dim; ++x) info_stream << x << '\t';
-    info_stream << std::endl;
-    info_stream << a << std::endl;
-    info_stream << b << std::endl;
+    QFPHelpers::info_stream << "starting dot product orthogonality test with a, b = " << std::endl;
+    for(int x = 0; x < dim; ++x) QFPHelpers::info_stream << x << '\t';
+    QFPHelpers::info_stream << std::endl;
+    QFPHelpers::info_stream << a << std::endl;
+    QFPHelpers::info_stream << b << std::endl;
     T backup;
 
     for(int r = 0; r < dim; ++r){
@@ -177,7 +183,7 @@ public:
       backup = p;
       for(int i = 0; i < iters; ++i){
 	//	cout << "r:" << r << ":i:" << i << std::std::endl;
-	p = FPHelpers::perturbFP(backup, i * ulp_inc);
+	p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
 	//Added this for force watchpoint hits every cycle (well, two).  We shouldn't really
 	//be hitting float min
 	watchPoint = FLT_MIN;
@@ -193,24 +199,24 @@ public:
 	}else{
 	  if(i == 0) score += fabs(watchPoint); //a ^ b);  //if falsely not detecting ortho, should be the dot prod
 	}
-	info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
-	  FPWrap<T>(a ^ b) << std::endl;
+	QFPHelpers::info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", " << QFPHelpers::FPWrap<T>(a[r]) << " multiplier: " << b[r] << ", " << QFPHelpers::FPWrap<T>(b[r]) << " perp: " << isOrth << " dot prod: " <<
+	  QFPHelpers::FPWrap<T>(a ^ b) << std::endl;
       }
-      info_stream << "next dimension . . . " << std::endl;
+      QFPHelpers::info_stream << "next dimension . . . " << std::endl;
       p = backup;
     }
-    info_stream << "Final report, one iteration set per dimensiion:" << std::endl;
-    info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
-    info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
-    info_stream << '\t' << "dimensions: " << dim << std::endl;
-    info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
+    QFPHelpers::info_stream << "Final report, one iteration set per dimensiion:" << std::endl;
+    QFPHelpers::info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
+    QFPHelpers::info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
+    QFPHelpers::info_stream << '\t' << "dimensions: " << dim << std::endl;
+    QFPHelpers::info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
     int cdim = 0;
     for(auto d: orthoCount){
-      info_stream << "For mod dim " << cdim << ", there were " << d << " ortho vectors, product magnitude (biased fp exp): "
-	   << FPHelpers::getExponent(a[cdim] * b[cdim]) << std::endl;
+      QFPHelpers::info_stream << "For mod dim " << cdim << ", there were " << d << " ortho vectors, product magnitude (biased fp exp): "
+			      <<QFPHelpers::FPHelpers::getExponent(a[cdim] * b[cdim]) << std::endl;
       cdim++;
     }
-    return {{id, typeid(T).name()}, {score, 0.0}};
+    return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
 };
 
@@ -225,12 +231,12 @@ public:
     auto dim = ti.highestDim;
     T min = ti.min;
     T max = ti.max;
-    Vector<T> b = Vector<T>::getRandomVector(dim, min, max);
-    auto c = Matrix<T>::Identity(dim) * b;
-    info_stream << "Product is: " << c << std::endl;
+    QFPHelpers::Vector<T> b = QFPHelpers::Vector<T>::getRandomVector(dim, min, max);
+    auto c = QFPHelpers::Matrix<T>::Identity(dim) * b;
+    QFPHelpers::info_stream << "Product is: " << c << std::endl;
     bool eq = c == b;
-    info_stream << "A * b == b? " << eq << std::endl;
-    return {{id, typeid(T).name()}, {c.L1Distance(b), c.LInfDistance(b)}};
+    QFPHelpers::info_stream << "A * b == b? " << eq << std::endl;
+    return {{{id, typeid(T).name()}, {c.L1Distance(b), c.LInfDistance(b)}}};
   }
 };
 REGISTER_TYPE(DoMatrixMultSanity)
@@ -241,14 +247,14 @@ public:
   DoSimpleRotate90(std::string id):TestBase(id){}
 
   resultType operator()(const testInput& ti) {
-    Vector<T> A = {1, 1, 1};
-    Vector<T> expected = {-1, 1, 1};
-    info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;
+    QFPHelpers::Vector<T> A = {1, 1, 1};
+    QFPHelpers::Vector<T> expected = {-1, 1, 1};
+    QFPHelpers::info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;
     A.rotateAboutZ_3d(M_PI/2);
-    info_stream << "Resulting vector: " << A << std::endl;
-    info_stream << "in " << id << std::endl;
-    A.dumpDistanceMetrics(expected, info_stream);
-    return {{id, typeid(T).name()}, {A.L1Distance(expected), A.LInfDistance(expected)}};
+    QFPHelpers::info_stream << "Resulting vector: " << A << std::endl;
+    QFPHelpers::info_stream << "in " << id << std::endl;
+    A.dumpDistanceMetrics(expected, QFPHelpers::info_stream);
+    return {{{id, typeid(T).name()}, {A.L1Distance(expected), A.LInfDistance(expected)}}};
   }  
 };
 
@@ -263,23 +269,23 @@ public:
     T min = ti.min;
     T max = ti.max;
     auto theta = M_PI;
-    auto A = Vector<T>::getRandomVector(3, min, max);
+    auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max);
     auto orig = A;
-    info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
+    QFPHelpers::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);
-    info_stream << "Rotated is: " << A << std::endl;
+    QFPHelpers::info_stream << "Rotated is: " << A << std::endl;
     A.rotateAboutZ_3d(-theta);
-    info_stream << "Unrotated is: " << A << std::endl;
+    QFPHelpers::info_stream << "Unrotated is: " << A << std::endl;
     bool equal = A == orig;
-    info_stream << "Are they equal? " << equal << std::endl;
+    QFPHelpers::info_stream << "Are they equal? " << equal << std::endl;
     auto dist = A.L1Distance(orig);
     if(!equal){
-      info_stream << "error in L1 distance is: " << dist << std::endl;
-      info_stream << "difference between: " << (A - orig) << std::endl;
+      QFPHelpers::info_stream << "error in L1 distance is: " << dist << std::endl;
+      QFPHelpers::info_stream << "difference between: " << (A - orig) << std::endl;
     }
-    info_stream << "in " << id << std::endl;
-    A.dumpDistanceMetrics(orig, info_stream);
-    return {{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}};
+    QFPHelpers::info_stream << "in " << id << std::endl;
+    A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
+    return {{{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}}};
   }
 };
 
@@ -294,23 +300,23 @@ public:
     auto n = ti.iters;
     T min = ti.min;
     T max = ti.max;
-    Vector<T> A = Vector<T>::getRandomVector(3, min, max);
+    QFPHelpers::Vector<T> A = QFPHelpers::Vector<T>::getRandomVector(3, min, max);
     auto orig = A;
     T theta = 2 * M_PI / n;
-    info_stream << "Rotate full circle in " << n << " increments, A is: " << A << std::endl;
+    QFPHelpers::info_stream << "Rotate full circle in " << n << " increments, A is: " << A << std::endl;
     for(int r = 0; r < n; ++r){
       A.rotateAboutZ_3d(theta);
-      info_stream << r << " rotations, vect = " << A << std::endl;
+      QFPHelpers::info_stream << r << " rotations, vect = " << A << std::endl;
     }
-    info_stream << "Rotated is: " << A << std::endl;
+    QFPHelpers::info_stream << "Rotated is: " << A << std::endl;
     bool equal = A == orig;
-    info_stream << "Does rotated vect == starting vect? " << equal << std::endl;
+    QFPHelpers::info_stream << "Does rotated vect == starting vect? " << equal << std::endl;
     if(!equal){
-      info_stream << "The (vector) difference is: " << (A - orig) << std::endl;
+      QFPHelpers::info_stream << "The (vector) difference is: " << (A - orig) << std::endl;
     }
-    info_stream << "in " << id << std::endl;
-    A.dumpDistanceMetrics(orig, info_stream);
-    return {{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}};
+    QFPHelpers::info_stream << "in " << id << std::endl;
+    A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
+    return {{{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}}};
   }
 };
   
@@ -346,7 +352,7 @@ public:
 		    std::pow(ti.max, 2));
       score += std::abs(crit - checkVal);
     }
-    return {{id, typeid(T).name()}, {score, 0.0}};
+    return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
 };
 
@@ -396,20 +402,76 @@ public:
 
     T first = (a + b) * c;
     T second = (a * c) + (b * c);
-    auto first_int  = FPHelpers::projectType<T>(first);
-    auto second_int = FPHelpers::projectType<T>(second);
+    auto first_int  = QFPHelpers::FPHelpers::projectType<T>(first);
+    auto second_int = QFPHelpers::FPHelpers::projectType<T>(second);
     auto difference = first_int - second_int;
     crit = difference;
 
     long double score = fabs(difference);
 
-    info_stream << "DistributivityOfMultiplication: sizeof(T):  " << sizeof(T) << " bytes" << std::endl;
-    info_stream << "DistributivityOfMultiplication: difference: " << score << " ULPs" << std::endl;
+    QFPHelpers::info_stream << "DistributivityOfMultiplication: sizeof(T):  " << sizeof(T) << " bytes" << std::endl;
+    QFPHelpers::info_stream << "DistributivityOfMultiplication: difference: " << score << " ULPs" << std::endl;
 
-    return {{id, typeid(T).name()}, {score, 0.0}};
+    return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
 };
 
 REGISTER_TYPE(DistributivityOfMultiplication)
+
+
+#include "eigen/adjoint.cpp"
+  
+template <typename T>
+class EigenAdjoint : public TestBase{
+public:
+  EigenAdjoint(std::string id):TestBase(id){}
+  
+  resultType operator()(const testInput& ti){
+    if(sizeof(T) != 4) return {};
+    test_adjoint();
+    auto res = eigenResults;
+    eigenResults.clear();
+    return res;
+  }
+};
+
+REGISTER_TYPE(EigenAdjoint)
+
+// #include "eigen/array.cpp"
+
+// template <typename T>
+// class EigenArray(std::string id):TestBase(id){}
+
+//   resultType operator()(const testInput& ti){
+//     if(sizeof(T) != 4) return {};
+//     test_array();
+//     auto res = eigenResults;
+//     eigenResults.clear();
+//     return res;
+//   }
+// };
+
+// REGISTER_TYPE(EigenArray)
+    
+// #include "eigen/array_for_matrix.cpp"
+  
+// template <typename T>
+// class EigenArrayForMatrix : public TestBase{
+// public:
+//   EigenArrayForMatrix(std::string id):TestBase(id){}
+  
+//   resultType operator()(const testInput& ti){
+//     if(sizeof(T) != 4) return {};
+//     // std::cout << "about to call test_array_for_matrix" << std::endl;
+//     test_array_for_matrix();
+//     // std::cout << "called the func" << std::endl;
+//     auto res = eigenResults;
+//     eigenResults.clear();
+//     return res;
+//   }
+// };
+
+// REGISTER_TYPE(EigenArrayForMatrix)
+
 
 } //namespace QFPTest

@@ -16,8 +16,11 @@ namespace QFPTest {
   
 void setWatching(bool watch = true);
 
-  typedef std::pair<std::pair<const std::string, const std::string>,
-		    std::pair<long double, long double> > resultType;
+
+
+typedef std::map<std::pair<const std::string, const std::string>,
+  std::pair<long double, long double>> resultType;
+
 
 std::ostream&
 operator<<(std::ostream&, const resultType&);

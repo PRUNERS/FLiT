@@ -94,14 +94,16 @@ setWatching(bool watch){
 
   //output operator for resultType
 std::ostream&
-operator<<(std::ostream& os, const resultType& r) {
+operator<<(std::ostream& os, const resultType& res){
   // std::string name = r.first;
   // std::string prec;
   // long double s1;
   // long double s2;
   // std::tie(prec, s1, s2) = r.second;
-  os << r.first.first << ":" << r.first.second << ","
-     << r.second.first << "," << r.second.second;
+  for(auto r  : res){
+    os << r.first.first << ":" << r.first.second << ","
+       << r.second.first << "," << r.second.second << std::endl;
+  }
   return os;
 }
 }

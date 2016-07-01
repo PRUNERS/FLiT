@@ -4,12 +4,13 @@ CC := g++
 FFLAGS ?= 
 TARGET ?= test
 
-CPPFLAGS ?= -Wuninitialized -g 
+CPPFLAGS ?= -Wuninitialized -g
 
 CPPFLAGS += -std=c++11 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I. \
-	 $(FFLAGS) -lpthread -pthread
+	 -Ieigen $(FFLAGS) -lpthread -pthread
 
 INCFILES := $(wildcard *.h)
+INCFILES := $(wildcard eigen/*.h)
 
 SOURCE := $(wildcard *.cpp)
 OBJ := $(SOURCE:.cpp=.o)
