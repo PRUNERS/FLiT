@@ -15,8 +15,8 @@ using namespace QFPHelpers;
 using namespace QFPTest;
 
 // typedef std::map<int,int> score_t;
-typedef std::map<std::pair<std::string, std::string>,
-                 std::pair<long double, long double>> score_t;
+// typedef std::map<std::pair<std::string, std::string>,
+//                  std::pair<long double, long double>> score_t;
 
 int
 getPrecID(std::string s){
@@ -47,7 +47,7 @@ loadIntFromEnv(int &dest, std::string var, int defVal){
 }
 
 void
-outputResults(const score_t& scores){
+outputResults(const QFPTest::resultType& scores){
   for(const auto& i: scores){
     std::cout << "HOST,SWITCHES,COMPILER," << i.first.second << ",us," << i.second.first
 	      << "," << FPWrap<long double>(i.second.first) << ","
@@ -60,11 +60,11 @@ outputResults(const score_t& scores){
 typedef std::list<std::future<QFPTest::resultType>> future_collection_t;
 typedef std::chrono::milliseconds const timeout_t;
 
-void checkFutures(future_collection_t& fc, const timeout_t& to, score_t& scores){
+void checkFutures(future_collection_t& fc, const timeout_t& to, QFPTest::resultType& scores){
   for(auto it=fc.begin(); it!=fc.end(); ++it){
     if(it->wait_for(to) != std::future_status::timeout){
       auto val = it->get();
-      scores.insert(val);
+      scores.insert(val.begin(), val.end());
       it = fc.erase(it);
     }
   }
@@ -100,7 +100,7 @@ main(int argc, char* argv[]){
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
 
-  score_t scores;
+  QFPTest::resultType scores;
 
   scores.clear();
 
@@ -114,7 +114,7 @@ main(int argc, char* argv[]){
     auto plist = TestBase::getTests()[TEST]->create();
     auto score = (*plist[getPrecID(PRECISION)])(ip);
     for(auto& p: plist) delete p;
-    scores.insert(score);
+    scores.insert(score.begin(), score.end());
     outputResults(scores);
   }else{
 
