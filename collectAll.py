@@ -11,7 +11,7 @@ hostinfo = [
            ['u0422778@kingspeak2.chpc.utah.edu', 12],
            ['sawaya@bihexal.cs.utah.edu', 24],
            ['sawaya@gaussr.cs.utah.edu', 8],
-            ['sawaya@ms0144.utah.cloudlab.us', 8]
+            ['sawaya@ms0237.utah.cloudlab.us', 8]
 ]
 
 #constants
