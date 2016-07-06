@@ -11,6 +11,7 @@
 #include <float.h>
 #include <random>
 #include <algorithm>
+#include <mutex>
 
 
 namespace QFPHelpers {
@@ -190,13 +191,17 @@ struct FPWrap{
   friend std::ostream& operator<<(std::ostream& os, FPWrap<U> const &w);
 };
 
+  extern std::mutex ostreamMutex;
+  
 template <typename U>
 std::ostream& operator<<(std::ostream& os, const FPWrap<U> &w){
   w.update();
+  ostreamMutex.lock();
   std::ios_base::fmtflags f = os.flags();
   //FIXME can't handle 128 bit values for ostream operations
   os << std::hex << w.intVal;
   os.flags(f);
+  ostreamMutex.unlock();
   return os;
 }
 
@@ -247,7 +252,8 @@ public:
   Vector<T>
   getRandomVector(size_t dim, T min_inc, T max_exc,
 		  std::default_random_engine::result_type seed = 0,
-		  bool doSeed = false){
+		  bool doSeed = true){
+    std::default_random_engine gen;
     if(doSeed) gen.seed(seed);
     std::uniform_real_distribution<T> dist(min_inc,max_exc);
     Vector<T> tmp(dim);

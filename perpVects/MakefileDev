@@ -1,10 +1,9 @@
-#CC := clang++
+CC := clang++
 #CC := g++
-CC := g++
 FFLAGS ?= 
 TARGET ?= test
 
-CPPFLAGS ?= -Wuninitialized -g
+CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
 
 CPPFLAGS += -std=c++11 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I. \
 	 -Ieigen $(FFLAGS) -lpthread -pthread

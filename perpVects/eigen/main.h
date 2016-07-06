@@ -100,7 +100,7 @@
 
 namespace Eigen
 {
-  static std::vector<std::string> g_test_stack;
+  static std::map<std::string, std::vector<std::string>> g_test_stack;
   //QFP we removed the setter (main)
   static int g_repeat = DEFAULT_REPEAT;
   static unsigned int g_seed;
@@ -213,17 +213,27 @@ namespace Eigen
 
 
 #define EIGEN_INTERNAL_DEBUGGING
-#include <Eigen/QR> // required for createRandomPIMatrixOfRank
+#include <Eigen/QR> 
 
 typedef std::pair<bool, long double> cond_t;
 
-int vi_count = 0;
+//int vi_count = 0;
 
 inline void verify_impl(cond_t condition, const char *testname, const char *file, int line, const char *condition_as_string, bool invert = false)
 {
   bool cond = condition.first != invert;
-  eigenResults.insert({{std::string(testname) + std::to_string(vi_count++), "f"},
-	{(long double)cond, condition.second}});
+  // eigenResults.insert({{std::string(testname) + "_" + file + "_" + std::to_string(line), "f"},
+  // 	{(long double)cond, condition.second}});
+  if(eigenResults.find(std::string(file)) == eigenResults.end()){
+    eigenResults_mutex.lock();
+    eigenResults[std::string(file)];
+    eigenResults_mutex.unlock();
+  }
+  auto& container = eigenResults[std::string(file)];
+  // std::cout << "size of eigenResults " << file << " is: " << container.size() << std::endl;
+  container.insert({{std::string(testname) + "_" + std::string(file) + "_" + std::to_string(line), "f"},
+  	{(long double)cond, condition.second}});
+
   // if (!condition)
   // {
   //   std::cerr << "Test " << testname << " failed in " << file << " (" << line << ")"
@@ -239,16 +249,24 @@ inline void verify_impl(cond_t condition, const char *testname, const char *file
 
 inline void verify_impl(bool condition, const char *testname, const char *file, int line, const char *condition_as_string)
 {
-  static int count = 0;
-  eigenResults.insert({{std::string(testname) + std::to_string(vi_count++), "f"},
-	{(long double)condition, 0.0}});
+  if(eigenResults.find(std::string(file)) == eigenResults.end()){
+    eigenResults_mutex.lock();
+    eigenResults[std::string(file)];
+    eigenResults_mutex.unlock();
+  }
+  auto& container = eigenResults[std::string(file)];
+  // eigenResults.insert({{std::string(testname) + "_" + file + "_" + std::to_string(line), "f"},
+  // 	{(long double)condition, 0.0}});
+  // std::cout << "size of eigenResults " << file << " is: " << container.size() << std::endl;
+  container.insert({{std::string(testname) + "_" + std::string(file) + "_" + std::to_string(line), "f"},
+  	{(long double)condition, 0.0}});
 }
 
-#define VERIFY2(a) ::verify_impl(a, g_test_stack.back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a))
+#define VERIFY2(a) ::verify_impl(a, g_test_stack[__FILE__].back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a))
 
-#define VERIFY2_NOT(a) ::verify_impl(a, g_test_stack.back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a), true)
+#define VERIFY2_NOT(a) ::verify_impl(a, g_test_stack[__FILE__].back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a), true)
 
-#define VERIFY(a) ::verify_impl(a, g_test_stack.back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a))
+#define VERIFY(a) ::verify_impl(a, g_test_stack[__FILE__].empty()?__FILE__:g_test_stack[__FILE__].back().c_str(), __FILE__, __LINE__, EI_PP_MAKE_STRING(a))
 // #define VERIFY(a)
 
 #define VERIFY_IS_EQUAL(a, b) VERIFY2(test_is_equal(a, b))
@@ -262,10 +280,11 @@ inline void verify_impl(bool condition, const char *testname, const char *file, 
 #define VERIFY_IS_UNITARY(a) VERIFY2(test_isUnitary(a))
 
 #define CALL_SUBTEST(FUNC) do { \
-    g_test_stack.push_back(EI_PP_MAKE_STRING(FUNC)); \
+    std::cout << "calling subtest with " << __FILE__ << std::endl; \
+    g_test_stack[__FILE__].push_back(EI_PP_MAKE_STRING(FUNC));	\
     FUNC; \
-    g_test_stack.pop_back(); \
-  } while (0)
+    g_test_stack[__FILE__].pop_back(); \
+  } while (0) \
 
 
 namespace Eigen {
