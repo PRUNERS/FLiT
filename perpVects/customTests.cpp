@@ -7,10 +7,15 @@
 
 #include <cmath>
 #include <typeinfo>
+#include <mutex>
 
 //setup for Eigen library test suite
 //there's a race on this container -- switching to 1 concurrency
-QFPTest::resultType eigenResults;
+std::map<std::string, QFPTest::resultType> eigenResults;
+//QFPTest::resultType eigenResults;
+std::mutex eigenResults_mutex;
+std::mutex g_test_stack_mutex;
+
 #include "eigen/main.h"
 
 namespace QFPTest {
@@ -24,7 +29,7 @@ public:
   resultType operator()(const testInput& ti) {
     auto& min = ti.min;
     auto& max = ti.max;
-    auto& crit = getWatchData<T>();
+    //    auto& crit = getWatchData<T>();
     QFPHelpers::info_stream << "entered " << id << std::endl; 
     long double L1Score = 0.0;
     long double LIScore = 0.0;
@@ -36,12 +41,16 @@ public:
     QFPHelpers::info_stream << "cross: " << std::endl << cross << std::endl;
     auto sine = cross.L2Norm();
     QFPHelpers::info_stream << "sine: " << std::endl << sine << std::endl;
-    crit = A ^ B; //dot product
-    QFPHelpers::info_stream << "cosine: " << std::endl << crit << std::endl;
+    //    crit = A ^ B; //dot product
+    auto cos = A ^ B;
+    //    QFPHelpers::info_stream << "cosine: " << std::endl << crit << std::endl;
+    QFPHelpers::info_stream << "cosine: " << std::endl << cos << std::endl;
     auto sscpm = QFPHelpers::Matrix<T>::SkewSymCrossProdM(cross);
     QFPHelpers::info_stream << "sscpm: " << std::endl << sscpm << std::endl;
     auto rMatrix = QFPHelpers::Matrix<T>::Identity(3) +
-      sscpm + (sscpm * sscpm) * ((1 - crit)/(sine * sine));
+      sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
+    // auto rMatrix = QFPHelpers::Matrix<T>::Identity(3) +
+    //   sscpm + (sscpm * sscpm) * ((1 - crit)/(sine * sine));
     auto result = rMatrix * A;
     QFPHelpers::info_stream << "rotator: " << std::endl << rMatrix << std::endl;
     if(!(result == B)){
@@ -70,7 +79,7 @@ public:
   DoHariGSBasic(std::string id):TestBase(id){}
 
   resultType operator()(const testInput& ti) {
-    auto& crit = getWatchData<T>();
+    //auto& crit = getWatchData<T>();
     long double score = 0.0;
     T e;
     sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
@@ -79,18 +88,18 @@ public:
     QFPHelpers::Vector<T> b = {1, e, 0};
     QFPHelpers::Vector<T> c = {1, 0, e};
     auto r1 = a.getUnitVector();
-    crit = r1[0];
+    //crit = r1[0];
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
-    crit =r2[0];
+    //crit =r2[0];
     auto r3 = (c - r1 * (c ^ r1) -
 	       r2 * (c ^ r2)).getUnitVector();
-    crit = r3[0];
+    //crit = r3[0];
     T o12 = r1 ^ r2;
-    crit = o12;
+    //    crit = o12;
     T o13 = r1 ^ r3;
-    crit = o13;
+    //crit = o13;
     T o23 = r2 ^ r3;
-    crit = 023;
+    //crit = 023;
     if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
       QFPHelpers::info_stream << "in: " << id << std::endl;
       QFPHelpers::info_stream << "applied gram-schmidt to:" << std::endl;
@@ -337,7 +346,7 @@ public:
     T c = std::sqrt(std::pow(a,2) + std::pow(b, 2));
     const T delta = ti.max / (T)ti.iters;
     
-    auto& crit = getWatchData<T>();
+    // auto& crit = getWatchData<T>();
 
     // 1/2 b*h = A
     const T checkVal = 0.5 * b * a;  //all perturbations will have the same base and height
@@ -345,7 +354,8 @@ public:
     long double score = 0;
 
     for(T pos = 1; pos <= a; pos += delta){
-      crit = getArea(a,b,c);
+      auto crit = getArea(a,b,c);
+      // crit = getArea(a,b,c);
       b = std::sqrt(std::pow(pos, 2) +
 		    std::pow(ti.max, 2));
       c = std::sqrt(std::pow(a - pos, 2) +
@@ -398,14 +408,14 @@ public:
     T b = 1.09822961058807457775616000e+23;
     T c = 1.89503425000000000000000000e+06;
 
-    auto& crit = getWatchData<T>();
+    //    auto& crit = getWatchData<T>();
 
     T first = (a + b) * c;
     T second = (a * c) + (b * c);
     auto first_int  = QFPHelpers::FPHelpers::projectType<T>(first);
     auto second_int = QFPHelpers::FPHelpers::projectType<T>(second);
     auto difference = first_int - second_int;
-    crit = difference;
+    //crit = difference;
 
     long double score = fabs(difference);
 
@@ -420,38 +430,54 @@ REGISTER_TYPE(DistributivityOfMultiplication)
 
 
 #include "eigen/adjoint.cpp"
+
+EIGEN_CLASS_DEF(EigenAdjoint, adjoint)
   
-template <typename T>
-class EigenAdjoint : public TestBase{
-public:
-  EigenAdjoint(std::string id):TestBase(id){}
-  
-  resultType operator()(const testInput& ti){
-    if(sizeof(T) != 4) return {};
-    test_adjoint();
-    auto res = eigenResults;
-    eigenResults.clear();
-    return res;
-  }
-};
-
-REGISTER_TYPE(EigenAdjoint)
-
-// #include "eigen/array.cpp"
-
 // template <typename T>
-// class EigenArray(std::string id):TestBase(id){}
-
+// class EigenAdjoint : public TestBase{
+// public:
+//   EigenAdjoint(std::string id):TestBase(id){}
+  
 //   resultType operator()(const testInput& ti){
 //     if(sizeof(T) != 4) return {};
-//     test_array();
-//     auto res = eigenResults;
-//     eigenResults.clear();
+//     test_adjoint();
+//     auto res = eigenResults["eigen/adjoint.cpp"];
+//     std::cout << "size of eigenResults is: " + res.size() << std::endl;
+//     eigenResults["eigen/adjoint.cpp"].clear();
 //     return res;
 //   }
 // };
 
-// REGISTER_TYPE(EigenArray)
+REGISTER_TYPE(EigenAdjoint)
+
+#include "eigen/array.cpp"
+
+EIGEN_CLASS_DEF(EigenArray, array)
+
+// template <typename T>
+// class EigenArray : public TestBase {
+// public:
+//   EigenArray(std::string id):TestBase(id){}
+
+//   resultType operator()(const testInput& ti){ 
+//     if(sizeof(T) != 4) return {}; 
+//     auto fileS = std::string("./eigen/") + std::string("array") + ".cpp"; 
+//     std::cout << "in " << "array" << " setting path to " << fileS << std::endl; 
+//     g_test_stack_mutex.lock(); 
+//     g_test_stack[fileS];	
+//     g_test_stack_mutex.unlock(); 
+//     eigenResults_mutex.lock(); 
+//     eigenResults[fileS]; 
+//     eigenResults_mutex.unlock(); 
+//     test_array(); 
+//     g_test_stack[fileS].clear(); 
+//     auto res = eigenResults[fileS]; 
+//     eigenResults[fileS].clear(); 
+//     return res; 
+//   } 
+// };
+
+REGISTER_TYPE(EigenArray)
     
 // #include "eigen/array_for_matrix.cpp"
   

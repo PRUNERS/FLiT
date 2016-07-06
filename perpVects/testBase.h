@@ -81,4 +81,28 @@ public:
   static klass##Factory global_##klass##Factory;
 }
 
+#define EIGEN_CLASS_DEF(klass, file) \
+  template <typename T> \
+  class klass : public TestBase{ \
+  public: \
+    klass(std::string id):TestBase(id){}		\
+    resultType operator()(const testInput& ti){ \
+      if(sizeof(T) != 4) return {}; \
+      auto fileS = std::string("./eigen/") + std::string(#file) + ".cpp"; \
+      std::cout << "in " << #file << " setting path to " << fileS << std::endl; \
+      g_test_stack_mutex.lock(); \
+      g_test_stack[fileS];	\
+      g_test_stack_mutex.unlock(); \
+      eigenResults_mutex.lock(); \
+      eigenResults[fileS]; \
+      eigenResults_mutex.unlock(); \
+      test_##file(); \
+      g_test_stack[fileS].clear(); \
+      auto res = eigenResults[fileS]; \
+      eigenResults[fileS].clear(); \
+      return res; \
+    } \
+  }; \
+      
+
 #endif

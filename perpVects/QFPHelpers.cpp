@@ -3,6 +3,7 @@
 // of computation.
 
 #include <unordered_map>
+#include <mutex>
 
 #include "QFPHelpers.h"
 
@@ -35,7 +36,7 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
   return os;
 }
 
-std::default_random_engine gen;
+std::mutex ostreamMutex;
 
 std::string
 getSortName(sort_t val){
