@@ -30,6 +30,8 @@ def parse_args(arguments):
                             (i.e.  pre-filter).  For example, --fix
                             precision=d,switches=,compiler=g++
                             ''')
+    parser.add_argument('-F', '--format', choices=['csv', 'latex'],
+                        default='csv')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-o', '--output', default='output.csv',
                        help='Output file for generated table counts')
@@ -64,24 +66,34 @@ def generate_compare_matrix(inputrows, row_types):
     assert len(row_names) > 0, \
             'You must select at least one row type using --rows'
 
-    table = []  # list of lists, len(row_names) x len(row_names)
-    for row_name in row_names:
-        new_table_row = []
-        table.append(new_table_row)
-        row_items = [x for x in inputrows
-                     if all(x[name] == value
-                            for name, value in zip(row_types, row_name))]
-        for col_name in row_names:
-            col_items = [x for x in inputrows
-                         if all(x[name] == value
-                                for name, value in zip(row_types, col_name))]
-            new_table_row.append(sum(x['score0'] != y['score0']
-                                     for x in row_items for y in col_items
-                                     if all(x[name] == y[name]
-                                            for name in other_types)
-                                ))
-        print(new_table_row)
+    # Do some caching to speed this up
+    vals2key = lambda vals: '_'.join(vals)
+    row2key = lambda row: vals2key(row[x] for x in row_types)
+    row2otherkey = lambda row: vals2key(row[x] for x in other_types)
+    row_map = {}
+    for row in inputrows:
+        key = row2key(row)
+        otherkey = row2otherkey(row)
+        if key not in row_map:
+            row_map[key] = {}
+        if otherkey not in row_map[key]:
+            row_map[key][otherkey] = []
+        row_map[key][otherkey].append(row['score0'])
+
+    # list of lists, len(row_names) x len(row_names)
+    # initialize the table with zeros
+    table = [[0] * len(row_names) for x in range(len(row_names))]
+    for idx1, row_name in enumerate(row_names):
+        row_dict = row_map[vals2key(row_name)]
+        for idx2, col_name in enumerate(row_names):
+            col_dict = row_map[vals2key(col_name)]
+            table[idx1][idx2] = sum([
+                    col_dict[key] != value
+                    for key, value in row_dict.items()
+                    if key in col_dict
+                    ])
     return (row_names, table)
+
 
 def main(arguments):
     'Main entry point'
@@ -98,11 +110,13 @@ def main(arguments):
         outfile = open(args.output, 'w')
 
     try:
-        pivot_table.write_table_to_csv(outfile, row_names, row_names, table)
-    except:
+        if args.format == 'csv':
+            pivot_table.write_table_to_csv(outfile, row_names, row_names, table)
+        elif args.format == 'latex':
+            pivot_table.write_table_to_latex(outfile, row_names, row_names, table)
+    finally:
         if not args.stdout:
             outfile.close()
-        raise
 
 
 if __name__ == '__main__':
