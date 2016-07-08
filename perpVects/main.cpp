@@ -65,7 +65,7 @@ void checkFutures(future_collection_t& fc, const timeout_t& to,
   for(auto it=fc.begin(); it!=fc.end(); ++it){
     if(it->wait_for(to) != std::future_status::timeout){
       auto val = it->get();
-      for(auto v : val) std::cout << v.first.first << std::endl;
+      // for(auto v : val) std::cout << v.first.first << std::endl;
       scores.insert(val.begin(), val.end());
       it = fc.erase(it);
       if(getOne) return;

@@ -1,295 +1,412 @@
+project(Eigen)
+cmake_minimum_required(VERSION 2.8.5)
 
-# generate split test header file
-message(STATUS ${CMAKE_CURRENT_BINARY_DIR})
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h "")
-foreach(i RANGE 1 999)
-  file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h
-    "#ifdef EIGEN_TEST_PART_${i}\n"
-    "#define CALL_SUBTEST_${i}(FUNC) CALL_SUBTEST(FUNC)\n"
-    "#else\n"
-    "#define CALL_SUBTEST_${i}(FUNC)\n"
-    "#endif\n\n"
-    )
-endforeach()
+# guard against in-source builds
 
-# configure blas/lapack (use Eigen's ones)
-set(BLAS_FOUND TRUE)
-set(LAPACK_FOUND TRUE)
-set(BLAS_LIBRARIES eigen_blas)
-set(LAPACK_LIBRARIES eigen_lapack)
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+  message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
+endif()
 
-set(EIGEN_TEST_MATRIX_DIR "" CACHE STRING "Enable testing of realword sparse matrices contained in the specified path")
-if(EIGEN_TEST_MATRIX_DIR)
-  if(NOT WIN32)
-    message(STATUS "Test realworld sparse matrices: ${EIGEN_TEST_MATRIX_DIR}")
-    add_definitions( -DTEST_REAL_CASES="${EIGEN_TEST_MATRIX_DIR}" )
-  else(NOT WIN32)
-    message(STATUS "REAL CASES CAN NOT BE CURRENTLY TESTED ON WIN32")
-  endif(NOT WIN32)
-endif(EIGEN_TEST_MATRIX_DIR)
+# guard against bad build-type strings
 
-set(SPARSE_LIBS " ")
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
 
-find_package(Cholmod)
-if(CHOLMOD_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
-  add_definitions("-DEIGEN_CHOLMOD_SUPPORT")
-  include_directories(${CHOLMOD_INCLUDES})
-  set(SPARSE_LIBS ${SPARSE_LIBS} ${CHOLMOD_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  set(CHOLMOD_ALL_LIBS  ${CHOLMOD_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-  ei_add_property(EIGEN_TESTED_BACKENDS "Cholmod, ")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
+if(    NOT cmake_build_type_tolower STREQUAL "debug"
+   AND NOT cmake_build_type_tolower STREQUAL "release"
+   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are Debug, Release, RelWithDebInfo (case-insensitive).")
+endif()
+
+
+#############################################################################
+# retrieve version infomation                                               #
+#############################################################################
+
+# automatically parse the version number
+file(READ "${PROJECT_SOURCE_DIR}/Eigen/src/Core/util/Macros.h" _eigen_version_header)
+string(REGEX MATCH "define[ \t]+EIGEN_WORLD_VERSION[ \t]+([0-9]+)" _eigen_world_version_match "${_eigen_version_header}")
+set(EIGEN_WORLD_VERSION "${CMAKE_MATCH_1}")
+string(REGEX MATCH "define[ \t]+EIGEN_MAJOR_VERSION[ \t]+([0-9]+)" _eigen_major_version_match "${_eigen_version_header}")
+set(EIGEN_MAJOR_VERSION "${CMAKE_MATCH_1}")
+string(REGEX MATCH "define[ \t]+EIGEN_MINOR_VERSION[ \t]+([0-9]+)" _eigen_minor_version_match "${_eigen_version_header}")
+set(EIGEN_MINOR_VERSION "${CMAKE_MATCH_1}")
+set(EIGEN_VERSION_NUMBER ${EIGEN_WORLD_VERSION}.${EIGEN_MAJOR_VERSION}.${EIGEN_MINOR_VERSION})
+
+# if the mercurial program is absent, this will leave the EIGEN_HG_CHANGESET string empty,
+# but won't stop CMake.
+execute_process(COMMAND hg tip -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_HGTIP_OUTPUT)
+execute_process(COMMAND hg branch -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_BRANCH_OUTPUT)
+
+# if this is the default (aka development) branch, extract the mercurial changeset number from the hg tip output...
+if(EIGEN_BRANCH_OUTPUT MATCHES "default")
+string(REGEX MATCH "^changeset: *[0-9]*:([0-9;a-f]+).*" EIGEN_HG_CHANGESET_MATCH "${EIGEN_HGTIP_OUTPUT}")
+set(EIGEN_HG_CHANGESET "${CMAKE_MATCH_1}")
+endif(EIGEN_BRANCH_OUTPUT MATCHES "default")
+#...and show it next to the version number
+if(EIGEN_HG_CHANGESET)
+  set(EIGEN_VERSION "${EIGEN_VERSION_NUMBER} (mercurial changeset ${EIGEN_HG_CHANGESET})")
+else(EIGEN_HG_CHANGESET)
+  set(EIGEN_VERSION "${EIGEN_VERSION_NUMBER}")
+endif(EIGEN_HG_CHANGESET)
+
+
+include(CheckCXXCompilerFlag)
+include(GNUInstallDirs)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+#############################################################################
+# find how to link to the standard libraries                                #
+#############################################################################
+
+find_package(StandardMathLibrary)
+
+
+set(EIGEN_TEST_CUSTOM_LINKER_FLAGS  "" CACHE STRING "Additional linker flags when linking unit tests.")
+set(EIGEN_TEST_CUSTOM_CXX_FLAGS     "" CACHE STRING "Additional compiler flags when compiling unit tests.")
+
+set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "")
+
+if(NOT STANDARD_MATH_LIBRARY_FOUND)
+
+  message(FATAL_ERROR
+    "Can't link to the standard math library. Please report to the Eigen developers, telling them about your platform.")
+
 else()
-  ei_add_property(EIGEN_MISSING_BACKENDS "Cholmod, ")
-endif()
 
-find_package(Umfpack)
-if(UMFPACK_FOUND AND BLAS_FOUND)
-  add_definitions("-DEIGEN_UMFPACK_SUPPORT")
-  include_directories(${UMFPACK_INCLUDES})
-  set(SPARSE_LIBS ${SPARSE_LIBS} ${UMFPACK_LIBRARIES} ${BLAS_LIBRARIES})
-  set(UMFPACK_ALL_LIBS ${UMFPACK_LIBRARIES} ${BLAS_LIBRARIES})
-  ei_add_property(EIGEN_TESTED_BACKENDS "UmfPack, ")
-else()
-  ei_add_property(EIGEN_MISSING_BACKENDS "UmfPack, ")
-endif()
-
-find_package(SuperLU)
-if(SUPERLU_FOUND AND BLAS_FOUND)
-  add_definitions("-DEIGEN_SUPERLU_SUPPORT")
-  include_directories(${SUPERLU_INCLUDES})
-  set(SPARSE_LIBS ${SPARSE_LIBS} ${SUPERLU_LIBRARIES} ${BLAS_LIBRARIES})
-  set(SUPERLU_ALL_LIBS ${SUPERLU_LIBRARIES} ${BLAS_LIBRARIES})
-  ei_add_property(EIGEN_TESTED_BACKENDS  "SuperLU, ")
-else()
-  ei_add_property(EIGEN_MISSING_BACKENDS  "SuperLU, ")
-endif()
-
-
-find_package(Pastix)
-find_package(Scotch)
-find_package(Metis 5.0 REQUIRED)
-if(PASTIX_FOUND AND BLAS_FOUND)
-  add_definitions("-DEIGEN_PASTIX_SUPPORT")
-  include_directories(${PASTIX_INCLUDES})
-  if(SCOTCH_FOUND)
-    include_directories(${SCOTCH_INCLUDES})
-    set(PASTIX_LIBRARIES ${PASTIX_LIBRARIES} ${SCOTCH_LIBRARIES})
-  elseif(METIS_FOUND)
-    include_directories(${METIS_INCLUDES})
-    set(PASTIX_LIBRARIES ${PASTIX_LIBRARIES} ${METIS_LIBRARIES})
-  else(SCOTCH_FOUND)
-    ei_add_property(EIGEN_MISSING_BACKENDS  "PaStiX, ")
-  endif(SCOTCH_FOUND)
-  set(SPARSE_LIBS ${SPARSE_LIBS} ${PASTIX_LIBRARIES} ${ORDERING_LIBRARIES} ${BLAS_LIBRARIES})
-  set(PASTIX_ALL_LIBS ${PASTIX_LIBRARIES} ${BLAS_LIBRARIES})
-  ei_add_property(EIGEN_TESTED_BACKENDS  "PaStiX, ")
-else()
-  ei_add_property(EIGEN_MISSING_BACKENDS  "PaStiX, ")
-endif()
-
-if(METIS_FOUND)
-  add_definitions("-DEIGEN_METIS_SUPPORT")
-  include_directories(${METIS_INCLUDES})
-  ei_add_property(EIGEN_TESTED_BACKENDS "METIS, ")
-else()
-  ei_add_property(EIGEN_MISSING_BACKENDS "METIS, ")
-endif()
-
-find_package(SPQR)
-if(SPQR_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
-  if(CHOLMOD_FOUND)
-    add_definitions("-DEIGEN_SPQR_SUPPORT")
-    include_directories(${SPQR_INCLUDES})
-    set(SPQR_ALL_LIBS ${SPQR_LIBRARIES} ${CHOLMOD_LIBRARIES} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-    set(SPARSE_LIBS ${SPARSE_LIBS} ${SPQR_ALL_LIBS})
-    ei_add_property(EIGEN_TESTED_BACKENDS "SPQR, ")
-  else(CHOLMOD_FOUND)
-    ei_add_property(EIGEN_MISSING_BACKENDS "SPQR, ")
-  endif(CHOLMOD_FOUND)
-endif()
-
-option(EIGEN_TEST_NOQT "Disable Qt support in unit tests" OFF)
-if(NOT EIGEN_TEST_NOQT)
-  find_package(Qt4)
-  if(QT4_FOUND)
-    include(${QT_USE_FILE})
-    ei_add_property(EIGEN_TESTED_BACKENDS  "Qt4 support, ")
+  if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
+    set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO} ${STANDARD_MATH_LIBRARY}")
   else()
-    ei_add_property(EIGEN_MISSING_BACKENDS  "Qt4 support, ")
+    set(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO "${STANDARD_MATH_LIBRARY}")
   endif()
-endif(NOT EIGEN_TEST_NOQT)
 
-if(TEST_LIB)
-  add_definitions("-DEIGEN_EXTERN_INSTANTIATIONS=1")
-endif(TEST_LIB)
-
-set_property(GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT "Official")
-add_custom_target(BuildOfficial)
-
-ei_add_test(meta)
-ei_add_test(sizeof)
-ei_add_test(dynalloc)
-ei_add_test(nomalloc)
-ei_add_test(first_aligned)
-ei_add_test(mixingtypes)
-ei_add_test(packetmath)
-ei_add_test(unalignedassert)
-ei_add_test(vectorization_logic)
-ei_add_test(basicstuff)
-ei_add_test(linearstructure)
-ei_add_test(integer_types)
-ei_add_test(cwiseop)
-ei_add_test(unalignedcount)
-ei_add_test(exceptions)
-ei_add_test(redux)
-ei_add_test(visitor)
-ei_add_test(block)
-ei_add_test(corners)
-ei_add_test(product_small)
-ei_add_test(product_large)
-ei_add_test(product_extra)
-ei_add_test(diagonalmatrices)
-ei_add_test(adjoint)
-ei_add_test(diagonal)
-ei_add_test(miscmatrices)
-ei_add_test(commainitializer)
-ei_add_test(smallvectors)
-ei_add_test(mapped_matrix)
-ei_add_test(mapstride)
-ei_add_test(mapstaticmethods)
-ei_add_test(array)
-ei_add_test(array_for_matrix)
-ei_add_test(array_replicate)
-ei_add_test(array_reverse)
-ei_add_test(ref)
-ei_add_test(triangular)
-ei_add_test(selfadjoint)
-ei_add_test(product_selfadjoint)
-ei_add_test(product_symm)
-ei_add_test(product_syrk)
-ei_add_test(product_trmv)
-ei_add_test(product_trmm)
-ei_add_test(product_trsolve)
-ei_add_test(product_mmtr)
-ei_add_test(product_notemporary)
-ei_add_test(stable_norm)
-ei_add_test(bandmatrix)
-ei_add_test(cholesky)
-ei_add_test(lu)
-ei_add_test(determinant)
-ei_add_test(inverse)
-ei_add_test(qr)
-ei_add_test(qr_colpivoting)
-ei_add_test(qr_fullpivoting)
-ei_add_test(upperbidiagonalization)
-ei_add_test(hessenberg)
-ei_add_test(schur_real)
-ei_add_test(schur_complex)
-ei_add_test(eigensolver_selfadjoint)
-ei_add_test(eigensolver_generic)
-ei_add_test(eigensolver_complex)
-ei_add_test(real_qz)
-ei_add_test(eigensolver_generalized_real)
-ei_add_test(jacobi)
-ei_add_test(jacobisvd)
-ei_add_test(geo_orthomethods)
-ei_add_test(geo_homogeneous)
-ei_add_test(geo_quaternion)
-ei_add_test(geo_transformations)
-ei_add_test(geo_eulerangles)
-ei_add_test(geo_hyperplane)
-ei_add_test(geo_parametrizedline)
-ei_add_test(geo_alignedbox)
-ei_add_test(stdvector)
-ei_add_test(stdvector_overload)
-ei_add_test(stdlist)
-ei_add_test(stdlist_overload)
-ei_add_test(stddeque)
-ei_add_test(stddeque_overload)
-ei_add_test(resize)
-ei_add_test(sparse_vector)
-ei_add_test(sparse_basic)
-ei_add_test(sparse_product)
-ei_add_test(sparse_solvers)
-ei_add_test(umeyama)
-ei_add_test(householder)
-ei_add_test(swap)
-ei_add_test(conservative_resize)
-ei_add_test(permutationmatrices)
-ei_add_test(sparse_permutations)
-ei_add_test(nullary)
-ei_add_test(nesting_ops "${CMAKE_CXX_FLAGS_DEBUG}")
-ei_add_test(zerosized)
-ei_add_test(dontalign)
-ei_add_test(sizeoverflow)
-ei_add_test(prec_inverse_4x4)
-ei_add_test(vectorwiseop)
-ei_add_test(special_numbers)
-ei_add_test(rvalue_types)
-ei_add_test(mpl2only)
-
-ei_add_test(simplicial_cholesky)
-ei_add_test(conjugate_gradient)
-ei_add_test(bicgstab)
-ei_add_test(sparselu)
-ei_add_test(sparseqr)
-
-# ei_add_test(denseLM)
-
-if(QT4_FOUND)
-  ei_add_test(qtvector "" "${QT_QTCORE_LIBRARY}")
-endif(QT4_FOUND)
-
-ei_add_test(eigen2support)
-
-if(UMFPACK_FOUND)
-  ei_add_test(umfpack_support "" "${UMFPACK_ALL_LIBS}")
 endif()
 
-if(SUPERLU_FOUND)
-  ei_add_test(superlu_support "" "${SUPERLU_ALL_LIBS}")
+if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
+  message(STATUS "Standard libraries to link to explicitly: ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO}")
+else()
+  message(STATUS "Standard libraries to link to explicitly: none")
 endif()
 
-if(CHOLMOD_FOUND)
-  ei_add_test(cholmod_support "" "${CHOLMOD_ALL_LIBS}")
+option(EIGEN_BUILD_BTL "Build benchmark suite" OFF)
+if(NOT WIN32)
+  option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" ON)
+endif(NOT WIN32)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+option(EIGEN_SPLIT_LARGE_TESTS "Split large tests into smaller executables" ON)
+
+option(EIGEN_DEFAULT_TO_ROW_MAJOR "Use row-major as default matrix storage order" OFF)
+if(EIGEN_DEFAULT_TO_ROW_MAJOR)
+  add_definitions("-DEIGEN_DEFAULT_TO_ROW_MAJOR")
 endif()
 
-if(PARDISO_FOUND)
-  ei_add_test(pardiso_support "" "${PARDISO_ALL_LIBS}")
+set(EIGEN_TEST_MAX_SIZE "320" CACHE STRING "Maximal matrix/vector size, default is 320")
+
+macro(ei_add_cxx_compiler_flag FLAG)
+  string(REGEX REPLACE "-" "" SFLAG ${FLAG})
+  check_cxx_compiler_flag(${FLAG} COMPILER_SUPPORT_${SFLAG})
+  if(COMPILER_SUPPORT_${SFLAG})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
+  endif()
+endmacro(ei_add_cxx_compiler_flag)
+
+if(NOT MSVC)
+  # We assume that other compilers are partly compatible with GNUCC
+  
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g3")
+  set(CMAKE_CXX_FLAGS_RELEASE "-g0 -O2")
+  
+  # clang outputs some warnings for unknwon flags that are not caught by check_cxx_compiler_flag
+  # adding -Werror turns such warnings into errors
+  check_cxx_compiler_flag("-Werror" COMPILER_SUPPORT_WERROR)
+  if(COMPILER_SUPPORT_WERROR)
+    set(CMAKE_REQUIRED_FLAGS "-Werror")
+  endif()
+  
+  ei_add_cxx_compiler_flag("-pedantic")
+  ei_add_cxx_compiler_flag("-Wall")
+  ei_add_cxx_compiler_flag("-Wextra")
+  #ei_add_cxx_compiler_flag("-Weverything")              # clang
+  
+  ei_add_cxx_compiler_flag("-Wundef")
+  ei_add_cxx_compiler_flag("-Wcast-align")
+  ei_add_cxx_compiler_flag("-Wchar-subscripts")
+  ei_add_cxx_compiler_flag("-Wnon-virtual-dtor")
+  ei_add_cxx_compiler_flag("-Wunused-local-typedefs")
+  ei_add_cxx_compiler_flag("-Wpointer-arith")
+  ei_add_cxx_compiler_flag("-Wwrite-strings")
+  ei_add_cxx_compiler_flag("-Wformat-security")
+  
+  ei_add_cxx_compiler_flag("-Wno-psabi")
+  ei_add_cxx_compiler_flag("-Wno-variadic-macros")
+  ei_add_cxx_compiler_flag("-Wno-long-long")
+  
+  ei_add_cxx_compiler_flag("-fno-check-new")
+  ei_add_cxx_compiler_flag("-fno-common")
+  ei_add_cxx_compiler_flag("-fstrict-aliasing")
+  ei_add_cxx_compiler_flag("-wd981")                    # disable ICC's "operands are evaluated in unspecified order" remark
+  ei_add_cxx_compiler_flag("-wd2304")                   # disbale ICC's "warning #2304: non-explicit constructor with single argument may cause implicit type conversion" produced by -Wnon-virtual-dtor
+  
+  # The -ansi flag must be added last, otherwise it is also used as a linker flag by check_cxx_compiler_flag making it fails
+  # Moreover we should not set both -strict-ansi and -ansi
+  check_cxx_compiler_flag("-strict-ansi" COMPILER_SUPPORT_STRICTANSI)
+  ei_add_cxx_compiler_flag("-Qunused-arguments")        # disable clang warning: argument unused during compilation: '-ansi'
+  
+  if(COMPILER_SUPPORT_STRICTANSI)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -strict-ansi")
+  else()
+    ei_add_cxx_compiler_flag("-ansi")
+  endif()
+  
+  set(CMAKE_REQUIRED_FLAGS "")
+
+  option(EIGEN_TEST_SSE2 "Enable/Disable SSE2 in tests/examples" OFF)
+  if(EIGEN_TEST_SSE2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2")
+    message(STATUS "Enabling SSE2 in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_SSE3 "Enable/Disable SSE3 in tests/examples" OFF)
+  if(EIGEN_TEST_SSE3)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
+    message(STATUS "Enabling SSE3 in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_SSSE3 "Enable/Disable SSSE3 in tests/examples" OFF)
+  if(EIGEN_TEST_SSSE3)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mssse3")
+    message(STATUS "Enabling SSSE3 in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_SSE4_1 "Enable/Disable SSE4.1 in tests/examples" OFF)
+  if(EIGEN_TEST_SSE4_1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+    message(STATUS "Enabling SSE4.1 in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_SSE4_2 "Enable/Disable SSE4.2 in tests/examples" OFF)
+  if(EIGEN_TEST_SSE4_2)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.2")
+    message(STATUS "Enabling SSE4.2 in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_ALTIVEC "Enable/Disable AltiVec in tests/examples" OFF)
+  if(EIGEN_TEST_ALTIVEC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec -mabi=altivec")
+    message(STATUS "Enabling AltiVec in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_NEON "Enable/Disable Neon in tests/examples" OFF)
+  if(EIGEN_TEST_NEON)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon -mcpu=cortex-a8")
+    message(STATUS "Enabling NEON in tests/examples")
+  endif()
+
+  check_cxx_compiler_flag("-fopenmp" COMPILER_SUPPORT_OPENMP)
+  if(COMPILER_SUPPORT_OPENMP)
+    option(EIGEN_TEST_OPENMP "Enable/Disable OpenMP in tests/examples" OFF)
+    if(EIGEN_TEST_OPENMP)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+      message(STATUS "Enabling OpenMP in tests/examples")
+    endif()
+  endif()
+
+else(NOT MSVC)
+
+  # C4127 - conditional expression is constant
+  # C4714 - marked as __forceinline not inlined (I failed to deactivate it selectively)
+  #         We can disable this warning in the unit tests since it is clear that it occurs
+  #         because we are oftentimes returning objects that have a destructor or may
+  #         throw exceptions - in particular in the unit tests we are throwing extra many
+  #         exceptions to cover indexing errors.
+  # C4505 - unreferenced local function has been removed (impossible to deactive selectively)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4127 /wd4505 /wd4714")
+
+  # replace all /Wx by /W4
+  string(REGEX REPLACE "/W[0-9]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+  check_cxx_compiler_flag("/openmp" COMPILER_SUPPORT_OPENMP)
+  if(COMPILER_SUPPORT_OPENMP)
+    option(EIGEN_TEST_OPENMP "Enable/Disable OpenMP in tests/examples" OFF)
+    if(EIGEN_TEST_OPENMP)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp")
+      message(STATUS "Enabling OpenMP in tests/examples")
+    endif()
+  endif()
+
+  option(EIGEN_TEST_SSE2 "Enable/Disable SSE2 in tests/examples" OFF)
+  if(EIGEN_TEST_SSE2)
+    if(NOT CMAKE_CL_64)
+      # arch is not supported on 64 bit systems, SSE is enabled automatically.
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2")
+    endif(NOT CMAKE_CL_64)
+    message(STATUS "Enabling SSE2 in tests/examples")
+  endif(EIGEN_TEST_SSE2)
+endif(NOT MSVC)
+
+option(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION "Disable explicit vectorization in tests/examples" OFF)
+option(EIGEN_TEST_X87 "Force using X87 instructions. Implies no vectorization." OFF)
+option(EIGEN_TEST_32BIT "Force generating 32bit code." OFF)
+
+if(EIGEN_TEST_X87)
+  set(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION ON)
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=387")
+    message(STATUS "Forcing use of x87 instructions in tests/examples")
+  else()
+    message(STATUS "EIGEN_TEST_X87 ignored on your compiler")
+  endif()
 endif()
 
-if(PASTIX_FOUND AND (SCOTCH_FOUND OR METIS_FOUND))
-  ei_add_test(pastix_support "" "${PASTIX_ALL_LIBS}")
+if(EIGEN_TEST_32BIT)
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+    message(STATUS "Forcing generation of 32-bit code in tests/examples")
+  else()
+    message(STATUS "EIGEN_TEST_32BIT ignored on your compiler")
+  endif()
 endif()
 
-if(SPQR_FOUND AND CHOLMOD_FOUND)
-  ei_add_test(spqr_support "" "${SPQR_ALL_LIBS}")
+if(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION)
+  add_definitions(-DEIGEN_DONT_VECTORIZE=1)
+  message(STATUS "Disabling vectorization in tests/examples")
 endif()
 
-if(METIS_FOUND)
-ei_add_test(metis_support "" "${METIS_LIBRARIES}")
+option(EIGEN_TEST_NO_EXPLICIT_ALIGNMENT "Disable explicit alignment (hence vectorization) in tests/examples" OFF)
+if(EIGEN_TEST_NO_EXPLICIT_ALIGNMENT)
+  add_definitions(-DEIGEN_DONT_ALIGN=1)
+  message(STATUS "Disabling alignment in tests/examples")
 endif()
 
-string(TOLOWER "${CMAKE_CXX_COMPILER}" cmake_cxx_compiler_tolower)
-if(cmake_cxx_compiler_tolower MATCHES "qcc")
-  set(CXX_IS_QCC "ON")
+option(EIGEN_TEST_C++0x "Enables all C++0x features." OFF)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+
+# Backward compatibility support for EIGEN_INCLUDE_INSTALL_DIR
+if(EIGEN_INCLUDE_INSTALL_DIR AND NOT INCLUDE_INSTALL_DIR)
+  set(INCLUDE_INSTALL_DIR ${EIGEN_INCLUDE_INSTALL_DIR}
+      CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed")
+else()
+  set(INCLUDE_INSTALL_DIR
+      "${CMAKE_INSTALL_INCLUDEDIR}/eigen3"
+      CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed"
+      )
 endif()
 
-ei_add_property(EIGEN_TESTING_SUMMARY "CXX:               ${CMAKE_CXX_COMPILER}\n")
-if(CMAKE_COMPILER_IS_GNUCXX AND NOT CXX_IS_QCC)
-  execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version COMMAND head -n 1 OUTPUT_VARIABLE EIGEN_CXX_VERSION_STRING OUTPUT_STRIP_TRAILING_WHITESPACE)
-  ei_add_property(EIGEN_TESTING_SUMMARY "CXX_VERSION:       ${EIGEN_CXX_VERSION_STRING}\n")
+set(CMAKEPACKAGE_INSTALL_DIR
+    "${CMAKE_INSTALL_LIBDIR}/cmake/eigen3"
+    CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
+    )
+set(PKGCONFIG_INSTALL_DIR
+    "${CMAKE_INSTALL_DATADIR}/pkgconfig"
+    CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
+    )
+
+# similar to set_target_properties but append the property instead of overwriting it
+macro(ei_add_target_property target prop value)
+
+  get_target_property(previous ${target} ${prop})
+  # if the property wasn't previously set, ${previous} is now "previous-NOTFOUND" which cmake allows catching with plain if()
+  if(NOT previous)
+    set(previous "")
+  endif(NOT previous)
+  set_target_properties(${target} PROPERTIES ${prop} "${previous} ${value}")
+endmacro(ei_add_target_property)
+
+install(FILES
+  signature_of_eigen3_matrix_library
+  DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel
+  )
+
+if(EIGEN_BUILD_PKGCONFIG)
+    configure_file(eigen3.pc.in eigen3.pc @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
+        DESTINATION ${PKGCONFIG_INSTALL_DIR}
+        )
+endif(EIGEN_BUILD_PKGCONFIG)
+
+add_subdirectory(Eigen)
+
+add_subdirectory(doc EXCLUDE_FROM_ALL)
+
+include(EigenConfigureTesting)
+
+# fixme, not sure this line is still needed:
+enable_testing() # must be called from the root CMakeLists, see man page
+
+
+if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+  add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
+else()
+  add_subdirectory(test EXCLUDE_FROM_ALL)
 endif()
-ei_add_property(EIGEN_TESTING_SUMMARY "CXX_FLAGS:         ${CMAKE_CXX_FLAGS}\n")
-ei_add_property(EIGEN_TESTING_SUMMARY "Sparse lib flags:  ${SPARSE_LIBS}\n")
 
-option(EIGEN_TEST_EIGEN2 "Run whole Eigen2 test suite against EIGEN2_SUPPORT" OFF)
-mark_as_advanced(EIGEN_TEST_EIGEN2)
-if(EIGEN_TEST_EIGEN2)
-  add_subdirectory(eigen2)
+if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+  add_subdirectory(blas)
+  add_subdirectory(lapack)
+else()
+  add_subdirectory(blas EXCLUDE_FROM_ALL)
+  add_subdirectory(lapack EXCLUDE_FROM_ALL)
 endif()
 
+add_subdirectory(unsupported)
 
-option(EIGEN_TEST_BUILD_DOCUMENTATION "Test building the doxygen documentation" OFF)
-IF(EIGEN_TEST_BUILD_DOCUMENTATION)
-  add_dependencies(buildtests doc)
-ENDIF()
+add_subdirectory(demos EXCLUDE_FROM_ALL)
+
+# must be after test and unsupported, for configuring buildtests.in
+add_subdirectory(scripts EXCLUDE_FROM_ALL)
+
+# TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
+if(EIGEN_BUILD_BTL)
+  add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
+endif(EIGEN_BUILD_BTL)
+
+if(NOT WIN32)
+  add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
+endif(NOT WIN32)
+
+configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
+
+ei_testing_print_summary()
+
+message(STATUS "")
+message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
+message(STATUS "")
+
+option(EIGEN_FAILTEST "Enable failtests." OFF)
+if(EIGEN_FAILTEST)
+  add_subdirectory(failtest)
+endif()
+
+string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
+if(cmake_generator_tolower MATCHES "makefile")
+  message(STATUS "Some things you can do now:")
+  message(STATUS "--------------+--------------------------------------------------------------")
+  message(STATUS "Command       |   Description")
+  message(STATUS "--------------+--------------------------------------------------------------")
+  message(STATUS "make install  | Install Eigen. Headers will be installed to:")
+  message(STATUS "              |     <CMAKE_INSTALL_PREFIX>/<INCLUDE_INSTALL_DIR>")
+  message(STATUS "              |   Using the following values:")
+  message(STATUS "              |     CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+  message(STATUS "              |     INCLUDE_INSTALL_DIR:  ${INCLUDE_INSTALL_DIR}")
+  message(STATUS "              |   Change the install location of Eigen headers using:")
+  message(STATUS "              |     cmake . -DCMAKE_INSTALL_PREFIX=yourprefix")
+  message(STATUS "              |   Or:")
+  message(STATUS "              |     cmake . -DINCLUDE_INSTALL_DIR=yourdir")
+  message(STATUS "make doc      | Generate the API documentation, requires Doxygen & LaTeX")
+  message(STATUS "make check    | Build and run the unit-tests. Read this page:")
+  message(STATUS "              |   http://eigen.tuxfamily.org/index.php?title=Tests")
+  message(STATUS "make blas     | Build BLAS library (not the same thing as Eigen)")
+  message(STATUS "--------------+--------------------------------------------------------------")
+else()
+  message(STATUS "To build/run the unit tests, read this page:")
+  message(STATUS "  http://eigen.tuxfamily.org/index.php?title=Tests")
+endif()
+
+message(STATUS "")
