@@ -65,6 +65,7 @@ public:
   const std::string id;
 };
 
+}
  
 #define REGISTER_TYPE(klass) \
   class klass##Factory : public TestFactory  {			  \
@@ -78,25 +79,23 @@ public:
 	  new klass<long double>(#klass)}; \
     } \
   }; \
-  static klass##Factory global_##klass##Factory;
-}
+  static klass##Factory global_##klass##Factory; \
 
-#define EIGEN_CLASS_DEF(klass, file) \
+#define EIGEN_CLASS_DEF(klass, file)		\
   template <typename T> \
-  class klass : public TestBase{ \
+  class klass : public TestBase{	\
   public: \
     klass(std::string id):TestBase(id){}		\
     resultType operator()(const testInput& ti){ \
       if(sizeof(T) != 4) return {}; \
-      auto fileS = std::string("./eigen/") + std::string(#file) + ".cpp"; \
-      std::cout << "in " << #file << " setting path to " << fileS << std::endl; \
+      auto fileS = std::string(#file); \
       g_test_stack_mutex.lock(); \
       g_test_stack[fileS];	\
       g_test_stack_mutex.unlock(); \
       eigenResults_mutex.lock(); \
       eigenResults[fileS]; \
       eigenResults_mutex.unlock(); \
-      test_##file(); \
+      test_##file();	   \
       g_test_stack[fileS].clear(); \
       auto res = eigenResults[fileS]; \
       eigenResults[fileS].clear(); \
