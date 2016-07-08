@@ -1,6 +1,4 @@
 # a makefile for a variety of compielrs and compiler flags
-# NOTES: gcc 5.x (apparently) has a problem with shift count for templated types
-# (regarding -Wno-shift-count-overflow)
 
 #the list of compilers to iterate over
 #compiler specific flags may be set here
@@ -17,6 +15,18 @@ VERBOSE ?=
 
 #CC_GEN_OPTS ?= -O0 -ggdb
 CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst -I../gdb/inst -I. -Ieigen -lpthread -pthread
+
+#Eigen includes
+
+CC_REQUIRED += -I./eigen/build/unsupported/test \
+-I./eigen/unsupported/test \
+-I./eigen \
+-I./eigen/build \
+-I./eigen/unsupported/test/../../test \
+-I./eigen/unsupported/test/../../unsupported \
+-I./eigen/unsupported/test/../../Eigen \
+-I./eigen/build/unsupported/test/../../test \
+-I/usr/local/include -I./eigen/unsupported/test/./mpreal \
 
 include ../Makefile.switches
 
