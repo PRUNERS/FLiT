@@ -90,7 +90,7 @@ main(int argc, char* argv[]){
     return 0;
   }  
   int DEGP; //degree of parallelism, or current tasks
-  loadIntFromEnv(DEGP, "DEGP", 6);
+  loadIntFromEnv(DEGP, "DEGP", 3);
   std::chrono::milliseconds const timeout (0);
   
   size_t iters = 200;
