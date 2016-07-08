@@ -141,10 +141,11 @@ def write_table_to_csv(outfile, col_names, row_names, table):
         else:
             writer.writerow([str(name)] + row)
 
-def write_table_to_latex(outfile, col_names, row_names, table):
+def write_table_to_latex(outfile, col_names, row_names, table, classes=None):
     '''
     Writes the table complete with column names, row names, and table contents
-    out to a Latex source file.
+    out to a Latex source file.  The classes are the equivalence classes if
+    doing that.  A separate table will be generated for the classes.
     '''
     fill_empty = lambda x: r'$<$empty$>$' if x == '' else x
 
@@ -159,16 +160,23 @@ def write_table_to_latex(outfile, col_names, row_names, table):
     else:
         row_names = [fill_empty(x[0]) for x in row_names]
     row_names = [x.strip() for x in row_names]
-    
+
+    if classes is not None:
+        classes = tuple(tuple(fill_empty(y) for y in x.split(', '))
+                        for x in classes)
+
     max_value = max([max(x) for x in table])
     bound = lambda lower, val, upper: min(upper, max(lower, val))
     def colorstring(value):
-        'Creates a "\color[rgb]{r,g,b}" string for the hard-coded colormap'
+        'Creates a "\\color[rgb]{r,g,b}" string for the hard-coded colormap'
         percent = value / max_value
         red = bound(0.5, 0.5 + percent * 5 / 3, 1.0)
         green = bound(0.5, 0.125 + percent * 5 / 4, 1.0)
         blue = bound(0.5, -2/3 + percent * 5 / 3, 1.0)
-        return r'\cellcolor[rgb]{' + '{0}, {1}, {2}'.format(red, green, blue) + '}'
+        string = r'\cellcolor[rgb]{' + \
+                 '{0}, {1}, {2}'.format(red, green, blue) + \
+                 '}'
+        return string
 
     outfile.write(r'''
 \documentclass[border=10pt]{standalone}
@@ -182,7 +190,7 @@ def write_table_to_latex(outfile, col_names, row_names, table):
 
 ''')
     outfile.write(r'\begin{tabular}{r' + '|c' * len(col_names) + '}\n')
-    outfile.write('  &\n');
+    outfile.write('  &\n')
     outfile.write('  \\rotatebox{90}{' +
                   '} &\n  \\rotatebox{90}{'.join(col_names) + '}\n')
     outfile.write('  \\\\\n')
@@ -191,16 +199,35 @@ def write_table_to_latex(outfile, col_names, row_names, table):
     for i in range(len(row_names)):
         row_string = '  ' + row_names[i] + ' &\n  '
         row_string += ' &\n  '.join(
-                [colorstring(x) + ' ' + str(x) for x in table[i]]
-                )
+            [colorstring(x) + ' ' + str(x) for x in table[i]]
+            )
         #for elem in table[i][:-1]:
         #    row_string += '  ' + str(elem) + ' &\n'
         #row_string += '  ' + str(table[i][-1]) + '\n'
         rows.append(row_string)
     outfile.write('  \\\\\n  \\hline\n'.join(rows))
-    
-    outfile.write('\end{tabular}\n')
-    outfile.write('\n\end{document}\n')
+
+    outfile.write('\n\\end{tabular}\n')
+
+    if classes is not None:
+        write_class_table_to_latex(outfile, row_names, classes)
+
+    outfile.write('\n\\end{document}\n')
+
+def write_class_table_to_latex(outfile, row_names, classes):
+    '''
+    This only creates a class table section of a LaTeX document, not a complete
+    LaTeX file like write_table_to_latex() does.  This will take the list of
+    classes and create a 2-column table with no colors.
+    '''
+    #outfile.write('\\begin{tabular}{c|l}\n')
+    outfile.write('\\begin{tabular}{c|p{9cm}}\n')
+    row_strings = []
+    for i in range(len(row_names)):
+        row_strings.append('{0} & {1}'.format(row_names[i], ', '.join(classes[i])))
+    outfile.write('  ' + ' \\\\ \\hline\n  '.join(row_strings))
+    outfile.write('\n\\end{tabular}\n')
+
 
 def main(arguments):
     'Main entry point'
