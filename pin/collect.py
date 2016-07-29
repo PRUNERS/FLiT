@@ -1,3 +1,5 @@
+#!/bin/env python3
+
 #this script runs the pin opcodemix to collect QC results.
 #It works in the results directory on a host that ran QC (wihtout deleting output)
 
