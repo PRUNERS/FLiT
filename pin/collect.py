@@ -38,4 +38,5 @@ for f in glob.glob('*'):
             os.environ['TEST'] = t
             print(subprocess.check_output(['../pin/pin/pin', '-t ' +
                                 '../pin/*/source/tools/SimpleExamples/obj-intel64/opcodemix.so',
-                                '-o ' + 'opcodes/' + f + '_' + p + '_' + t + '.pin', '--', f]))
+                                '-o ' + 'opcodes/' + f + '_' + p + '_' + t + '.pin', '--', './' +
+                                f]))
