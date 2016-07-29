@@ -9,7 +9,7 @@ fi
 if [[ ! -e results ]]; then
     mkdir results
 fi
-rm results/*
+#rm results/*
 cd perpVects
 make -j $1 -f Makefile2
 
