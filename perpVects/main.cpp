@@ -75,14 +75,19 @@ void checkFutures(future_collection_t& fc, const timeout_t& to,
 
 int
 main(int argc, char* argv[]){
-  char sfx = argv[0][std::strlen(argv[0]) - 1]; //to diff btw inf1 & inf2
+  
+  std::string NO_WATCHS;
+  loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
+  std::string sfx;
+  if(NO_WATCHS != "true")
+    sfx = argv[0][std::strlen(argv[0]) - 1]; //to diff btw inf1 & inf2
+  else
+    sfx = "";
   if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
   std::string TEST;
   loadStringFromEnv(TEST, std::string("TEST") + sfx, "all");
   std::string PRECISION;
   loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
-  std::string NO_WATCHS;
-  loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
   bool doOne = TEST != "all";
   if((TEST == "all") != (PRECISION == "all")){ //all or one
     std::cerr << argv[0] << " must be ran with one or all tests selected."
