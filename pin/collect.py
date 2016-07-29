@@ -6,6 +6,7 @@
 import glob
 import sys
 import os
+import subprocess
 
 if not os.path.exists('opcodes'):
     os.makedirs('opcodes')
