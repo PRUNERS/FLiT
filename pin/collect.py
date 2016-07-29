@@ -33,7 +33,7 @@ for f in glob.glob('*'):
                   'DoOrthoPerturbTest',
                   'TrianglePSylv',
                   'RotateFullCircle',
-                  'DistributivityInMultiplication']:
+                  'DistributivityOfMultiplication']:
 
             os.environ['TEST'] = t
             print(subprocess.check_output(['../pin/pin/pin', '-t',
