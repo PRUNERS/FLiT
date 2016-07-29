@@ -5,6 +5,7 @@
 
 import glob
 import sys
+import os
 
 if not os.path.exists('opcodes'):
     os.makedirs('opcodes')
@@ -13,11 +14,11 @@ for f in glob.glob('*'):
     if f[:-4] == 'out_':
         continue
     splt = f.split('_')
-    if len(split) != 3:
+    if len(splt) != 3:
         continue
-    compiler = split[0]
-    host = split[1]
-    flags = split[2]
+    compiler = splt[0]
+    host = splt[1]
+    flags = splt[2]
     for p in ['f', 'd', 'e']:
         os.environ['PRECISION'] = p
         for t in ['DistributivityOfMultiplication',
