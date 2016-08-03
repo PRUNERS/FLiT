@@ -35,8 +35,8 @@ else:
     usage()
     exit(1)
 
-for f in glob.iglob('results/*'):
-    remove(f);
+# for f in glob.iglob('results/*'):
+#     remove(f);
 
 
 for h in hostinfo:
