@@ -1,10 +1,13 @@
-CREATE OR REPLACE FUNCTION importOpcodeResults(path text, run integer) RETURNS integer as $$
+CREATE OR REPLACE FUNCTION importOpcodeResults(path text, run integer) RETURNS integer[] as $$
 import glob
 from plpy import spiexceptions
 import os
 count = 0
+skipped = 0
 for f in glob.iglob(path + '/*'):
     fels = os.path.basename(f).split('_')
+    if len(fels) != 5:
+        continue
     if fels[0] == 'INTEL':
         compiler = 'icpc'
     elif fels[0] == 'GCC':
@@ -25,7 +28,10 @@ for f in glob.iglob(path + '/*'):
           "run = " + str(run))
     res = plpy.execute(tq)
     if res.nrows() == 0:
-        raise plpy.SPIError('test record not found for: ' + tq)
+        print('test record not found for: ' + tq)
+        print('ignoring . . .')
+        skipped = skipped + 1
+        continue
     tindx = res[0]["index"]
     with open(f) as inf:
         for line in inf:
@@ -49,6 +55,6 @@ for f in glob.iglob(path + '/*'):
                     ", " + str(l[2]) + ", " + str(l[3]) + ", " + str(dynamic) + ")")
             plpy.execute(cntq)
             count = count + 1
-return count
+return [count, skipped]
 $$ LANGUAGE plpython3u;
    
