@@ -4,7 +4,7 @@ CLANG := clang++
 VERBOSE ?=
 
 CC_OPTS ?= -O0 -ggdb -Wuninitialized
-CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow
+CC_REQUIRED := -std=c++14  -lstdc++ -lm -Wno-shift-count-overflow
 ##Targets
 SSE := -mfpmath=sse -mtune=native
 RELAXED := -funsafe-math-optimizations

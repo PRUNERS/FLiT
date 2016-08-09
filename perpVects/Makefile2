@@ -14,7 +14,7 @@ COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 VERBOSE ?=
 
 #CC_GEN_OPTS ?= -O0 -ggdb
-CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst -I../gdb/inst -I. -Ieigen -lpthread -pthread
+CC_REQUIRED := -std=c++14  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst -I../gdb/inst -I. -Ieigen -lpthread -pthread
 
 #Eigen includes
 
