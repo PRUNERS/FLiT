@@ -8,10 +8,10 @@
 namespace UnitTests{
 
   using namespace QFPHelpers;
-  
+
   typedef std::pair<std::string, bool> results;
 
-  
+
 
   template<typename T>
   static results
@@ -21,7 +21,7 @@ namespace UnitTests{
     auto O = A.genOrthoVector();
     if(!(A.isOrtho(O))) result = false;
     return {__func__, result};
-  }  
+  }
 
   template<typename T>
   static results
@@ -65,7 +65,7 @@ namespace UnitTests{
     }
     return{__func__, result};
   }
-  
+
   template<typename T>
   static results
   TestInnerProd(){
@@ -85,7 +85,7 @@ namespace UnitTests{
     return{__func__, result};
   }
 
-  
+
   template<typename T>
   static results
   TestL2Distance(){
@@ -95,7 +95,7 @@ namespace UnitTests{
     if(!(A.L2Distance(B) != sqrt(12))) result = false;
     return {__func__, result};
   }
-  
+
   template<typename T>
   static results
   UnitVector(){
@@ -152,7 +152,7 @@ namespace UnitTests{
     }
     return {__func__, result};
   }
-  
+
   template<typename T>
   static results
   MxM(){
@@ -176,7 +176,7 @@ namespace UnitTests{
       info_stream << "output:" << std::endl << output << std::endl;
     }
     return {__func__, result};
-  
+
   }
   template<typename T>
   static results
