@@ -11,22 +11,22 @@ COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
-VERBOSE ?= 
+VERBOSE ?=
 
 #CC_GEN_OPTS ?= -O0 -ggdb
 CC_REQUIRED := -std=c++11  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst -I../gdb/inst -I. -Ieigen -lpthread -pthread
 
 #Eigen includes
 
-CC_REQUIRED += -I./eigen/build/unsupported/test \
--I./eigen/unsupported/test \
--I./eigen \
--I./eigen/build \
--I./eigen/unsupported/test/../../test \
--I./eigen/unsupported/test/../../unsupported \
--I./eigen/unsupported/test/../../Eigen \
--I./eigen/build/unsupported/test/../../test \
--I/usr/local/include -I./eigen/unsupported/test/./mpreal \
+CC_REQUIRED += -I./eigen/build/unsupported/test
+CC_REQUIRED += -I./eigen/unsupported/test
+CC_REQUIRED += -I./eigen
+CC_REQUIRED += -I./eigen/build
+CC_REQUIRED += -I./eigen/unsupported/test/../../test
+CC_REQUIRED += -I./eigen/unsupported/test/../../unsupported
+CC_REQUIRED += -I./eigen/unsupported/test/../../Eigen
+CC_REQUIRED += -I./eigen/build/unsupported/test/../../test
+CC_REQUIRED += -I/usr/local/include -I./eigen/unsupported/test/./mpreal
 
 include ../Makefile.switches
 
@@ -60,10 +60,10 @@ $(strip $2)_$(hostname)_$(strip $1) : $(OBJ:.o=_$(strip $2)_$(hostname)_$(strip 
 		       -$($(strip $2)) $($(strip $1)) $(CC_REQUIRED) $$^ -o $$@
 		       -rm $(OBJ:.o=_$(strip $2)_$(hostname)_$(strip $1).o)
 
-QFPHelpers_$(strip $2)_$(hostname)_$(strip $1).o : QFPHelpers.cpp QFPHelpers.h 
+QFPHelpers_$(strip $2)_$(hostname)_$(strip $1).o : QFPHelpers.cpp QFPHelpers.h
 			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
 
-testBase_$(strip $2)_$(hostname)_$(strip $1).o : testBase.cpp testBase.h ../gdb/inst/inst 
+testBase_$(strip $2)_$(hostname)_$(strip $1).o : testBase.cpp testBase.h ../gdb/inst/inst
 			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
 
 customTests_$(strip $2)_$(hostname)_$(strip $1).o : customTests.cpp testBase.h QFPHelpers.h

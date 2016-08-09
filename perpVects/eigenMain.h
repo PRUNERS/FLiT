@@ -197,7 +197,7 @@ namespace Eigen
 
 
 #define EIGEN_INTERNAL_DEBUGGING
-#include <Eigen/QR> 
+#include <Eigen/QR>
 
 typedef std::pair<bool, long double> cond_t;
 
@@ -213,7 +213,8 @@ getFileNoEx(std::string path){
   return retval;
 }
 
-inline void verify_impl(cond_t condition, const char *testname, const char *file, int line, const char *condition_as_string, bool invert = false)
+inline void verify_impl(cond_t condition, const char *testname, const char *file,
+                        int line, const char *condition_as_string, bool invert = false)
 {
   auto fname = getFileNoEx(file);
   bool cond = condition.first != invert;
@@ -243,7 +244,8 @@ inline void verify_impl(cond_t condition, const char *testname, const char *file
   // }
 }
 
-inline void verify_impl(bool condition, const char *testname, const char *file, int line, const char *condition_as_string)
+inline void verify_impl(bool condition, const char *testname, const char *file,
+                        int line, const char *condition_as_string)
 {
   std::string fname = getFileNoEx(file);
   if(eigenResults.find(fname) == eigenResults.end()){

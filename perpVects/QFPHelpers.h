@@ -5,6 +5,10 @@
 #ifndef QFPHELPERS
 #define QFPHELPERS
 
+#ifndef Q_UNUSED
+#define Q_UNUSED(x) (void)x
+#endif
+
 #include <ostream>
 #include <iostream>
 #include <type_traits>
@@ -41,15 +45,15 @@ public:
 static void printOnce(std::string, void*);
 
 extern InfoStream info_stream;
-  
+
 //returns a bitlength equivalent unsigned type
 template<typename T>
 struct get_corresponding_type{
   using type = typename std::conditional<
     std::is_floating_point<T>::value && sizeof(T) == 4 , uint32_t,
     typename std::conditional<std::is_floating_point<T>::value && sizeof(T) == 8 , uint64_t,
-		     typename std::conditional<std::is_floating_point<T>::value && sizeof(T) == 16 ,
-				      unsigned __int128, void>::type>::type>::type;
+                     typename std::conditional<std::is_floating_point<T>::value && sizeof(T) == 16,
+                     unsigned __int128, void>::type>::type>::type;
 };
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
@@ -61,38 +65,40 @@ struct FPHelpers {
   static const unsigned mantBitWidth32 = FLT_MANT_DIG; //32 - expBitWidth32 - 1;
   static const unsigned mantBitWidth64 = DBL_MANT_DIG; //64 - expBitWidth64 - 1;
   static const unsigned mantBitWidth80 = LDBL_MANT_DIG; //128 - expBitWidth80 - 1;
-  static const unsigned bias32 = (1 << expBitWidth32 - 1) - 1;
-  static const unsigned bias64 = (1 << expBitWidth64 - 1) - 1;
-  static const unsigned bias80 = (1 << expBitWidth80 - 1) - 1;
-  
+  static const unsigned bias32 = (1 << (expBitWidth32 - 1)) - 1;
+  static const unsigned bias64 = (1 << (expBitWidth64 - 1)) - 1;
+  static const unsigned bias80 = (1 << (expBitWidth80 - 1)) - 1;
+
   template<typename S, typename R>
   static void
   projectType(S const &source, R& result){
     S temp = source;
     R* u = reinterpret_cast<R*>(&temp);
-    if( sizeof(S) == 16 && std::is_floating_point<S>::value){ //we must be using long double, which is 80 bit extended -- mask out higher bits
+    if( sizeof(S) == 16 && std::is_floating_point<S>::value){
+      // we must be using long double, which is 80 bit extended -- mask out higher bits
       unsigned __int128 zero = 0;
-      //some compilers are leaving garbage in unused bits (not defined behavior)
-      *u = (unsigned __int128)*u & (~zero >> 48); //this is really tacky hacky
+      // some compilers are leaving garbage in unused bits (not defined behavior)
+      *u = (unsigned __int128)*u & (~zero >> 48); // this is really tacky hacky
     }
     result = *u;
   }
-  
+
   template<typename F>
   static typename get_corresponding_type<F>::type
   projectType(F const &source){
     using I = typename get_corresponding_type<F>::type;
     F temp = source;
     I* u = reinterpret_cast<I*>(&temp);
-    if( sizeof(F) == 16 && std::is_floating_point<F>::value){ //we must be using long double, which is 80 bit extended -- mask out higher bits
+    if( sizeof(F) == 16 && std::is_floating_point<F>::value){
+      // we must be using long double, which is 80 bit extended -- mask out higher bits
       unsigned __int128 zero = 0;
       *u = *u & (~zero >> 48);
     }
     return *u;
   }
 
-  //the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
-  //[pos][bias + 1][000...0]
+  // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
+  // [pos][bias + 1][000...0]
   template<typename T>
   static T
   getFirstNorm(){
@@ -102,23 +108,24 @@ struct FPHelpers {
     switch(sizeof(T)){
     case 4:
       {
-	val = (t)1 << mantBitWidth32;
+        val = (t)1 << mantBitWidth32;
       }
       break;
     case 8:
       {
-	val = (t)1 << mantBitWidth64;
-	projectType(val, retVal);
+        val = (t)1 << mantBitWidth64;
+        projectType(val, retVal);
       }
       break;
     case 16:
       {
-	val = (t) 1 << mantBitWidth80;
+        val = (t) 1 << mantBitWidth80;
       }
       break;
     default:
-      //won't compile
+      // won't compile
       int x = 0;
+      Q_UNUSED(x);
     }
     projectType(val, retVal);
     return retVal;
@@ -126,7 +133,8 @@ struct FPHelpers {
 
   template<typename T>
   static T
-  perturbFP(T const &src, unsigned offset){ //negative offset with 0 may produce NAN
+  perturbFP(T const &src, unsigned offset){
+    // negative offset with 0 may produce NAN
     T ncSrc = src;
     typename get_corresponding_type<T>::type tmp;
     if(NO_SUBNORMALS && ncSrc == 0) ncSrc = getFirstNorm<T>();
@@ -144,7 +152,7 @@ struct FPHelpers {
     return retVal;
   }
 
-  //returns the exponent portion of floating point
+  // returns the exponent portion of floating point
   template<typename T>
   static unsigned
   getExponent(T v){
@@ -154,17 +162,17 @@ struct FPHelpers {
     switch(sizeof(v)){
     case 4:
       {
-	retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
+        retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
       }
       break;
     case 8:
       {
-	retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64); 
+        retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64);
       }
       break;
     case 16:
       {
-	retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
+        retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
       }
       break;
     default:
@@ -192,7 +200,7 @@ struct FPWrap{
 };
 
   extern std::mutex ostreamMutex;
-  
+
 template <typename U>
 std::ostream& operator<<(std::ostream& os, const FPWrap<U> &w){
   w.update();
@@ -217,7 +225,7 @@ getSortName(sort_t val);
 
 template<typename T>
 class Matrix;
- 
+
 template <typename T>
 class Vector {
   std::vector<T> data;
@@ -251,8 +259,8 @@ public:
   static
   Vector<T>
   getRandomVector(size_t dim, T min_inc, T max_exc,
-		  std::default_random_engine::result_type seed = 0,
-		  bool doSeed = true){
+                  std::default_random_engine::result_type seed = 0,
+                  bool doSeed = true){
     std::default_random_engine gen;
     if(doSeed) gen.seed(seed);
     std::uniform_real_distribution<T> dist(min_inc,max_exc);
@@ -274,8 +282,8 @@ public:
     bool retVal = true;
     for(int x = 0; x < size(); ++x){
       if(data[x] != b.data[x]){
-	retVal = false;
-	break;
+        retVal = false;
+        break;
       }
     }
     return retVal;
@@ -320,8 +328,8 @@ public:
     for(int x = 0; x < data.size(); ++x){
       T abe = fabs(data[x]);
       if(abe > largest.second){
-	largest.first = x;
-	largest.second = abe;
+        largest.first = x;
+        largest.second = abe;
       }
     }
   }
@@ -329,14 +337,14 @@ public:
   void
   rotateAboutZ_3d(T rads){
     Matrix<T> t = {{(T)cos(rads), (T)-sin(rads), 0},
-		   {(T)sin(rads), (T)cos(rads), 0},
-		{0, 0, 1}};
+                   {(T)sin(rads), (T)cos(rads), 0},
+                   {0, 0, 1}};
     info_stream << "rotation matrix is: " << t << std::endl;
     Vector<T> tmp(*this);
     tmp = t * tmp;
     info_stream << "in rotateAboutZ, result is: " << tmp << std::endl;
     data = tmp.data;
-    
+
   }
 
   Vector<T>
@@ -390,11 +398,11 @@ public:
     T retVal;
     if(sortType == lt || sortType == gt){
       if(sortType == lt)
-	std::sort(cont.begin(), cont.end(),
-		  [](T a, T b){return fabs(a) < fabs(b);});
+        std::sort(cont.begin(), cont.end(),
+                  [](T a, T b){return fabs(a) < fabs(b);});
       else
-	std::sort(cont.begin(), cont.end(),
-		  [](T a, T b){return fabs(a) > fabs(b);});
+        std::sort(cont.begin(), cont.end(),
+                  [](T a, T b){return fabs(a) > fabs(b);});
     }
     for_each(cont.begin(), cont.end(), fun);
   }
@@ -402,7 +410,7 @@ public:
   void
   setSort(sort_t st = def){sortType = st;}
   //inner product (dot product)
-  
+
   T
   operator^(Vector<T> const &rhs) const {
     T sum = 0.0;
@@ -412,11 +420,11 @@ public:
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
       /* std::for_each(prods.begin(), prods.end(), [&](T i){i = 0.0;}); */
-      for(int i = 0; i < size(); ++i){ 
-	sum += data[i] * rhs.data[i]; 
+      for(int i = 0; i < size(); ++i){
+        sum += data[i] * rhs.data[i];
       }
       /* for(auto j:prods){ */
-      /* 	temp += j; */
+      /*         temp += j; */
       /* } */
     }
     return sum;
@@ -457,7 +465,7 @@ public:
     reduce(diff.data, [&retVal](T e){retVal += e*e;});
     return std::sqrt(retVal);
   }
- 
+
   //cross product, only defined here in 3d
   Vector<T>
   cross(Vector<T> const &rhs) const {
@@ -467,7 +475,7 @@ public:
     retVal.data[2] = data[0] * rhs.data[1] - rhs.data[0] * data[1];
     return retVal;
   }
-  
+
   Vector<T>
   operator*(Vector<T> const &rhs) const {
     Vector<T> retVal(size());
@@ -501,7 +509,7 @@ std::ostream& operator<<(std::ostream& os, Matrix<T> const &m){
   }
   return os;
 }
-  
+
 template<typename T>
 class Matrix {
   std::vector<std::vector<T>> data;
@@ -514,13 +522,13 @@ public:
     int x = 0; int y = 0;
     for(auto r: l){
       for(auto i: r){
-	data[x][y] = i;
-	++y;
+        data[x][y] = i;
+        ++y;
       }
       ++x; y = 0;
     }
   }
-  
+
   friend class Vector<T>;
   template<class U>
   friend std::ostream& operator<<(std::ostream& os, Matrix<U> const &a);
@@ -531,13 +539,13 @@ public:
     bool retVal = true;
     for(int x = 0; x < data.size(); ++x){
       for(int y = 0; y < data[0].size(); ++y){
-	if(data[x][y] != rhs.data[x][y]){
-	  info_stream << "in: " << __func__ << std::endl;
-	  info_stream << "for x,y: " << x << ":" << y << std::endl;
-	  info_stream << "this = " << data[x][y] << "; rhs = " << rhs.data[x][y] << std::endl;
-	  retVal = false;
-	  break;
-	}
+        if(data[x][y] != rhs.data[x][y]){
+          info_stream << "in: " << __func__ << std::endl;
+          info_stream << "for x,y: " << x << ":" << y << std::endl;
+          info_stream << "this = " << data[x][y] << "; rhs = " << rhs.data[x][y] << std::endl;
+          retVal = false;
+          break;
+        }
       }
     }
     return retVal;
@@ -548,21 +556,21 @@ public:
     Matrix<T> retVal(data.size(), data[0].size());
     for(int x = 0; x < data.size(); ++x){
       for(int y =0; y < data[0].size(); ++y){
-	retVal.data[x][y] = data[x][y] * sca;
+        retVal.data[x][y] = data[x][y] * sca;
       }
     }
     return retVal;
   }
-  
+
   //precond: this.w = rhs.h, duh
   Matrix<T>
   operator*(Matrix<T> const &rhs){
     Matrix<T> retVal(data.size(), rhs.data[0].size());
     for(int bcol = 0; bcol < rhs.data[0].size(); ++bcol){
       for(int x = 0; x < data.size(); ++x){
-	for(int y = 0; y < data[0].size(); ++y){
-	  retVal.data[x][bcol] += data[x][y] * rhs.data[y][bcol];
-	}
+        for(int y = 0; y < data[0].size(); ++y){
+          retVal.data[x][bcol] += data[x][y] * rhs.data[y][bcol];
+        }
       }
     }
     return retVal;
@@ -574,8 +582,8 @@ public:
   SkewSymCrossProdM(Vector<T> const &v){
     return Matrix<T>(
       {{0, -v[2], v[1]},
-	  {v[2], 0, -v[0]},
-	    {-v[1], v[0], 0}});
+       {v[2], 0, -v[0]},
+       {-v[1], v[0], 0}});
   }
 
   static
@@ -584,13 +592,13 @@ public:
     Matrix<T> retVal(dims, dims);
     for(int x = 0; x < dims; ++x){
       for(int y =0; y < dims; ++y){
-	if(x == y) retVal.data[x][y] = 1;
-	else retVal.data[x][y] = 0;
+        if(x == y) retVal.data[x][y] = 1;
+        else retVal.data[x][y] = 0;
       }
     }
     return retVal;
   }
-  
+
   Vector<T>
   operator*(Vector<T> const &v) const {
     info_stream << "in Matrix multiply operator with matrix:" << std::endl;
@@ -599,7 +607,7 @@ public:
     int resI = 0;
     for(auto row: data){
       for(size_t i = 0; i < row.size(); ++i){
-	retVal[resI] += row[i] * v[i];
+        retVal[resI] += row[i] * v[i];
       }
       ++resI;
     }
@@ -612,8 +620,8 @@ public:
     int x = 0; int y = 0;
     for(auto r: data){
       for(auto i: r){
-	retVal.data[x][y] = i + rhs.data[x][y];
-	++y;
+        retVal.data[x][y] = i + rhs.data[x][y];
+        ++y;
       }
       y = 0; ++x;
     }
