@@ -5,10 +5,6 @@
 #ifndef QFPHELPERS
 #define QFPHELPERS
 
-#ifndef Q_UNUSED
-#define Q_UNUSED(x) (void)x
-#endif
-
 #include <ostream>
 #include <iostream>
 #include <type_traits>
@@ -17,13 +13,15 @@
 #include <algorithm>
 #include <mutex>
 
+#ifndef Q_UNUSED
+#define Q_UNUSED(x) (void)x
+#endif
+
 
 namespace QFPHelpers {
 
 const int RAND_SEED = 1;
 const bool NO_SUBNORMALS = true;
-
-extern std::default_random_engine gen;
 
 //used for directing output to nowhere if wanted
 class InfoStream : public std::ostream{
@@ -33,45 +31,59 @@ class InfoStream : public std::ostream{
     int overflow(int c) { return c; }
   };
 public:
-  InfoStream():std::ostream(new NullBuffer()){}
-  void
-  reinit(std::streambuf* b){init(b);}
-  void
-  show(){reinit(std::cout.rdbuf());}
-  void
-  hide(){reinit(new NullBuffer());}
+  InfoStream() : std::ostream(new NullBuffer()) {}
+  void reinit(std::streambuf* b) { init(b); }
+  void show() { reinit(std::cout.rdbuf()); }
+  void hide() { reinit(new NullBuffer()); }
 };
 
 static void printOnce(std::string, void*);
 
 extern InfoStream info_stream;
 
-//returns a bitlength equivalent unsigned type
+// returns a bitlength equivalent unsigned type for floats
+// and a bitlength equivalent floating type for integral types
 template<typename T>
-struct get_corresponding_type{
-  using type = typename std::conditional<
-    std::is_floating_point<T>::value && sizeof(T) == 4 , uint32_t,
-    typename std::conditional<std::is_floating_point<T>::value && sizeof(T) == 8 , uint64_t,
-                     typename std::conditional<std::is_floating_point<T>::value && sizeof(T) == 16,
-                     unsigned __int128, void>::type>::type>::type;
+struct get_corresponding_type {
+  using type = typename std::conditional_t<
+    std::is_floating_point<T>::value && sizeof(T) == 4, uint32_t,
+    std::conditional_t<
+      std::is_floating_point<T>::value && sizeof(T) == 8, uint64_t,
+		std::conditional_t<
+      std::is_floating_point<T>::value && sizeof(T) == 16, unsigned __int128,
+    std::conditional_t<
+      std::is_integral<T>::value && sizeof(T) == sizeof(float), float,
+    std::conditional_t<
+      std::is_integral<T>::value && sizeof(T) == sizeof(double), double,
+    std::conditional_t<
+      std::is_integral<T>::value && sizeof(T) == sizeof(long double), long double,
+    std::conditional_t<
+      std::is_same<T, __int128>::value && sizeof(long double) == 16, long double,
+    std::conditional_t<
+      std::is_same<T, unsigned __int128>::value && sizeof(long double) == 16, long double,
+      void
+    >>>>>>>>;
 };
+
+template <typename T>
+using get_corresponding_type_t = typename get_corresponding_type<T>::type;
+
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
-struct FPHelpers {
-  static const unsigned expBitWidth32 = 8;
-  static const unsigned expBitWidth64 = 11;
-  static const unsigned expBitWidth80 = 15;
-  static const unsigned mantBitWidth32 = FLT_MANT_DIG; //32 - expBitWidth32 - 1;
-  static const unsigned mantBitWidth64 = DBL_MANT_DIG; //64 - expBitWidth64 - 1;
-  static const unsigned mantBitWidth80 = LDBL_MANT_DIG; //128 - expBitWidth80 - 1;
-  static const unsigned bias32 = (1 << (expBitWidth32 - 1)) - 1;
-  static const unsigned bias64 = (1 << (expBitWidth64 - 1)) - 1;
-  static const unsigned bias80 = (1 << (expBitWidth80 - 1)) - 1;
+namespace FPHelpers {
+  const unsigned expBitWidth32 = 8;
+  const unsigned expBitWidth64 = 11;
+  const unsigned expBitWidth80 = 15;
+  const unsigned mantBitWidth32 = FLT_MANT_DIG; //32 - expBitWidth32 - 1;
+  const unsigned mantBitWidth64 = DBL_MANT_DIG; //64 - expBitWidth64 - 1;
+  const unsigned mantBitWidth80 = LDBL_MANT_DIG; //128 - expBitWidth80 - 1;
+  const unsigned bias32 = (1 << (expBitWidth32 - 1)) - 1;
+  const unsigned bias64 = (1 << (expBitWidth64 - 1)) - 1;
+  const unsigned bias80 = (1 << (expBitWidth80 - 1)) - 1;
 
   template<typename S, typename R>
-  static void
-  projectType(S const &source, R& result){
+  void projectType(S const &source, R& result){
     S temp = source;
     R* u = reinterpret_cast<R*>(&temp);
     if( sizeof(S) == 16 && std::is_floating_point<S>::value){
@@ -84,9 +96,9 @@ struct FPHelpers {
   }
 
   template<typename F>
-  static typename get_corresponding_type<F>::type
+  get_corresponding_type_t<F>
   projectType(F const &source){
-    using I = typename get_corresponding_type<F>::type;
+    using I = get_corresponding_type_t<F>;
     F temp = source;
     I* u = reinterpret_cast<I*>(&temp);
     if( sizeof(F) == 16 && std::is_floating_point<F>::value){
@@ -100,10 +112,10 @@ struct FPHelpers {
   // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
   // [pos][bias + 1][000...0]
   template<typename T>
-  static T
+  T
   getFirstNorm(){
     T retVal;
-    typedef typename get_corresponding_type<T>::type t;
+    using t = get_corresponding_type_t<T>;
     t val;
     switch(sizeof(T)){
     case 4:
@@ -131,19 +143,8 @@ struct FPHelpers {
     return retVal;
   }
 
-  template<typename T>
-  static T
-  perturbFP(T const &src, unsigned offset){
-    // negative offset with 0 may produce NAN
-    T ncSrc = src;
-    typename get_corresponding_type<T>::type tmp;
-    if(NO_SUBNORMALS && ncSrc == 0) ncSrc = getFirstNorm<T>();
-    T retVal = perturbFPTyped(ncSrc, tmp, offset);
-    return retVal;
-  }
-
   template<typename T, typename U>
-  static T
+  T
   perturbFPTyped(T &src, U &tmp, int offset){
     T retVal;
     projectType(src, tmp);
@@ -152,12 +153,22 @@ struct FPHelpers {
     return retVal;
   }
 
-  // returns the exponent portion of floating point
   template<typename T>
-  static unsigned
+  T
+  perturbFP(T const &src, unsigned offset){ //negative offset with 0 may produce NAN
+    T ncSrc = src;
+    get_corresponding_type_t<T> tmp;
+    if(NO_SUBNORMALS && ncSrc == 0) ncSrc = getFirstNorm<T>();
+    T retVal = perturbFPTyped(ncSrc, tmp, offset);
+    return retVal;
+  }
+
+  //returns the exponent portion of floating point
+  template<typename T>
+  unsigned int
   getExponent(T v){
     unsigned retVal = -1;
-    typename get_corresponding_type<T>::type val;
+    get_corresponding_type_t<T> val;
     projectType(v, val);
     switch(sizeof(v)){
     case 4:
@@ -181,12 +192,52 @@ struct FPHelpers {
     return retVal;
   }
 
+  /**
+   * Reinterpret float to integral or integral to float
+   * 
+   * The reinterpreted float value will be an unsigned integral the same size as the passed-in float
+   * 
+   * The reinterpreted integral value will be a floating point value of the same size
+   * 
+   * Example:
+   *   auto floatVal = reinterpret_convert(0x1f3742ae);
+   *   auto intVal   = reinterpret_convert(floatVal);
+   *   printf("%e\n", floatVal);
+   *   printf("0x%08x\n", intVal);
+   * Output:
+   *   3.880691e-20
+   *   0x1f3742ae
+   *
+   * @sa reinterpret_int_as_float, reinterpret_float_as_int
+   */
+  template<typename T>
+  get_corresponding_type_t<T> reinterpret_convert(T val) {
+    using ToType = get_corresponding_type_t<T>;
+    return *reinterpret_cast<ToType*>(&val);
+  }
 
-};
+  /** Convenience for reinterpret_convert().  Enforces the type to be integral */
+  template<typename I>
+  decltype(auto) reinterpret_int_as_float(I val) {
+    static_assert(std::is_integral<I>::value
+                    || std::is_same<I, __int128>::value
+                    || std::is_same<I, unsigned __int128>::value,
+                  "Must pass an integral type to reinterpret as floating-point");
+    return reinterpret_convert(val);
+  }
+
+  /** Convenience for reinterpret_convert().  Enforces the type to be floating-point */
+  template<typename F>
+  decltype(auto) reinterpret_float_as_int(F val) {
+    static_assert(std::is_floating_point<F>::value,
+                  "Must pass a floating-point type to reinterpret as integral");
+    return reinterpret_convert(val);
+  }
+}
 
 template<typename F>
 struct FPWrap{
-  using I = typename get_corresponding_type<F>::type;
+  using I = get_corresponding_type_t<F>;
   F const &floatVal;
   I intVal;
   void
@@ -424,7 +475,7 @@ public:
         sum += data[i] * rhs.data[i];
       }
       /* for(auto j:prods){ */
-      /*         temp += j; */
+      /*   temp += j; */
       /* } */
     }
     return sum;
