@@ -14,19 +14,27 @@ COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 VERBOSE ?=
 
 #CC_GEN_OPTS ?= -O0 -ggdb
-CC_REQUIRED := -std=c++14  -lstdc++ -lm -Wno-shift-count-overflow -I../gdb/inst -I../gdb/inst -I. -Ieigen -lpthread -pthread
+CC_REQUIRED  = -std=c++14
+CC_REQUIRED += -Wno-shift-count-overflow
+CC_REQUIRED += -lstdc++
+CC_REQUIRED += -lm
+CC_REQUIRED += -lpthread
+CC_REQUIRED += -pthread
+CC_REQUIRED += -I../gdb/inst
+CC_REQUIRED += -I../gdb/inst
+CC_REQUIRED += -I.
 
 #Eigen includes
 
-CC_REQUIRED += -I./eigen/build/unsupported/test
-CC_REQUIRED += -I./eigen/unsupported/test
-CC_REQUIRED += -I./eigen
-CC_REQUIRED += -I./eigen/build
-CC_REQUIRED += -I./eigen/unsupported/test/../../test
-CC_REQUIRED += -I./eigen/unsupported/test/../../unsupported
-CC_REQUIRED += -I./eigen/unsupported/test/../../Eigen
-CC_REQUIRED += -I./eigen/build/unsupported/test/../../test
-CC_REQUIRED += -I/usr/local/include -I./eigen/unsupported/test/./mpreal
+CC_REQUIRED += -isystem eigen/build/unsupported/test
+CC_REQUIRED += -isystem eigen/unsupported/test
+CC_REQUIRED += -isystem eigen
+CC_REQUIRED += -isystem eigen/build
+CC_REQUIRED += -isystem eigen/unsupported/test/../../test
+CC_REQUIRED += -isystem eigen/unsupported/test/../../unsupported
+CC_REQUIRED += -isystem eigen/unsupported/test/../../Eigen
+CC_REQUIRED += -isystem eigen/build/unsupported/test/../../test
+CC_REQUIRED += -isystem eigen/unsupported/test/./mpreal
 
 include ../Makefile.switches
 
