@@ -8,6 +8,11 @@
 #include <cmath>
 #include <typeinfo>
 
+#ifndef Q_UNUSED
+#define Q_UNUSED(x) (void)x
+#endif
+
+
 //setup for Eigen library test suite
 //there's a race on this container -- switching to 1 concurrency
 std::map<std::string, QFPTest::resultType> eigenResults;
@@ -28,7 +33,7 @@ public:
     auto& min = ti.min;
     auto& max = ti.max;
     //    auto& crit = getWatchData<T>();
-    QFPHelpers::info_stream << "entered " << id << std::endl; 
+    QFPHelpers::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
     long double LIScore = 0.0;
     auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
@@ -77,6 +82,8 @@ public:
   DoHariGSBasic(std::string id):TestBase(id){}
 
   resultType operator()(const testInput& ti) {
+    Q_UNUSED(ti);
+
     //auto& crit = getWatchData<T>();
     long double score = 0.0;
     T e;
@@ -124,6 +131,8 @@ public:
   DoHariGSImproved(std::string id):TestBase(id){}
 
   resultType operator()(const testInput& ti) {
+    Q_UNUSED(ti);
+
     long double score = 0.0;
     T e;
     sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
@@ -177,7 +186,7 @@ public:
     //https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
     QFPHelpers::Vector<T> a(dim, fun);
     QFPHelpers::Vector<T> b = a.genOrthoVector();
-  
+
     QFPHelpers::info_stream << "starting dot product orthogonality test with a, b = " << std::endl;
     for(int x = 0; x < dim; ++x) QFPHelpers::info_stream << x << '\t';
     QFPHelpers::info_stream << std::endl;
@@ -195,10 +204,10 @@ public:
 	//be hitting float min
 	watchPoint = FLT_MIN;
 	watchPoint = a ^ b;
-	
+
 	//DELME debug
 	//std::cout << watchPoint << std::endl;
-	
+
 	bool isOrth = watchPoint == 0; //a.isOrtho(b);
 	if(isOrth){
 	  orthoCount[r]++;
@@ -233,7 +242,7 @@ template <typename T>
 class DoMatrixMultSanity: public TestBase {
 public:
   DoMatrixMultSanity(std::string id):TestBase(id){}
-  
+
   resultType operator()(const testInput& ti) {
     auto dim = ti.highestDim;
     T min = ti.min;
@@ -254,6 +263,8 @@ public:
   DoSimpleRotate90(std::string id):TestBase(id){}
 
   resultType operator()(const testInput& ti) {
+    Q_UNUSED(ti);
+
     QFPHelpers::Vector<T> A = {1, 1, 1};
     QFPHelpers::Vector<T> expected = {-1, 1, 1};
     QFPHelpers::info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;
@@ -262,7 +273,7 @@ public:
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(expected, QFPHelpers::info_stream);
     return {{{id, typeid(T).name()}, {A.L1Distance(expected), A.LInfDistance(expected)}}};
-  }  
+  }
 };
 
 REGISTER_TYPE(DoSimpleRotate90)
@@ -326,13 +337,13 @@ public:
     return {{{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}}};
   }
 };
-  
+
 REGISTER_TYPE(RotateFullCircle)
 
 template <typename T>
 class Triangle: public TestBase {
 protected:
-  
+
   Triangle(std::string id):TestBase(id){}
   virtual
   T getArea(const T a, const T b, const T c) = 0;
@@ -343,7 +354,7 @@ public:
     T b = ti.max;
     T c = std::sqrt(std::pow(a,2) + std::pow(b, 2));
     const T delta = ti.max / (T)ti.iters;
-    
+
     // auto& crit = getWatchData<T>();
 
     // 1/2 b*h = A
@@ -375,7 +386,7 @@ public:
 	  const T c){
     T s = (a + b + c ) / 2;
     return sqrt(s* (s-a) * (s-b) * (s-c));
-  }  
+  }
 };
 
 REGISTER_TYPE(TrianglePHeron)
@@ -384,7 +395,7 @@ template <typename T>
 class TrianglePSylv: public Triangle<T> {
 public:
   TrianglePSylv(std::string id):Triangle<T>(id){}
-  
+
   T
   getArea(const T a,
 	  const T b,
@@ -402,6 +413,8 @@ public:
   DistributivityOfMultiplication(std::string id):TestBase(id){}
 
   resultType operator()(const testInput& ti) {
+    Q_UNUSED(ti);
+
     T a = 3.36736864456782105775439872e+26;
     T b = 1.09822961058807457775616000e+23;
     T c = 1.89503425000000000000000000e+06;
@@ -417,8 +430,10 @@ public:
 
     long double score = fabs(difference);
 
-    QFPHelpers::info_stream << "DistributivityOfMultiplication: sizeof(T):  " << sizeof(T) << " bytes" << std::endl;
-    QFPHelpers::info_stream << "DistributivityOfMultiplication: difference: " << score << " ULPs" << std::endl;
+    QFPHelpers::info_stream << "DistributivityOfMultiplication: sizeof(T):  "
+                            << sizeof(T) << " bytes" << std::endl;
+    QFPHelpers::info_stream << "DistributivityOfMultiplication: difference: "
+                            << score << " ULPs" << std::endl;
 
     return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
@@ -443,7 +458,7 @@ REGISTER_TYPE(DistributivityOfMultiplication)
 // }
 // EIGEN_CLASS_DEF(EigenArrayForMatrix, array_for_matrix)
 // REGISTER_TYPE(EigenArrayForMatrix)
-  
+
 // namespace array_replicate {
 // #include "eigen/array_replicate.cpp"
 // }
