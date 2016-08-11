@@ -310,9 +310,9 @@ public:
   static
   Vector<T>
   getRandomVector(size_t dim, T min_inc, T max_exc,
-                  std::default_random_engine::result_type seed = 0,
+                  std::mt19937::result_type seed = 0,
                   bool doSeed = true){
-    std::default_random_engine gen;
+    std::mt19937 gen;
     if(doSeed) gen.seed(seed);
     std::uniform_real_distribution<T> dist(min_inc,max_exc);
     Vector<T> tmp(dim);
