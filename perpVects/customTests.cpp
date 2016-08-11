@@ -437,7 +437,7 @@ public:
       QFPHelpers::info_stream << "DistributivityOfMultiplication: undist  = "
                               << valuesUndistributed.back() << std::endl;
       returnval.insert({
-          {id, typeid(T).name()},
+          {id + "_idx" + std::to_string(returnval.size()), typeid(T).name()},
           {valuesDistributed.back(), valuesUndistributed.back()}
           });
     }
