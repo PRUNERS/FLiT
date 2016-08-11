@@ -5,8 +5,17 @@ TARGET ?= test
 
 CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
 
-CPPFLAGS += -std=c++14 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I. \
-	 -Ieigen -Ieigen/Eigen $(FFLAGS) -lpthread -pthread
+CPPFLAGS += $(FFLAGS)
+CPPFLAGS += -std=c++14
+CPPFLAGS += -Wno-shift-count-overflow
+CPPFLAGS += -MMD
+CPPFLAGS += -lm
+CPPFLAGS += -lpthread
+CPPFLAGS += -pthread
+CPPFLAGS += -I../gdb/inst
+CPPFLAGS += -I.
+CPPFLAGS += -isystem eigen
+CPPFLAGS += -isystem eigen/Eigen
 
 INCFILES := $(wildcard *.h)
 INCFILES += $(wildcard eigen/*.h)
