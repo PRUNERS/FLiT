@@ -8,8 +8,8 @@
 #include "QFPHelpers.h"
 
 namespace QFPHelpers {
-  
-static 
+
+static
 void
 printOnce(std::string s, void* addr){
   return;
@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 i) {
   os << hi << lo;
   return os;
 }
-  
+
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
   uint64_t hi = i >> 64;
   uint64_t lo = (uint64_t)i;

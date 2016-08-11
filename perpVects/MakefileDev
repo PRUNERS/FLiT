@@ -1,11 +1,11 @@
 #CC := clang++
 CC := g++
-FFLAGS ?= 
+FFLAGS ?=
 TARGET ?= test
 
 CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
 
-CPPFLAGS += -std=c++11 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I. \
+CPPFLAGS += -std=c++14 -lm -Wno-shift-count-overflow -MMD  -I../gdb/inst -I. \
 	 -Ieigen -Ieigen/Eigen $(FFLAGS) -lpthread -pthread
 
 INCFILES := $(wildcard *.h)
@@ -20,7 +20,7 @@ OBJ := $(SOURCE:.cpp=.o)
 all :  $(TARGET)
 
 $(TARGET) : $(OBJ)
-	$(CC) $(CPPFLAGS)   -o $@ $^ 
+	$(CC) $(CPPFLAGS)   -o $@ $^
 
 %.o : %.cpp $(INCFILES)
 	$(CC) $(CPPFLAGS) -c $< -o $@

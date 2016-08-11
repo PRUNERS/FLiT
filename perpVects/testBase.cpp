@@ -33,7 +33,7 @@ popWatchData<float>(){
   baseF = fStack.top();
   fStack.pop();
 }
-  
+
 template<>
 void
 pushWatchData<double>(){
@@ -46,7 +46,7 @@ popWatchData<double>(){
   baseD = dStack.top();
   dStack.pop();
 }
-  
+
 template<>
 void
 pushWatchData<long double>(){
@@ -59,7 +59,7 @@ popWatchData<long double>(){
   baseL = lStack.top();
   lStack.pop();
 }
-  
+
 template<>
 volatile float& getWatchData<float>(){
   if(!fReg && watching){
