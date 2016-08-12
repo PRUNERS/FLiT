@@ -2,7 +2,10 @@ CC := g++
 
 CC_OPTS ?= -Wuninitialized
 
-CC_REQUIRED := -std=c++14  -lstdc++ -lm -Wno-shift-count-overflow
+CC_REQUIRED := -std=c++14
+CC_REQUIRED += -Wno-shift-count-overflow
+CC_REQUIRED += -lstdc++
+CC_REQUIRED += -lm
 
 .phony : all
 

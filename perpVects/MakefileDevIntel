@@ -2,7 +2,12 @@ CC := icpc
 
 CC_OPTS ?= -Wuninitialized
 
-CC_REQUIRED := -lm --std=c++14 -lstdc++ -Wno-shift-count-overflow -gxx-name=g++-5.1 -frounding-math
+CC_REQUIRED += --std=c++14
+CC_REQUIRED += -Wno-shift-count-overflow
+CC_REQUIRED += -gxx-name=g++-5.1
+CC_REQUIRED += -lm
+CC_REQUIRED += -lstdc++
+CC_REQUIRED += -frounding-math
 
 INCFILES := ../gdb/inst
 
