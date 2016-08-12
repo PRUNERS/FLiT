@@ -1,7 +1,7 @@
 #CC := clang++
 CC := g++
 FFLAGS ?=
-TARGET ?= test
+TARGET ?= runTests
 
 CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
 
@@ -17,24 +17,35 @@ CPPFLAGS += -I.
 CPPFLAGS += -isystem eigen
 CPPFLAGS += -isystem eigen/Eigen
 
-INCFILES := $(wildcard *.h)
-INCFILES += $(wildcard eigen/*.h)
-INCFILES += $(wildcard eigen/Eigen/*)
+DEPFLAGS += -MD -MF $*.d
 
-SOURCE := $(wildcard *.cpp)
-OBJ := $(SOURCE:.cpp=.o)
+TESTS    := $(wildcard tests/*.cpp)
+SOURCE   := $(wildcard *.cpp)
+SOURCE   += $(TESTS)
 
-.phony : all
+OBJ      := $(SOURCE:.cpp=.o)
+DEPS     := $(SOURCE:.cpp=.d)
 
+
+.PHONY : all
 all :  $(TARGET)
 
 $(TARGET) : $(OBJ)
 	$(CC) $(CPPFLAGS)   -o $@ $^
 
-%.o : %.cpp $(INCFILES)
-	$(CC) $(CPPFLAGS) -c $< -o $@
+%.o : %.cpp
+	$(CC) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
 
-.phony : clean
+.PRECIOUS: %.d
+-include $(SOURCE:%.cpp=%.d)
 
+.PHONY : clean
 clean :
-	rm -f *.o test *.d
+	rm -f $(OBJ)
+	rm -f $(DEPS)
+
+.PHONY: veryclean distclean
+veryclean : distclean
+distclean : clean
+	rm -f $(TARGET)
+
