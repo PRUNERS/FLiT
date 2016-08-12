@@ -68,42 +68,43 @@ public:
 }
 
 #define REGISTER_TYPE(klass) \
-  class klass##Factory : public TestFactory {        \
-  public:                                            \
-    klass##Factory() {                               \
-      TestBase::registerTest(#klass, this);          \
-    }                                                \
-    virtual std::vector<TestBase *> create() {       \
-      return {                                       \
-          new klass<float>(#klass),                  \
-          new klass<double>(#klass),                 \
-          new klass<long double>(#klass)             \
-      };                                             \
-    }                                                \
-  };                                                 \
-  static klass##Factory global_##klass##Factory;     \
+  class klass##Factory : public QFPTest::TestFactory {   \
+  public:                                                \
+    klass##Factory() {                                   \
+      QFPTest::TestBase::registerTest(#klass, this);     \
+    }                                                    \
+    virtual std::vector<QFPTest::TestBase *> create() {  \
+      return {                                           \
+          new klass<float>(#klass),                      \
+          new klass<double>(#klass),                     \
+          new klass<long double>(#klass)                 \
+      };                                                 \
+    }                                                    \
+  };                                                     \
+  static klass##Factory global_##klass##Factory;         \
 
-#define EIGEN_CLASS_DEF(klass, file)                 \
-  template <typename T>                              \
-  class klass : public TestBase{                     \
-  public:                                            \
-    klass(std::string id):TestBase(id){}             \
-    resultType operator()(const testInput& ti){      \
-      if(sizeof(T) != 4) return {};                  \
-      auto fileS = std::string(#file);               \
-      g_test_stack_mutex.lock();                     \
-      g_test_stack[fileS];                           \
-      g_test_stack_mutex.unlock();                   \
-      eigenResults_mutex.lock();                     \
-      eigenResults[fileS];                           \
-      eigenResults_mutex.unlock();                   \
-      test_##file();                                 \
-      g_test_stack[fileS].clear();                   \
-      auto res = eigenResults[fileS];                \
-      eigenResults[fileS].clear();                   \
-      return res;                                    \
-    }                                                \
-  };                                                 \
+#define EIGEN_CLASS_DEF(klass, file)                     \
+  template <typename T>                                  \
+  class klass : public QFPTest::TestBase{                \
+  public:                                                \
+    klass(std::string id) : QFPTest::TestBase(id){}      \
+    QFPTest::resultType                                  \
+    operator()(const QFPTest::testInput& ti){            \
+      if(sizeof(T) != 4) return {};                      \
+      auto fileS = std::string(#file);                   \
+      g_test_stack_mutex.lock();                         \
+      g_test_stack[fileS];                               \
+      g_test_stack_mutex.unlock();                       \
+      eigenResults_mutex.lock();                         \
+      eigenResults[fileS];                               \
+      eigenResults_mutex.unlock();                       \
+      test_##file();                                     \
+      g_test_stack[fileS].clear();                       \
+      auto res = eigenResults[fileS];                    \
+      eigenResults[fileS].clear();                       \
+      return res;                                        \
+    }                                                    \
+  };                                                     \
 
 
 #endif

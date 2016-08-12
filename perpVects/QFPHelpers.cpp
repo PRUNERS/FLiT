@@ -2,10 +2,11 @@
 // they utilize the watch data for sensitive points
 // of computation.
 
+#include "QFPHelpers.h"
+
+#include <iostream>
 #include <unordered_map>
 #include <mutex>
-
-#include "QFPHelpers.h"
 
 namespace QFPHelpers {
 
