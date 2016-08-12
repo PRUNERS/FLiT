@@ -38,65 +38,54 @@ CC_REQUIRED += -isystem eigen/unsupported/test/./mpreal
 
 include ../Makefile.switches
 
-# INCFILES  := $(wildcard *.h)
-SOURCE    := $(wildcard *.cpp)
-OBJ 	  := $(SOURCE:.cpp=.o)
+# INCFILES    := $(wildcard *.h)
+TESTS       := $(wildcard tests/*.cpp)
+SOURCE      := $(wildcard *.cpp)
+SOURCE      += $(TESTS)
 
+hostname    := $(shell hostname)
 
-hostname := $(shell hostname)
+TARGETS     := $(foreach c, $(COMPILERS), \
+                 $(foreach s, $(SWITCHES), \
+                   $c_$(hostname)_$(strip $(s))_out_$(VERBOSE)))
+VERBOSE_OUTPUT := $(TARGETS:%=%_out_$(VERBOSE))
 
-.phony : all
-.phony : cleanResults #strip excess info from Intel output (__file__) and remove emtpy outputs
-.phony : archive
-
-TARGETS := $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $c_$(hostname)_$(strip $(s))_out_$(VERBOSE)))
-
+.PHONY : all
 all : $(TARGETS) cleanResults archive
 
-#very cool: recyclable target definitions! adapted from
-#http://make.mad-scientist.net/the-eval-function/
+# very cool: recyclable target definitions! adapted from
+# http://make.mad-scientist.net/the-eval-function/
 
 define RULE
-$2_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
+$(strip 2)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
 	-./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
 	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
 	-sed -i 's/COMPILER/$($(strip $2))/g' $$@
 	-sed -i 's/FILENAME/$2_$(hostname)_$(strip $1)/g' $$@
 
-$(strip $2)_$(hostname)_$(strip $1) : $(OBJ:.o=_$(strip $2)_$(hostname)_$(strip $1).o)
-		       -$($(strip $2)) $($(strip $1)) $(CC_REQUIRED) $$^ -o $$@
-		       -rm $(OBJ:.o=_$(strip $2)_$(hostname)_$(strip $1).o)
+$(strip $2)_$(hostname)_$(strip $1) : $(SOURCE:%.cpp=%_$(strip $2)_$(hostname)_$(strip $1).o)
+	-$($(strip $2)) $($(strip $1)) $(CC_REQUIRED) $$^ -o $$@
+	-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1).o)
 
-QFPHelpers_$(strip $2)_$(hostname)_$(strip $1).o : QFPHelpers.cpp QFPHelpers.h
-			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-
-testBase_$(strip $2)_$(hostname)_$(strip $1).o : testBase.cpp testBase.h ../gdb/inst/inst
-			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-
-customTests_$(strip $2)_$(hostname)_$(strip $1).o : customTests.cpp testBase.h QFPHelpers.h
-			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-
-main_$(strip $2)_$(hostname)_$(strip $1).o : main.cpp testBase.h QFPHelpers.h
-			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-
-unitTests_$(strip $2)_$(hostname)_$(strip $1).o : unitTests.cpp QFPHelpers.h
-			 -$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
-
+%_$(strip $2)_$(hostname)_$(strip $1).o : %.cpp
+	-$($(strip $2)) -c $($(strip $1)) $(CC_REQUIRED) $$< -o $$@
 endef
 
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(eval $(call RULE, $s, $c))))
 
+.PHONY : cleanResults #strip excess info from Intel output (__file__) and remove emtpy outputs
 cleanResults : $(TARGETS)
 	$(info doing clean)
 	sed -i 's/FPTests:://' *out_$(VERBOSE)
 	-find . -size 0 -exec rm {} \;
 
+.PHONY : archive
 archive : cleanResults
 	-tar -zcf ../results/$(hostname).tgz *$(hostname)*
-	-rm *$(hostname)*
+	rm -f *$(hostname)*
 
-.phony : clean
-
+.PHONY : clean
 clean :
-	-rm $(addsuffix *, $(COMPILERS))
+	rm -f $(TARGETS)
+	rm -f $(VERBOSE_OUTPUT)

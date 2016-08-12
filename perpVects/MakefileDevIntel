@@ -13,8 +13,6 @@ INCFILES := ../gdb/inst
 
 INC := -I $(INCFILES)
 
-
-
 .phony : all
 
 all : intel #intel_g
