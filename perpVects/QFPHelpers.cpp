@@ -22,7 +22,9 @@ printOnce(std::string s, void* addr){
   }
 }
 
-InfoStream info_stream;
+thread_local InfoStream info_stream;
+std::mutex ostreamMutex;
+
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 i) {
   uint64_t hi = i >> 64;
   uint64_t lo = (uint64_t)i;
@@ -36,8 +38,6 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
   os << hi << lo;
   return os;
 }
-
-std::mutex ostreamMutex;
 
 std::string
 getSortName(sort_t val){
