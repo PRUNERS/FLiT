@@ -7,7 +7,7 @@
 #define GT_DECLARE(funcName)                                   \
   float gt_##funcName(const std::vector<float>&);              \
   double gt_##funcName(const std::vector<double>&);            \
-  long double gt_##funcName(const std::vector<long double>&);
+  long double gt_##funcName(const std::vector<long double>&);  \
 
 GT_DECLARE(distribution)
 
