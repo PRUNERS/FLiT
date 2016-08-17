@@ -1,9 +1,14 @@
 #ifndef TEST_H
 #define TEST_H
 
-template<typename T>
-T distributionTest(T a, T b, T c) {
-  return (a * c) + (b * c);
-}
+#include "functions.hpp"
+#include <vector>
+
+#define TST_DECLARE(funcName)                                   \
+  float tst_##funcName(const std::vector<float>&);              \
+  double tst_##funcName(const std::vector<double>&);            \
+  long double tst_##funcName(const std::vector<long double>&);
+
+TST_DECLARE(distribution)
 
 #endif // TEST_H
