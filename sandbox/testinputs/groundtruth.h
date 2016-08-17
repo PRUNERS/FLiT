@@ -2,12 +2,8 @@
 #define GROUNDTRUTH_H
 
 #include "functions.hpp"
+#include "macros.h"
 #include <vector>
-
-#define GT_DECLARE(funcName)                                   \
-  float gt_##funcName(const std::vector<float>&);              \
-  double gt_##funcName(const std::vector<double>&);            \
-  long double gt_##funcName(const std::vector<long double>&);  \
 
 GT_DECLARE(distribution)
 

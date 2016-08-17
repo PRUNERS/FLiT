@@ -14,6 +14,10 @@ auto generateSeed() {
 
 }
 
+void printTestVal(const char* funcName, float val);
+void printTestVal(const char* funcName, double val);
+void printTestVal(const char* funcName, long double val);
+
 // returns a bitlength equivalent unsigned type for floats
 // and a bitlength equivalent floating type for integral types
 template <typename T>
