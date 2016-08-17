@@ -1,20 +1,17 @@
 #include "groundtruth.h"
+#include "functions.hpp"
 
-namespace {
+#include <vector>
 
-  template<typename T>
-  T distributionTruth_impl(T a, T b, T c) {
-    return (a * c) + (b * c);
-  }
+#define GT_DEFINE(funcName)                                         \
+  float gt_##funcName(const std::vector<float> &in) {               \
+    return funcName(in);                                            \
+  }                                                                 \
+  double gt_##funcName(const std::vector<double> &in) {             \
+    return funcName(in);                                            \
+  }                                                                 \
+  long double gt_##funcName(const std::vector<long double> &in) {   \
+    return funcName(in);                                            \
+  }                                                                 \
 
-}
-
-float distributionTruth(float a, float b, float c) {
-  return distributionTruth_impl(a, b, c);
-}
-double distributionTruth(double a, double b, double c) {
-  return distributionTruth_impl(a, b, c);
-}
-long double distributionTruth(long double a, long double b, long double c) {
-  return distributionTruth_impl(a, b, c);
-}
+GT_DEFINE(distribution)
