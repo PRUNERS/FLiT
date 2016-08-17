@@ -27,6 +27,10 @@ default: all
 .PHONY: all
 all: $(TARGET)
 
+.PHONY: run
+run: $(TARGET)
+	-./$(TARGET)
+
 .PHONY: clean
 clean:
 	rm -f $(OBJ)
