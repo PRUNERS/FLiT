@@ -1,8 +1,8 @@
-#include "groundtruth.h"
+#include "test.h"
 
 #include "functions.hpp"
 #include "macros.h"
 
 #include <vector>
 
-GT_DEFINE(distribution)
+TST_DEFINE(distribution)
