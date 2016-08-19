@@ -17,7 +17,7 @@ public:
     auto orig = A;
     T theta = 2 * M_PI / n;
     QFPHelpers::info_stream << "Rotate full circle in " << n << " increments, A is: " << A << std::endl;
-    for(int r = 0; r < n; ++r){
+    for(decltype(n) r = 0; r < n; ++r){
       A.rotateAboutZ_3d(theta);
       QFPHelpers::info_stream << r << " rotations, vect = " << A << std::endl;
     }
