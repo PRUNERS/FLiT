@@ -82,116 +82,6 @@ namespace FPHelpers {
   const unsigned bias64 = (1 << (expBitWidth64 - 1)) - 1;
   const unsigned bias80 = (1 << (expBitWidth80 - 1)) - 1;
 
-  template<typename S, typename R>
-  void projectType(S const &source, R& result){
-    S temp = source;
-    R* u = reinterpret_cast<R*>(&temp);
-    if( sizeof(S) == 16 && std::is_floating_point<S>::value){
-      // we must be using long double, which is 80 bit extended -- mask out higher bits
-      unsigned __int128 zero = 0;
-      // some compilers are leaving garbage in unused bits (not defined behavior)
-      *u = (unsigned __int128)*u & (~zero >> 48); // this is really tacky hacky
-    }
-    result = *u;
-  }
-
-  template<typename F>
-  get_corresponding_type_t<F>
-  projectType(F const &source){
-    using I = get_corresponding_type_t<F>;
-    F temp = source;
-    I* u = reinterpret_cast<I*>(&temp);
-    if( sizeof(F) == 16 && std::is_floating_point<F>::value){
-      // we must be using long double, which is 80 bit extended -- mask out higher bits
-      unsigned __int128 zero = 0;
-      *u = *u & (~zero >> 48);
-    }
-    return *u;
-  }
-
-  // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
-  // [pos][bias + 1][000...0]
-  template<typename T>
-  T
-  getFirstNorm(){
-    T retVal;
-    using t = get_corresponding_type_t<T>;
-    t val;
-    switch(sizeof(T)){
-    case 4:
-      {
-        val = (t)1 << mantBitWidth32;
-      }
-      break;
-    case 8:
-      {
-        val = (t)1 << mantBitWidth64;
-        projectType(val, retVal);
-      }
-      break;
-    case 16:
-      {
-        val = (t) 1 << mantBitWidth80;
-      }
-      break;
-    default:
-      // won't compile
-      int x = 0;
-      Q_UNUSED(x);
-    }
-    projectType(val, retVal);
-    return retVal;
-  }
-
-  template<typename T, typename U>
-  T
-  perturbFPTyped(T &src, U &tmp, int offset){
-    T retVal;
-    projectType(src, tmp);
-    tmp += offset;
-    projectType(tmp, retVal);
-    return retVal;
-  }
-
-  template<typename T>
-  T
-  perturbFP(T const &src, unsigned offset){ //negative offset with 0 may produce NAN
-    T ncSrc = src;
-    get_corresponding_type_t<T> tmp;
-    if(NO_SUBNORMALS && ncSrc == 0) ncSrc = getFirstNorm<T>();
-    T retVal = perturbFPTyped(ncSrc, tmp, offset);
-    return retVal;
-  }
-
-  //returns the exponent portion of floating point
-  template<typename T>
-  unsigned int
-  getExponent(T v){
-    unsigned retVal = -1;
-    get_corresponding_type_t<T> val;
-    projectType(v, val);
-    switch(sizeof(v)){
-    case 4:
-      {
-        retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
-      }
-      break;
-    case 8:
-      {
-        retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64);
-      }
-      break;
-    case 16:
-      {
-        retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
-      }
-      break;
-    default:
-      retVal = 0;
-    }
-    return retVal;
-  }
-
   /**
    * Internal method used by reinterpret_convert<> to mask the top bits of an
    * unsigned __int128 after reinterpreting from an 80-bit long double.
@@ -258,16 +148,83 @@ namespace FPHelpers {
                   "Must pass a floating-point type to reinterpret as integral");
     return reinterpret_convert(val);
   }
+
+  // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
+  // [pos][bias + 1][000...0]
+  template<typename T>
+  T
+  getFirstNorm(){
+    static_assert(std::is_floating_point<T>::value,
+                  "getFirstNorm() only supports floating point");
+    using t = get_corresponding_type_t<T>;
+    t val;
+    switch(sizeof(T)){
+    case 4:
+      {
+        val = (t)1 << mantBitWidth32;
+      }
+      break;
+    case 8:
+      {
+        val = (t)1 << mantBitWidth64;
+      }
+      break;
+    case 16:
+      {
+        val = (t) 1 << mantBitWidth80;
+      }
+      break;
+    }
+    return reinterpret_int_as_float(val);
+  }
+
+  template<typename T>
+  T
+  perturbFP(T const &src, uint offset){ //negative offset with 0 may produce NAN
+    static_assert(std::is_floating_point<T>::value,
+                  "perturbFP() only supports floating point");
+    auto retval = reinterpret_float_as_int(src);
+    retval += offset;
+    return reinterpret_int_as_float(retval);
+  }
+
+  //returns the exponent portion of floating point
+  template<typename T>
+  uint
+  getExponent(T v){
+    uint retVal = -1;
+    auto val = reinterpret_float_as_int(v);
+    switch(sizeof(v)){
+    case 4:
+      {
+        retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
+      }
+      break;
+    case 8:
+      {
+        retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64);
+      }
+      break;
+    case 16:
+      {
+        retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
+      }
+      break;
+    default:
+      retVal = 0;
+    }
+    return retVal;
+  }
 }
 
 template<typename F>
 struct FPWrap{
   using I = get_corresponding_type_t<F>;
   F const &floatVal;
-  I intVal;
+  mutable I intVal;
   void
   update() const {
-    FPHelpers::projectType(floatVal, const_cast<FPWrap*>(this)->intVal);
+    intVal = FPHelpers::reinterpret_float_as_int(floatVal);
   }
 
   FPWrap(F const &val):floatVal(val){}
