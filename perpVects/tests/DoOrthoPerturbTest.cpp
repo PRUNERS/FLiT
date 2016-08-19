@@ -28,16 +28,17 @@ public:
 
     QFPHelpers::info_stream << "starting dot product orthogonality test with a, b = "
                             << std::endl;
-    for(int x = 0; x < dim; ++x) QFPHelpers::info_stream << x << '\t';
+    for(decltype(dim) x = 0; x < dim; ++x)
+      QFPHelpers::info_stream << x << '\t';
     QFPHelpers::info_stream << std::endl;
     QFPHelpers::info_stream << a << std::endl;
     QFPHelpers::info_stream << b << std::endl;
     T backup;
 
-    for(int r = 0; r < dim; ++r){
+    for(decltype(dim) r = 0; r < dim; ++r){
     T &p = a[r];
       backup = p;
-      for(int i = 0; i < iters; ++i){
+      for(decltype(iters) i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
         p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
         // Added this for force watchpoint hits every cycle (well, two).  We

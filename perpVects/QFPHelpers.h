@@ -37,7 +37,7 @@ public:
   void hide() { reinit(new NullBuffer()); }
 };
 
-static void printOnce(std::string, void*);
+void printOnce(std::string, void*);
 
 extern InfoStream info_stream;
 
@@ -193,6 +193,28 @@ namespace FPHelpers {
   }
 
   /**
+   * Internal method used by reinterpret_convert<> to mask the top bits of an
+   * unsigned __int128 after reinterpreting from an 80-bit long double.
+   *
+   * If the type is anything besides unsigned __int128, then this method does
+   * nothing.  Only the __int128 specialization actually does something.
+   *
+   * If we reinterpret an unsigned __int128 from a long double, which is 80-bit
+   * extended, then mask out the higher bits.  This needs to be done because
+   * some compilers are leaving garbage in the unused bits (net defined
+   * behavior)
+   */
+  template<typename T> T tryMaskBits81To128(T val) { return val; }
+
+  // This specialization masks all upper bits from 81-128 with zeros
+  template<>
+  inline unsigned __int128
+  tryMaskBits81To128(unsigned __int128 val) {
+    const unsigned __int128 zero = 0;
+    return val & (~zero >> 48);
+  }
+
+  /**
    * Reinterpret float to integral or integral to float
    * 
    * The reinterpreted float value will be an unsigned integral the same size as the passed-in float
@@ -213,7 +235,10 @@ namespace FPHelpers {
   template<typename T>
   get_corresponding_type_t<T> reinterpret_convert(T val) {
     using ToType = get_corresponding_type_t<T>;
-    return *reinterpret_cast<ToType*>(&val);
+    ToType returnVal = *reinterpret_cast<ToType*>(&val);
+    // for converting from long double to unsigned __int128, mask out the upper
+    // unused bits
+    return tryMaskBits81To128(returnVal);
   }
 
   /** Convenience for reinterpret_convert().  Enforces the type to be integral */
@@ -301,7 +326,7 @@ public:
   Vector<T>
   operator*(T const &rhs){
     Vector<T> retVal(size());
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       retVal[x] = data[x] * rhs;
     }
     return retVal;
@@ -331,7 +356,7 @@ public:
   bool
   operator==(Vector<T> const &b){
     bool retVal = true;
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       if(data[x] != b.data[x]){
         retVal = false;
         break;
@@ -363,7 +388,7 @@ public:
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
     shuffle(seq.begin(), seq.end(), std::default_random_engine(RAND_SEED));
     //do pairwise swap
-    for(int i = 0; i < size(); i += 2){
+    for(uint i = 0; i < size(); i += 2){
       retVal[seq[i]] = data[seq[i+1]];
       retVal[seq[i+1]] = -data[seq[i]];
     }
@@ -401,7 +426,7 @@ public:
   Vector<T>
   operator-(Vector<T> const &rhs) const {
     Vector<T> retVal(size());
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       retVal[x] = data[x] - rhs.data[x];
     }
     return retVal;
@@ -411,8 +436,9 @@ public:
   BitDistance(Vector<T> const &rhs) const {
     typedef unsigned __int128 itype;
     itype retVal;
-    for(int i = 0; i < size(); ++i){
-      retVal += std::labs((itype)FPWrap<long double>((long double)data[i]).intVal - FPWrap<T>((long double)rhs.data[i]).intVal);
+    for(uint i = 0; i < size(); ++i){
+      retVal += std::labs((itype)FPWrap<long double>((long double)data[i]).intVal -
+                          FPWrap<T>((long double)rhs.data[i]).intVal);
     }
     return retVal;
   }
@@ -422,7 +448,7 @@ public:
   T
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       distance += fabs(data[x] - rhs.data[x]);
     }
     return distance;
@@ -444,9 +470,6 @@ public:
   template<typename F, class C>
   void
   reduce(C &cont, F const &fun) const {
-    //    printOnce(__FUNCTION__, &cont.data()[0]);
-
-    T retVal;
     if(sortType == lt || sortType == gt){
       if(sortType == lt)
         std::sort(cont.begin(), cont.end(),
@@ -459,8 +482,7 @@ public:
   }
 
   void
-  setSort(sort_t st = def){sortType = st;}
-  //inner product (dot product)
+  setSort(sort_t st = def) { sortType = st; }
 
   T
   operator^(Vector<T> const &rhs) const {
@@ -471,7 +493,7 @@ public:
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
       /* std::for_each(prods.begin(), prods.end(), [&](T i){i = 0.0;}); */
-      for(int i = 0; i < size(); ++i){
+      for(uint i = 0; i < size(); ++i){
         sum += data[i] * rhs.data[i];
       }
       /* for(auto j:prods){ */
@@ -492,7 +514,6 @@ public:
   }
 
   T LInfDistance(Vector<T> const &rhs) const {
-    T retVal;
     auto diff = operator-(rhs);
     return diff.LInfNorm();
   }
@@ -588,8 +609,8 @@ public:
   bool
   operator==(Matrix<T> const &rhs){
     bool retVal = true;
-    for(int x = 0; x < data.size(); ++x){
-      for(int y = 0; y < data[0].size(); ++y){
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y = 0; y < data[0].size(); ++y){
         if(data[x][y] != rhs.data[x][y]){
           info_stream << "in: " << __func__ << std::endl;
           info_stream << "for x,y: " << x << ":" << y << std::endl;
@@ -605,8 +626,8 @@ public:
   Matrix<T>
   operator*(T const &sca){
     Matrix<T> retVal(data.size(), data[0].size());
-    for(int x = 0; x < data.size(); ++x){
-      for(int y =0; y < data[0].size(); ++y){
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y =0; y < data[0].size(); ++y){
         retVal.data[x][y] = data[x][y] * sca;
       }
     }
@@ -617,9 +638,9 @@ public:
   Matrix<T>
   operator*(Matrix<T> const &rhs){
     Matrix<T> retVal(data.size(), rhs.data[0].size());
-    for(int bcol = 0; bcol < rhs.data[0].size(); ++bcol){
-      for(int x = 0; x < data.size(); ++x){
-        for(int y = 0; y < data[0].size(); ++y){
+    for(uint bcol = 0; bcol < rhs.data[0].size(); ++bcol){
+      for(uint x = 0; x < data.size(); ++x){
+        for(uint y = 0; y < data[0].size(); ++y){
           retVal.data[x][bcol] += data[x][y] * rhs.data[y][bcol];
         }
       }
@@ -641,8 +662,8 @@ public:
   Matrix<T>
   Identity(size_t dims){
     Matrix<T> retVal(dims, dims);
-    for(int x = 0; x < dims; ++x){
-      for(int y =0; y < dims; ++y){
+    for(size_t x = 0; x < dims; ++x){
+      for(size_t y =0; y < dims; ++y){
         if(x == y) retVal.data[x][y] = 1;
         else retVal.data[x][y] = 0;
       }

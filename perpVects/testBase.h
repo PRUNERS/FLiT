@@ -88,7 +88,8 @@ public:
   public:                                                \
     klass(std::string id) : QFPTest::TestBase(id){}      \
     QFPTest::resultType                                  \
-    operator()(const QFPTest::testInput& ti){            \
+    operator()(const QFPTest::testInput& ti) {           \
+      Q_UNUSED(ti);                                      \
       if(sizeof(T) != 4) return {};                      \
       auto fileS = std::string(#file);                   \
       g_test_stack_mutex.lock();                         \

@@ -10,9 +10,7 @@
 
 namespace QFPHelpers {
 
-static
-void
-printOnce(std::string s, void* addr){
+void printOnce(std::string s, void* addr){
   return;
   static std::unordered_map<void*, std::string> seen;
   if(seen.count(addr) == 0){

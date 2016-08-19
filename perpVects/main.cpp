@@ -134,7 +134,8 @@ main(int argc, char* argv[]){
     for(auto& t : TestBase::getTests()){
       auto plist = t.second->create();
       for(auto pt : plist){
-        while(DEGP == futures.size()) checkFutures(futures, timeout, scores, false);
+        while(static_cast<uint>(DEGP) == futures.size())
+          checkFutures(futures, timeout, scores, false);
         futures.push_back(std::async(std::launch::async,
                                      [pt,ip]{auto retVal =   (*pt)(ip);
                                        delete pt; return retVal;}));
