@@ -57,7 +57,7 @@ all : $(TARGETS) cleanResults archive
 # http://make.mad-scientist.net/the-eval-function/
 
 define RULE
-$(strip 2)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
+$(strip $2)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)
 	-./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
 	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
