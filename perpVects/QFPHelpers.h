@@ -5,8 +5,11 @@
 #ifndef QFPHELPERS
 #define QFPHELPERS
 
+#include "InfoStream.h"
+
 #include <ostream>
 #include <iostream>
+#include <sstream>
 #include <type_traits>
 #include <float.h>
 #include <random>
@@ -22,24 +25,9 @@ namespace QFPHelpers {
 
 const int RAND_SEED = 1;
 const bool NO_SUBNORMALS = true;
-
-//used for directing output to nowhere if wanted
-class InfoStream : public std::ostream{
-  class NullBuffer : public std::streambuf
-  {
-  public:
-    int overflow(int c) { return c; }
-  };
-public:
-  InfoStream() : std::ostream(new NullBuffer()) {}
-  void reinit(std::streambuf* b) { init(b); }
-  void show() { reinit(std::cout.rdbuf()); }
-  void hide() { reinit(new NullBuffer()); }
-};
+extern thread_local InfoStream info_stream;
 
 void printOnce(std::string, void*);
-
-extern InfoStream info_stream;
 
 // returns a bitlength equivalent unsigned type for floats
 // and a bitlength equivalent floating type for integral types
@@ -232,7 +220,7 @@ struct FPWrap{
   friend std::ostream& operator<<(std::ostream& os, FPWrap<U> const &w);
 };
 
-  extern std::mutex ostreamMutex;
+extern std::mutex ostreamMutex;
 
 template <typename U>
 std::ostream& operator<<(std::ostream& os, const FPWrap<U> &w){
