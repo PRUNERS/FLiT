@@ -93,25 +93,36 @@ def generate_table(inputrows, col_types, row_types):
     assert len(row_names) > 0, \
             'You must select at least one row type using --rows'
 
-    table = []  # list of lists, len(row_names) x len(col_names)
-    for row_name in row_names:
+    # Do some caching to speed this up
+    vals2key = lambda vals: '_'.join(vals)
+    row2rowkey = lambda row: vals2key(row[x] for x in row_types)
+    row2colkey = lambda row: vals2key(row[x] for x in col_types)
+    value_map = {}
+    for row in inputrows:
+        rowkey = row2rowkey(row)
+        colkey = row2colkey(row)
+        if rowkey not in value_map:
+            value_map[rowkey] = {}
+        if colkey not in value_map[rowkey]:
+            value_map[rowkey][colkey] = set()
+        value_map[rowkey][colkey].add(row['score0'])
+
+    table = []
+    for row_idx, row_name in enumerate(row_names):
         new_table_row = []
         table.append(new_table_row)
+        row_dict = value_map[vals2key(row_name)]
         if len(col_names) > 0:
             for col_name in col_names:
-                new_table_row.append(len(
-                    set(x['score0'] for x in inputrows
-                        if all(x[name] == value
-                               for name, value in zip(row_types, row_name))
-                        and all(x[name] == value
-                                for name, value in zip(col_types, col_name)))
-                    ))
+                try:
+                    new_table_row.append(len(row_dict[vals2key(col_name)]))
+                except KeyError:
+                    new_table_row.append(0)
         else:
-            new_table_row.append(len(
-                set(x['score0'] for x in inputrows
-                    if all(x[name] == value
-                           for name, value in zip(row_types, row_name)))
-                ))
+            try:
+                new_table_row.append(len(row_dict['']))
+            except KeyError:
+                new_table_row.append(0)
 
     if len(col_names[0]) == 0:
         col_names = [('total',)]
