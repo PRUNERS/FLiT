@@ -42,6 +42,7 @@
 #include <deque>
 #include <queue>
 #include <list>
+#include <map>
 
 
 // To test that all calls from Eigen code to std::min() and std::max() are
@@ -214,7 +215,7 @@ getFileNoEx(std::string path){
 }
 
 inline void verify_impl(cond_t condition, const char *testname, const char *file,
-                        int line, const char *condition_as_string, bool invert = false)
+                        int line, const char* /*condition_as_string*/, bool invert = false)
 {
   auto fname = getFileNoEx(file);
   bool cond = condition.first != invert;
@@ -245,7 +246,7 @@ inline void verify_impl(cond_t condition, const char *testname, const char *file
 }
 
 inline void verify_impl(bool condition, const char *testname, const char *file,
-                        int line, const char *condition_as_string)
+                        int line, const char* /*condition_as_string*/)
 {
   std::string fname = getFileNoEx(file);
   if(eigenResults.find(fname) == eigenResults.end()){
