@@ -37,7 +37,7 @@ public:
   void hide() { reinit(new NullBuffer()); }
 };
 
-static void printOnce(std::string, void*);
+void printOnce(std::string, void*);
 
 extern InfoStream info_stream;
 
@@ -82,114 +82,26 @@ namespace FPHelpers {
   const unsigned bias64 = (1 << (expBitWidth64 - 1)) - 1;
   const unsigned bias80 = (1 << (expBitWidth80 - 1)) - 1;
 
-  template<typename S, typename R>
-  void projectType(S const &source, R& result){
-    S temp = source;
-    R* u = reinterpret_cast<R*>(&temp);
-    if( sizeof(S) == 16 && std::is_floating_point<S>::value){
-      // we must be using long double, which is 80 bit extended -- mask out higher bits
-      unsigned __int128 zero = 0;
-      // some compilers are leaving garbage in unused bits (not defined behavior)
-      *u = (unsigned __int128)*u & (~zero >> 48); // this is really tacky hacky
-    }
-    result = *u;
-  }
+  /**
+   * Internal method used by reinterpret_convert<> to mask the top bits of an
+   * unsigned __int128 after reinterpreting from an 80-bit long double.
+   *
+   * If the type is anything besides unsigned __int128, then this method does
+   * nothing.  Only the __int128 specialization actually does something.
+   *
+   * If we reinterpret an unsigned __int128 from a long double, which is 80-bit
+   * extended, then mask out the higher bits.  This needs to be done because
+   * some compilers are leaving garbage in the unused bits (net defined
+   * behavior)
+   */
+  template<typename T> T tryMaskBits81To128(T val) { return val; }
 
-  template<typename F>
-  get_corresponding_type_t<F>
-  projectType(F const &source){
-    using I = get_corresponding_type_t<F>;
-    F temp = source;
-    I* u = reinterpret_cast<I*>(&temp);
-    if( sizeof(F) == 16 && std::is_floating_point<F>::value){
-      // we must be using long double, which is 80 bit extended -- mask out higher bits
-      unsigned __int128 zero = 0;
-      *u = *u & (~zero >> 48);
-    }
-    return *u;
-  }
-
-  // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
-  // [pos][bias + 1][000...0]
-  template<typename T>
-  T
-  getFirstNorm(){
-    T retVal;
-    using t = get_corresponding_type_t<T>;
-    t val;
-    switch(sizeof(T)){
-    case 4:
-      {
-        val = (t)1 << mantBitWidth32;
-      }
-      break;
-    case 8:
-      {
-        val = (t)1 << mantBitWidth64;
-        projectType(val, retVal);
-      }
-      break;
-    case 16:
-      {
-        val = (t) 1 << mantBitWidth80;
-      }
-      break;
-    default:
-      // won't compile
-      int x = 0;
-      Q_UNUSED(x);
-    }
-    projectType(val, retVal);
-    return retVal;
-  }
-
-  template<typename T, typename U>
-  T
-  perturbFPTyped(T &src, U &tmp, int offset){
-    T retVal;
-    projectType(src, tmp);
-    tmp += offset;
-    projectType(tmp, retVal);
-    return retVal;
-  }
-
-  template<typename T>
-  T
-  perturbFP(T const &src, unsigned offset){ //negative offset with 0 may produce NAN
-    T ncSrc = src;
-    get_corresponding_type_t<T> tmp;
-    if(NO_SUBNORMALS && ncSrc == 0) ncSrc = getFirstNorm<T>();
-    T retVal = perturbFPTyped(ncSrc, tmp, offset);
-    return retVal;
-  }
-
-  //returns the exponent portion of floating point
-  template<typename T>
-  unsigned int
-  getExponent(T v){
-    unsigned retVal = -1;
-    get_corresponding_type_t<T> val;
-    projectType(v, val);
-    switch(sizeof(v)){
-    case 4:
-      {
-        retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
-      }
-      break;
-    case 8:
-      {
-        retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64);
-      }
-      break;
-    case 16:
-      {
-        retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
-      }
-      break;
-    default:
-      retVal = 0;
-    }
-    return retVal;
+  // This specialization masks all upper bits from 81-128 with zeros
+  template<>
+  inline unsigned __int128
+  tryMaskBits81To128(unsigned __int128 val) {
+    const unsigned __int128 zero = 0;
+    return val & (~zero >> 48);
   }
 
   /**
@@ -213,7 +125,10 @@ namespace FPHelpers {
   template<typename T>
   get_corresponding_type_t<T> reinterpret_convert(T val) {
     using ToType = get_corresponding_type_t<T>;
-    return *reinterpret_cast<ToType*>(&val);
+    ToType returnVal = *reinterpret_cast<ToType*>(&val);
+    // for converting from long double to unsigned __int128, mask out the upper
+    // unused bits
+    return tryMaskBits81To128(returnVal);
   }
 
   /** Convenience for reinterpret_convert().  Enforces the type to be integral */
@@ -233,16 +148,83 @@ namespace FPHelpers {
                   "Must pass a floating-point type to reinterpret as integral");
     return reinterpret_convert(val);
   }
+
+  // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
+  // [pos][bias + 1][000...0]
+  template<typename T>
+  T
+  getFirstNorm(){
+    static_assert(std::is_floating_point<T>::value,
+                  "getFirstNorm() only supports floating point");
+    using t = get_corresponding_type_t<T>;
+    t val;
+    switch(sizeof(T)){
+    case 4:
+      {
+        val = (t)1 << mantBitWidth32;
+      }
+      break;
+    case 8:
+      {
+        val = (t)1 << mantBitWidth64;
+      }
+      break;
+    case 16:
+      {
+        val = (t) 1 << mantBitWidth80;
+      }
+      break;
+    }
+    return reinterpret_int_as_float(val);
+  }
+
+  template<typename T>
+  T
+  perturbFP(T const &src, uint offset){ //negative offset with 0 may produce NAN
+    static_assert(std::is_floating_point<T>::value,
+                  "perturbFP() only supports floating point");
+    auto retval = reinterpret_float_as_int(src);
+    retval += offset;
+    return reinterpret_int_as_float(retval);
+  }
+
+  //returns the exponent portion of floating point
+  template<typename T>
+  uint
+  getExponent(T v){
+    uint retVal = -1;
+    auto val = reinterpret_float_as_int(v);
+    switch(sizeof(v)){
+    case 4:
+      {
+        retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
+      }
+      break;
+    case 8:
+      {
+        retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64);
+      }
+      break;
+    case 16:
+      {
+        retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
+      }
+      break;
+    default:
+      retVal = 0;
+    }
+    return retVal;
+  }
 }
 
 template<typename F>
 struct FPWrap{
   using I = get_corresponding_type_t<F>;
   F const &floatVal;
-  I intVal;
+  mutable I intVal;
   void
   update() const {
-    FPHelpers::projectType(floatVal, const_cast<FPWrap*>(this)->intVal);
+    intVal = FPHelpers::reinterpret_float_as_int(floatVal);
   }
 
   FPWrap(F const &val):floatVal(val){}
@@ -301,7 +283,7 @@ public:
   Vector<T>
   operator*(T const &rhs){
     Vector<T> retVal(size());
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       retVal[x] = data[x] * rhs;
     }
     return retVal;
@@ -331,7 +313,7 @@ public:
   bool
   operator==(Vector<T> const &b){
     bool retVal = true;
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       if(data[x] != b.data[x]){
         retVal = false;
         break;
@@ -363,7 +345,7 @@ public:
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
     shuffle(seq.begin(), seq.end(), std::default_random_engine(RAND_SEED));
     //do pairwise swap
-    for(int i = 0; i < size(); i += 2){
+    for(uint i = 0; i < size(); i += 2){
       retVal[seq[i]] = data[seq[i+1]];
       retVal[seq[i+1]] = -data[seq[i]];
     }
@@ -401,7 +383,7 @@ public:
   Vector<T>
   operator-(Vector<T> const &rhs) const {
     Vector<T> retVal(size());
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       retVal[x] = data[x] - rhs.data[x];
     }
     return retVal;
@@ -411,8 +393,9 @@ public:
   BitDistance(Vector<T> const &rhs) const {
     typedef unsigned __int128 itype;
     itype retVal;
-    for(int i = 0; i < size(); ++i){
-      retVal += std::labs((itype)FPWrap<long double>((long double)data[i]).intVal - FPWrap<T>((long double)rhs.data[i]).intVal);
+    for(uint i = 0; i < size(); ++i){
+      retVal += std::labs((itype)FPWrap<long double>((long double)data[i]).intVal -
+                          FPWrap<T>((long double)rhs.data[i]).intVal);
     }
     return retVal;
   }
@@ -422,7 +405,7 @@ public:
   T
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
-    for(int x = 0; x < size(); ++x){
+    for(uint x = 0; x < size(); ++x){
       distance += fabs(data[x] - rhs.data[x]);
     }
     return distance;
@@ -444,9 +427,6 @@ public:
   template<typename F, class C>
   void
   reduce(C &cont, F const &fun) const {
-    //    printOnce(__FUNCTION__, &cont.data()[0]);
-
-    T retVal;
     if(sortType == lt || sortType == gt){
       if(sortType == lt)
         std::sort(cont.begin(), cont.end(),
@@ -459,8 +439,7 @@ public:
   }
 
   void
-  setSort(sort_t st = def){sortType = st;}
-  //inner product (dot product)
+  setSort(sort_t st = def) { sortType = st; }
 
   T
   operator^(Vector<T> const &rhs) const {
@@ -471,7 +450,7 @@ public:
       sum = std::inner_product(data.begin(), data.end(), rhs.data.begin(), (T)0.0);
     }else{
       /* std::for_each(prods.begin(), prods.end(), [&](T i){i = 0.0;}); */
-      for(int i = 0; i < size(); ++i){
+      for(uint i = 0; i < size(); ++i){
         sum += data[i] * rhs.data[i];
       }
       /* for(auto j:prods){ */
@@ -492,7 +471,6 @@ public:
   }
 
   T LInfDistance(Vector<T> const &rhs) const {
-    T retVal;
     auto diff = operator-(rhs);
     return diff.LInfNorm();
   }
@@ -588,8 +566,8 @@ public:
   bool
   operator==(Matrix<T> const &rhs){
     bool retVal = true;
-    for(int x = 0; x < data.size(); ++x){
-      for(int y = 0; y < data[0].size(); ++y){
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y = 0; y < data[0].size(); ++y){
         if(data[x][y] != rhs.data[x][y]){
           info_stream << "in: " << __func__ << std::endl;
           info_stream << "for x,y: " << x << ":" << y << std::endl;
@@ -605,8 +583,8 @@ public:
   Matrix<T>
   operator*(T const &sca){
     Matrix<T> retVal(data.size(), data[0].size());
-    for(int x = 0; x < data.size(); ++x){
-      for(int y =0; y < data[0].size(); ++y){
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y =0; y < data[0].size(); ++y){
         retVal.data[x][y] = data[x][y] * sca;
       }
     }
@@ -617,9 +595,9 @@ public:
   Matrix<T>
   operator*(Matrix<T> const &rhs){
     Matrix<T> retVal(data.size(), rhs.data[0].size());
-    for(int bcol = 0; bcol < rhs.data[0].size(); ++bcol){
-      for(int x = 0; x < data.size(); ++x){
-        for(int y = 0; y < data[0].size(); ++y){
+    for(uint bcol = 0; bcol < rhs.data[0].size(); ++bcol){
+      for(uint x = 0; x < data.size(); ++x){
+        for(uint y = 0; y < data[0].size(); ++y){
           retVal.data[x][bcol] += data[x][y] * rhs.data[y][bcol];
         }
       }
@@ -641,8 +619,8 @@ public:
   Matrix<T>
   Identity(size_t dims){
     Matrix<T> retVal(dims, dims);
-    for(int x = 0; x < dims; ++x){
-      for(int y =0; y < dims; ++y){
+    for(size_t x = 0; x < dims; ++x){
+      for(size_t y =0; y < dims; ++y){
         if(x == y) retVal.data[x][y] = 1;
         else retVal.data[x][y] = 0;
       }

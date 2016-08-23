@@ -24,8 +24,6 @@ public:
       T a = std::get<0>(input);
       T b = std::get<1>(input);
       T c = std::get<2>(input);
-      T dist = (a * c) + (b * c);
-      T undist = (a + b) * c;
       valuesDistributed.push_back((a * c) + (b * c));
       valuesUndistributed.push_back((a + b) * c);
       QFPHelpers::info_stream << std::setw(8);
