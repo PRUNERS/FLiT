@@ -20,6 +20,11 @@
 #define Q_UNUSED(x) (void)x
 #endif
 
+#ifdef __CUDA__
+#include <cuda.h>
+#include <thrust/device_vector>
+#include <thrust/host_vector>
+#endif
 
 namespace QFPHelpers {
 
@@ -31,30 +36,30 @@ void printOnce(std::string, void*);
 
 // returns a bitlength equivalent unsigned type for floats
 // and a bitlength equivalent floating type for integral types
-template<typename T>
-struct get_corresponding_type {
-  using type = typename std::conditional_t<
-    std::is_floating_point<T>::value && sizeof(T) == 4, uint32_t,
-    std::conditional_t<
-      std::is_floating_point<T>::value && sizeof(T) == 8, uint64_t,
-    std::conditional_t<
-      std::is_floating_point<T>::value && sizeof(T) == 16, unsigned __int128,
-    std::conditional_t<
-      std::is_integral<T>::value && sizeof(T) == sizeof(float), float,
-    std::conditional_t<
-      std::is_integral<T>::value && sizeof(T) == sizeof(double), double,
-    std::conditional_t<
-      std::is_integral<T>::value && sizeof(T) == sizeof(long double), long double,
-    std::conditional_t<
-      std::is_same<T, __int128>::value && sizeof(long double) == 16, long double,
-    std::conditional_t<
-      std::is_same<T, unsigned __int128>::value && sizeof(long double) == 16, long double,
-      void
-    >>>>>>>>;
-};
+// template<typename T>
+// struct get_corresponding_type {
+//   using type = typename std::conditional_t<
+//     std::is_floating_point<T>::value && sizeof(T) == 4, uint32_t,
+//     std::conditional_t<
+//       std::is_floating_point<T>::value && sizeof(T) == 8, uint64_t,
+//     std::conditional_t<
+//       std::is_floating_point<T>::value && sizeof(T) == 16, unsigned __int128,
+//     std::conditional_t<
+//       std::is_integral<T>::value && sizeof(T) == sizeof(float), float,
+//     std::conditional_t<
+//       std::is_integral<T>::value && sizeof(T) == sizeof(double), double,
+//     std::conditional_t<
+//       std::is_integral<T>::value && sizeof(T) == sizeof(long double), long double,
+//     std::conditional_t<
+//       std::is_same<T, __int128>::value && sizeof(long double) == 16, long double,
+//     std::conditional_t<
+//       std::is_same<T, unsigned __int128>::value && sizeof(long double) == 16, long double,
+//       void
+//     >>>>>>>>;
+// };
 
-template <typename T>
-using get_corresponding_type_t = typename get_corresponding_type<T>::type;
+// template <typename T>
+// using get_corresponding_type_t = typename get_corresponding_type<T>::type;
 
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
@@ -92,6 +97,30 @@ namespace FPHelpers {
     return val & (~zero >> 48);
   }
 
+  // template <typename T>
+  // int
+  // swap_float_int(T val){
+  //   return *reinterpret_cast<int*>(&val);
+  // }
+
+  auto
+  swap_float_int(unsigned int val) -> float;
+  
+  auto
+  swap_float_int(unsigned long val) -> double;
+
+  auto
+  swap_float_int(unsigned __int128 val) -> long double;
+
+  auto
+  swap_float_int(float val) -> unsigned int;
+
+  auto
+  swap_float_int(double val) -> unsigned long;
+
+  auto
+  swap_float_int(long double val) -> unsigned __int128;
+
   /**
    * Reinterpret float to integral or integral to float
    * 
@@ -110,128 +139,129 @@ namespace FPHelpers {
    *
    * @sa reinterpret_int_as_float, reinterpret_float_as_int
    */
-  template<typename T>
-  get_corresponding_type_t<T> reinterpret_convert(T val) {
-    using ToType = get_corresponding_type_t<T>;
-    ToType returnVal = *reinterpret_cast<ToType*>(&val);
-    // for converting from long double to unsigned __int128, mask out the upper
-    // unused bits
-    return tryMaskBits81To128(returnVal);
-  }
+  /* template<typename T> */
+  /* get_corresponding_type_t<T> reinterpret_convert(T val) { */
+  /*   using ToType = get_corresponding_type_t<T>; */
+  /*   ToType returnVal = *reinterpret_cast<ToType*>(&val); */
+  /*   // for converting from long double to unsigned __int128, mask out the upper */
+  /*   // unused bits */
+  /*   return tryMaskBits81To128(returnVal); */
+  /* } */
 
-  /** Convenience for reinterpret_convert().  Enforces the type to be integral */
-  template<typename I>
-  decltype(auto) reinterpret_int_as_float(I val) {
-    static_assert(std::is_integral<I>::value
-                    || std::is_same<I, __int128>::value
-                    || std::is_same<I, unsigned __int128>::value,
-                  "Must pass an integral type to reinterpret as floating-point");
-    return reinterpret_convert(val);
-  }
+  /* /\** Convenience for reinterpret_convert().  Enforces the type to be integral *\/ */
+  /* template<typename I> */
+  /* decltype(auto) reinterpret_int_as_float(I val) { */
+  /*   static_assert(std::is_integral<I>::value */
+  /*                   || std::is_same<I, __int128>::value */
+  /*                   || std::is_same<I, unsigned __int128>::value, */
+  /*                 "Must pass an integral type to reinterpret as floating-point"); */
+  /*   return reinterpret_convert(val); */
+  /* } */
 
-  /** Convenience for reinterpret_convert().  Enforces the type to be floating-point */
-  template<typename F>
-  decltype(auto) reinterpret_float_as_int(F val) {
-    static_assert(std::is_floating_point<F>::value,
-                  "Must pass a floating-point type to reinterpret as integral");
-    return reinterpret_convert(val);
-  }
+  /* /\** Convenience for reinterpret_convert().  Enforces the type to be floating-point *\/ */
+  /* template<typename F> */
+  /* decltype(auto) reinterpret_float_as_int(F val) { */
+  /*   static_assert(std::is_floating_point<F>::value, */
+  /*                 "Must pass a floating-point type to reinterpret as integral"); */
+  /*   return reinterpret_convert(val); */
+  /* } */
 
-  // the first normalized number > 0 (the smallest positive) -- can be obtained from <float>
-  // [pos][bias + 1][000...0]
-  template<typename T>
-  T
-  getFirstNorm(){
-    static_assert(std::is_floating_point<T>::value,
-                  "getFirstNorm() only supports floating point");
-    using t = get_corresponding_type_t<T>;
-    t val;
-    switch(sizeof(T)){
-    case 4:
-      {
-        val = (t)1 << mantBitWidth32;
-      }
-      break;
-    case 8:
-      {
-        val = (t)1 << mantBitWidth64;
-      }
-      break;
-    case 16:
-      {
-        val = (t) 1 << mantBitWidth80;
-      }
-      break;
-    }
-    return reinterpret_int_as_float(val);
-  }
+  /* // the first normalized number > 0 (the smallest positive) -- can be obtained from <float> */
+  /* // [pos][bias + 1][000...0] */
+  /* template<typename T> */
+  /* T */
+  /* getFirstNorm(){ */
+  /*   static_assert(std::is_floating_point<T>::value, */
+  /*                 "getFirstNorm() only supports floating point"); */
+  /*   using t = get_corresponding_type_t<T>; */
+  /*   t val; */
+  /*   switch(sizeof(T)){ */
+  /*   case 4: */
+  /*     { */
+  /*       val = (t)1 << mantBitWidth32; */
+  /*     } */
+  /*     break; */
+  /*   case 8: */
+  /*     { */
+  /*       val = (t)1 << mantBitWidth64; */
+  /*     } */
+  /*     break; */
+  /*   case 16: */
+  /*     { */
+  /*       val = (t) 1 << mantBitWidth80; */
+  /*     } */
+  /*     break; */
+  /*   } */
+  /*   return reinterpret_int_as_float(val); */
+  /* } */
 
   template<typename T>
   T
   perturbFP(T const &src, uint offset){ //negative offset with 0 may produce NAN
     static_assert(std::is_floating_point<T>::value,
                   "perturbFP() only supports floating point");
-    auto retval = reinterpret_float_as_int(src);
+    auto retval = swap_float_int(src);
     retval += offset;
-    return reinterpret_int_as_float(retval);
+    return swap_float_int(retval);
   }
 
   //returns the exponent portion of floating point
-  template<typename T>
-  uint
-  getExponent(T v){
-    uint retVal = -1;
-    auto val = reinterpret_float_as_int(v);
-    switch(sizeof(v)){
-    case 4:
-      {
-        retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32);
-      }
-      break;
-    case 8:
-      {
-        retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64);
-      }
-      break;
-    case 16:
-      {
-        retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80);
-      }
-      break;
-    default:
-      retVal = 0;
-    }
-    return retVal;
-  }
-}
+/*   template<typename T> */
+/*   uint */
+/*   getExponent(T v){ */
+/*     uint retVal = -1; */
+/*     auto val = reinterpret_float_as_int(v); */
+/*     switch(sizeof(v)){ */
+/*     case 4: */
+/*       { */
+/*         retVal = ((val >> (32 - expBitWidth32 - 1) & 0x7F) - bias32); */
+/*       } */
+/*       break; */
+/*     case 8: */
+/*       { */
+/*         retVal = ((val >> (64 - expBitWidth64 - 1) & 0x7FF) - bias64); */
+/*       } */
+/*       break; */
+/*     case 16: */
+/*       { */
+/*         retVal = ((val >> (80 - expBitWidth80 - 1) & 0x7FFF) - bias80); */
+/*       } */
+/*       break; */
+/*     default: */
+/*       retVal = 0; */
+/*     } */
+/*     return retVal; */
+/*   } */
+/* } */
 
-template<typename F>
-struct FPWrap{
-  using I = get_corresponding_type_t<F>;
-  F const &floatVal;
-  mutable I intVal;
-  void
-  update() const {
-    intVal = FPHelpers::reinterpret_float_as_int(floatVal);
-  }
+/* template<typename F> */
+/* struct FPWrap{ */
+/*   using I = get_corresponding_type_t<F>; */
+/*   F const &floatVal; */
+/*   mutable I intVal; */
+/*   void */
+/*   update() const { */
+/*     intVal = FPHelpers::reinterpret_float_as_int(floatVal); */
+/*   } */
 
-  FPWrap(F const &val):floatVal(val){}
-  template<typename U>
-  friend std::ostream& operator<<(std::ostream& os, FPWrap<U> const &w);
-};
+/*   FPWrap(F const &val):floatVal(val){} */
+/*   template<typename U> */
+/*   friend std::ostream& operator<<(std::ostream& os, FPWrap<U> const &w); */
+/* }; */
 
-extern std::mutex ostreamMutex;
+// extern std::mutex ostreamMutex;
 
-template <typename U>
-std::ostream& operator<<(std::ostream& os, const FPWrap<U> &w){
-  w.update();
-  ostreamMutex.lock();
-  std::ios_base::fmtflags f = os.flags();
-  //FIXME can't handle 128 bit values for ostream operations
-  os << std::hex << w.intVal;
-  os.flags(f);
-  ostreamMutex.unlock();
-  return os;
+// template <typename U>
+// std::ostream& operator<<(std::ostream& os, const FPWrap<U> &w){
+//   w.update();
+//   ostreamMutex.lock();
+//   std::ios_base::fmtflags f = os.flags();
+//   //FIXME can't handle 128 bit values for ostream operations
+//   os << std::hex << w.intVal;
+//   os.flags(f);
+//   ostreamMutex.unlock();
+//   return os;
+//}
 }
 
 enum sort_t{
@@ -241,8 +271,8 @@ enum sort_t{
    def //default (manual unsorted)
 };
 
-std::string
-getSortName(sort_t val);
+// std::string
+// getSortName(sort_t val);
 
 template<typename T>
 class Matrix;
@@ -377,16 +407,16 @@ public:
     return retVal;
   }
 
-  unsigned __int128
-  BitDistance(Vector<T> const &rhs) const {
-    typedef unsigned __int128 itype;
-    itype retVal;
-    for(uint i = 0; i < size(); ++i){
-      retVal += std::labs((itype)FPWrap<long double>((long double)data[i]).intVal -
-                          FPWrap<T>((long double)rhs.data[i]).intVal);
-    }
-    return retVal;
-  }
+  /* unsigned __int128 */
+  /* BitDistance(Vector<T> const &rhs) const { */
+  /*   typedef unsigned __int128 itype; */
+  /*   itype retVal; */
+  /*   for(uint i = 0; i < size(); ++i){ */
+  /*     retVal += std::labs((itype)FPWrap<long double>((long double)data[i]).intVal - */
+  /*                         FPWrap<T>((long double)rhs.data[i]).intVal); */
+  /*   } */
+  /*   return retVal; */
+  /* } */
 
   //may be more useful than L2 as there is no square/sqrt
   //op to lose bits
@@ -652,6 +682,5 @@ public:
 };
 
 }
-
 
 #endif

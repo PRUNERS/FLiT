@@ -37,19 +37,51 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
   return os;
 }
 
-std::string
-getSortName(sort_t val){
-  switch(val){
-  case lt:
-    return "lt";
-  case gt:
-    return "gt";
-  case bi:
-    return "bi";
-  case def:
-    return "us";
-  default:
-    return "something bad happened, undefined sort type";
+namespace FPHelpers{
+    auto
+  swap_float_int(unsigned int val) -> float{
+    return *reinterpret_cast<float*>(&val);
+  }
+
+  auto
+  swap_float_int(unsigned long val) -> double{
+     return *reinterpret_cast<double*>(&val);
+  }
+
+  auto
+  swap_float_int(unsigned __int128 val) -> long double{
+    return *reinterpret_cast<long double*>(&val);
+  }
+
+  auto
+  swap_float_int(float val) -> unsigned int{
+    return *reinterpret_cast<unsigned int*>(&val);
+  }
+
+  auto
+  swap_float_int(double val) -> unsigned long{
+    return *reinterpret_cast<unsigned long*>(&val);
+  }
+
+  auto
+  swap_float_int(long double val) -> unsigned __int128{
+    return *reinterpret_cast<unsigned __int128*>(&val);
   }
 }
+
+// std::string
+// getSortName(sort_t val){
+//   switch(val){
+//   case lt:
+//     return "lt";
+//   case gt:
+//     return "gt";
+//   case bi:
+//     return "bi";
+//   case def:
+//     return "us";
+//   default:
+//     return "something bad happened, undefined sort type";
+//   }
+// }
 }
