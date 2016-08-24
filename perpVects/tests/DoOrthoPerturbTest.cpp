@@ -43,7 +43,8 @@ public:
       for(decltype(iters) i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
 	//        p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
-	p = std::nextafter(p, p+1);
+	
+	p = std::nextafter(p, std::numeric_limits<T>::max());
         // Added this for force watchpoint hits every cycle (well, two).  We
         // shouldn't really be hitting float min
         watchPoint = FLT_MIN;
