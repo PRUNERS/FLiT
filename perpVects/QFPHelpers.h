@@ -103,23 +103,23 @@ namespace FPHelpers {
   //   return *reinterpret_cast<int*>(&val);
   // }
 
-  auto
-  swap_float_int(unsigned int val) -> float;
+  float
+  swap_float_int(uint32_t val);
   
-  auto
-  swap_float_int(unsigned long val) -> double;
+  double
+  swap_float_int(unsigned long val);
 
-  auto
-  swap_float_int(unsigned __int128 val) -> long double;
+  long double
+  swap_float_int(unsigned __int128 val);
 
-  auto
-  swap_float_int(float val) -> unsigned int;
+  uint32_t 
+  swap_float_int(float val);
 
-  auto
-  swap_float_int(double val) -> unsigned long;
+  unsigned long
+  swap_float_int(double val);
 
-  auto
-  swap_float_int(long double val) -> unsigned __int128;
+  unsigned __int128
+  swap_float_int(long double val);
 
   /**
    * Reinterpret float to integral or integral to float

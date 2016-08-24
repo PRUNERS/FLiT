@@ -38,33 +38,33 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
 }
 
 namespace FPHelpers{
-    auto
-  swap_float_int(unsigned int val) -> float{
+  float
+  swap_float_int(uint32_t val){
     return *reinterpret_cast<float*>(&val);
   }
 
-  auto
-  swap_float_int(unsigned long val) -> double{
+  double
+  swap_float_int(unsigned long val){
      return *reinterpret_cast<double*>(&val);
   }
 
-  auto
-  swap_float_int(unsigned __int128 val) -> long double{
+  long double
+  swap_float_int(unsigned __int128 val){
     return *reinterpret_cast<long double*>(&val);
   }
 
-  auto
-  swap_float_int(float val) -> unsigned int{
-    return *reinterpret_cast<unsigned int*>(&val);
+  uint32_t
+  swap_float_int(float val){
+    return *reinterpret_cast<uint32_t*>(&val);
   }
 
-  auto
-  swap_float_int(double val) -> unsigned long{
+  unsigned long
+  swap_float_int(double val){
     return *reinterpret_cast<unsigned long*>(&val);
   }
 
-  auto
-  swap_float_int(long double val) -> unsigned __int128{
+  unsigned __int128
+  swap_float_int(long double val){
     return *reinterpret_cast<unsigned __int128*>(&val);
   }
 }
