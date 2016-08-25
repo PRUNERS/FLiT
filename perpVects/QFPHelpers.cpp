@@ -44,7 +44,7 @@ namespace FPHelpers{
   }
 
   double
-  swap_float_int(unsigned long val){
+  swap_float_int(uint64_t val){
      return *reinterpret_cast<double*>(&val);
   }
 
@@ -58,9 +58,9 @@ namespace FPHelpers{
     return *reinterpret_cast<uint32_t*>(&val);
   }
 
-  unsigned long
+  uint64_t
   swap_float_int(double val){
-    return *reinterpret_cast<unsigned long*>(&val);
+    return *reinterpret_cast<uint64_t*>(&val);
   }
 
   unsigned __int128
