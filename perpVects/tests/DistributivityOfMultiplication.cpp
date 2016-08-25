@@ -1,5 +1,5 @@
-#include "testBase.h"
-#include "QFPHelpers.h"
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
 
 #include <cmath>
 #include <iomanip>

@@ -7,8 +7,8 @@
 #include <chrono>
 #include <list>
 
-#include "testBase.h"
-#include "QFPHelpers.h"
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
 
 
 using namespace QFPHelpers;

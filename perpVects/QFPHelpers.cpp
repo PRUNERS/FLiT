@@ -2,7 +2,7 @@
 // they utilize the watch data for sensitive points
 // of computation.
 
-#include "QFPHelpers.h"
+#include "QFPHelpers.hpp"
 
 #include <iostream>
 #include <unordered_map>
@@ -69,19 +69,4 @@ namespace FPHelpers{
   }
 }
 
-// std::string
-// getSortName(sort_t val){
-//   switch(val){
-//   case lt:
-//     return "lt";
-//   case gt:
-//     return "gt";
-//   case bi:
-//     return "bi";
-//   case def:
-//     return "us";
-//   default:
-//     return "something bad happened, undefined sort type";
-//   }
-// }
 }
