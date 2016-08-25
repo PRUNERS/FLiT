@@ -3,7 +3,7 @@
 #include <map>
 #include <iostream>
 
-#include "QFPHelpers.h"
+#include "QFPHelpers.hpp"
 
 namespace UnitTests{
 
