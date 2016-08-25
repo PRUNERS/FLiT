@@ -3,8 +3,6 @@
 
 #include <cstring>
 #include <typeinfo>
-#include <future>
-#include <chrono>
 #include <list>
 
 #include "testBase.hpp"
@@ -58,23 +56,6 @@ outputResults(const QFPTest::resultType& scores){
   }
 }
 
-//typedef std::list<std::future<std::pair<int,int>>> future_collection_t;
-typedef std::list<std::future<QFPTest::resultType>> future_collection_t;
-typedef std::chrono::milliseconds const timeout_t;
-
-void checkFutures(future_collection_t& fc, const timeout_t& to,
-                  QFPTest::resultType& scores, bool getOne = false){
-  for(auto it=fc.begin(); it!=fc.end(); ++it){
-    if(it->wait_for(to) != std::future_status::timeout){
-      auto val = it->get();
-      // for(auto v : val) std::cout << v.first.first << std::endl;
-      scores.insert(val.begin(), val.end());
-      it = fc.erase(it);
-      if(getOne) return;
-    }
-  }
-}
-
 int
 main(int argc, char* argv[]){
 
@@ -96,9 +77,6 @@ main(int argc, char* argv[]){
               << std::endl;
     return 0;
   }
-  int DEGP; //degree of parallelism, or current tasks
-  loadIntFromEnv(DEGP, "DEGP", 3);
-  std::chrono::milliseconds const timeout (0);
 
   size_t iters = 200;
   size_t dim = 16;
@@ -129,23 +107,15 @@ main(int argc, char* argv[]){
     outputResults(scores);
   }else{
 
-    future_collection_t futures;
-
     QFPTest::testInput ip{iters, dim, ulp_inc, min, max};
     scores.clear();
     for(auto& t : TestBase::getTests()){
       auto plist = t.second->create();
       for(auto pt : plist){
-        while(static_cast<uint>(DEGP) == futures.size())
-          checkFutures(futures, timeout, scores, false);
-        futures.push_back(std::async(std::launch::async,
-                                     [pt,ip]{auto retVal =   (*pt)(ip);
-                                       delete pt; return retVal;}));
-        // auto score = (*pt)(ip);
-        // scores.insert(score.begin(), score.end());
+        auto score = (*pt)(ip);
+        scores.insert(score.begin(), score.end());
       }
     }
-    while(futures.size() > 0) checkFutures(futures, timeout, scores);
     outputResults(scores);
   }
 }
