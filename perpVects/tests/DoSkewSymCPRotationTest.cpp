@@ -1,5 +1,5 @@
-#include "testBase.h"
-#include "QFPHelpers.h"
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
 
 #include <cmath>
 #include <typeinfo>
@@ -50,7 +50,7 @@ public:
     }
     return {{
       {id, typeid(T).name()},
-	    {L1Score, LIScore}
+            {L1Score, LIScore}
     }};
   }
 };

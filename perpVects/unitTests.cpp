@@ -3,11 +3,12 @@
 #include <map>
 #include <iostream>
 
-#include "QFPHelpers.h"
+#include "QFPHelpers.hpp"
 
 namespace UnitTests{
 
   using namespace QFPHelpers;
+  using namespace QFPHelpers::FPHelpers;
 
   typedef std::pair<std::string, bool> results;
 
@@ -109,8 +110,10 @@ namespace UnitTests{
       info_stream << "V:" << std::endl << V << std::endl;
       info_stream << "expected:" << std::endl << expected << std::endl;
       info_stream << "output:" << std::endl << output << std::endl;
-      info_stream << "expected bits: " << std::hex << FPWrap<T>(expected) << std::endl;
-      info_stream << "output bits:" << std::hex << FPWrap<T>(output) << std::endl;
+      info_stream << "expected bits: " << std::hex <<
+        swap_float_int(expected) << std::endl;
+      info_stream << "output bits:" << std::hex <<
+        swap_float_int(output) << std::endl;
     }
     return{__func__, result};
   }
@@ -245,7 +248,8 @@ namespace UnitTests{
     int retVal = 0;
     std::map<std::string, bool> results;
     RunTests(results);
-    if(std::any_of(results.begin(), results.end(), [](UnitTests::results x){return x.second;})){
+    if(std::any_of(results.begin(), results.end(),
+                   [](UnitTests::results x){return x.second;})){
       for(auto i: results){
         std::cout << i.first << "\t" << i.second << std::endl;
       }

@@ -1,5 +1,5 @@
-#include "testBase.h"
-#include "QFPHelpers.h"
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
 
 #include <cmath>
 #include <typeinfo>
@@ -11,6 +11,8 @@ public:
   DoOrthoPerturbTest(std::string id):QFPTest::TestBase(id){}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+    using namespace QFPHelpers;
+    using namespace QFPHelpers::FPHelpers;
     auto iters = ti.iters;
     auto dim = ti.highestDim;
     size_t indexer = 0;
@@ -40,7 +42,9 @@ public:
       backup = p;
       for(decltype(iters) i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
-        p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
+        //        p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
+        
+        p = std::nextafter(p, std::numeric_limits<T>::max());
         // Added this for force watchpoint hits every cycle (well, two).  We
         // shouldn't really be hitting float min
         watchPoint = FLT_MIN;
@@ -58,11 +62,11 @@ public:
           // if falsely not detecting ortho, should be the dot prod
           if(i == 0) score += fabs(watchPoint); //a ^ b);  
         }
-        QFPHelpers::info_stream << "i:" << i << ":a[" << r << "] = " << a[r] << ", "
-                          << QFPHelpers::FPWrap<T>(a[r]) << " multiplier: "
-                          << b[r] << ", " << QFPHelpers::FPWrap<T>(b[r]) << " perp: "
-                          << isOrth << " dot prod: " << QFPHelpers::FPWrap<T>(a ^ b)
-                          << std::endl;
+        QFPHelpers::info_stream << "i:" << i << ":a[" << r << "] = " <<
+          a[r] << ", " << swap_float_int(a[r]) << " multiplier: " <<
+          b[r] << ", " << swap_float_int(b[r]) <<
+          " perp: " << isOrth << " dot prod: " <<
+          swap_float_int(a ^ b) << std::endl;
       }
       QFPHelpers::info_stream << "next dimension . . . " << std::endl;
       p = backup;
@@ -74,10 +78,12 @@ public:
     QFPHelpers::info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
     int cdim = 0;
     for(auto d: orthoCount){
-      QFPHelpers::info_stream << "For mod dim " << cdim << ", there were " << d
-                              << " ortho vectors, product magnitude (biased fp exp): "
-                              << QFPHelpers::FPHelpers::getExponent(a[cdim] * b[cdim])
-                              << std::endl;
+      int exp = 0;
+      std::frexp(a[cdim] * b[cdim], &exp);
+      QFPHelpers::info_stream << "For mod dim " << cdim <<
+        ", there were " << d <<
+        " ortho vectors, product magnitude (biased fp exp): " <<
+        exp << std::endl;
       cdim++;
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};
