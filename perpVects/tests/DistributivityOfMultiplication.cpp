@@ -48,7 +48,7 @@ std::vector<std::tuple<float,float,float>>
 DistributivityOfMultiplication<float>::testValues() {
   std::vector<std::tuple<float,float,float>> values;
   auto convert = [](uint32_t x) { return QFPHelpers::FPHelpers::
-				  swap_float_int(x); };
+                                  swap_float_int(x); };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -73,7 +73,7 @@ std::vector<std::tuple<double,double,double>>
 DistributivityOfMultiplication<double>::testValues() {
   std::vector<std::tuple<double,double,double>> values;
   auto convert = [](uint64_t x) { return QFPHelpers::FPHelpers::
-				  swap_float_int(x); };
+                                  swap_float_int(x); };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying

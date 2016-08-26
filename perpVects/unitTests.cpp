@@ -111,9 +111,9 @@ namespace UnitTests{
       info_stream << "expected:" << std::endl << expected << std::endl;
       info_stream << "output:" << std::endl << output << std::endl;
       info_stream << "expected bits: " << std::hex <<
-	swap_float_int(expected) << std::endl;
+        swap_float_int(expected) << std::endl;
       info_stream << "output bits:" << std::hex <<
-	swap_float_int(output) << std::endl;
+        swap_float_int(output) << std::endl;
     }
     return{__func__, result};
   }
@@ -249,7 +249,7 @@ namespace UnitTests{
     std::map<std::string, bool> results;
     RunTests(results);
     if(std::any_of(results.begin(), results.end(),
-		   [](UnitTests::results x){return x.second;})){
+                   [](UnitTests::results x){return x.second;})){
       for(auto i: results){
         std::cout << i.first << "\t" << i.second << std::endl;
       }

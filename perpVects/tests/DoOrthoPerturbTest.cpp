@@ -42,9 +42,9 @@ public:
       backup = p;
       for(decltype(iters) i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
-	//        p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
-	
-	p = std::nextafter(p, std::numeric_limits<T>::max());
+        //        p = QFPHelpers::FPHelpers::perturbFP(backup, i * ulp_inc);
+        
+        p = std::nextafter(p, std::numeric_limits<T>::max());
         // Added this for force watchpoint hits every cycle (well, two).  We
         // shouldn't really be hitting float min
         watchPoint = FLT_MIN;
@@ -63,10 +63,10 @@ public:
           if(i == 0) score += fabs(watchPoint); //a ^ b);  
         }
         QFPHelpers::info_stream << "i:" << i << ":a[" << r << "] = " <<
-	  a[r] << ", " << swap_float_int(a[r]) << " multiplier: " <<
-	  b[r] << ", " << swap_float_int(b[r]) <<
-	  " perp: " << isOrth << " dot prod: " <<
-	  swap_float_int(a ^ b) << std::endl;
+          a[r] << ", " << swap_float_int(a[r]) << " multiplier: " <<
+          b[r] << ", " << swap_float_int(b[r]) <<
+          " perp: " << isOrth << " dot prod: " <<
+          swap_float_int(a ^ b) << std::endl;
       }
       QFPHelpers::info_stream << "next dimension . . . " << std::endl;
       p = backup;
@@ -81,9 +81,9 @@ public:
       int exp = 0;
       std::frexp(a[cdim] * b[cdim], &exp);
       QFPHelpers::info_stream << "For mod dim " << cdim <<
-	", there were " << d <<
-	" ortho vectors, product magnitude (biased fp exp): " <<
-	exp << std::endl;
+        ", there were " << d <<
+        " ortho vectors, product magnitude (biased fp exp): " <<
+        exp << std::endl;
       cdim++;
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};

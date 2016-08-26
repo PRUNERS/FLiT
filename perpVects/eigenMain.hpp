@@ -220,7 +220,7 @@ inline void verify_impl(cond_t condition, const char *testname, const char *file
   auto fname = getFileNoEx(file);
   bool cond = condition.first != invert;
   // eigenResults.insert({{std::string(testname) + "_" + file + "_" + std::to_string(line), "f"},
-  // 	{(long double)cond, condition.second}});
+  //    {(long double)cond, condition.second}});
   if(eigenResults.find(fname) == eigenResults.end()){
     eigenResults_mutex.lock();
     eigenResults[fname];
@@ -229,7 +229,7 @@ inline void verify_impl(cond_t condition, const char *testname, const char *file
   auto& container = eigenResults[fname];
   // std::cout << "size of eigenResults " << file << " is: " << container.size() << std::endl;
   container.insert({{std::string(testname) + "_" + fname + "_" + std::to_string(line), "f"},
-  	{(long double)cond, condition.second}});
+        {(long double)cond, condition.second}});
   // std::cout << "container size is: " << container.size() << std::endl;
 
   // if (!condition)
@@ -256,10 +256,10 @@ inline void verify_impl(bool condition, const char *testname, const char *file,
   }
   auto& container = eigenResults[fname];
   // eigenResults.insert({{std::string(testname) + "_" + file + "_" + std::to_string(line), "f"},
-  // 	{(long double)condition, 0.0}});
+  //    {(long double)condition, 0.0}});
   // std::cout << "size of eigenResults " << file << " is: " << container.size() << std::endl;
   container.insert({{std::string(testname) + "_" + fname + "_" + std::to_string(line), "f"},
-  	{(long double)condition, 0.0}});
+        {(long double)condition, 0.0}});
   // std::cout << "container size is: " << container.size() << std::endl;
 }
 
@@ -281,7 +281,7 @@ inline void verify_impl(bool condition, const char *testname, const char *file,
 #define VERIFY_IS_UNITARY(a) VERIFY2(test_isUnitary(a))
 
 #define CALL_SUBTEST(FUNC) do { \
-    g_test_stack[__FILE__].push_back(EI_PP_MAKE_STRING(FUNC));	\
+    g_test_stack[__FILE__].push_back(EI_PP_MAKE_STRING(FUNC));  \
     FUNC; \
     g_test_stack[__FILE__].pop_back(); \
   } while (0) \

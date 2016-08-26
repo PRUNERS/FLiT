@@ -29,25 +29,11 @@
 namespace QFPHelpers {
 
 const int RAND_SEED = 1;
-const bool NO_SUBNORMALS = true;
 extern thread_local InfoStream info_stream;
-
-void printOnce(std::string, void*);
-
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
 namespace FPHelpers {
-  const unsigned expBitWidth32 = 8;
-  const unsigned expBitWidth64 = 11;
-  const unsigned expBitWidth80 = 15;
-  const unsigned mantBitWidth32 = FLT_MANT_DIG; //32 - expBitWidth32 - 1;
-  const unsigned mantBitWidth64 = DBL_MANT_DIG; //64 - expBitWidth64 - 1;
-  const unsigned mantBitWidth80 = LDBL_MANT_DIG; //128 - expBitWidth80 - 1;
-  const unsigned bias32 = (1 << (expBitWidth32 - 1)) - 1;
-  const unsigned bias64 = (1 << (expBitWidth64 - 1)) - 1;
-  const unsigned bias80 = (1 << (expBitWidth80 - 1)) - 1;
-
   /**
    * Internal method used by reinterpret_convert<> to mask the top bits of an
    * unsigned __int128 after reinterpreting from an 80-bit long double.
@@ -60,40 +46,38 @@ namespace FPHelpers {
    * some compilers are leaving garbage in the unused bits (net defined
    * behavior)
    */
-  template<typename T> T tryMaskBits81To128(T val) { return val; }
 
-  // This specialization masks all upper bits from 81-128 with zeros
-  template<>
-  inline unsigned __int128
-  tryMaskBits81To128(unsigned __int128 val) {
-    const unsigned __int128 zero = 0;
-    return val & (~zero >> 48);
+  inline float
+  swap_float_int(uint32_t val){
+    return *reinterpret_cast<float*>(&val);
   }
 
-  // template <typename T>
-  // int
-  // swap_float_int(T val){
-  //   return *reinterpret_cast<int*>(&val);
-  // }
+  inline double
+  swap_float_int(uint64_t val){
+     return *reinterpret_cast<double*>(&val);
+  }
 
-  float
-  swap_float_int(uint32_t val);
-  
-  double
-  swap_float_int(uint64_t val);
+  inline long double
+  swap_float_int(unsigned __int128 val){
+    return *reinterpret_cast<long double*>(&val);
+  }
 
-  long double
-  swap_float_int(unsigned __int128 val);
+  inline uint32_t
+  swap_float_int(float val){
+    return *reinterpret_cast<uint32_t*>(&val);
+  }
 
-  uint32_t 
-  swap_float_int(float val);
+  inline uint64_t
+  swap_float_int(double val){
+    return *reinterpret_cast<uint64_t*>(&val);
+  }
 
-  uint64_t
-  swap_float_int(double val);
-
-  unsigned __int128
-  swap_float_int(long double val);
-
+  inline unsigned __int128
+  swap_float_int(long double val){
+    const unsigned __int128 zero = 0;
+    const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
+    return temp & (~zero >> 48);
+  }
 }
 
 template<typename T>
@@ -178,12 +162,13 @@ public:
   // 1 2  3  4 5
   // may produce
   // 3 4 -1 -2 0
+
   Vector<T>
   genOrthoVector(){
     Vector<T> retVal(size());
     std::vector<T> seq(size());
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
-    shuffle(seq.begin(), seq.end(), std::default_random_engine(RAND_SEED));
+    shuffle(seq.begin(), seq.end(), std::mt19937(RAND_SEED));
     //do pairwise swap
     for(uint i = 0; i < size(); i += 2){
       retVal[seq[i]] = data[seq[i+1]];
@@ -432,8 +417,6 @@ public:
 
   Vector<T>
   operator*(Vector<T> const &v) const {
-    info_stream << "in Matrix multiply operator with matrix:" << std::endl;
-    info_stream << (*this);
     Vector<T> retVal(data.size());
     int resI = 0;
     for(auto row: data){
@@ -468,3 +451,4 @@ public:
 }
 
 #endif
+ 

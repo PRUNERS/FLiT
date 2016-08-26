@@ -26,7 +26,7 @@ public:
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
     //crit =r2[0];
     auto r3 = (c - r1 * (c ^ r1) -
-	       r2 * (c ^ r2)).getUnitVector();
+               r2 * (c ^ r2)).getUnitVector();
     //crit = r3[0];
     T o12 = r1 ^ r2;
     //    crit = o12;
@@ -46,7 +46,7 @@ public:
       QFPHelpers::info_stream << "r3: " << r3 << std::endl;
       QFPHelpers::info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
       QFPHelpers::info_stream << "score (bits): " <<
-	QFPHelpers::FPHelpers::swap_float_int(score) << std::endl;
+        QFPHelpers::FPHelpers::swap_float_int(score) << std::endl;
       QFPHelpers::info_stream << "score (dec) :" << score << std::endl;
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};

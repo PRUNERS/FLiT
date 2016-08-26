@@ -3,7 +3,6 @@
 
 #include <cstring>
 #include <typeinfo>
-#include <list>
 
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
@@ -83,8 +82,6 @@ main(int argc, char* argv[]){
   size_t ulp_inc = 1;
   float min = -6.0;
   float max = 6.0;
-  float theta = M_PI;
-  Q_UNUSED(theta);
 
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
