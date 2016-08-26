@@ -1,8 +1,8 @@
 #ifndef TRIANGLE_HPP
 #define TRIANGLE_HPP
 
-#include "testBase.h"
-#include "QFPHelpers.h"
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
 
 #include <cmath>
 #include <typeinfo>

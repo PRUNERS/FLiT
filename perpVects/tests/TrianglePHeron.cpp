@@ -1,5 +1,5 @@
 #include "Triangle.hpp"
-#include "QFPHelpers.h"
+#include "QFPHelpers.hpp"
 
 #include <cmath>
 

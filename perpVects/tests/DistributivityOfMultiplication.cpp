@@ -1,5 +1,5 @@
-#include "testBase.h"
-#include "QFPHelpers.h"
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
 
 #include <cmath>
 #include <iomanip>
@@ -47,7 +47,8 @@ template<>
 std::vector<std::tuple<float,float,float>>
 DistributivityOfMultiplication<float>::testValues() {
   std::vector<std::tuple<float,float,float>> values;
-  auto convert = [](uint32_t x) { return QFPHelpers::FPHelpers::reinterpret_int_as_float(x); };
+  auto convert = [](uint32_t x) { return QFPHelpers::FPHelpers::
+                                  swap_float_int(x); };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -71,7 +72,8 @@ template<>
 std::vector<std::tuple<double,double,double>>
 DistributivityOfMultiplication<double>::testValues() {
   std::vector<std::tuple<double,double,double>> values;
-  auto convert = [](uint64_t x) { return QFPHelpers::FPHelpers::reinterpret_int_as_float(x); };
+  auto convert = [](uint64_t x) { return QFPHelpers::FPHelpers::
+                                  swap_float_int(x); };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -129,7 +131,7 @@ DistributivityOfMultiplication<long double>::testValues() {
     unsigned __int128 val = left_half;
     val = val << 64;
     val += right_half;
-    return QFPHelpers::FPHelpers::reinterpret_int_as_float(val);
+    return QFPHelpers::FPHelpers::swap_float_int(val);
   };
 
   // Put in canned values of previously found diverging inputs

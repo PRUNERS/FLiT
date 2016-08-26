@@ -2,54 +2,27 @@
 // they utilize the watch data for sensitive points
 // of computation.
 
-#include "QFPHelpers.h"
+#include "QFPHelpers.hpp"
 
 #include <iostream>
-#include <unordered_map>
 #include <mutex>
 
 namespace QFPHelpers {
 
-void printOnce(std::string s, void* addr){
-  return;
-  static std::unordered_map<void*, std::string> seen;
-  if(seen.count(addr) == 0){
-    seen.insert({addr, s});
-    std::cout << s << " at: " << addr << std::endl;
-    asm("int $3");
-  }
-}
-
 thread_local InfoStream info_stream;
 std::mutex ostreamMutex;
 
-std::ostream& operator<<(std::ostream& os, const unsigned __int128 i) {
+std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
   uint64_t hi = i >> 64;
   uint64_t lo = (uint64_t)i;
+  ostreamMutex.lock();
+  auto bflags = os.flags();
+  os.flags(std::ios::hex | std::ios::showbase);
   os << hi << lo;
+  os.flags( bflags );
+  ostreamMutex.unlock();
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const unsigned __int128 &i){
-  uint64_t hi = i >> 64;
-  uint64_t lo = (uint64_t)i;
-  os << hi << lo;
-  return os;
 }
-
-std::string
-getSortName(sort_t val){
-  switch(val){
-  case lt:
-    return "lt";
-  case gt:
-    return "gt";
-  case bi:
-    return "bi";
-  case def:
-    return "us";
-  default:
-    return "something bad happened, undefined sort type";
-  }
-}
-}
+ 

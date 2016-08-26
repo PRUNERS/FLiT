@@ -1,12 +1,12 @@
 #CC := clang++
-CC := g++
+CC := g++-4.9
 FFLAGS ?=
 TARGET ?= runTests
 
 CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
 
 CPPFLAGS += $(FFLAGS)
-CPPFLAGS += -std=c++14
+CPPFLAGS += -std=c++11
 CPPFLAGS += -Wno-shift-count-overflow
 CPPFLAGS += -Wall
 CPPFLAGS += -Wextra

@@ -1,6 +1,6 @@
 //this is the base instantiation for tests
 
-#include "testBase.h"
+#include "testBase.hpp"
 #include "../gdb/inst/inst"
 
 #include <stack>

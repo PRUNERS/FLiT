@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "QFPHelpers.h"
+#include "QFPHelpers.hpp"
 
 namespace QFPTest {
 
@@ -92,12 +92,8 @@ public:
       Q_UNUSED(ti);                                      \
       if(sizeof(T) != 4) return {};                      \
       auto fileS = std::string(#file);                   \
-      g_test_stack_mutex.lock();                         \
       g_test_stack[fileS];                               \
-      g_test_stack_mutex.unlock();                       \
-      eigenResults_mutex.lock();                         \
       eigenResults[fileS];                               \
-      eigenResults_mutex.unlock();                       \
       test_##file();                                     \
       g_test_stack[fileS].clear();                       \
       auto res = eigenResults[fileS];                    \
