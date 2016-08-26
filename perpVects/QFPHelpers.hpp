@@ -34,19 +34,6 @@ extern thread_local InfoStream info_stream;
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
 namespace FPHelpers {
-  /**
-   * Internal method used by reinterpret_convert<> to mask the top bits of an
-   * unsigned __int128 after reinterpreting from an 80-bit long double.
-   *
-   * If the type is anything besides unsigned __int128, then this method does
-   * nothing.  Only the __int128 specialization actually does something.
-   *
-   * If we reinterpret an unsigned __int128 from a long double, which is 80-bit
-   * extended, then mask out the higher bits.  This needs to be done because
-   * some compilers are leaving garbage in the unused bits (net defined
-   * behavior)
-   */
-
   inline float
   swap_float_int(uint32_t val){
     return *reinterpret_cast<float*>(&val);
