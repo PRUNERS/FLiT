@@ -27,7 +27,7 @@ public:
     T o12 = r1 ^ r2;
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
-    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
+    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
       QFPHelpers::info_stream << "in: " << id << std::endl;
       QFPHelpers::info_stream << "applied gram-schmidt to:" << std::endl;
       QFPHelpers::info_stream << "a: " << a << std::endl;
