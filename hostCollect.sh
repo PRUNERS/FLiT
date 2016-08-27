@@ -6,9 +6,7 @@ if [[ ! -e "~/.postgresql" ]]; then
     cp /local/.postgresql/* ~/.postresql/
 fi
 
-if [[ ! -e results ]]; then
-    mkdir results
-fi
+mkdir -p results
 #rm results/*
 cd perpVects
 make -j $1

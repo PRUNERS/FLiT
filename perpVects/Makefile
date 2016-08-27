@@ -82,6 +82,7 @@ cleanResults : $(TARGETS)
 
 .PHONY : archive
 archive : cleanResults
+	mkdir -p ../results
 	-tar -zcf ../results/$(hostname).tgz *$(hostname)*
 	rm -f *$(hostname)*
 
