@@ -219,7 +219,7 @@ The table below explains how this is accomplished.
 
 | parameter | file | example | notes |
 ---|---|---|---
-compiler | perpTest/Makefile2 | COMPILERS := $(foreach c, GCC | Add a var for your compiler and add to COMPILERS line
+compiler | perpTest/Makefile | COMPILERS := $(foreach c, GCC | Add a var for your compiler and add to COMPILERS line
 compiler flag | Makefile.switches | FPMODFST2 := -fp-model fast=2 | [unique name] := [flag] <br> also add name to **SWITCHES** list declaration in file
 host name | collectAll.py | youruname@kingspeak2.chpc.utah.edu | username@FQDN of host, added to hostinfo var (at top of file)
 test name |  | perpTest/test.cpp | There are three steps to adding your own test.  See below

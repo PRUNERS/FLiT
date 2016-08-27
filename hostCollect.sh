@@ -11,7 +11,7 @@ if [[ ! -e results ]]; then
 fi
 #rm results/*
 cd perpVects
-make -j $1 -f Makefile2
+make -j $1
 
 if [[ $VERBOSE != 'verbose' ]]; then
     cd ../results

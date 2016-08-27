@@ -51,6 +51,11 @@
 
 //QFP mods
 
+#include <map>
+#include <mutex>
+
+#include "eigenMain.hpp"
+
 #define EIGEN_TEST_PART_1
 #define EIGEN_TEST_PART_2
 #define EIGEN_TEST_PART_3
