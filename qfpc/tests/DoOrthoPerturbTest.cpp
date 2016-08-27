@@ -57,10 +57,10 @@ public:
         if(isOrth){
           orthoCount[r]++;
           // score should be perturbed amount
-          if(i != 0) score += fabs(p - backup);
+          if(i != 0) score += std::abs(p - backup);
         }else{
           // if falsely not detecting ortho, should be the dot prod
-          if(i == 0) score += fabs(watchPoint); //a ^ b);  
+          if(i == 0) score += std::abs(watchPoint); //a ^ b);
         }
         QFPHelpers::info_stream << "i:" << i << ":a[" << r << "] = " <<
           a[r] << ", " << as_int(a[r]) << " multiplier: " <<

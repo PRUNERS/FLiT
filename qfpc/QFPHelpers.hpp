@@ -171,7 +171,7 @@ public:
     T retVal;
     std::pair<int, T> largest;
     for(int x = 0; x < data.size(); ++x){
-      T abe = fabs(data[x]);
+      T abe = std::abs(data[x]);
       if(abe > largest.second){
         largest.first = x;
         largest.second = abe;
@@ -205,7 +205,7 @@ public:
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
     for(uint x = 0; x < size(); ++x){
-      distance += fabs(data[x] - rhs.data[x]);
+      distance += std::abs(data[x] - rhs.data[x]);
     }
     return distance;
   }
@@ -240,7 +240,7 @@ public:
   LInfNorm() const {
     T retVal = 0;
     for(auto e: data){
-      T tmp = fabs(e);
+      T tmp = std::abs(e);
       if( tmp > retVal) retVal = tmp;
     }
     return retVal;

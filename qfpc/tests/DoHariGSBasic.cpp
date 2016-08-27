@@ -34,7 +34,7 @@ public:
     //crit = o13;
     T o23 = r2 ^ r3;
     //crit = 023;
-    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
+    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
       QFPHelpers::info_stream << "in: " << id << std::endl;
       QFPHelpers::info_stream << "applied gram-schmidt to:" << std::endl;
       QFPHelpers::info_stream << "a: " << a << std::endl;
