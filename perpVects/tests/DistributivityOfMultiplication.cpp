@@ -47,8 +47,9 @@ template<>
 std::vector<std::tuple<float,float,float>>
 DistributivityOfMultiplication<float>::testValues() {
   std::vector<std::tuple<float,float,float>> values;
-  auto convert = [](uint32_t x) { return QFPHelpers::FPHelpers::
-                                  swap_float_int(x); };
+  auto convert = [](uint32_t x) {
+    return QFPHelpers::FPHelpers::as_float(x);
+  };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -72,8 +73,9 @@ template<>
 std::vector<std::tuple<double,double,double>>
 DistributivityOfMultiplication<double>::testValues() {
   std::vector<std::tuple<double,double,double>> values;
-  auto convert = [](uint64_t x) { return QFPHelpers::FPHelpers::
-                                  swap_float_int(x); };
+  auto convert = [](uint64_t x) {
+    return QFPHelpers::FPHelpers::as_float(x);
+  };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -131,52 +133,52 @@ DistributivityOfMultiplication<long double>::testValues() {
     unsigned __int128 val = left_half;
     val = val << 64;
     val += right_half;
-    return QFPHelpers::FPHelpers::swap_float_int(val);
+    return QFPHelpers::FPHelpers::as_float(val);
   };
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
   // to specify enough decimal digits to get the same floating-point value
   values.emplace_back(
-      convert(0x402b99, 0x2bb4d082ca2e7ec7),  //  3.586714e-1573
-      convert(0x40725a, 0x14c0a0cd445b52d5),  //  6.131032e+3879
-      convert(0x40075d, 0x0bc91b713fc2fba5)); //  4.278225e-4366
+      convert(0x2b99, 0x2bb4d082ca2e7ec7),  //  3.586714e-1573
+      convert(0x725a, 0x14c0a0cd445b52d5),  //  6.131032e+3879
+      convert(0x075d, 0x0bc91b713fc2fba5)); //  4.278225e-4366
   values.emplace_back(
-      convert(0x403408, 0xd98776d83be541b8),  //  1.497721e-922
-      convert(0x407da5, 0x32daa5df77e78b5e),  //  2.847787e+4750
-      convert(0x40376a, 0xfa52e8946985dab4)); //  8.479921e-662
+      convert(0x3408, 0xd98776d83be541b8),  //  1.497721e-922
+      convert(0x7da5, 0x32daa5df77e78b5e),  //  2.847787e+4750
+      convert(0x376a, 0xfa52e8946985dab4)); //  8.479921e-662
   values.emplace_back(
-      convert(0x402355, 0xb32ca57fbcc68a6c),  //  1.541551e-2209
-      convert(0x407337, 0x4855e1d4f174504d),  //  7.201858e+3946
-      convert(0x40736a, 0xac4f338d852e88cd)); //  3.863064e+3962
+      convert(0x2355, 0xb32ca57fbcc68a6c),  //  1.541551e-2209
+      convert(0x7337, 0x4855e1d4f174504d),  //  7.201858e+3946
+      convert(0x736a, 0xac4f338d852e88cd)); //  3.863064e+3962
   values.emplace_back(
-      convert(0x404727, 0x9c8f934e1cc682d2),  //  3.753403e+551
-      convert(0x4002e7, 0x3b753c2d81c6bf78),  //  3.612998e-4709
-      convert(0x40485b, 0xeae81af41947d10a)); //  2.936812e+644
+      convert(0x4727, 0x9c8f934e1cc682d2),  //  3.753403e+551
+      convert(0x02e7, 0x3b753c2d81c6bf78),  //  3.612998e-4709
+      convert(0x485b, 0xeae81af41947d10a)); //  2.936812e+644
   values.emplace_back(
-      convert(0x401b91, 0x9e18ddbb66670e9f),  //  4.852600e-2808
-      convert(0x40205f, 0x58ab17d3e5309234),  //  5.031688e-2438
-      convert(0x404a4a, 0x1b8a0c6541700676)); //  3.521930e+792
+      convert(0x1b91, 0x9e18ddbb66670e9f),  //  4.852600e-2808
+      convert(0x205f, 0x58ab17d3e5309234),  //  5.031688e-2438
+      convert(0x4a4a, 0x1b8a0c6541700676)); //  3.521930e+792
   values.emplace_back(
-      convert(0x404178, 0xd2cee20bba5c6843),  //  5.069741e+113
-      convert(0x403564, 0x58406d82dd970b8e),  //  3.483973e-818
-      convert(0x40150a, 0x92cde10402bc42ef)); //  4.292064e-3311
+      convert(0x4178, 0xd2cee20bba5c6843),  //  5.069741e+113
+      convert(0x3564, 0x58406d82dd970b8e),  //  3.483973e-818
+      convert(0x150a, 0x92cde10402bc42ef)); //  4.292064e-3311
   values.emplace_back(
-      convert(0x401965, 0x630847ac1ecd253c),  //  1.288694e-2975
-      convert(0x40004c, 0x6e2b4c6a070d3835),  //  1.093228e-4909
-      convert(0x40380f, 0x92b14ca6d81b5a24)); //  2.324058e-612
+      convert(0x1965, 0x630847ac1ecd253c),  //  1.288694e-2975
+      convert(0x004c, 0x6e2b4c6a070d3835),  //  1.093228e-4909
+      convert(0x380f, 0x92b14ca6d81b5a24)); //  2.324058e-612
   values.emplace_back(
-      convert(0x404492, 0x870e870425dcb0cf),  //  3.384007e+352
-      convert(0x4071dd, 0x159330946cecd9a8),  //  1.498527e+3842
-      convert(0x40586a, 0xfc38e15fe5d604a5)); //  1.079136e+1882
+      convert(0x4492, 0x870e870425dcb0cf),  //  3.384007e+352
+      convert(0x71dd, 0x159330946cecd9a8),  //  1.498527e+3842
+      convert(0x586a, 0xfc38e15fe5d604a5)); //  1.079136e+1882
   values.emplace_back(
-      convert(0x40240d, 0xae73609d2bf51b7d),  //  3.680220e-2154
-      convert(0x402a67, 0x89b93255d3362c94),  //  8.669256e-1665
-      convert(0x402462, 0x79d020dd3c308e90)); //  9.941326e-2129
+      convert(0x240d, 0xae73609d2bf51b7d),  //  3.680220e-2154
+      convert(0x2a67, 0x89b93255d3362c94),  //  8.669256e-1665
+      convert(0x2462, 0x79d020dd3c308e90)); //  9.941326e-2129
   values.emplace_back(
-      convert(0x406703, 0x6455d50eb2825cf7),  //  3.818039e+3006
-      convert(0x401f77, 0x70b75c7169817349),  //  9.267715e-2508
-      convert(0x404ab4, 0x27faa40914dad6a6)); //  4.148019e+824
+      convert(0x6703, 0x6455d50eb2825cf7),  //  3.818039e+3006
+      convert(0x1f77, 0x70b75c7169817349),  //  9.267715e-2508
+      convert(0x4ab4, 0x27faa40914dad6a6)); //  4.148019e+824
 
   return values;
 }
