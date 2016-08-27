@@ -10,7 +10,7 @@ if [[ ! -e results ]]; then
     mkdir results
 fi
 #rm results/*
-cd perpVects
+cd qfpc
 make -j $1 -f Makefile2
 
 if [[ $VERBOSE != 'verbose' ]]; then
