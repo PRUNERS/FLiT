@@ -111,9 +111,9 @@ namespace UnitTests{
       info_stream << "expected:" << std::endl << expected << std::endl;
       info_stream << "output:" << std::endl << output << std::endl;
       info_stream << "expected bits: " << std::hex <<
-        swap_float_int(expected) << std::endl;
+        as_int(expected) << std::endl;
       info_stream << "output bits:" << std::hex <<
-        swap_float_int(output) << std::endl;
+        as_int(output) << std::endl;
     }
     return{__func__, result};
   }
