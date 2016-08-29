@@ -1,6 +1,6 @@
 #This file, from a list of hosts, does the following through ssh commands:
 ## cd QFP && git pull
-## cd QFP/perpVects && make -j [appropriate number] -f Makefile2
+## cd QFP/qfpc && make -j [appropriate number] -f Makefile2
 ## cd QFP && git add -u && git commit -m 'auto commit, test results'
 ## genDiffTable
 
@@ -20,10 +20,19 @@ all: $(TARGETS) pull_local
 
 define RULE
 $1_exec :
-	-ssh $2 'cd QFP && git checkout dumpSQL && git pull && cd perpVects && make -j $3 -f Makefile2 && cd .. && git add -u && git commit -m "auto commit, test results" && git push'
+	-ssh $2 \
+		'cd QFP &&
+		git checkout dumpSQL &&
+		git pull &&
+		cd qfpc &&
+		make -j $3 -f Makefile2 &&
+		cd .. &&
+		git add -u &&
+		git commit -m "auto commit, test results" &&
+		git push'
 endef
 
 $(foreach h, $(HOSTS), $(eval $(call RULE, $(strip $h), $(word 1, $($(strip $h))), $(word 2, $($(strip $h))))))
 
 pull_local : $(TARGETS)
-	   git pull
+	git pull
