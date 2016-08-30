@@ -3,7 +3,7 @@
 #
 
 # Generated executable
-perpVecs/runTests
+qfpc/runTests
 
 # Vim
 .*.swp

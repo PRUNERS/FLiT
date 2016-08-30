@@ -47,11 +47,16 @@ loadIntFromEnv(int &dest, std::string var, int defVal){
 void
 outputResults(const QFPTest::resultType& scores){
   for(const auto& i: scores){
-    std::cout << "HOST,SWITCHES,COMPILER," << i.first.second <<
-      ",us," << i.second.first << "," <<
-      swap_float_int(i.second.first) << "," << i.second.second <<
-      "," << swap_float_int(i.second.second) << "," <<
-      i.first.first << "," << "FILENAME" << std::endl;
+    std::cout
+      << "HOST,SWITCHES,COMPILER,"
+      << i.first.second << ",us,"
+      << i.second.first << ","
+      << as_int(i.second.first) << ","
+      << i.second.second << ","
+      << as_int(i.second.second) << ","
+      << i.first.first << ","
+      << "FILENAME"
+      << std::endl;
   }
 }
 

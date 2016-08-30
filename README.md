@@ -227,7 +227,7 @@ test name |  | perpTest/test.cpp | There are three steps to adding your own test
 
 #### adding a new test ####
 
-As an example, examine the function _DoSkewSymCPRotationTest_ in perpVects/test.cpp.
+As an example, examine the function _DoSkewSymCPRotationTest_ in qfpc/test.cpp.
 You need the following features:
 
 * return FPTests::resultType
@@ -293,7 +293,7 @@ To execute QD, you should take the following steps:
 
 * Log onto a host that you'd like to examine a pair of tests (for instance, kingspeak2.chpc.utah.edu:/remote_qfp)
 [for example]:
-* cd qfp/perpVects
+* cd qfp/qfpc
 * make -f MakefileQD -j 12
 * runQD [test1] [test2] [precision1] [sort1] [precision2] [sort2]
 

@@ -26,8 +26,8 @@ emacs = check_output('which emacs', shell=True)[:-1]  #remove newline from which
 ln = check_output('which ln', shell=True)[:-1]
 
 topDir = os.path.dirname(__file__)
-inf1 = os.path.realpath('perpVects/' + sys.argv[1])
-inf2 = os.path.realpath('perpVects/' + sys.argv[2])
+inf1 = os.path.realpath('qfpc/' + sys.argv[1])
+inf2 = os.path.realpath('qfpc/' + sys.argv[2])
 os.environ['TEST1'] = sys.argv[3]
 os.environ['PRECISION1'] = sys.argv[4]
 os.environ['SORT1'] = sys.argv[5]
