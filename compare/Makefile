@@ -42,10 +42,10 @@ run2 : 	test2
 	TEST=$(TEST)
 	./$< verbose > $@
 
-test1 : ../perpVects/test.cpp
+test1 : ../qfpc/test.cpp
 	$(COMPILER1) $(CXX_REQ) $($(COMPSW1)) $< -o $@
 
-test2 : ../perpVects/test.cpp
+test2 : ../qfpc/test.cpp
 	$(COMPILER2) $(CXX_REQ) $($(COMPSW2)) $< -o $@
 
 clean:
