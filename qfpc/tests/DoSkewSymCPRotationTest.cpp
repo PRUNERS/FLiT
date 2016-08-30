@@ -5,9 +5,11 @@
 #include <typeinfo>
 
 template <typename T>
-class DoSkewSymCPRotationTest: public QFPTest::TestBase {
+class DoSkewSymCPRotationTest: public QFPTest::TestBase<T> {
 public:
-  DoSkewSymCPRotationTest(std::string id) : QFPTest::TestBase(id){}
+  DoSkewSymCPRotationTest(std::string id)
+    : QFPTest::TestBase<T>(std::move(id)) {}
+
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     auto& min = ti.min;
     auto& max = ti.max;
@@ -53,6 +55,9 @@ public:
             {L1Score, LIScore}
     }};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoSkewSymCPRotationTest)

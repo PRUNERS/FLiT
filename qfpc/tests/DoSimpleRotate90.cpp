@@ -5,9 +5,9 @@
 #include <typeinfo>
 
 template <typename T>
-class DoSimpleRotate90: public QFPTest::TestBase {
+class DoSimpleRotate90: public QFPTest::TestBase<T> {
 public:
-  DoSimpleRotate90(std::string id):QFPTest::TestBase(id){}
+  DoSimpleRotate90(std::string id):QFPTest::TestBase<T>(std::move(id)) {}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
@@ -23,6 +23,9 @@ public:
       {id, typeid(T).name()}, {A.L1Distance(expected), A.LInfDistance(expected)}
     }};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoSimpleRotate90)

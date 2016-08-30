@@ -8,9 +8,9 @@
 #include <typeinfo>
 
 template <typename T>
-class Triangle: public QFPTest::TestBase {
+class Triangle: public QFPTest::TestBase<T> {
 protected:
-  Triangle(std::string id) : QFPTest::TestBase(id) {}
+  Triangle(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
   virtual T getArea(const T a, const T b, const T c) = 0;
 
 public:
@@ -38,6 +38,9 @@ public:
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 #endif // TRIANGLE_HPP

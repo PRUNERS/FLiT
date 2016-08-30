@@ -5,9 +5,9 @@
 #include <typeinfo>
 
 template <typename T>
-class DoMatrixMultSanity: public QFPTest::TestBase {
+class DoMatrixMultSanity: public QFPTest::TestBase<T> {
 public:
-  DoMatrixMultSanity(std::string id) : QFPTest::TestBase(id){}
+  DoMatrixMultSanity(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     auto dim = ti.highestDim;
@@ -22,6 +22,9 @@ public:
       {id, typeid(T).name()}, {c.L1Distance(b), c.LInfDistance(b)}
     }};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoMatrixMultSanity)

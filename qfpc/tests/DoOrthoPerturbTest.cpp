@@ -6,9 +6,9 @@
 #include <iomanip>
 
 template <typename T>
-class DoOrthoPerturbTest: public QFPTest::TestBase {
+class DoOrthoPerturbTest: public QFPTest::TestBase<T> {
 public:
-  DoOrthoPerturbTest(std::string id):QFPTest::TestBase(id){}
+  DoOrthoPerturbTest(std::string id):QFPTest::TestBase<T>(std::move(id)) {}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     using namespace QFPHelpers;
@@ -88,6 +88,9 @@ public:
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoOrthoPerturbTest)
