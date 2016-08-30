@@ -21,9 +21,9 @@
 #endif
 
 #ifdef __CUDA__
-#include <cuda.h>
-#include <thrust/device_vector>
-#include <thrust/host_vector>
+#define HOST_DEVICE __host__ __device__
+#else
+#define HOST_DEVICE
 #endif
 
 namespace QFPHelpers {
@@ -100,10 +100,11 @@ public:
     return retVal;
   }
 
+  HOST_DEVICE
   static
   Vector<T>
   getRandomVector(size_t dim, T min_inc, T max_exc,
-                  std::mt19937::result_type seed = 0,
+                  uint32_t seed = 0,
                   bool doSeed = true){
     std::mt19937 gen;
     if(doSeed) gen.seed(seed);
@@ -354,6 +355,7 @@ public:
     return retVal;
   }
 
+  HOST_DEVICE
   Matrix<T>
   operator*(T const &sca){
     Matrix<T> retVal(data.size(), data[0].size());
@@ -366,6 +368,7 @@ public:
   }
 
   //precond: this.w = rhs.h, duh
+  HOST_DEVICE
   Matrix<T>
   operator*(Matrix<T> const &rhs){
     Matrix<T> retVal(data.size(), rhs.data[0].size());
@@ -389,6 +392,7 @@ public:
        {-v[1], v[0], 0}});
   }
 
+  HOST_DEVICE
   static
   Matrix<T>
   Identity(size_t dims){

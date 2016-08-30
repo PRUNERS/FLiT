@@ -15,6 +15,9 @@ protected:
 
 public:
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     T a = ti.max;
     T b = ti.max;
     T c = std::sqrt(std::pow(a,2) + std::pow(b, 2));
@@ -37,6 +40,7 @@ public:
       score += std::abs(crit - checkVal);
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};
+#endif
   }
 };
 

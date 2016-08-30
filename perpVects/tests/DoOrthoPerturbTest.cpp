@@ -11,6 +11,9 @@ public:
   DoOrthoPerturbTest(std::string id):QFPTest::TestBase(id){}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     using namespace QFPHelpers;
     using namespace QFPHelpers::FPHelpers;
     auto iters = ti.iters;
@@ -87,6 +90,7 @@ public:
       cdim++;
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};
+#endif
   }
 };
 

@@ -12,6 +12,9 @@ public:
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
 
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     QFPHelpers::Vector<T> A = {1, 1, 1};
     QFPHelpers::Vector<T> expected = {-1, 1, 1};
     QFPHelpers::info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;
@@ -22,6 +25,7 @@ public:
     return {{
       {id, typeid(T).name()}, {A.L1Distance(expected), A.LInfDistance(expected)}
     }};
+#endif
   }
 };
 
