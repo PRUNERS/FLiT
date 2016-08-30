@@ -5,9 +5,9 @@
 #include <typeinfo>
 
 template <typename T>
-class DoHariGSImproved: public QFPTest::TestBase {
+class DoHariGSImproved: public QFPTest::TestBase<T> {
 public:
-  DoHariGSImproved(std::string id) : QFPTest::TestBase(id) {}
+  DoHariGSImproved(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
@@ -43,6 +43,9 @@ public:
       {id, typeid(T).name()}, {score, 0.0}
     }};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoHariGSImproved)

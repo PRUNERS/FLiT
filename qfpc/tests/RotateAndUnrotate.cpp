@@ -5,9 +5,9 @@
 #include <typeinfo>
 
 template <typename T>
-class RotateAndUnrotate: public QFPTest::TestBase {
+class RotateAndUnrotate: public QFPTest::TestBase<T> {
 public:
-  RotateAndUnrotate(std::string id) : QFPTest::TestBase(id){}
+  RotateAndUnrotate(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     T min = ti.min;
@@ -31,6 +31,9 @@ public:
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
     return {{{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}}};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(RotateAndUnrotate)

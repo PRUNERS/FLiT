@@ -8,9 +8,10 @@
 #include <tuple>
 
 template <typename T>
-class DistributivityOfMultiplication : public QFPTest::TestBase {
+class DistributivityOfMultiplication : public QFPTest::TestBase<T> {
 public:
-  DistributivityOfMultiplication(std::string id) : QFPTest::TestBase(id) {}
+  DistributivityOfMultiplication(std::string id)
+    : QFPTest::TestBase<T>(std::move(id)) {}
 
   std::vector<std::tuple<T,T,T>> testValues();
 
@@ -40,6 +41,9 @@ public:
     }
     return returnval;
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 // Define the inputs

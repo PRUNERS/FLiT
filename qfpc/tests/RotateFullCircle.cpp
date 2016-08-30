@@ -5,9 +5,9 @@
 #include <typeinfo>
 
 template <typename T>
-class RotateFullCircle: public QFPTest::TestBase {
+class RotateFullCircle: public QFPTest::TestBase<T> {
 public:
-  RotateFullCircle(std::string id) : QFPTest::TestBase(id){}
+  RotateFullCircle(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     auto n = ti.iters;
@@ -31,6 +31,9 @@ public:
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
     return {{{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}}};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(RotateFullCircle)
