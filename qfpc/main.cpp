@@ -60,6 +60,7 @@ void runTestWithDefaultInput(QFPTest::TestFactory* factory,
 
   auto scores = (*factory->get<F>())(ip);
   totScores.insert(scores.begin(), scores.end());
+  info_stream.flushout();
 }
 
 int main(int argc, char* argv[]) {
