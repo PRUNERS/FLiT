@@ -102,7 +102,7 @@ main(int argc, char* argv[]){
   //singleton
   if(doOne){
     QFPTest::testInput ip{iters, dim, ulp_inc, min, max};
-    auto plist = TestBase::getTests()[TEST]->create();
+    auto plist = getTests()[TEST]->create();
     auto score = (*plist[getPrecID(PRECISION)])(ip);
     for(auto& p: plist) delete p;
     scores.insert(score.begin(), score.end());
@@ -111,7 +111,7 @@ main(int argc, char* argv[]){
 
     QFPTest::testInput ip{iters, dim, ulp_inc, min, max};
     scores.clear();
-    for(auto& t : TestBase::getTests()){
+    for(auto& t : getTests()){
       auto plist = t.second->create();
       for(auto pt : plist){
         auto score = (*pt)(ip);
