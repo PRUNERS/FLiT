@@ -15,6 +15,9 @@ public:
   std::vector<std::tuple<T,T,T>> testValues();
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     Q_UNUSED(ti);
     auto vals = this->testValues();
     std::vector<T> valuesDistributed;
@@ -39,6 +42,7 @@ public:
           });
     }
     return returnval;
+#endif
   }
 };
 

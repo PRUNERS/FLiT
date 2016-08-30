@@ -10,6 +10,9 @@ public:
   RotateFullCircle(std::string id) : QFPTest::TestBase(id){}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     auto n = ti.iters;
     T min = ti.min;
     T max = ti.max;
@@ -30,6 +33,7 @@ public:
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
     return {{{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}}};
+#endif
   }
 };
 

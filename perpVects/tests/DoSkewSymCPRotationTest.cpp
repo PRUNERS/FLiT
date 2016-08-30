@@ -9,6 +9,9 @@ class DoSkewSymCPRotationTest: public QFPTest::TestBase {
 public:
   DoSkewSymCPRotationTest(std::string id) : QFPTest::TestBase(id){}
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     auto& min = ti.min;
     auto& max = ti.max;
     //    auto& crit = getWatchData<T>();
@@ -52,6 +55,7 @@ public:
       {id, typeid(T).name()},
             {L1Score, LIScore}
     }};
+#endif
   }
 };
 

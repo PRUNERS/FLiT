@@ -12,6 +12,9 @@ public:
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
 
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     long double score = 0.0;
     T e;
     sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
@@ -42,6 +45,7 @@ public:
     return {{
       {id, typeid(T).name()}, {score, 0.0}
     }};
+#endif
   }
 };
 

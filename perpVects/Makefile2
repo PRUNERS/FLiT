@@ -135,4 +135,5 @@ archive : cleanResults
 .PHONY : clean
 clean :
 	rm -f $(TARGETS)
+	rm -f $(CUTARGETS)
 	rm -f $(VERBOSE_OUTPUT)

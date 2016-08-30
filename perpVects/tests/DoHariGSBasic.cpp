@@ -11,6 +11,9 @@ public:
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
+#ifdef __CUDA__
+    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+#else
     using namespace QFPHelpers;
 
     //auto& crit = getWatchData<T>();
@@ -50,6 +53,7 @@ public:
       QFPHelpers::info_stream << "score (dec) :" << score << std::endl;
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};
+#endif
   }
 };
 
