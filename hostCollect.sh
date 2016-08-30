@@ -8,7 +8,7 @@ fi
 
 mkdir -p results
 #rm results/*
-cd perpVects
+cd qfpc
 make -j $1
 
 if [[ $VERBOSE != 'verbose' ]]; then
