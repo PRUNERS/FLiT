@@ -9,7 +9,7 @@ class RotateAndUnrotate: public QFPTest::TestBase<T> {
 public:
   RotateAndUnrotate(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     T min = ti.min;
     T max = ti.max;
     auto theta = M_PI;

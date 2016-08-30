@@ -48,7 +48,7 @@ class TestBase {
 public:
   TestBase(std::string id) : id(std::move(id)) {}
   virtual ~TestBase() = default;
-  virtual ResultType operator()(const TestInput&) = 0;
+  virtual ResultType run(const TestInput&) = 0;
   const std::string id;
 };
 
@@ -130,7 +130,7 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
     klass(std::string id)                                \
       : QFPTest::TestBase<T>(std::move(id)) {}           \
     QFPTest::ResultType                                  \
-    operator()(const QFPTest::TestInput& ti) {           \
+    run(const QFPTest::TestInput& ti) {                  \
       Q_UNUSED(ti);                                      \
       if(sizeof(T) != 4) return {};                      \
       auto fileS = std::string(#file);                   \

@@ -10,7 +10,7 @@ public:
   DoSkewSymCPRotationTest(std::string id)
     : QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     auto& min = ti.min;
     auto& max = ti.max;
     //    auto& crit = getWatchData<T>();

@@ -9,7 +9,7 @@ class DoHariGSImproved: public QFPTest::TestBase<T> {
 public:
   DoHariGSImproved(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     Q_UNUSED(ti);
 
     long double score = 0.0;

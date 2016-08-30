@@ -15,7 +15,7 @@ public:
 
   std::vector<std::tuple<T,T,T>> testValues();
 
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     Q_UNUSED(ti);
     auto vals = this->testValues();
     std::vector<T> valuesDistributed;
