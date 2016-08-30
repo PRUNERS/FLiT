@@ -48,29 +48,30 @@ public:
   virtual std::vector<TestBase *> create() = 0;
 };
 
+inline std::map<std::string, TestFactory*>& getTests() {
+  static std::map<std::string, TestFactory*> tests;
+  return tests;
+}
+
+inline void registerTest(const std::string& name, TestFactory *factory) {
+  getTests()[name] = factory;
+}
+
 class TestBase {
 public:
   TestBase(std::string id):id(id) {}
   virtual ~TestBase() = default;
-  static inline
-  void registerTest(const std::string& name, TestFactory *factory) {
-    getTests()[name] = factory;
-  }
   virtual resultType operator()(const testInput&) = 0;
-  static std::map<std::string, TestFactory*>& getTests() {
-    static std::map<std::string, TestFactory*> tests;
-    return tests;
-  }
   const std::string id;
 };
 
 }
 
-#define REGISTER_TYPE(klass) \
+#define REGISTER_TYPE(klass)                             \
   class klass##Factory : public QFPTest::TestFactory {   \
   public:                                                \
     klass##Factory() {                                   \
-      QFPTest::TestBase::registerTest(#klass, this);     \
+      QFPTest::registerTest(#klass, this);               \
     }                                                    \
     virtual std::vector<QFPTest::TestBase *> create() {  \
       return {                                           \
