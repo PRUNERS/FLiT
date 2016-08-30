@@ -8,10 +8,10 @@ import glob
 
 
 hostinfo = [
-           ['u0422778@kingspeak1.chpc.utah.edu', 12],
-           ['sawaya@bihexal.cs.utah.edu', 24],
-           ['sawaya@gaussr.cs.utah.edu', 8],
-            ['sawaya@ms0620.utah.cloudlab.us', 8]
+    ['u0422778@kingspeak1.chpc.utah.edu', 12],
+    ['sawaya@bihexal.cs.utah.edu', 24],
+    ['sawaya@gaussr.cs.utah.edu', 8],
+    ['sawaya@ms0620.utah.cloudlab.us', 8]
 ]
 
 #constants
@@ -35,9 +35,6 @@ else:
     usage()
     exit(1)
 
-# for f in glob.iglob('results/*'):
-#     remove(f);
-
 
 for h in hostinfo:
     print('collecting data from ' + h[0])
@@ -52,14 +49,26 @@ for h in hostinfo:
                          'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
     print(stdo)
     if verbose == '':
-        stdo = check_output(['scp', h[0] + ':~/remote_qfp/qfp/results/masterRes*', 'results/masterRes' + h[0]])
+        stdo = check_output([
+            'scp',
+            h[0] + ':~/remote_qfp/qfp/results/masterRes*',
+            'results/masterRes' + h[0]
+            ])
         print(stdo)
 
 if verbose == '':
     chdir('results')
-    stdo = check_output([psql, '-d', 'qfp', '-c', 'INSERT INTO runs (rdate, notes) VALUES (\'' + str(datetime.date.today())
-                         + '\', \'' + notes + '\');'])
+    stdo = check_output([
+        psql, '-d', 'qfp',
+        '-c',
+        'INSERT INTO runs (rdate, notes) VALUES (\'' +
+            str(datetime.date.today()) +
+            '\', \'' + notes + '\');'
+        ])
     for f in glob.iglob('masterRes*'):
-        stdo = check_output([psql, '-d', 'qfp', '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'])
+        stdo = check_output([
+            psql, '-d', 'qfp',
+            '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'
+            ])
         print(stdo)
     
