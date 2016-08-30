@@ -49,7 +49,7 @@ public:
       QFPHelpers::info_stream << "r3: " << r3 << std::endl;
       QFPHelpers::info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
       QFPHelpers::info_stream << "score (bits): " <<
-        QFPHelpers::FPHelpers::swap_float_int(score) << std::endl;
+        QFPHelpers::FPHelpers::as_int(score) << std::endl;
       QFPHelpers::info_stream << "score (dec) :" << score << std::endl;
     }
     return {{{id, typeid(T).name()}, {score, 0.0}}};

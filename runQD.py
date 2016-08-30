@@ -62,7 +62,7 @@ tname2 = d2['name']
 
 #build required tests
 
-chdir('perpVects')
+chdir('qfpc')
 
 print('building test1')
 print('with CC = ' + comp1 + ', FFLAGS = ' + flags1 + ', TARGET = ' +

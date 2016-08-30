@@ -66,10 +66,10 @@ public:
           if(i == 0) score += fabs(watchPoint); //a ^ b);  
         }
         QFPHelpers::info_stream << "i:" << i << ":a[" << r << "] = " <<
-          a[r] << ", " << swap_float_int(a[r]) << " multiplier: " <<
-          b[r] << ", " << swap_float_int(b[r]) <<
+          a[r] << ", " << as_int(a[r]) << " multiplier: " <<
+          b[r] << ", " << as_int(b[r]) <<
           " perp: " << isOrth << " dot prod: " <<
-          swap_float_int(a ^ b) << std::endl;
+          as_int(a ^ b) << std::endl;
       }
       QFPHelpers::info_stream << "next dimension . . . " << std::endl;
       p = backup;
