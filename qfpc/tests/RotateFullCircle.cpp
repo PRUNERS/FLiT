@@ -9,7 +9,7 @@ class RotateFullCircle: public QFPTest::TestBase<T> {
 public:
   RotateFullCircle(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     auto n = ti.iters;
     T min = ti.min;
     T max = ti.max;

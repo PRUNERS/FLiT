@@ -14,7 +14,7 @@ protected:
   virtual T getArea(const T a, const T b, const T c) = 0;
 
 public:
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     T a = ti.max;
     T b = ti.max;
     T c = std::sqrt(std::pow(a,2) + std::pow(b, 2));

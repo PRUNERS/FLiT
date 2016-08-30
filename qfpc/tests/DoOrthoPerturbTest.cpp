@@ -10,7 +10,7 @@ class DoOrthoPerturbTest: public QFPTest::TestBase<T> {
 public:
   DoOrthoPerturbTest(std::string id):QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
+  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
     using namespace QFPHelpers;
     using namespace QFPHelpers::FPHelpers;
     auto iters = ti.iters;
