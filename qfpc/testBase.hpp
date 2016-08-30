@@ -5,28 +5,28 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
+#include "QFPHelpers.hpp"
+
 #include <map>
+#include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
-#include <tuple>
-#include <memory>
-
-#include "QFPHelpers.hpp"
 
 namespace QFPTest {
 
 void setWatching(bool watch = true);
 
 
-using resultType = std::map<std::pair<const std::string, const std::string>,
+using ResultType = std::map<std::pair<const std::string, const std::string>,
                             std::pair<long double, long double>>;
 
 
 std::ostream&
-operator<<(std::ostream&, const resultType&);
+operator<<(std::ostream&, const ResultType&);
 
-struct testInput {
+struct TestInput {
   size_t iters;
   size_t highestDim;
   size_t ulp_inc;
@@ -48,7 +48,7 @@ class TestBase {
 public:
   TestBase(std::string id) : id(std::move(id)) {}
   virtual ~TestBase() = default;
-  virtual resultType operator()(const testInput&) = 0;
+  virtual ResultType operator()(const TestInput&) = 0;
   const std::string id;
 };
 
@@ -129,8 +129,8 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
   public:                                                \
     klass(std::string id)                                \
       : QFPTest::TestBase<T>(std::move(id)) {}           \
-    QFPTest::resultType                                  \
-    operator()(const QFPTest::testInput& ti) {           \
+    QFPTest::ResultType                                  \
+    operator()(const QFPTest::TestInput& ti) {           \
       Q_UNUSED(ti);                                      \
       if(sizeof(T) != 4) return {};                      \
       auto fileS = std::string(#file);                   \

@@ -9,7 +9,7 @@ class DoSimpleRotate90: public QFPTest::TestBase<T> {
 public:
   DoSimpleRotate90(std::string id):QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
     Q_UNUSED(ti);
 
     QFPHelpers::Vector<T> A = {1, 1, 1};

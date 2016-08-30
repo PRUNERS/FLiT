@@ -9,7 +9,7 @@ class DoMatrixMultSanity: public QFPTest::TestBase<T> {
 public:
   DoMatrixMultSanity(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
     auto dim = ti.highestDim;
     T min = ti.min;
     T max = ti.max;
