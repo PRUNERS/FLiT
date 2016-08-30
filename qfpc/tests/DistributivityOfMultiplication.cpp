@@ -15,12 +15,12 @@ public:
 
   std::vector<std::tuple<T,T,T>> testValues();
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
     Q_UNUSED(ti);
     auto vals = this->testValues();
     std::vector<T> valuesDistributed;
     std::vector<T> valuesUndistributed;
-    QFPTest::resultType returnval;
+    QFPTest::ResultType returnval;
     for (auto& input : vals) {
       T a = std::get<0>(input);
       T b = std::get<1>(input);

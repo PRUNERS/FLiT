@@ -9,7 +9,7 @@ class DoHariGSBasic: public QFPTest::TestBase<T> {
 public:
   DoHariGSBasic(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+  QFPTest::ResultType operator()(const QFPTest::TestInput& ti) {
     Q_UNUSED(ti);
     using namespace QFPHelpers;
 

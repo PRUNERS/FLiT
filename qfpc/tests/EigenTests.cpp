@@ -3,7 +3,7 @@
 
 //setup for Eigen library test suite
 //there's a race on this container -- switching to 1 concurrency
-std::map<std::string, QFPTest::resultType> eigenResults;
+std::map<std::string, QFPTest::ResultType> eigenResults;
 std::mutex eigenResults_mutex;
 std::mutex g_test_stack_mutex;
 

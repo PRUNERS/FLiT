@@ -33,7 +33,7 @@ loadIntFromEnv(int &dest, const std::string &var, int defVal){
 }
 
 void
-outputResults(const QFPTest::resultType& scores){
+outputResults(const QFPTest::ResultType& scores){
   for(const auto& i: scores){
     std::cout
       << "HOST,SWITCHES,COMPILER,"
@@ -50,13 +50,13 @@ outputResults(const QFPTest::resultType& scores){
 
 template <typename F>
 void runTestWithDefaultInput(QFPTest::TestFactory* factory,
-                             QFPTest::resultType& totScores) {
+                             QFPTest::ResultType& totScores) {
   size_t iters = 200;
   size_t dim = 16;
   size_t ulp_inc = 1;
   float min = -6.0;
   float max = 6.0;
-  QFPTest::testInput ip{iters, dim, ulp_inc, min, max};
+  QFPTest::TestInput ip{iters, dim, ulp_inc, min, max};
 
   auto scores = (*factory->get<F>())(ip);
   totScores.insert(scores.begin(), scores.end());
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     QFPTest::setWatching();
   }
 
-  QFPTest::resultType scores;
+  QFPTest::ResultType scores;
   if(doOne) {
     auto factory = getTests()[TEST];
     std::string precision(PRECISION);
