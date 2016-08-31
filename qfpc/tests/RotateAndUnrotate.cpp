@@ -9,7 +9,21 @@ class RotateAndUnrotate: public QFPTest::TestBase<T> {
 public:
   RotateAndUnrotate(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
+  // TODO: Use these methods instead of canned test data in run_impl()
+  virtual size_t getInputsPerRun() { return 1; }
+  virtual QFPTest::TestInput<T> getDefaultInput() {
+    QFPTest::TestInput<T> ti;
+    ti.min = -6.0;
+    ti.max = 6.0;
+    ti.iters = 200;
+    ti.highestDim = 16;
+    ti.ulp_inc = 1;
+    ti.vals = { 1.0 }; // dummy value for now
+    return ti;
+  }
+
+protected:
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     T min = ti.min;
     T max = ti.max;
     auto theta = M_PI;
@@ -29,10 +43,10 @@ public:
     }
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
-    return {{{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}}};
+    return {dist, A.LInfDistance(orig)};
   }
 
-private:
+protected:
   using QFPTest::TestBase<T>::id;
 };
 
