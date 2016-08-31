@@ -9,18 +9,19 @@ class DoSkewSymCPRotationTest: public QFPTest::TestBase {
 public:
   DoSkewSymCPRotationTest(std::string id) : QFPTest::TestBase(id){}
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+    Q_UNUSED(ti);
 #ifdef __CUDA__
     return {{{id, typeid(T).name()}, {0.0, 0.0}}};
 #else
-    auto& min = ti.min;
-    auto& max = ti.max;
+    // auto& min = ti.min;
+    // auto& max = ti.max;
     //    auto& crit = getWatchData<T>();
     QFPHelpers::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
     long double LIScore = 0.0;
-    auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
+    auto A = QFPHelpers::Vector<T>::getRandomVector(3).getUnitVector();
     QFPHelpers::info_stream << "A (unit) is: " << std::endl << A << std::endl;
-    auto B = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
+    auto B = QFPHelpers::Vector<T>::getRandomVector(3).getUnitVector();
     QFPHelpers::info_stream << "B (unit): " << std::endl  << B << std::endl;
     auto cross = A.cross(B); //cross product
     QFPHelpers::info_stream << "cross: " << std::endl << cross << std::endl;

@@ -10,13 +10,14 @@ public:
   RotateAndUnrotate(std::string id) : QFPTest::TestBase(id){}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
+    Q_UNUSED(ti);
 #ifdef __CUDA__
     return {{{id, typeid(T).name()}, {0.0, 0.0}}};
 #else
-    T min = ti.min;
-    T max = ti.max;
+    // T min = ti.min;
+    // T max = ti.max;
     auto theta = M_PI;
-    auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max);
+    auto A = QFPHelpers::Vector<T>::getRandomVector(3);
     auto orig = A;
     QFPHelpers::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);

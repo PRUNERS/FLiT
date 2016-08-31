@@ -18,7 +18,7 @@ namespace UnitTests{
   static results
   TestGenOrthoVector(){
     bool result = true;
-    auto A = Vector<T>::getRandomVector(10, -10, 10);
+    auto A = Vector<T>::getRandomVector(10);
     auto O = A.genOrthoVector();
     if(!(A.isOrtho(O))) result = false;
     return {__func__, result};
@@ -47,8 +47,8 @@ namespace UnitTests{
   static results
   TestCrossProd(){
     bool result = true;
-    auto A = Vector<T>::getRandomVector(3, -3, 3);
-    auto B = Vector<T>::getRandomVector(3, -3, 3);
+    auto A = Vector<T>::getRandomVector(3);
+    auto B = Vector<T>::getRandomVector(3);
     // Vector<T> A = {1, 0, 0};
     // Vector<T> B = {0, 1, 1};
     auto C = A.cross(B);
@@ -101,7 +101,7 @@ namespace UnitTests{
   static results
   UnitVector(){
     bool result = true;
-    auto V = Vector<T>::getRandomVector(5, -20, 20);
+    auto V = Vector<T>::getRandomVector(5);
     T expected = 1.0;
     auto output = V.getUnitVector().L2Norm();
     if(!(output == expected)){

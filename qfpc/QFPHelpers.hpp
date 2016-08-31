@@ -21,6 +21,8 @@
 #endif
 
 #ifdef __CUDA__
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #define HOST_DEVICE __host__ __device__
 #else
 #define HOST_DEVICE
@@ -30,6 +32,40 @@ namespace QFPHelpers {
 
 const int RAND_SEED = 1;
 extern thread_local InfoStream info_stream;
+  //this section provides a pregenerated random
+  //sequence that can be used by tests, including
+  //CUDA
+template <typename T>
+std::vector<T>
+setRandSequence(size_t size, int32_t seed = RAND_SEED){
+  std::vector<T> ret(size);
+  std::mt19937 gen;
+  gen.seed(seed);
+  std::uniform_real_distribution<T> dist(-6.0, 6.0);
+  for(auto& i: ret) i = dist(gen);
+  return ret;
+}
+
+extern const std::vector<float> float_rands;
+extern const std::vector<double> double_rands;
+extern const std::vector<long double> long_double_rands;
+  
+template <typename T>
+std::vector<T>
+getRandSeq(){return std::vector<T>();}
+  
+template <>
+std::vector<float>
+getRandSeq<float>();
+
+template <>
+std::vector<double>
+getRandSeq<double>();
+
+template <>
+std::vector<long double>
+getRandSeq<long double>();
+  
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
@@ -75,13 +111,18 @@ class Vector {
   std::vector<T> data;
 public:
   Vector():data(0){}
+
   Vector(std::initializer_list<T> l):data(l){}
+  
   Vector(size_t size):data(size, 0){}
+
   template <typename U>
   Vector(size_t size, U genFun):data(size, 0){
     std::generate(data.begin(), data.end(), genFun);
   }
+
   Vector(const Vector &v):data(v.data) {}
+
   size_t
   size() const {return data.size();}
 
@@ -100,18 +141,13 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE
   static
   Vector<T>
-  getRandomVector(size_t dim, T min_inc, T max_exc,
-                  uint32_t seed = 0,
-                  bool doSeed = true){
-    std::mt19937 gen;
-    if(doSeed) gen.seed(seed);
-    std::uniform_real_distribution<T> dist(min_inc,max_exc);
+  getRandomVector(size_t dim){
     Vector<T> tmp(dim);
-    for(auto& i: tmp.data){
-      i = dist(gen);
+    auto rand = getRandSeq<T>();
+    for(size_t x = 0; x < dim; ++x){
+      tmp[x] = rand[x];
     }
     return tmp;
   }
@@ -125,6 +161,7 @@ public:
   bool
   operator==(Vector<T> const &b){
     bool retVal = true;
+    if(b.data.size() != this->data.size()) return false;
     for(uint x = 0; x < size(); ++x){
       if(data[x] != b.data[x]){
         retVal = false;
@@ -156,6 +193,7 @@ public:
     Vector<T> retVal(size());
     std::vector<T> seq(size());
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
+    
     shuffle(seq.begin(), seq.end(), std::mt19937(RAND_SEED));
     //do pairwise swap
     for(uint i = 0; i < size(); i += 2){
@@ -165,19 +203,6 @@ public:
     if(size() & 1) //odd
       retVal[seq[size() - 1]] = 0;
     return retVal;
-  }
-
-  T
-  getLInfNorm(){
-    T retVal;
-    std::pair<int, T> largest;
-    for(int x = 0; x < data.size(); ++x){
-      T abe = fabs(data[x]);
-      if(abe > largest.second){
-        largest.first = x;
-        largest.second = abe;
-      }
-    }
   }
 
   void
@@ -339,7 +364,7 @@ public:
 
 
   bool
-  operator==(Matrix<T> const &rhs){
+  operator==(Matrix<T> const &rhs) const {
     bool retVal = true;
     for(uint x = 0; x < data.size(); ++x){
       for(uint y = 0; y < data[0].size(); ++y){
@@ -355,7 +380,6 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE
   Matrix<T>
   operator*(T const &sca){
     Matrix<T> retVal(data.size(), data[0].size());
@@ -365,10 +389,15 @@ public:
       }
     }
     return retVal;
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y =0; y < data[0].size(); ++y){
+        retVal.data[x][y] = data[x][y] * sca;
+      }
+    }
+    return retVal;
   }
 
   //precond: this.w = rhs.h, duh
-  HOST_DEVICE
   Matrix<T>
   operator*(Matrix<T> const &rhs){
     Matrix<T> retVal(data.size(), rhs.data[0].size());
@@ -392,7 +421,6 @@ public:
        {-v[1], v[0], 0}});
   }
 
-  HOST_DEVICE
   static
   Matrix<T>
   Identity(size_t dims){
