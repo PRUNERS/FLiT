@@ -31,10 +31,13 @@
 namespace QFPHelpers {
 
 const int RAND_SEED = 1;
+const int RAND_VECT_SIZE = 256;
+
 extern thread_local InfoStream info_stream;
   //this section provides a pregenerated random
   //sequence that can be used by tests, including
   //CUDA
+
 template <typename T>
 std::vector<T>
 setRandSequence(size_t size, int32_t seed = RAND_SEED){
@@ -383,12 +386,6 @@ public:
   Matrix<T>
   operator*(T const &sca){
     Matrix<T> retVal(data.size(), data[0].size());
-    for(uint x = 0; x < data.size(); ++x){
-      for(uint y =0; y < data[0].size(); ++y){
-        retVal.data[x][y] = data[x][y] * sca;
-      }
-    }
-    return retVal;
     for(uint x = 0; x < data.size(); ++x){
       for(uint y =0; y < data[0].size(); ++y){
         retVal.data[x][y] = data[x][y] * sca;

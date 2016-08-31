@@ -1,36 +1,36 @@
-#include <thrust/device_vector.h>
-
-#include <QFPHelpers.hpp>
+#ifdef __CUDA__
+#include <cuda.h>
+#include "QFPHelpers.hpp"
+#include "CUVector.hpp"
 
 namespace CUHelpers{
-  using thrust::device_vector;
-
-extern device_vector<float>* cuda_float_rands;
-extern device_vector<double>* cuda_double_rands;
-
-template <typename T>
-__global__
-void loadDeviceData(device_vector<T>* dest, device_vector<T> source);
+  
+// extern
+// __host__ __device__
+// float* cuda_float_rands;
+  
+// extern
+// __host__ __device__
+// double* cuda_double_rands;
 
 void
 initDeviceData();
 
-// template <typename T>
-// __device__
-// thrust::device_vector<T>
-// getRandSeqCU(){ return thrust::device_vector<T>();}
+template <typename T>
+__host__ __device__
+T*
+getRandSeqCU(){return (T*) NULL;}
 
-// template<>
-// __device__
-// thrust::device_vector<float>
-// getRandSeqCU<float>();
+template<>
+__host__ __device__
+float* getRandSeqCU<float>();
 
-// template<>
-// __device__
-// thrust::device_vector<double>
-// getRandSeqCU<double>();
+template<>
+__host__ __device__
+double* getRandSeqCU<double>();
 
 template <typename T>
+__host__ __device__
 T
 abs(T val){
   if(val > 0) return val;
@@ -42,105 +42,136 @@ class MatrixCU;
 
 template <typename T>
 class VectorCU {
-  thrust::device_vector<T> data;
+  cuvector<T> data;
+  friend class MatrixCU<T>;
 public:
-  __device__  
-  VectorCU(size_t dim): data(dim){}
+  using vsize_t = typename cuvector<T>::cvs_t;
+  __host__ __device__  
+  VectorCU(vsize_t dim): data(dim){}
 
-  __device__  
+  __host__ __device__
+  VectorCU&
+  operator=(const VectorCU& rhs){
+    data = rhs.data;
+    return *this;
+  }
+
+  __host__ __device__
+  VectorCU(const VectorCU& rhs):data(rhs.data){}
+
+  __host__ __device__  
   static
   VectorCU<T>
-  getRandomVector(size_t dim){
-    VectorCU<T> retVal(dim)
-    auto rands = getRandSeqCU<T>();
-    for(uint32_t x = 0; x < rands.size(); ++x){
-      retVal[x] = rands[x];
+  getRandomVector(vsize_t dim){
+    VectorCU<T> retVal(dim);
+    //auto rands = QFPHelpers::getRandSeq<T>();
+    //    auto rands = getRandSeqCU<T>();
+    for(vsize_t x = 0; x < dim; ++x){
+      retVal.data[x] = (T)x;
     }
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   VectorCU<T>
   getUnitVector() const {
-    VectorCU<T> retVal(this->data.size());
-    return retVal * ((T)1.0 / (this->L2Norm()));
+    VectorCU<T> retVal(data.size());
+    return retVal * ((T)1.0 / (L2Norm()));
   }
 
-  __device__  
+  __host__ __device__  
   bool
   operator==(VectorCU<T> const &b){
     if(this->data.size() != b.data.size()) return false;
-    for(uint32_t x = 0; x < b.data.size(); ++x){
-      if(this->data[x] != b.data[x]) return false;
+    for(vsize_t x = 0; x < b.data.size(); ++x){
+      if(data[x] != b.data[x]) return false;
     }
     return true;
   }
 
-  __device__  
+  __host__ __device__  
   T
   L1Distance(VectorCU<T> const &rhs) const {
     T distance = 0;
-    for(uint32_t x = 0; x < data.size(); ++x){
+    for(vsize_t x = 0; x < data.size(); ++x){
       distance += fabs(data[x] - rhs.data[x]);
     }
     return distance;
   }
 
-  __device__  
+  __host__ __device__  
   T
   operator^(VectorCU<T> const &rhs) const {
     T sum = 0.0;
-    for(uint32_t i = 0; i < data.size(); ++x){
+    for(vsize_t i = 0; i < data.size(); ++i){
       sum += data[i] * rhs.data[i];
     }
     return sum;
   }
 
-  __device__  
+  __host__ __device__  
   VectorCU<T>
   operator*(VectorCU<T> const &rhs) const{
     VectorCU<T> ret(data.size());
-    for(uint32_t x = 0; x < data.size(); ++x){
+    for(vsize_t x = 0; x < data.size(); ++x){
       ret[x] = data[x] * rhs.data[x];
     }
+    return ret;
   }
 
-  __device__  
+  __host__ __device__
+  VectorCU<T>
+  operator-(const VectorCU<T>& rhs) const {
+    VectorCU<T> retVal(data.size());
+    for(vsize_t x = 0;
+        x < data.size();
+        ++x){
+      retVal.data[x] = data[x] - rhs.data[x];
+    }
+    return retVal;
+  }
+
+  __host__ __device__  
   T
   LInfNorm() const {
     T largest = 0;
-    for(auto x : data){
-      T tmp = abs(x);
+    for(vsize_t x = 0;
+        x < data.size();
+        ++x){
+      T tmp = abs(data[x]);
       if(tmp > largest) largest = tmp;
     }
     return largest;
   }
 
-  __device__  
+  __host__ __device__  
   T
   LInfDistance(VectorCU<T> const &rhs) const {
     auto diff = operator-(rhs);
     return diff.LInfNorm();
   }
 
-  //this assumes there is only float and double on CUDA (may change for half precision)
-  __device__  
+  //TODO this assumes there is only float and double on
+  //CUDA (may change for half precision)
+  __host__ __device__  
   T
   L2Norm() const {
     VectorCU<T> squares = (*this) * (*this);
     T retVal = (T)0.0;
-    for(auto i : squares) retVal += i;
+    for(vsize_t x = 0;
+        x < data.size();
+        ++x) retVal += squares.data[x];
     if(sizeof(T) == 4) return sqrtf(retVal);
     else return sqrtd(retVal);
   }
 
   T
-  __device__  
+  __host__ __device__  
   L2Distance(VectorCU<T> const &rhs) const {
-    return L2Norm((*this) - rhs);
+    return ((*this) - rhs).L2Norm();
   }
 
-  __device__  
+  __host__ __device__  
   VectorCU<T>
   cross(VectorCU<T> const &rhs) const {
     VectorCU<T> retVal(data.size());
@@ -150,7 +181,7 @@ public:
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   bool
   isOrtho(VectorCU<T> const &rhs){
     return operator^(rhs) == (T)0;
@@ -159,19 +190,21 @@ public:
 
 template<typename T>
 class MatrixCU{
-  thrust::device_vector<thrust::device_vector<T>> data;
+  cuvector<cuvector<T>> data;
 public:
-  __device__  
-  MatrixCU(uint32_t rows, uint32_t cols):
-    data(rows, thrust::device_vector<T>(cols,0)){}
+  using vsize_t = typename cuvector<T>::cvs_t;
 
-  __device__  
+  __host__ __device__  
+  MatrixCU(vsize_t rows, vsize_t cols):
+    data(rows, cuvector<T>(cols,0)){}
+
+  __host__ __device__  
   bool
   operator==(MatrixCU<T> const &rhs) const {
     if(data.size() != rhs.data.size()) return false;
     bool retVal = true;
-    for(uint32_t x = 0; x < data.size(); ++x){
-      for(uint32_t y = 0; y < data[0].size(); ++y){
+    for(vsize_t x = 0; x < data.size(); ++x){
+      for(vsize_t y = 0; y < data[0].size(); ++y){
         if(data[x][y] != rhs.data[x][y]){
           retVal = false;
           break;
@@ -181,25 +214,25 @@ public:
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   MatrixCU<T>
   operator*(T const &sca){
     MatrixCU<T> retVal(data.size(), data[0].size());
-    for(uint32_t x = 0; x < data.size(); ++x){
-      for(uint32_t y =0; y < data[0].size(); ++y){
+    for(vsize_t x = 0; x < data.size(); ++x){
+      for(vsize_t y = 0; y < data[0].size(); ++y){
         retVal.data[x][y] = data[x][y] * sca;
       }
     }
     return retVal;    
   }
   
-  __device__  
+  __host__ __device__  
   MatrixCU<T>
   operator*(MatrixCU<T> const &rhs){
     MatrixCU<T> retVal(data.size(), rhs.data[0].size());
-    for(uint32_t bcol = 0; bcol < rhs.data[0].size(); ++bcol){
-      for(uint32_t x = 0; x < data.size(); ++x){
-        for(uint32_t y = 0; y < data[0].size(); ++y){
+    for(vsize_t bcol = 0; bcol < rhs.data[0].size(); ++bcol){
+      for(vsize_t x = 0; x < data.size(); ++x){
+        for(vsize_t y = 0; y < data[0].size(); ++y){
           retVal.data[x][bcol] += data[x][y] * rhs.data[y][bcol];
         }
       }
@@ -207,7 +240,7 @@ public:
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   static
   MatrixCU<T>
   SkewSymCrossProdM(VectorCU<T> const &v){
@@ -227,7 +260,7 @@ public:
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   static
   MatrixCU<T>
   Identity(size_t dims){
@@ -241,35 +274,44 @@ public:
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   VectorCU<T>
   operator*(VectorCU<T> const &v) const {
-    VectorCU<T> retVal(data.size());
-    int resI = 0;
-    for(auto row: data){
-      for(size_t i = 0; i < row.size(); ++i){
-        retVal[resI] += row[i] * v[i];
+    VectorCU<T> retVal((vsize_t)data.size());
+    vsize_t resI = 0;
+    for(vsize_t x = 0;
+        x < data.size();
+        ++x){
+      auto row = data[x];
+      for(vsize_t i = 0; i < row.size(); ++i){
+        retVal.data[resI] += row[i] * v.data[i];
       }
       ++resI;
     }
     return retVal;
   }
 
-  __device__  
+  __host__ __device__  
   MatrixCU<T>
   operator+(MatrixCU<T> const&rhs) const{
-    Matrix<T> retVal(data.size(), data.size());
+    MatrixCU<T> retVal(data.size(), data.size());
     int x = 0; int y = 0;
-    for(auto r: data){
-      for(auto i: r){
+    for(vsize_t j = 0;
+        j < data.size();
+        ++j){
+      auto& r = data[j];
+      for(vsize_t k = 0;
+          k < data.size();
+          ++k){
+        auto& i = r[k];
         retVal.data[x][y] = i + rhs.data[x][y];
         ++y;
       }
       y = 0; ++x;
     }
     return retVal;
-  }
-  
+  }  
 };
 }
 
+#endif

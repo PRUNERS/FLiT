@@ -9,9 +9,9 @@
 
 namespace QFPHelpers {
 
-const std::vector<float> float_rands = setRandSequence<float>(256);
-const std::vector<double> double_rands = setRandSequence<double>(256);
-const std::vector<long double>  long_double_rands = setRandSequence<long double>(256);
+const std::vector<float> float_rands = setRandSequence<float>(RAND_VECT_SIZE);
+const std::vector<double> double_rands = setRandSequence<double>(RAND_VECT_SIZE);
+const std::vector<long double>  long_double_rands = setRandSequence<long double>(RAND_VECT_SIZE);
 
 template <>
 std::vector<float>
