@@ -57,16 +57,46 @@ public:
     getTests()[name] = factory;
   }
   virtual resultType operator()(const testInput&) = 0;
+
+  // template <bool C = hasCuda, typename std::enable_if<C>::type* = nullptr>
   static std::map<std::string, TestFactory*>& getTests() {
     static std::map<std::string, TestFactory*> tests;
     return tests;
   }
+//   template <bool C = hasCuda, typename std::enable_if<!C>::type* = nullptr>
+//   static std::map<std::string, TestFactory*>& getTests() {
+// #ifdef __CUDA__
+//     return {};
+// #else
+//     static std::map<std::string, TestFactory*> tests;
+//     return tests;
+// #endif
+//  }
   const std::string id;
 };
 
 }
 
-#define REGISTER_TYPE(klass) \
+#ifdef __CUDA__
+
+#define REGISTER_TYPE(klass)                             \
+  class klass##Factory : public QFPTest::TestFactory {   \
+  public:                                                \
+    klass##Factory() {                                   \
+        QFPTest::TestBase::registerTest(#klass, this);   \
+    }                                                    \
+    virtual std::vector<QFPTest::TestBase *> create() {  \
+      return {                                           \
+          new klass<float>(#klass),                      \
+          new klass<double>(#klass),                     \
+      };                                                 \
+    }                                                    \
+  };                                                     \
+  static klass##Factory global_##klass##Factory;         \
+  
+#else
+
+#define REGISTER_TYPE(klass)                             \
   class klass##Factory : public QFPTest::TestFactory {   \
   public:                                                \
     klass##Factory() {                                   \
@@ -81,6 +111,8 @@ public:
     }                                                    \
   };                                                     \
   static klass##Factory global_##klass##Factory;         \
+  
+#endif
 
 #define EIGEN_CLASS_DEF(klass, file)                     \
   template <typename T>                                  \
