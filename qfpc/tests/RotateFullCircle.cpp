@@ -14,9 +14,9 @@ public:
     return {{{id, typeid(T).name()}, {0.0, 0.0}}};
 #else
     auto n = ti.iters;
-    T min = ti.min;
-    T max = ti.max;
-    QFPHelpers::Vector<T> A = QFPHelpers::Vector<T>::getRandomVector(3, min, max);
+    // T min = ti.min;
+    // T max = ti.max;
+    QFPHelpers::Vector<T> A = QFPHelpers::Vector<T>::getRandomVector(3);
     auto orig = A;
     T theta = 2 * M_PI / n;
     QFPHelpers::info_stream << "Rotate full circle in " << n << " increments, A is: " << A << std::endl;

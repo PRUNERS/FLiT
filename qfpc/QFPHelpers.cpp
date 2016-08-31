@@ -9,6 +9,23 @@
 
 namespace QFPHelpers {
 
+const std::vector<float> float_rands = setRandSequence<float>(256);
+const std::vector<double> double_rands = setRandSequence<double>(256);
+const std::vector<long double>  long_double_rands = setRandSequence<long double>(256);
+
+template <>
+std::vector<float>
+getRandSeq<float>(){return float_rands;}
+
+template <>
+std::vector<double>
+getRandSeq<double>(){return double_rands;}
+
+template <>
+std::vector<long double>
+getRandSeq<long double>(){return long_double_rands;}
+  
+
 thread_local InfoStream info_stream;
 std::mutex ostreamMutex;
 

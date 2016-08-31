@@ -18,9 +18,9 @@ public:
     return DoMatrixMultSanity_CUDA<T>(ti, id);
 #else
     auto dim = ti.highestDim;
-    T min = ti.min;
-    T max = ti.max;
-    QFPHelpers::Vector<T> b = QFPHelpers::Vector<T>::getRandomVector(dim, min, max);
+    // T min = ti.min;
+    // T max = ti.max;
+    QFPHelpers::Vector<T> b = QFPHelpers::Vector<T>::getRandomVector(dim);
     auto c = QFPHelpers::Matrix<T>::Identity(dim) * b;
     QFPHelpers::info_stream << "Product is: " << c << std::endl;
     bool eq = c == b;

@@ -7,6 +7,11 @@
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
+#ifdef __CUDA__
+#include "CUHelpers.hpp"
+using namespace CUHelpers;
+#endif
+
 
 using namespace QFPHelpers;
 using namespace QFPHelpers::FPHelpers;
@@ -90,6 +95,10 @@ main(int argc, char* argv[]){
 
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
+
+#ifdef __CUDA__
+  CUHelpers::initDeviceData();
+#endif
 
   QFPTest::resultType scores;
 

@@ -25,6 +25,8 @@ DEPFLAGS += -MD -MF $*.d
 TESTS    := $(wildcard tests/*.cpp)
 SOURCE   := $(wildcard *.cpp)
 SOURCE   += $(TESTS)
+SOURCE   += eigen/EigenTests.cpp
+
 
 OBJ      := $(SOURCE:.cpp=.o)
 DEPS     := $(SOURCE:.cpp=.d)
