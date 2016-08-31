@@ -4,27 +4,42 @@
 #include <cmath>
 #include <typeinfo>
 
-template <typename T>
-class DoMatrixMultSanity: public QFPTest::TestBase<T> {
-public:
-  DoMatrixMultSanity(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+using QFPHelpers::Matrix;
+using QFPHelpers::Vector;
+using QFPHelpers::info_stream;
+using QFPTest::ResultType;
+using QFPTest::TestBase;
+using QFPTest::TestInput;
 
-  QFPTest::ResultType run(const QFPTest::TestInput& ti) {
-    auto dim = ti.highestDim;
-    T min = ti.min;
-    T max = ti.max;
-    QFPHelpers::Vector<T> b = QFPHelpers::Vector<T>::getRandomVector(dim, min, max);
-    auto c = QFPHelpers::Matrix<T>::Identity(dim) * b;
-    QFPHelpers::info_stream << "Product is: " << c << std::endl;
-    bool eq = c == b;
-    QFPHelpers::info_stream << "A * b == b? " << eq << std::endl;
-    return {{
-      {id, typeid(T).name()}, {c.L1Distance(b), c.LInfDistance(b)}
-    }};
+template <typename T>
+class DoMatrixMultSanity: public TestBase<T> {
+public:
+  DoMatrixMultSanity(std::string id) : TestBase<T>(std::move(id)) {}
+
+  virtual size_t getInputsPerRun() { return 16; }
+
+  virtual TestInput<T> getDefaultInput() {
+    TestInput<T> ti;
+    ti.highestDim = getInputsPerRun();
+    ti.min = -6;
+    ti.max = 6;
+    ti.vals = Vector<T>::getRandomVector(ti.highestDim, ti.min, ti.max).getData();
+    return ti;
   }
 
-private:
-  using QFPTest::TestBase<T>::id;
+protected:
+  ResultType::mapped_type run_impl(const TestInput<T>& ti) {
+    auto dim = getInputsPerRun();
+    Vector<T> b = {ti.vals[0], ti.vals[1], ti.vals[2]};
+    auto c = Matrix<T>::Identity(dim) * b;
+    bool eq = (c == b);
+    info_stream << id << ": Product is: " << c << std::endl;
+    info_stream << id << ": A * b == b? " << eq << std::endl;
+    return {c.L1Distance(b), c.LInfDistance(b)};
+  }
+
+protected:
+  using TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoMatrixMultSanity)

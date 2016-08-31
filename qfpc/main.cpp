@@ -51,13 +51,8 @@ outputResults(const QFPTest::ResultType& scores){
 template <typename F>
 void runTestWithDefaultInput(QFPTest::TestFactory* factory,
                              QFPTest::ResultType& totScores) {
-  size_t iters = 200;
-  size_t dim = 16;
-  size_t ulp_inc = 1;
-  float min = -6.0;
-  float max = 6.0;
   auto test = factory->get<F>();
-  QFPTest::TestInput ip{iters, dim, ulp_inc, min, max};
+  auto ip = test->getDefaultInput();
 
   auto scores = test->run(ip);
   totScores.insert(scores.begin(), scores.end());

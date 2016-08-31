@@ -75,21 +75,18 @@ class Vector {
   std::vector<T> data;
 public:
   Vector():data(0){}
-  Vector(std::initializer_list<T> l):data(l){}
-  Vector(size_t size):data(size, 0){}
+  Vector(std::initializer_list<T> l) : data(l) {}
+  Vector(size_t size):data(size, 0) {}
   template <typename U>
   Vector(size_t size, U genFun):data(size, 0){
     std::generate(data.begin(), data.end(), genFun);
   }
   Vector(const Vector &v):data(v.data) {}
-  size_t
-  size() const {return data.size();}
+  size_t size() const { return data.size(); }
+  T& operator[](size_t indx){return data[indx];}
+  const T& operator[](size_t indx) const {return data[indx];}
 
-  T&
-  operator[](size_t indx){return data[indx];}
-
-  const T&
-  operator[](size_t indx) const {return data[indx];}
+  const std::vector<T>& getData() { return data; }
 
   Vector<T>
   operator*(T const &rhs){

@@ -28,6 +28,7 @@ flags = [
     '-Wall',
     '-Wextra',
     '-Werror',
+    '-pedantic',
     '-fexceptions',
     '-x',
     'c++',
