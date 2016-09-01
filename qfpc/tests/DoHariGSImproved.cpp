@@ -4,28 +4,23 @@
 #include <cmath>
 #include <typeinfo>
 
-using QFPHelpers::Vector;
-using QFPHelpers::info_stream;
-using QFPTest::TestBase;
-using QFPTest::ResultType;
-using QFPTest::TestInput;
 
 template <typename T>
-class DoHariGSImproved: public TestBase<T> {
+class DoHariGSImproved: public QFPTest::TestBase<T> {
 public:
-  DoHariGSImproved(std::string id) : TestBase<T>(std::move(id)) {}
+  DoHariGSImproved(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 9; }
-  virtual TestInput<T> getDefaultInput();
+  virtual QFPTest::TestInput<T> getDefaultInput();
 
 protected:
-  ResultType::mapped_type run_impl(const TestInput<T>& ti) {
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     long double score = 0.0;
 
     //matrix = {a, b, c};
-    Vector<T> a = {ti.vals[0], ti.vals[1], ti.vals[2]};
-    Vector<T> b = {ti.vals[3], ti.vals[4], ti.vals[5]};
-    Vector<T> c = {ti.vals[6], ti.vals[7], ti.vals[8]};
+    QFPHelpers::Vector<T> a = {ti.vals[0], ti.vals[1], ti.vals[2]};
+    QFPHelpers::Vector<T> b = {ti.vals[3], ti.vals[4], ti.vals[5]};
+    QFPHelpers::Vector<T> c = {ti.vals[6], ti.vals[7], ti.vals[8]};
 
     auto r1 = a.getUnitVector();
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -35,22 +30,22 @@ protected:
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
     if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
-      info_stream << id << ": in: " << id << std::endl;
-      info_stream << id << ": applied gram-schmidt to:" << std::endl;
-      info_stream << id << ":   a:  " << a << std::endl;
-      info_stream << id << ":   b:  " << b << std::endl;
-      info_stream << id << ":   c:  " << c << std::endl;
-      info_stream << id << ": resulting vectors were:" << std::endl;
-      info_stream << id << ":   r1: " << r1 << std::endl;
-      info_stream << id << ":   r2: " << r2 << std::endl;
-      info_stream << id << ":   r3: " << r3 << std::endl;
-      info_stream << id << ": w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
+      QFPHelpers::info_stream << id << ": in: " << id << std::endl;
+      QFPHelpers::info_stream << id << ": applied gram-schmidt to:" << std::endl;
+      QFPHelpers::info_stream << id << ":   a:  " << a << std::endl;
+      QFPHelpers::info_stream << id << ":   b:  " << b << std::endl;
+      QFPHelpers::info_stream << id << ":   c:  " << c << std::endl;
+      QFPHelpers::info_stream << id << ": resulting vectors were:" << std::endl;
+      QFPHelpers::info_stream << id << ":   r1: " << r1 << std::endl;
+      QFPHelpers::info_stream << id << ":   r2: " << r2 << std::endl;
+      QFPHelpers::info_stream << id << ":   r3: " << r3 << std::endl;
+      QFPHelpers::info_stream << id << ": w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
     }
     return {score, 0.0};
   }
 
 protected:
-  using TestBase<T>::id;
+  using QFPTest::TestBase<T>::id;
 };
 
 namespace {
@@ -61,10 +56,10 @@ namespace {
 }
 
 template <typename T>
-TestInput<T> DoHariGSImproved<T>::getDefaultInput() {
+QFPTest::TestInput<T> DoHariGSImproved<T>::getDefaultInput() {
   T e = getSmallValue<T>();
 
-  TestInput<T> ti;
+  QFPTest::TestInput<T> ti;
 
   // Just one test
   ti.vals = {
