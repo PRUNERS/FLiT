@@ -17,9 +17,6 @@ LINK_FLAGS    = -ldl -rdynamic
 DEP_FLAGS     = -MD -MF $*.d
 
 SOURCE        = $(wildcard *.cpp)
-SOURCE       += ../qfpc/QFPHelpers.cpp
-SOURCE       += ../qfpc/InfoStream.cpp
-SOURCE       += ../qfpc/testBase.cpp
 OPT_SOURCE    = testbed.cpp
 OPT_LIB       = testbed.so
 UNOPT_SOURCE  = $(filter-out $(OPT_SOURCE),$(SOURCE))

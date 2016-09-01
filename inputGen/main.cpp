@@ -93,7 +93,7 @@ int main(void) {
   //runAllPrecisions("DistributivityOfMultiplication", 10, 10000);
 
   //runAllPrecisions("DoHariGSBasic", 10, 100000);
-  QFPHelpers::info_stream.show();
+  //QFPHelpers::info_stream.show();
   runAllPrecisions("DoMatrixMultSanity", 10, 1000);
 
   return 0;
