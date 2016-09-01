@@ -1,4 +1,4 @@
-#include "groundtruth.h"
+#include "testbed.h"
 
 #include "DistributivityOfMultiplication.hpp"
 #include "DoHariGSBasic.hpp"
@@ -14,6 +14,8 @@
 
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
+
+#include <iterator>
 
 // Only store these locally because we want multiple compiled copies
 namespace {
@@ -34,35 +36,35 @@ namespace {
   INTERNAL_REGISTER_TYPE(TrianglePHeron, registerGtTest)
   INTERNAL_REGISTER_TYPE(TrianglePSylv, registerGtTest)
 
-  template<typename T> TruthType<T>
-  runGroundtruth_impl(std::string testName,
-                      std::function<T()> randGen)
+  template<typename T> long double
+  runTestbed_impl(const std::string &testName,
+                  const std::vector<T> &inputvals)
   {
     using QFPTest::TestInput;
     using QFPHelpers::Vector;
 
     auto test = alltests[testName]->get<T>();
     TestInput<T> input = test->getDefaultInput();
-    input.vals = Vector<T>(test->getInputsPerRun(), randGen).getData();
+    input.vals = inputvals;
     auto scores = test->run(input);
 
     // Return only the first score.  Ignore the key
-    return { input.vals, std::get<0>(scores.begin()->second) };
+    return std::get<0>(scores.begin()->second);
   }
 }
 
-TruthType<float>
-runGroundtruth(const std::string &testName, std::function<float()> randGen) {
-  return runGroundtruth_impl(testName, randGen);
+
+long double
+runTestbed_float(const std::string &testName, const std::vector<float> &inputs) {
+  return runTestbed_impl(testName, inputs);
 }
 
-TruthType<double>
-runGroundtruth(const std::string &testName, std::function<double()> randGen) {
-  return runGroundtruth_impl(testName, randGen);
+long double
+runTestbed_double(const std::string &testName, const std::vector<double> &inputs) {
+  return runTestbed_impl(testName, inputs);
 }
 
-TruthType<long double>
-runGroundtruth(const std::string &testName, std::function<long double()> randGen) {
-  return runGroundtruth_impl(testName, randGen);
+long double
+runTestbed_longdouble(const std::string &testName, const std::vector<long double> &inputs) {
+  return runTestbed_impl(testName, inputs);
 }
-

@@ -1,4 +1,4 @@
-TARGET              = inputGen
+TARGET              = testinputs
 
 OPT_FLAGS          ?= -O3 -funsafe-math-optimizations
 INTERNAL_OPT_FLAGS  = $(OPT_FLAGS) -fPIC
@@ -29,7 +29,7 @@ DEPS                = $(SOURCE:%.cpp=%.d)
 default: all
 
 .PHONY: all
-all: $(TARGET)
+all: $(TARGET) $(OPT_LIB)
 
 .PHONY: run
 run: $(TARGET)
@@ -44,6 +44,10 @@ clean:
 veryclean: distclean
 distclean: clean
 	rm -f $(TARGET)
+	rm -f $(OPT_LIB)
+
+$(OPT_LIB): $(OPT_OBJ) makefile
+	$(CXX) -o $(OPT_LIB) -shared $(OPT_OBJ) $(LINK_FLAGS)
 
 $(TARGET): $(UNOPT_OBJ) makefile
 	$(CXX) -o $(TARGET) $(UNOPT_OBJ) $(LINK_FLAGS)
