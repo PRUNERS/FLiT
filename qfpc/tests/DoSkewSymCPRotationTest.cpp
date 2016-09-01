@@ -10,31 +10,27 @@ public:
   DoSkewSymCPRotationTest(std::string id)
     : QFPTest::TestBase<T>(std::move(id)) {}
 
-  // TODO: Use these methods instead of canned test data in run_impl()
-  virtual size_t getInputsPerRun() { return 1; }
+  virtual size_t getInputsPerRun() { return 6; }
   virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
-    ti.min = -6.0;
-    ti.max = 6.0;
-    ti.iters = 200;
-    ti.highestDim = 16;
-    ti.ulp_inc = 1;
-    ti.vals = { 1.0 }; // dummy value for now
+    ti.min = -6;
+    ti.max = 6;
+    ti.vals = QFPHelpers::Vector<T>::getRandomVector(6, ti.min, ti.max).getData();
     return ti;
   }
 
 protected:
 
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
-    auto& min = ti.min;
-    auto& max = ti.max;
     //    auto& crit = getWatchData<T>();
     QFPHelpers::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
     long double LIScore = 0.0;
-    auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
+    QFPHelpers::Vector<T> A = { ti.vals[0], ti.vals[1], ti.vals[2] };
+    QFPHelpers::Vector<T> B = { ti.vals[3], ti.vals[4], ti.vals[5] };
+    A = A.getUnitVector();
+    B = B.getUnitVector();
     QFPHelpers::info_stream << "A (unit) is: " << std::endl << A << std::endl;
-    auto B = QFPHelpers::Vector<T>::getRandomVector(3, min, max).getUnitVector();
     QFPHelpers::info_stream << "B (unit): " << std::endl  << B << std::endl;
     auto cross = A.cross(B); //cross product
     QFPHelpers::info_stream << "cross: " << std::endl << cross << std::endl;
