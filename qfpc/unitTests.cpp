@@ -8,7 +8,6 @@
 namespace UnitTests{
 
   using namespace QFPHelpers;
-  using namespace QFPHelpers::FPHelpers;
 
   typedef std::pair<std::string, bool> results;
 

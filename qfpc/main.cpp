@@ -9,7 +9,6 @@
 
 
 using namespace QFPHelpers;
-using namespace QFPHelpers::FPHelpers;
 using namespace QFPTest;
 
 void

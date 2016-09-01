@@ -50,7 +50,7 @@ protected:
       QFPHelpers::info_stream << id << ": w dot prods:  "
                               << o12 << ", " << o13 << ", " << o23 << std::endl;
       QFPHelpers::info_stream << id << ": score (bits): "
-                              << QFPHelpers::FPHelpers::as_int(score) << std::endl;
+                              << QFPHelpers::as_int(score) << std::endl;
       QFPHelpers::info_stream << id << ": score (dec):  " << score << std::endl;
     }
     return {score, 0.0};
