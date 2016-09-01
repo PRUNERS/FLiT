@@ -21,17 +21,17 @@ template <typename F>
 F generateFloatBits();
 
 template<> inline
-float generateFloatBits() {
+float generateFloatBits<float>() {
   return QFPHelpers::as_float(randGenerator32());
 }
 
 template<> inline
-double generateFloatBits() {
+double generateFloatBits<double>() {
   return QFPHelpers::as_float(randGenerator64());
 }
 
 template<> inline
-long double generateFloatBits() {
+long double generateFloatBits<long double>() {
   return QFPHelpers::as_float(randGenerator128());
 }
 

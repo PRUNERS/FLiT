@@ -8,7 +8,7 @@
 
 extern "C"
 long double
-runTestbed_float(const char* testName, float* vals, int valCount);
+runTestbed_float(const std::string &testName, const std::vector<float> &inputs);
 
 extern "C"
 long double

@@ -55,8 +55,7 @@ namespace {
 
 
 long double
-runTestbed_float(const char* testName, float* vals, int valCount) {
-  std::vector<float> inputs(vals, vals + valCount);
+runTestbed_float(const std::string &testName, const std::vector<float> &inputs) {
   return runTestbed_impl(testName, inputs);
 }
 
