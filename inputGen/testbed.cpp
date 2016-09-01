@@ -15,6 +15,8 @@
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
+#include <iterator>
+
 // Only store these locally because we want multiple compiled copies
 namespace {
   std::map<std::string, QFPTest::TestFactory*> alltests;
@@ -53,16 +55,17 @@ namespace {
 
 
 long double
-runTestbed(const std::string &testName, const std::vector<float> &inputs) {
+runTestbed_float(const char* testName, float* vals, int valCount) {
+  std::vector<float> inputs(vals, vals + valCount);
   return runTestbed_impl(testName, inputs);
 }
 
 long double
-runTestbed(const std::string &testName, const std::vector<double> &inputs) {
+runTestbed_double(const std::string &testName, const std::vector<double> &inputs) {
   return runTestbed_impl(testName, inputs);
 }
 
 long double
-runTestbed(const std::string &testName, const std::vector<long double> &inputs) {
+runTestbed_longdouble(const std::string &testName, const std::vector<long double> &inputs) {
   return runTestbed_impl(testName, inputs);
 }

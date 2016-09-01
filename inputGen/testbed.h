@@ -6,13 +6,16 @@
 #include <vector>
 #include <tuple>
 
+extern "C"
 long double
-runTestbed(const std::string &testName, const std::vector<float> &inputs);
+runTestbed_float(const char* testName, float* vals, int valCount);
 
+extern "C"
 long double
-runTestbed(const std::string &testName, const std::vector<double> &inputs);
+runTestbed_double(const std::string &testName, const std::vector<double> &inputs);
 
+extern "C"
 long double
-runTestbed(const std::string &testName, const std::vector<long double> &inputs);
+runTestbed_longdouble(const std::string &testName, const std::vector<long double> &inputs);
 
 #endif // TESTBED_H
