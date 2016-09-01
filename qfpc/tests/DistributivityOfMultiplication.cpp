@@ -43,7 +43,7 @@ template<>
 inline QFPTest::TestInput<float>
 DistributivityOfMultiplication<float>::getDefaultInput() {
   auto convert = [](uint32_t x) {
-    return QFPHelpers::FPHelpers::as_float(x);
+    return QFPHelpers::as_float(x);
   };
 
   QFPTest::TestInput<float> ti;
@@ -104,7 +104,7 @@ template<>
 inline QFPTest::TestInput<double>
 DistributivityOfMultiplication<double>::getDefaultInput() {
   auto convert = [](uint64_t x) {
-    return QFPHelpers::FPHelpers::as_float(x);
+    return QFPHelpers::as_float(x);
   };
 
   QFPTest::TestInput<double> ti;
@@ -165,7 +165,7 @@ DistributivityOfMultiplication<long double>::getDefaultInput() {
     unsigned __int128 val = left_half;
     val = val << 64;
     val += right_half;
-    return QFPHelpers::FPHelpers::as_float(val);
+    return QFPHelpers::as_float(val);
   };
 
   QFPTest::TestInput<long double> ti;

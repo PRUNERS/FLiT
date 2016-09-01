@@ -55,7 +55,6 @@ protected:
       backup = p;
       for(decltype(iters) i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
-        //        p = FPHelpers::perturbFP(backup, i * ulp_inc);
         
         p = std::nextafter(p, std::numeric_limits<T>::max());
         // Added this for force watchpoint hits every cycle (well, two).  We
@@ -77,10 +76,10 @@ protected:
         }
         QFPHelpers::info_stream
           << "i:" << i
-          << ":a[" << r << "] = " << a[r] << ", " << QFPHelpers::FPHelpers::as_int(a[r])
-          << " multiplier: " << b[r] << ", " << QFPHelpers::FPHelpers::as_int(b[r])
+          << ":a[" << r << "] = " << a[r] << ", " << QFPHelpers::as_int(a[r])
+          << " multiplier: " << b[r] << ", " << QFPHelpers::as_int(b[r])
           << " perp: " << isOrth
-          << " dot prod: " << QFPHelpers::FPHelpers::as_int(a ^ b)
+          << " dot prod: " << QFPHelpers::as_int(a ^ b)
           << std::endl;
       }
       QFPHelpers::info_stream << "next dimension . . . " << std::endl;

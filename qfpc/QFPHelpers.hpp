@@ -33,38 +33,36 @@ extern thread_local InfoStream info_stream;
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
-namespace FPHelpers {
-  inline float
-  as_float(uint32_t val) {
-    return *reinterpret_cast<float*>(&val);
-  }
+inline float
+as_float(uint32_t val) {
+  return *reinterpret_cast<float*>(&val);
+}
 
-  inline double
-  as_float(uint64_t val) {
-     return *reinterpret_cast<double*>(&val);
-  }
+inline double
+as_float(uint64_t val) {
+   return *reinterpret_cast<double*>(&val);
+}
 
-  inline long double
-  as_float(unsigned __int128 val) {
-    return *reinterpret_cast<long double*>(&val);
-  }
+inline long double
+as_float(unsigned __int128 val) {
+  return *reinterpret_cast<long double*>(&val);
+}
 
-  inline uint32_t
-  as_int(float val) {
-    return *reinterpret_cast<uint32_t*>(&val);
-  }
+inline uint32_t
+as_int(float val) {
+  return *reinterpret_cast<uint32_t*>(&val);
+}
 
-  inline uint64_t
-  as_int(double val) {
-    return *reinterpret_cast<uint64_t*>(&val);
-  }
+inline uint64_t
+as_int(double val) {
+  return *reinterpret_cast<uint64_t*>(&val);
+}
 
-  inline unsigned __int128
-  as_int(long double val) {
-    const unsigned __int128 zero = 0;
-    const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
-    return temp & (~zero >> 48);
-  }
+inline unsigned __int128
+as_int(long double val) {
+  const unsigned __int128 zero = 0;
+  const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
+  return temp & (~zero >> 48);
 }
 
 template<typename T>
