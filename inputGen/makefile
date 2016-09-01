@@ -1,4 +1,4 @@
-TARGET        = testinputs
+TARGET        = inputGen
 
 OPT_FLAGS    ?= -O3 -funsafe-math-optimizations
 
