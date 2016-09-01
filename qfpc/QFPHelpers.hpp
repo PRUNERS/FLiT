@@ -79,7 +79,19 @@ public:
   Vector(size_t size, U genFun):data(size, 0){
     std::generate(data.begin(), data.end(), genFun);
   }
+
+  // Copyable
   Vector(const Vector &v):data(v.data) {}
+  Vector(const std::vector<T> &data) : data(data) {}
+  Vector& operator=(const Vector &v) { data = v.data; return *this; }
+  Vector& operator=(const std::vector<T> &data) { this->data = data; return *this; }
+
+  // Movable
+  Vector(Vector &&v) : data(std::move(v.data)) {}
+  Vector(std::vector<T> &&data) : data(std::move(data)) {}
+  Vector& operator=(Vector &&v) { data = std::move(v.data); return *this; }
+  Vector& operator=(std::vector<T> &&data) { this->data = std::move(data); return *this;}
+
   size_t size() const { return data.size(); }
   T& operator[](size_t indx){return data[indx];}
   const T& operator[](size_t indx) const {return data[indx];}
