@@ -1,3 +1,6 @@
+#ifndef DO_SIMPLE_ROTATE_90_HPP
+#define DO_SIMPLE_ROTATE_90_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -33,4 +36,4 @@ protected:
   using QFPTest::TestBase<T>::id;
 };
 
-REGISTER_TYPE(DoSimpleRotate90)
+#endif // DO_SIMPLE_ROTATE_90_HPP

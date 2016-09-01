@@ -1,3 +1,6 @@
+#ifndef TRIANGLE_P_HERON_HPP
+#define TRIANGLE_P_HERON_HPP
+
 #include "Triangle.hpp"
 #include "QFPHelpers.hpp"
 
@@ -17,4 +20,4 @@ public:
   }
 };
 
-REGISTER_TYPE(TrianglePHeron)
+#endif // TRIANGLE_P_HERON_HPP

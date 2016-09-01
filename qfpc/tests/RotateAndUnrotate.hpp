@@ -1,3 +1,6 @@
+#ifndef ROTATE_AND_UNROTATE_HPP
+#define ROTATE_AND_UNROTATE_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -44,4 +47,4 @@ protected:
   using QFPTest::TestBase<T>::id;
 };
 
-REGISTER_TYPE(RotateAndUnrotate)
+#endif // ROTATE_AND_UNROTATE_HPP

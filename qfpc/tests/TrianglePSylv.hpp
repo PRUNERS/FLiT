@@ -1,3 +1,6 @@
+#ifndef TRIANGLE_P_SYLV_HPP
+#define TRIANGLE_P_SYLV_HPP
+
 #include "Triangle.hpp"
 #include "QFPHelpers.hpp"
 
@@ -17,4 +20,4 @@ public:
 
 };
 
-REGISTER_TYPE(TrianglePSylv)
+#endif // TRIANGLE_P_SYLV_HPP

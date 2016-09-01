@@ -1,3 +1,6 @@
+#ifndef DO_MATRIX_MULT_SANITY_HPP
+#define DO_MATRIX_MULT_SANITY_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -38,4 +41,4 @@ protected:
   using QFPTest::TestBase<T>::id;
 };
 
-REGISTER_TYPE(DoMatrixMultSanity)
+#endif // DO_MATRIX_MULT_SANITY_HPP

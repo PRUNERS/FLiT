@@ -1,3 +1,6 @@
+#ifndef DISTRIBUTIVITY_OF_MULTIPLICATION_HPP
+#define DISTRIBUTIVITY_OF_MULTIPLICATION_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -218,4 +221,4 @@ DistributivityOfMultiplication<long double>::getDefaultInput() {
   return ti;
 }
 
-REGISTER_TYPE(DistributivityOfMultiplication)
+#endif // DISTRIBUTIVITY_OF_MULTIPLICATION_HPP

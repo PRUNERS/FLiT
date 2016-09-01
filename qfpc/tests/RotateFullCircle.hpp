@@ -1,3 +1,6 @@
+#ifndef ROTATE_FULL_CIRCLE_HPP
+#define ROTATE_FULL_CIRCLE_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -46,4 +49,4 @@ private:
   using QFPTest::TestBase<T>::id;
 };
 
-REGISTER_TYPE(RotateFullCircle)
+#endif // ROTATE_FULL_CIRCLE_HPP

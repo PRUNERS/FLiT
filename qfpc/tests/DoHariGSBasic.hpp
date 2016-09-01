@@ -1,3 +1,6 @@
+#ifndef DO_HARI_GS_BASIC_HPP
+#define DO_HARI_GS_BASIC_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -11,7 +14,20 @@ public:
   DoHariGSBasic(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 9; }
-  virtual QFPTest::TestInput<T> getDefaultInput();
+  virtual QFPTest::TestInput<T> getDefaultInput() {
+    T e = getSmallValue();
+
+    QFPTest::TestInput<T> ti;
+
+    // Just one test
+    ti.vals = {
+      1, e, e,  // vec a
+      1, e, 0,  // vec b
+      1, 0, e,  // vec c
+    };
+
+    return ti;
+  }
 
 protected:
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
@@ -58,30 +74,18 @@ protected:
 
 protected:
   using QFPTest::TestBase<T>::id;
+
+private:
+  static T getSmallValue();
 };
 
-namespace {
-  template <typename T> T getSmallValue();
-  template<> inline float getSmallValue() { return pow(10, -4); }
-  template<> inline double getSmallValue() { return pow(10, -8); }
-  template<> inline long double getSmallValue() { return pow(10, -10); }
-}
+template<> inline float
+DoHariGSBasic<float>::getSmallValue() { return pow(10, -4); }
 
-template <typename T>
-QFPTest::TestInput<T> DoHariGSBasic<T>::getDefaultInput() {
-  T e = getSmallValue<T>();
+template<> inline double
+DoHariGSBasic<double>::getSmallValue() { return pow(10, -8); }
 
-  QFPTest::TestInput<T> ti;
+template<> inline long double
+DoHariGSBasic<long double>::getSmallValue() { return pow(10, -10); }
 
-  // Just one test
-  ti.vals = {
-    1, e, e,  // vec a
-    1, e, 0,  // vec b
-    1, 0, e,  // vec c
-  };
-  
-  return ti;
-}
-
-REGISTER_TYPE(DoHariGSBasic)
-
+#endif // DO_HARI_GS_BASIC_HPP

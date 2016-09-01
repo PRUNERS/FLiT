@@ -1,3 +1,6 @@
+#ifndef DO_SKEW_SYM_CP_ROTATION_TEST_HPP
+#define DO_SKEW_SYM_CP_ROTATION_TEST_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -68,4 +71,4 @@ private:
   using QFPTest::TestBase<T>::id;
 };
 
-REGISTER_TYPE(DoSkewSymCPRotationTest)
+#endif // DO_SKEW_SYM_CP_ROTATION_TEST_HPP

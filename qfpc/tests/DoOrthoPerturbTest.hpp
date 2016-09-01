@@ -1,3 +1,6 @@
+#ifndef DO_ORTHO_PERTURB_TEST_HPP
+#define DO_ORTHO_PERTURB_TEST_HPP
+
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
@@ -107,4 +110,4 @@ private:
   using QFPTest::TestBase<T>::id;
 };
 
-REGISTER_TYPE(DoOrthoPerturbTest)
+#endif // DO_ORTHO_PERTURB_TEST_HPP
