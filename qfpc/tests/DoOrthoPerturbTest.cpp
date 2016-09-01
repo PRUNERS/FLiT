@@ -5,24 +5,16 @@
 #include <typeinfo>
 #include <iomanip>
 
-using QFPHelpers::FPHelpers::as_int;
-using QFPHelpers::Vector;
-using QFPHelpers::info_stream;
-using QFPHelpers::operator<<;
-using QFPTest::ResultType;
-using QFPTest::TestBase;
-using QFPTest::TestInput;
-using QFPTest::getWatchData;
 
 template <typename T>
-class DoOrthoPerturbTest : public TestBase<T> {
+class DoOrthoPerturbTest : public QFPTest::TestBase<T> {
 public:
-  DoOrthoPerturbTest(std::string id):TestBase<T>(std::move(id)) {}
+  DoOrthoPerturbTest(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
   // TODO: Use these methods instead of canned test data in run_impl()
   virtual size_t getInputsPerRun() { return 1; }
-  virtual TestInput<T> getDefaultInput() {
-    TestInput<T> ti;
+  virtual QFPTest::TestInput<T> getDefaultInput() {
+    QFPTest::TestInput<T> ti;
     ti.iters = 200;
     ti.highestDim = 16;
     ti.ulp_inc = 1;
@@ -31,29 +23,31 @@ public:
   }
 
 protected:
-  ResultType::mapped_type run_impl(const TestInput<T>& ti) {
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+    using QFPHelpers::operator<<;
+
     auto iters = ti.iters;
     auto dim = ti.highestDim;
     size_t indexer = 0;
     auto ulp_inc = ti.ulp_inc;
     auto fun = [&indexer]() { return static_cast<T>(1 << indexer++ ); };
     //    auto fun = [&indexer](){return 2.0 / pow((T)10.0, indexer++);};
-    auto& watchPoint = getWatchData<T>();
+    auto& watchPoint = QFPTest::getWatchData<T>();
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0.0);
     // we use a double literal above as a workaround for Intel 15-16 compiler
     // bug:
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    Vector<T> a(dim, fun);
-    Vector<T> b = a.genOrthoVector();
+    QFPHelpers::Vector<T> a(dim, fun);
+    QFPHelpers::Vector<T> b = a.genOrthoVector();
 
-    info_stream << "starting dot product orthogonality test with a, b = "
+    QFPHelpers::info_stream << "starting dot product orthogonality test with a, b = "
                 << std::endl;
     for(decltype(dim) x = 0; x < dim; ++x)
-      info_stream << x << '\t';
-    info_stream << std::endl;
-    info_stream << a << std::endl;
-    info_stream << b << std::endl;
+      QFPHelpers::info_stream << x << '\t';
+    QFPHelpers::info_stream << std::endl;
+    QFPHelpers::info_stream << a << std::endl;
+    QFPHelpers::info_stream << b << std::endl;
     T backup;
 
     for(decltype(dim) r = 0; r < dim; ++r){
@@ -81,36 +75,37 @@ protected:
           // if falsely not detecting ortho, should be the dot prod
           if(i == 0) score += std::abs(watchPoint); //a ^ b);
         }
-        info_stream << "i:" << i
-                    << ":a[" << r << "] = " << a[r] << ", " << as_int(a[r])
-                    << " multiplier: " << b[r] << ", " << as_int(b[r])
-                    << " perp: " << isOrth
-                    << " dot prod: " << as_int(a ^ b)
-                    << std::endl;
+        QFPHelpers::info_stream
+          << "i:" << i
+          << ":a[" << r << "] = " << a[r] << ", " << QFPHelpers::FPHelpers::as_int(a[r])
+          << " multiplier: " << b[r] << ", " << QFPHelpers::FPHelpers::as_int(b[r])
+          << " perp: " << isOrth
+          << " dot prod: " << QFPHelpers::FPHelpers::as_int(a ^ b)
+          << std::endl;
       }
-      info_stream << "next dimension . . . " << std::endl;
+      QFPHelpers::info_stream << "next dimension . . . " << std::endl;
       p = backup;
     }
-    info_stream << "Final report, one iteration set per dimensiion:" << std::endl;
-    info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
-    info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
-    info_stream << '\t' << "dimensions: " << dim << std::endl;
-    info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
+    QFPHelpers::info_stream << "Final report, one iteration set per dimensiion:" << std::endl;
+    QFPHelpers::info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
+    QFPHelpers::info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
+    QFPHelpers::info_stream << '\t' << "dimensions: " << dim << std::endl;
+    QFPHelpers::info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
     int cdim = 0;
     for(auto d: orthoCount){
       int exp = 0;
       std::frexp(a[cdim] * b[cdim], &exp);
-      info_stream << "For mod dim " << cdim <<
-        ", there were " << d <<
-        " ortho vectors, product magnitude (biased fp exp): " <<
-        exp << std::endl;
+      QFPHelpers::info_stream
+        << "For mod dim " << cdim << ", there were " << d
+        << " ortho vectors, product magnitude (biased fp exp): " << exp
+        << std::endl;
       cdim++;
     }
     return {score, 0.0};
   }
 
 private:
-  using TestBase<T>::id;
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoOrthoPerturbTest)

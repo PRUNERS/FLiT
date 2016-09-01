@@ -5,24 +5,17 @@
 #include <iomanip>
 #include <typeinfo>
 
-using QFPHelpers::FPHelpers::as_float;
-using QFPHelpers::FPHelpers::as_int;
-using QFPHelpers::info_stream;
-using QFPTest::ResultType;
-using QFPTest::TestBase;
-using QFPTest::TestInput;
-
 template <typename T>
-class DistributivityOfMultiplication : public TestBase<T> {
+class DistributivityOfMultiplication : public QFPTest::TestBase<T> {
 public:
   DistributivityOfMultiplication(std::string id)
-    : TestBase<T>(std::move(id)) {}
+    : QFPTest::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual TestInput<T> getDefaultInput();
+  virtual QFPTest::TestInput<T> getDefaultInput();
 
 protected:
-  ResultType::mapped_type run_impl(const TestInput<T>& ti) {
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];
@@ -30,30 +23,30 @@ protected:
     auto distributed = (a * c) + (b * c);
     auto undistributed = (a + b) * c;
 
-    info_stream << std::setw(8);
-    info_stream << id << ": (a,b,c) = (" << a << ","
+    QFPHelpers::info_stream << std::setw(8);
+    QFPHelpers::info_stream << id << ": (a,b,c) = (" << a << ","
                 << b << "," << c << ")" << std::endl;
-    info_stream << id << ": dist    = "
+    QFPHelpers::info_stream << id << ": dist    = "
                 << distributed << std::endl;
-    info_stream << id << ": undist  = "
+    QFPHelpers::info_stream << id << ": undist  = "
                 << undistributed << std::endl;
 
     return {distributed, undistributed};
   }
 
 protected:
-  using TestBase<T>::id;
+  using QFPTest::TestBase<T>::id;
 };
 
 // Define the inputs
 template<>
-TestInput<float>
+inline QFPTest::TestInput<float>
 DistributivityOfMultiplication<float>::getDefaultInput() {
   auto convert = [](uint32_t x) {
-    return as_float(x);
+    return QFPHelpers::FPHelpers::as_float(x);
   };
 
-  TestInput<float> ti;
+  QFPTest::TestInput<float> ti;
   
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -108,13 +101,13 @@ DistributivityOfMultiplication<float>::getDefaultInput() {
 }
 
 template<>
-TestInput<double>
+inline QFPTest::TestInput<double>
 DistributivityOfMultiplication<double>::getDefaultInput() {
   auto convert = [](uint64_t x) {
-    return as_float(x);
+    return QFPHelpers::FPHelpers::as_float(x);
   };
 
-  TestInput<double> ti;
+  QFPTest::TestInput<double> ti;
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -165,17 +158,17 @@ DistributivityOfMultiplication<double>::getDefaultInput() {
 }
 
 template<>
-TestInput<long double>
+inline QFPTest::TestInput<long double>
 DistributivityOfMultiplication<long double>::getDefaultInput() {
   // Here we are assuming that long double represents 80 bits
   auto convert = [](uint64_t left_half, uint64_t right_half) {
     unsigned __int128 val = left_half;
     val = val << 64;
     val += right_half;
-    return as_float(val);
+    return QFPHelpers::FPHelpers::as_float(val);
   };
 
-  TestInput<long double> ti;
+  QFPTest::TestInput<long double> ti;
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
