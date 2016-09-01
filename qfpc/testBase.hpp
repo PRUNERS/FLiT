@@ -177,11 +177,11 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
 
 }
 
-#define REGISTER_TYPE(klass)                             \
+#define INTERNAL_REGISTER_TYPE(klass, registerFunc)      \
   class klass##Factory : public QFPTest::TestFactory {   \
   public:                                                \
     klass##Factory() {                                   \
-      QFPTest::registerTest(#klass, this);               \
+      registerFunc(#klass, this);                        \
     }                                                    \
   protected:                                             \
     virtual createType create() {                        \
@@ -193,6 +193,9 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
     }                                                    \
   };                                                     \
   static klass##Factory global_##klass##Factory;         \
+
+#define REGISTER_TYPE(klass) \
+  INTERNAL_REGISTER_TYPE(klass, QFPTest::registerTest)
 
 /** A convenience macro for running Eigen tests
  *

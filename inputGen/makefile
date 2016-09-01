@@ -9,11 +9,16 @@ COMMON_FLAGS += -Werror
 COMMON_FLAGS += -Wall
 COMMON_FLAGS += -Wextra
 COMMON_FLAGS += -Wstrict-aliasing=0
+COMMON_FLAGS += -I../qfpc
+COMMON_FLAGS += -I../qfpc/tests
 UNOPT_FLAGS   = -O0
 LINK_FLAGS    =
 DEP_FLAGS     = -MD -MF $*.d
 
 SOURCE        = $(wildcard *.cpp)
+SOURCE       += ../qfpc/QFPHelpers.cpp
+SOURCE       += ../qfpc/InfoStream.cpp
+SOURCE       += ../qfpc/testBase.cpp
 UNOPT_SOURCE  = groundtruth.cpp
 OPT_SOURCE    = $(filter-out $(UNOPT_SOURCE),$(SOURCE))
 UNOPT_OBJ     = $(UNOPT_SOURCE:%.cpp=%.unopt.o)
