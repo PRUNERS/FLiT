@@ -20,13 +20,6 @@
 #define Q_UNUSED(x) (void)x
 #endif
 
-#ifdef __CUDA__
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#define HOST_DEVICE __host__ __device__
-#else
-#define HOST_DEVICE
-#endif
 
 namespace QFPHelpers {
 

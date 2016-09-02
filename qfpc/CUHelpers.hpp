@@ -1,6 +1,11 @@
+#pragma once
+
 #ifdef __CUDA__
-#include <cuda.h>
+//#include <cuda.h>
 #include "QFPHelpers.hpp"
+
+#define HOST_DEVICE
+//#define HOST_DEVICE __host__ __device__
 #include "CUVector.hpp"
 
 namespace CUHelpers{
@@ -17,20 +22,20 @@ void
 initDeviceData();
 
 template <typename T>
-__host__ __device__
+HOST_DEVICE
 T*
 getRandSeqCU(){return (T*) NULL;}
 
 template<>
-__host__ __device__
+HOST_DEVICE
 float* getRandSeqCU<float>();
 
 template<>
-__host__ __device__
+HOST_DEVICE
 double* getRandSeqCU<double>();
 
 template <typename T>
-__host__ __device__
+HOST_DEVICE
 T
 abs(T val){
   if(val > 0) return val;
@@ -46,20 +51,20 @@ class VectorCU {
   friend class MatrixCU<T>;
 public:
   using vsize_t = typename cuvector<T>::cvs_t;
-  __host__ __device__  
+  HOST_DEVICE  
   VectorCU(vsize_t dim): data(dim){}
 
-  __host__ __device__
+  HOST_DEVICE
   VectorCU&
   operator=(const VectorCU& rhs){
     data = rhs.data;
     return *this;
   }
 
-  __host__ __device__
+  HOST_DEVICE
   VectorCU(const VectorCU& rhs):data(rhs.data){}
 
-  __host__ __device__  
+  HOST_DEVICE  
   static
   VectorCU<T>
   getRandomVector(vsize_t dim){
@@ -72,14 +77,14 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   VectorCU<T>
   getUnitVector() const {
     VectorCU<T> retVal(data.size());
     return retVal * ((T)1.0 / (L2Norm()));
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   bool
   operator==(VectorCU<T> const &b){
     if(this->data.size() != b.data.size()) return false;
@@ -89,7 +94,7 @@ public:
     return true;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   T
   L1Distance(VectorCU<T> const &rhs) const {
     T distance = 0;
@@ -99,7 +104,7 @@ public:
     return distance;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   T
   operator^(VectorCU<T> const &rhs) const {
     T sum = 0.0;
@@ -109,7 +114,7 @@ public:
     return sum;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   VectorCU<T>
   operator*(VectorCU<T> const &rhs) const{
     VectorCU<T> ret(data.size());
@@ -119,7 +124,7 @@ public:
     return ret;
   }
 
-  __host__ __device__
+  HOST_DEVICE
   VectorCU<T>
   operator-(const VectorCU<T>& rhs) const {
     VectorCU<T> retVal(data.size());
@@ -131,7 +136,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   T
   LInfNorm() const {
     T largest = 0;
@@ -144,7 +149,7 @@ public:
     return largest;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   T
   LInfDistance(VectorCU<T> const &rhs) const {
     auto diff = operator-(rhs);
@@ -153,7 +158,7 @@ public:
 
   //TODO this assumes there is only float and double on
   //CUDA (may change for half precision)
-  __host__ __device__  
+  HOST_DEVICE  
   T
   L2Norm() const {
     VectorCU<T> squares = (*this) * (*this);
@@ -166,12 +171,12 @@ public:
   }
 
   T
-  __host__ __device__  
+  HOST_DEVICE  
   L2Distance(VectorCU<T> const &rhs) const {
     return ((*this) - rhs).L2Norm();
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   VectorCU<T>
   cross(VectorCU<T> const &rhs) const {
     VectorCU<T> retVal(data.size());
@@ -181,7 +186,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   bool
   isOrtho(VectorCU<T> const &rhs){
     return operator^(rhs) == (T)0;
@@ -194,11 +199,11 @@ class MatrixCU{
 public:
   using vsize_t = typename cuvector<T>::cvs_t;
 
-  __host__ __device__  
+  HOST_DEVICE  
   MatrixCU(vsize_t rows, vsize_t cols):
     data(rows, cuvector<T>(cols,0)){}
 
-  __host__ __device__  
+  HOST_DEVICE  
   bool
   operator==(MatrixCU<T> const &rhs) const {
     if(data.size() != rhs.data.size()) return false;
@@ -214,7 +219,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   MatrixCU<T>
   operator*(T const &sca){
     MatrixCU<T> retVal(data.size(), data[0].size());
@@ -226,7 +231,7 @@ public:
     return retVal;    
   }
   
-  __host__ __device__  
+  HOST_DEVICE  
   MatrixCU<T>
   operator*(MatrixCU<T> const &rhs){
     MatrixCU<T> retVal(data.size(), rhs.data[0].size());
@@ -240,7 +245,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   static
   MatrixCU<T>
   SkewSymCrossProdM(VectorCU<T> const &v){
@@ -260,7 +265,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   static
   MatrixCU<T>
   Identity(size_t dims){
@@ -274,7 +279,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   VectorCU<T>
   operator*(VectorCU<T> const &v) const {
     VectorCU<T> retVal((vsize_t)data.size());
@@ -291,7 +296,7 @@ public:
     return retVal;
   }
 
-  __host__ __device__  
+  HOST_DEVICE  
   MatrixCU<T>
   operator+(MatrixCU<T> const&rhs) const{
     MatrixCU<T> retVal(data.size(), data.size());

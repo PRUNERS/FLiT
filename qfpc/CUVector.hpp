@@ -1,4 +1,7 @@
-#include <cuda.h>
+#pragma once
+#include "CUHelpers.hpp"
+
+//#include <cuda.h>
 
 //This vector class is designed to be used on a CUDA
 //enabled device.
@@ -14,6 +17,8 @@
 // * operator =
 // * size()
 
+//#define HOST_DEVICE
+//#define HOST_DEVICE __host__ __device__
 
 template <typename T>
 class cuvector {
@@ -23,18 +28,26 @@ private:
   T* data;
   cvs_t vsize;
   bool invalid = false;
+
+  HOST_DEVICE
+  void
+  zero(){
+    for(cvs_t x = 0; x < vsize; ++x)
+      data[x] = 0;
+  }
 public:
 
-  __host__ __device__
+  HOST_DEVICE
   cuvector():vsize(0){}
 
-  __host__ __device__
+  HOST_DEVICE
   cuvector(cvs_t size):vsize(size){
     data = new  T[vsize];
     invalid = data == NULL;
+    if (!invalid) zero();
   }
   
-  __host__ __device__
+  HOST_DEVICE
   cuvector(cvs_t size, T val):vsize(size){
     data = new  T[vsize];
     invalid = data == NULL;
@@ -45,7 +58,7 @@ public:
     }
   }
 
-  __host__ __device__
+  HOST_DEVICE
   cuvector(const cuvector& rhs):vsize(rhs.vsize){
     data = new  T[vsize];
     invalid = data == NULL;
@@ -54,7 +67,7 @@ public:
     }
   }
   
-  __host__ __device__
+  HOST_DEVICE
   cuvector&
   operator=(const cuvector& rhs){
     vsize = rhs.vsize;
@@ -66,7 +79,7 @@ public:
     return *this;
   }
   
-  __host__ __device__
+  HOST_DEVICE
   cuvector(T* array, cvs_t size):vsize(size){
     data = new  T[vsize];
     invalid = data == NULL;
@@ -75,31 +88,31 @@ public:
     }
   }
 
-  __host__ __device__
+  HOST_DEVICE
   ~cuvector(){
     delete[] data;
   }
 
-  __host__ __device__
+  HOST_DEVICE
   inline
   bool
   isValid() const {return !invalid;}
 
-  __host__ __device__
+  HOST_DEVICE
   inline
   T
   operator[](cvs_t index) const {
     return data[index];
   }
 
-  __host__ __device__
+  HOST_DEVICE
   inline
   T&
   operator[](cvs_t index){
     return data[index];
   }
 
-  __host__ __device__
+  HOST_DEVICE
   inline
   cvs_t
   size() const {return vsize;}

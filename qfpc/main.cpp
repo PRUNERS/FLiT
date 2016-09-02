@@ -8,7 +8,7 @@
 #include "QFPHelpers.hpp"
 
 #ifdef __CUDA__
-#include <cuda.h>
+//#include <cuda.h>
 #include "CUHelpers.hpp"
 using namespace CUHelpers;
 #endif
@@ -131,7 +131,8 @@ main(int argc, char* argv[]){
     outputResults(scores);
   }
 #ifdef __CUDA__
-  cudaDeviceSynchronize();
+  //TODO uncomment me
+  //  cudaDeviceSynchronize();
 #endif
 }
 
