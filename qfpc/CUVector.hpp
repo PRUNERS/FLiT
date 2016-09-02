@@ -25,16 +25,16 @@ private:
   bool invalid = false;
 public:
 
-  __device__
+  __host__ __device__
   cuvector():vsize(0){}
 
-  __device__
+  __host__ __device__
   cuvector(cvs_t size):vsize(size){
     data = new  T[vsize];
     invalid = data == NULL;
   }
   
-  __device__
+  __host__ __device__
   cuvector(cvs_t size, T val){
     data = new  T[vsize];
     invalid = data == NULL;
@@ -45,7 +45,7 @@ public:
     }
   }
 
-  __device__
+  __host__ __device__
   cuvector(const cuvector& rhs):vsize(rhs.vsize){
     data = new  T[vsize];
     invalid = data == NULL;
@@ -54,7 +54,7 @@ public:
     }
   }
   
-  __device__
+  __host__ __device__
   cuvector&
   operator=(const cuvector& rhs){
     vsize = rhs.vsize;
@@ -66,7 +66,7 @@ public:
     return *this;
   }
   
-  __device__
+  __host__ __device__
   cuvector(T* array, cvs_t size):vsize(size){
     data = new  T[vsize];
     invalid = data == NULL;
@@ -75,31 +75,31 @@ public:
     }
   }
 
-  __device__
+  __host__ __device__
   ~cuvector(){
     delete[] data;
   }
 
-  __device__
+  __host__ __device__
   inline
   bool
   isValid() const {return !invalid;}
 
-  __device__
+  __host__ __device__
   inline
   T
   operator[](cvs_t index) const {
     return data[index];
   }
 
-  __device__
+  __host__ __device__
   inline
   T&
   operator[](cvs_t index){
     return data[index];
   }
 
-  __device__
+  __host__ __device__
   inline
   cvs_t
   size() const {return vsize;}
