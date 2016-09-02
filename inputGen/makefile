@@ -1,25 +1,29 @@
-TARGET        = inputGen
+TARGET              = inputGen
 
-OPT_FLAGS    ?= -O3 -funsafe-math-optimizations
+OPT_FLAGS          ?= -O3 -funsafe-math-optimizations
+INTERNAL_OPT_FLAGS  = $(OPT_FLAGS) -fPIC
 
-CXX           = g++
-COMMON_FLAGS += -std=c++14
-COMMON_FLAGS += -g
-COMMON_FLAGS += -Werror
-COMMON_FLAGS += -Wall
-COMMON_FLAGS += -Wextra
-COMMON_FLAGS += -Wstrict-aliasing=0
-UNOPT_FLAGS   = -O0
-LINK_FLAGS    =
-DEP_FLAGS     = -MD -MF $*.d
+CXX                 = g++
+COMMON_FLAGS       += -std=c++14
+COMMON_FLAGS       += -g
+COMMON_FLAGS       += -Werror
+COMMON_FLAGS       += -Wall
+COMMON_FLAGS       += -Wextra
+COMMON_FLAGS       += -Wstrict-aliasing=0
+COMMON_FLAGS       += -I../qfpc
+COMMON_FLAGS       += -I../qfpc/tests
+UNOPT_FLAGS         = -O0
+LINK_FLAGS          = -ldl -rdynamic
+DEP_FLAGS           = -MD -MF $*.d
 
-SOURCE        = $(wildcard *.cpp)
-UNOPT_SOURCE  = groundtruth.cpp
-OPT_SOURCE    = $(filter-out $(UNOPT_SOURCE),$(SOURCE))
-UNOPT_OBJ     = $(UNOPT_SOURCE:%.cpp=%.unopt.o)
-OPT_OBJ       = $(OPT_SOURCE:%.cpp=%.opt.o)
-OBJ           = $(UNOPT_OBJ) $(OPT_OBJ)
-DEPS          = $(SOURCE:%.cpp=%.d)
+SOURCE              = $(wildcard *.cpp)
+OPT_SOURCE          = testbed.cpp
+OPT_LIB             = testbed.so
+UNOPT_SOURCE        = $(filter-out $(OPT_SOURCE),$(SOURCE))
+UNOPT_OBJ           = $(UNOPT_SOURCE:%.cpp=%.unopt.o)
+OPT_OBJ             = $(OPT_SOURCE:%.cpp=%.opt.o)
+OBJ                 = $(UNOPT_OBJ) $(OPT_OBJ)
+DEPS                = $(SOURCE:%.cpp=%.d)
 
 .PHONY: default
 default: all
@@ -41,14 +45,14 @@ veryclean: distclean
 distclean: clean
 	rm -f $(TARGET)
 
-$(TARGET): $(OBJ) makefile
-	$(CXX) -o $(TARGET) $(LINK_FLAGS) $(OBJ)
+$(TARGET): $(UNOPT_OBJ) makefile
+	$(CXX) -o $(TARGET) $(UNOPT_OBJ) $(LINK_FLAGS)
 
 %.unopt.o: %.cpp makefile
 	$(CXX) -c $(COMMON_FLAGS) $(UNOPT_FLAGS) $(DEP_FLAGS) -o $@ $<
 
 %.opt.o: %.cpp makefile
-	$(CXX) -c $(COMMON_FLAGS) $(OPT_FLAGS) $(DEP_FLAGS) -o $@ $<
+	$(CXX) -c $(COMMON_FLAGS) $(INTERNAL_OPT_FLAGS) $(DEP_FLAGS) -o $@ $<
 
 .PRECIOUS: %.d
 -include $(DEPS)
