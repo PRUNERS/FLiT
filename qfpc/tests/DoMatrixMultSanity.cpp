@@ -40,7 +40,7 @@ QFPTest::resultType DoMatrixMultSanity_CUDA(uint32_t dim,
     rt[{id + std::to_string(hresults[x].index), typeid(T).name()}] =
       {hresults[x].s1, hresults[x].s2};
   }
-  printf("exiting cuda func, error %d\n", cudaGetLastError());
+  //  printf("exiting cuda func, error %d\n", cudaGetLastError());
   
   return rt;
 }
