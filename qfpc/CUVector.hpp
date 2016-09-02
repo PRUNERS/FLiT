@@ -35,7 +35,7 @@ public:
   }
   
   __host__ __device__
-  cuvector(cvs_t size, T val){
+  cuvector(cvs_t size, T val):vsize(size){
     data = new  T[vsize];
     invalid = data == NULL;
     if(!invalid){
