@@ -1,39 +1,10 @@
 #include "groundtruth.h"
 
-#include "DistributivityOfMultiplication.hpp"
-#include "DoHariGSBasic.hpp"
-#include "DoHariGSImproved.hpp"
-#include "DoMatrixMultSanity.hpp"
-#include "DoOrthoPerturbTest.hpp"
-#include "DoSimpleRotate90.hpp"
-#include "DoSkewSymCPRotationTest.hpp"
-#include "RotateAndUnrotate.hpp"
-#include "RotateFullCircle.hpp"
-#include "TrianglePHeron.hpp"
-#include "TrianglePSylv.hpp"
-
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
 // Only store these locally because we want multiple compiled copies
 namespace {
-  std::map<std::string, QFPTest::TestFactory*> alltests;
-  void registerGtTest(std::string name, QFPTest::TestFactory* factory) {
-    alltests[name] = factory;
-  }
-
-  INTERNAL_REGISTER_TYPE(DistributivityOfMultiplication, registerGtTest)
-  INTERNAL_REGISTER_TYPE(DoHariGSBasic, registerGtTest)
-  INTERNAL_REGISTER_TYPE(DoHariGSImproved, registerGtTest)
-  INTERNAL_REGISTER_TYPE(DoMatrixMultSanity, registerGtTest)
-  INTERNAL_REGISTER_TYPE(DoOrthoPerturbTest, registerGtTest)
-  INTERNAL_REGISTER_TYPE(DoSimpleRotate90, registerGtTest)
-  INTERNAL_REGISTER_TYPE(DoSkewSymCPRotationTest, registerGtTest)
-  INTERNAL_REGISTER_TYPE(RotateAndUnrotate, registerGtTest)
-  INTERNAL_REGISTER_TYPE(RotateFullCircle, registerGtTest)
-  INTERNAL_REGISTER_TYPE(TrianglePHeron, registerGtTest)
-  INTERNAL_REGISTER_TYPE(TrianglePSylv, registerGtTest)
-
   template<typename T> TruthType<T>
   runGroundtruth_impl(std::string testName,
                       std::function<T()> randGen)
@@ -41,7 +12,7 @@ namespace {
     using QFPTest::TestInput;
     using QFPHelpers::Vector;
 
-    auto test = alltests[testName]->get<T>();
+    auto test = QFPTest::getTests()[testName]->get<T>();
     TestInput<T> input = test->getDefaultInput();
     input.vals = Vector<T>(test->getInputsPerRun(), randGen).getData();
     auto scores = test->run(input);
