@@ -23,7 +23,7 @@ OPT_SOURCE          = testbed.cpp
 UNOPT_SOURCE        = $(filter-out $(OPT_SOURCE),$(SOURCE))
 TEST_SOURCE         = $(wildcard ../qfpc/tests/*.cpp)
 TEST_LINKS          = $(notdir $(TEST_SOURCE))
-TEST_LINKS         := $(filter-out EigenTests.cpp,$(TEST_LINKS))
+TEST_LINKS         := $(addprefix $(OBJ_DIR)/,$(filter-out EigenTests.cpp,$(TEST_LINKS)))
 OPT_SOURCE         += $(TEST_LINKS)
 UNOPT_SOURCE       += $(TEST_LINKS)
 UNOPT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(UNOPT_SOURCE:%.cpp=%.unopt.o)))
@@ -73,15 +73,24 @@ $(OPT_LIB): $(OPT_OBJ) makefile
 $(TARGET): $(UNOPT_OBJ) makefile
 	$(CXX) -o $(TARGET) $(UNOPT_OBJ) $(LINK_FLAGS)
 
-%.cpp: ../qfpc/tests/%.cpp
-	ln -s $< $@
+$(OBJ_DIR)/%.cpp: ../qfpc/tests/%.cpp
+	@mkdir -p $(OBJ_DIR)
+	ln -sf ../$< $@
+
+%.unopt.o: %.cpp makefile
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) -c $(COMMON_FLAGS) $(UNOPT_FLAGS) $(DEP_FLAGS) -o $@ $<
+
+%.opt.o: %.cpp makefile
+	@mkdir -p $(OBJ_DIR)
+	$(CXX) -c $(COMMON_FLAGS) $(INTERNAL_OPT_FLAGS) $(DEP_FLAGS) -o $@ $<
 
 $(OBJ_DIR)/%.unopt.o: %.cpp makefile
-	mkdir -p $(OBJ_DIR)
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) -c $(COMMON_FLAGS) $(UNOPT_FLAGS) $(DEP_FLAGS) -o $@ $<
 
 $(OBJ_DIR)/%.opt.o: %.cpp makefile
-	mkdir -p $(OBJ_DIR)
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) -c $(COMMON_FLAGS) $(INTERNAL_OPT_FLAGS) $(DEP_FLAGS) -o $@ $<
 
 .PRECIOUS: %.d
