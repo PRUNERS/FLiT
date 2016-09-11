@@ -60,7 +60,7 @@ void runTest(std::string testName, uint divergentCount, uint maxTries) {
     auto inputs = truthRun.first;
     auto truthval = truthRun.second;
     auto testval = runTestbed(testName, inputs);
-    if (truthval != testval) {
+    if (truthval != testval && !(std::isnan(truthval) && std::isnan(testval))) {
       mismatches.push_back(inputs);
 
       std::cout << testName << ":   Divergent outputs #" << mismatches.size() << std::endl;
