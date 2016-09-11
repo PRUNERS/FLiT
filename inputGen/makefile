@@ -32,16 +32,6 @@ OBJ                 = $(UNOPT_OBJ) $(OPT_OBJ)
 DEPS                = $(SOURCE:%.cpp=%.d)
 DEPS               += $(TEST_LINKS:%.cpp=%.d)
 
-print:
-	@echo "OPT_SOURCE:"
-	@printf "  %s\n" $(OPT_SOURCE)
-	@echo "SOURCE:"
-	@printf "  %s\n" $(SOURCE)
-	@echo "OBJ:"
-	@printf "  %s\n" $(OBJ)
-	@echo "TEST_LINKS:"
-	@printf "  %s\n" $(TEST_LINKS)
-
 .PHONY: default
 default: all
 
@@ -95,3 +85,15 @@ $(OBJ_DIR)/%.opt.o: %.cpp makefile
 
 .PRECIOUS: %.d
 -include $(DEPS)
+
+.PHONY: print
+print:
+	@echo "OPT_SOURCE:"
+	@printf "  %s\n" $(OPT_SOURCE)
+	@echo "SOURCE:"
+	@printf "  %s\n" $(SOURCE)
+	@echo "OBJ:"
+	@printf "  %s\n" $(OBJ)
+	@echo "TEST_LINKS:"
+	@printf "  %s\n" $(TEST_LINKS)
+
