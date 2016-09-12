@@ -2,7 +2,7 @@ TARGET              = inputGen
 OPT_LIB             = testbed.so
 
 OPT_FLAGS          ?= -O3 -funsafe-math-optimizations
-INTERNAL_OPT_FLAGS  = $(OPT_FLAGS) -fPIC
+INTERNAL_OPT_FLAGS  = $(OPT_FLAGS) -fPIC -g
 
 CXX                 = g++
 COMMON_FLAGS       += -std=c++14

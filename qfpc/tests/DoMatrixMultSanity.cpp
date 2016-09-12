@@ -26,7 +26,10 @@ public:
 protected:
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto dim = getInputsPerRun();
-    QFPHelpers::Vector<T> b = {ti.vals[0], ti.vals[1], ti.vals[2]};
+    QFPHelpers::Vector<T> b(dim);
+    for (decltype(dim) i = 0; i < dim; i++) {
+      b[i] = ti.vals[i];
+    }
     auto c = QFPHelpers::Matrix<T>::Identity(dim) * b;
     bool eq = (c == b);
     QFPHelpers::info_stream << id << ": Product is: " << c << std::endl;

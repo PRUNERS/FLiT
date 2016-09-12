@@ -47,7 +47,7 @@ void runTest(std::string testName, uint divergentCount, uint maxTries) {
 
   std::cout << testName << "(" << typeid(T).name() << "): "
             << "looking for " << divergentCount << " divergences, "
-            << "maxtries = " << maxTries
+            << "max_tries = " << maxTries
             << std::endl;
 
   uint mismatchIdx;
@@ -87,14 +87,16 @@ void runAllPrecisions(const std::string testName, uint divergentCount, uint maxT
 
 
 int main(void) {
+  // Sanity check: should not find any differences no matter the optimizations
+  //runAllPrecisions("DoMatrixMultSanity", 10, 1000);
+
   //runTest<float>("DistributivityOfMultiplication", 10, 100000);
   //runTest<double>("DistributivityOfMultiplication", 10, 100000);
   //runTest<long double>("DistributivityOfMultiplication", 10, 100000);
-  //runAllPrecisions("DistributivityOfMultiplication", 10, 10000);
+  runAllPrecisions("DistributivityOfMultiplication", 10, 10000);
 
   //runAllPrecisions("DoHariGSBasic", 10, 100000);
   //QFPHelpers::info_stream.show();
-  runAllPrecisions("DoMatrixMultSanity", 10, 1000);
 
   return 0;
 }
