@@ -9,35 +9,36 @@
 
 namespace QFPHelpers {
 
-const std::vector<float> float_rands = setRandSequence<float>(RAND_VECT_SIZE);
-const std::vector<double> double_rands = setRandSequence<double>(RAND_VECT_SIZE);
-const std::vector<long double>  long_double_rands = setRandSequence<long double>(RAND_VECT_SIZE);
-
-template <>
 std::vector<float>
-getRandSeq<float>(){return float_rands;}
+setRandSequence(size_t size, int32_t seed){
+  std::vector<float> ret(size);
+  std::mt19937 gen;
+  gen.seed(seed);
+  std::uniform_real_distribution<float> dist(-6.0, 6.0);
+  for(auto& i: ret) i = dist(gen);
+  return ret;
+}
 
-template <>
-std::vector<double>
-getRandSeq<double>(){return double_rands;}
+const std::vector<float> float_rands = setRandSequence(RAND_VECT_SIZE);
 
-template <>
-std::vector<long double>
-getRandSeq<long double>(){return long_double_rands;}
-  
+std::vector<float>
+getRandSeq(){return float_rands;}
 
 thread_local InfoStream info_stream;
 std::mutex ostreamMutex;
 
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
-  uint64_t hi = i >> 64;
-  uint64_t lo = (uint64_t)i;
-  ostreamMutex.lock();
-  auto bflags = os.flags();
-  os.flags(std::ios::hex | std::ios::showbase);
-  os << hi << lo;
-  os.flags( bflags );
-  ostreamMutex.unlock();
+  if(i == 0) os << 0;
+  else{
+    uint64_t hi = i >> 64;
+    uint64_t lo = (uint64_t)i;
+    ostreamMutex.lock();
+    auto bflags = os.flags();
+    os.flags(std::ios::hex & ~std::ios::showbase);
+    os << "0x" << hi << lo;
+    os.flags( bflags );
+    ostreamMutex.unlock();
+  }
   return os;
 }
 

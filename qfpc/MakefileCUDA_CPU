@@ -1,5 +1,5 @@
 #CC := clang++
-TARGET ?= runTests_CUDA
+TARGET ?= runTestsCPU_CUDA
 
 #CUDA
 NVCC := /usr/local/cuda-7.5/bin/nvcc
@@ -14,6 +14,7 @@ NVCC_REQUIRED += -arch=sm_20
 NVCC_CFLAGS := -x cu
 NVCC_CFLAGS += -dc
 NVCC_CFLAGS += -D__CUDA__
+NVCC_CFLAGS += -D__CPUKERNEL__
 NVCC_CFLAGS += -I .
 NVCC_CFLAGS += -I /usr/local/cuda/samples/common/inc
 

@@ -1,38 +1,37 @@
 #pragma once
 
-#ifdef __CUDA__
-//#include <cuda.h>
-#include "QFPHelpers.hpp"
-
+#if defined(__CPUKERNEL__) || !defined( __CUDA__)
 #define HOST_DEVICE
-//#define HOST_DEVICE __host__ __device__
+#define HOST
+#define DEVICE
+#define GLOBAL
+#else
+#include <cuda.h>
+#include <helper_cuda.h>
+#define HOST_DEVICE __host__ __device__
+#define HOST __host__
+#define DEVICE __device__
+#define GLOBAL __global__
+#endif
+#include "QFPHelpers.hpp"
 #include "CUVector.hpp"
 
 namespace CUHelpers{
-  
-// extern
-// __host__ __device__
-// float* cuda_float_rands;
-  
-// extern
-// __host__ __device__
-// double* cuda_double_rands;
 
 void
 initDeviceData();
 
-template <typename T>
-HOST_DEVICE
-T*
-getRandSeqCU(){return (T*) NULL;}
+  //template <typename T>
+// HOST_DEVICE
+// T*
+// getRandSeqCU(){return (T*) NULL;}
+// template<>
+// HOST_DEVICE
+// double* getRandSeqCU<double>();
 
-template<>
-HOST_DEVICE
-float* getRandSeqCU<float>();
 
-template<>
 HOST_DEVICE
-double* getRandSeqCU<double>();
+const float* getRandSeqCU();
 
 template <typename T>
 HOST_DEVICE
@@ -51,7 +50,9 @@ class VectorCU {
   friend class MatrixCU<T>;
 public:
   using vsize_t = typename cuvector<T>::cvs_t;
-  HOST_DEVICE  
+
+  HOST_DEVICE
+  explicit
   VectorCU(vsize_t dim): data(dim){}
 
   HOST_DEVICE
@@ -62,6 +63,12 @@ public:
   }
 
   HOST_DEVICE
+  T&
+  operator[](vsize_t index){
+    return data[index];
+  }
+
+  HOST_DEVICE
   VectorCU(const VectorCU& rhs):data(rhs.data){}
 
   HOST_DEVICE  
@@ -69,10 +76,10 @@ public:
   VectorCU<T>
   getRandomVector(vsize_t dim){
     VectorCU<T> retVal(dim);
-    //auto rands = QFPHelpers::getRandSeq<T>();
-    //    auto rands = getRandSeqCU<T>();
+    printf("made retval\n");
+    auto rands = getRandSeqCU();
     for(vsize_t x = 0; x < dim; ++x){
-      retVal.data[x] = (T)x;
+      retVal.data[x] = rands[x];
     }
     return retVal;
   }
@@ -80,7 +87,7 @@ public:
   HOST_DEVICE  
   VectorCU<T>
   getUnitVector() const {
-    VectorCU<T> retVal(data.size());
+    VectorCU<T> retVal(*this);
     return retVal * ((T)1.0 / (L2Norm()));
   }
 
@@ -120,6 +127,16 @@ public:
     VectorCU<T> ret(data.size());
     for(vsize_t x = 0; x < data.size(); ++x){
       ret[x] = data[x] * rhs.data[x];
+    }
+    return ret;
+  }
+
+  HOST_DEVICE
+  VectorCU<T>
+  operator*(T const& sca) const {
+    VectorCU<T> ret(data.size());
+    for(vsize_t x = 0; x < data.size(); ++x){
+      ret[x] = data[x] * sca;
     }
     return ret;
   }
@@ -167,7 +184,7 @@ public:
         x < data.size();
         ++x) retVal += squares.data[x];
     if(sizeof(T) == 4) return sqrtf(retVal);
-    else return sqrtd(retVal);
+    else return sqrt(retVal);
   }
 
   T
@@ -319,4 +336,4 @@ public:
 };
 }
 
-#endif
+//#endif

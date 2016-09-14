@@ -18,10 +18,6 @@ using namespace QFPHelpers;
 using namespace QFPHelpers::FPHelpers;
 using namespace QFPTest;
 
-// typedef std::map<int,int> score_t;
-// typedef std::map<std::pair<std::string, std::string>,
-//                  std::pair<long double, long double>> score_t;
-
 int
 getPrecID(std::string s){
   if(s == "f") return 0;
@@ -131,8 +127,7 @@ main(int argc, char* argv[]){
     outputResults(scores);
   }
 #ifdef __CUDA__
-  //TODO uncomment me
-  //  cudaDeviceSynchronize();
+  cudaDeviceSynchronize();
 #endif
 }
 
