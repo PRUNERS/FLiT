@@ -16,9 +16,17 @@
 #include <algorithm>
 #include <mutex>
 
+#include "CUHelpers.hpp"
+
 #ifndef Q_UNUSED
 #define Q_UNUSED(x) (void)x
 #endif
+
+// #ifdef __CUDA__
+// #define HOST_DEVICE __host__ __device__
+// #else
+// #define HOST_DEVICE
+// #endif
 
 
 namespace QFPHelpers {
@@ -31,46 +39,24 @@ extern thread_local InfoStream info_stream;
   //sequence that can be used by tests, including
   //CUDA
 
-template <typename T>
-std::vector<T>
-setRandSequence(size_t size, int32_t seed = RAND_SEED){
-  std::vector<T> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<T> dist(-6.0, 6.0);
-  for(auto& i: ret) i = dist(gen);
-  return ret;
-}
+std::vector<float>
+setRandSequence(size_t size, int32_t seed = RAND_SEED);
 
 extern const std::vector<float> float_rands;
-extern const std::vector<double> double_rands;
-extern const std::vector<long double> long_double_rands;
   
-template <typename T>
-std::vector<T>
-getRandSeq(){return std::vector<T>();}
-  
-template <>
 std::vector<float>
-getRandSeq<float>();
-
-template <>
-std::vector<double>
-getRandSeq<double>();
-
-template <>
-std::vector<long double>
-getRandSeq<long double>();
-  
+getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
 namespace FPHelpers {
+  HOST_DEVICE
   inline float
   as_float(uint32_t val) {
     return *reinterpret_cast<float*>(&val);
   }
 
+  HOST_DEVICE
   inline double
   as_float(uint64_t val) {
      return *reinterpret_cast<double*>(&val);
@@ -81,11 +67,13 @@ namespace FPHelpers {
     return *reinterpret_cast<long double*>(&val);
   }
 
+  HOST_DEVICE
   inline uint32_t
   as_int(float val) {
     return *reinterpret_cast<uint32_t*>(&val);
   }
 
+  HOST_DEVICE
   inline uint64_t
   as_int(double val) {
     return *reinterpret_cast<uint64_t*>(&val);
@@ -141,7 +129,7 @@ public:
   Vector<T>
   getRandomVector(size_t dim){
     Vector<T> tmp(dim);
-    auto rand = getRandSeq<T>();
+    auto rand = getRandSeq();
     for(size_t x = 0; x < dim; ++x){
       tmp[x] = rand[x];
     }
