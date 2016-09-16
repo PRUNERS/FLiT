@@ -126,7 +126,7 @@ main(int argc, char* argv[]){
     }
     outputResults(scores);
   }
-#ifdef __CUDA__
+#if defined(__CUDA__) && !defined(__CPUKERNEL__)
   cudaDeviceSynchronize();
 #endif
 }

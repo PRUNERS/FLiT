@@ -18,20 +18,48 @@
 
 namespace CUHelpers{
 
+
+template <typename T>
+T
+ccos(T val){ return 0;}
+
+template<>
+HOST_DEVICE
+inline
+float
+ccos<float>(float val){return cosf(val);}
+
+
+template<>
+HOST_DEVICE
+inline
+double
+ccos<double>(double val){return cos(val);}
+
+template <typename T>
+T
+csin(T val){ return 0;}
+
+template<>
+HOST_DEVICE
+inline
+float
+csin<float>(float val){return sinf(val);}
+
+template<>
+HOST_DEVICE
+inline
+double
+csin<double>(double val){return sin(val);}
+
 void
 initDeviceData();
 
-  //template <typename T>
-// HOST_DEVICE
-// T*
-// getRandSeqCU(){return (T*) NULL;}
-// template<>
-// HOST_DEVICE
-// double* getRandSeqCU<double>();
-
-
 HOST_DEVICE
 const float* getRandSeqCU();
+
+HOST_DEVICE
+const uint_fast32_t* get16ShuffledCU(); //an array with 0-15 shuffled
 
 template <typename T>
 HOST_DEVICE
@@ -69,6 +97,12 @@ public:
   }
 
   HOST_DEVICE
+  T
+  operator[](vsize_t index) const {
+    return data[index];
+  }
+
+  HOST_DEVICE
   VectorCU(const VectorCU& rhs):data(rhs.data){}
 
   HOST_DEVICE  
@@ -82,6 +116,30 @@ public:
       retVal.data[x] = rands[x];
     }
     return retVal;
+  }
+
+  //predoncition: this only works with vectors of
+  //predetermined size, now 16
+  HOST_DEVICE
+  VectorCU<T>
+  genOrthoVector() const {
+    VectorCU<T> retVal(data.size());
+    auto shuff = get16ShuffledCU();
+    for(vsize_t x = 0; x < data.size(); x += 2){
+      retVal[shuff[x]] = data[shuff[x+1]];
+      retVal[shuff[x+1]] = -data[shuff[x]];
+    }
+    return retVal;
+  }
+
+  HOST_DEVICE
+  VectorCU<T>
+  rotateAboutZ_3d(T rads){
+    MatrixCU<T> t(3,3);
+    t[0][0]=ccos(rads); t[0][1]=-csin(rads); t[0][2]=0;
+    t[1][0]=csin(rads); t[1][1]=ccos(rads);  t[1][2]=0;
+    t[2][0]=0;          t[2][1]=0;           t[2][2]=1;
+    return t * (*this);
   }
 
   HOST_DEVICE  
@@ -212,13 +270,28 @@ public:
 
 template<typename T>
 class MatrixCU{
-  cuvector<cuvector<T>> data;
+  using rdtype = cuvector<T>;
+  cuvector<rdtype> data;
 public:
   using vsize_t = typename cuvector<T>::cvs_t;
 
   HOST_DEVICE  
   MatrixCU(vsize_t rows, vsize_t cols):
     data(rows, cuvector<T>(cols,0)){}
+
+  HOST_DEVICE
+  inline
+  rdtype&
+  operator[](vsize_t indx){
+    return data[indx];
+  }
+
+  HOST_DEVICE
+  inline
+  rdtype
+  operator[](vsize_t indx) const {
+    return data[indx];
+  }
 
   HOST_DEVICE  
   bool
@@ -267,17 +340,17 @@ public:
   MatrixCU<T>
   SkewSymCrossProdM(VectorCU<T> const &v){
     MatrixCU<T> retVal(3,3);
-    retVal.data[0][0] = 0;
-    retVal.data[0][1] = -v[2];
-    retVal.data[0][2] = v[1];
+    retVal[0][0] = 0;
+    retVal[0][1] = -v[2];
+    retVal[0][2] = v[1];
 
-    retVal.data[0][0] = v[2];
-    retVal.data[1][1] = 0;
-    retVal.data[2][2] = -v[0];
+    retVal[0][0] = v[2];
+    retVal[1][1] = 0;
+    retVal[2][2] = -v[0];
 
-    retVal.data[0][0] = -v[1];
-    retVal.data[1][1] = v[0];
-    retVal.data[2][2] = 0;
+    retVal[0][0] = -v[1];
+    retVal[1][1] = v[0];
+    retVal[2][2] = 0;
 
     return retVal;
   }
@@ -289,8 +362,8 @@ public:
     MatrixCU<T> retVal(dims, dims);
     for(size_t x = 0; x < dims; ++x){
       for(size_t y = 0; y < dims; ++y){
-        if(x == y) retVal.data[x][y] = 1;
-        else retVal.data[x][y] = 0;
+        if(x == y) retVal[x][y] = 1;
+        else retVal[x][y] = 0;
       }
     }
     return retVal;
@@ -306,7 +379,7 @@ public:
         ++x){
       auto row = data[x];
       for(vsize_t i = 0; i < row.size(); ++i){
-        retVal.data[resI] += row[i] * v.data[i];
+        retVal[resI] += row[i] * v[i];
       }
       ++resI;
     }
@@ -321,12 +394,12 @@ public:
     for(vsize_t j = 0;
         j < data.size();
         ++j){
-      auto& r = data[j];
+      auto r = data[j];
       for(vsize_t k = 0;
           k < data.size();
           ++k){
-        auto& i = r[k];
-        retVal.data[x][y] = i + rhs.data[x][y];
+        auto i = r[k];
+        retVal[x][y] = i + rhs[x][y];
         ++y;
       }
       y = 0; ++x;

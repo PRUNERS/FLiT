@@ -19,14 +19,13 @@ DoMatrixMultSanityKernel(const QFPTest::testInput ti, cudaResultElement* results
   results[0].s1 = c.L1Distance(b);
   results[0].s2 = c.LInfDistance(b);
 }
-
 template <typename T>
 class DoMatrixMultSanity: public QFPTest::TestBase {
 public:
   DoMatrixMultSanity(std::string id) : QFPTest::TestBase(id){}
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
-#if defined(__CUDA__) || defined(__CPUKERNEL__)
+#if defined(__CUDA__)
     return DoCudaTest(ti, id, DoMatrixMultSanityKernel<T>,
 		      typeid(T).name(), 1);
 #else

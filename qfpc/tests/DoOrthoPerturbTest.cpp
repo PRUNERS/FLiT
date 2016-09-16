@@ -5,6 +5,58 @@
 #include <typeinfo>
 #include <iomanip>
 
+#include "cudaTests.hpp"
+
+using namespace CUHelpers;
+
+template <typename T>
+GLOBAL
+void
+DoOPTKernel(const QFPTest::testInput ti, cudaResultElement* results){
+    using namespace QFPHelpers;
+    using namespace QFPHelpers::FPHelpers;
+    auto iters = ti.iters;
+    auto dim = ti.highestDim;
+    size_t indexer = 0;
+    auto fun = [&indexer](){return (T)(1 << indexer++);};
+    //    auto fun = [&indexer](){return 2.0 / pow((T)10.0, indexer++);};
+    double score = 0.0;
+    cuvector<unsigned> orthoCount(dim, 0.0);
+    // we use a double literal above as a workaround for Intel 15-16 compiler
+    // bug:
+    // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
+    VectorCU<T> a(dim);
+    for(decltype(dim) x = 0; x < dim; ++x) a[x] = fun();
+    VectorCU<T> b = a.genOrthoVector();
+
+    T backup;
+
+    for(decltype(dim) r = 0; r < dim; ++r){
+    T &p = a[r];
+      backup = p;
+      for(decltype(iters) i = 0; i < iters; ++i){
+	auto tmp = as_int(p);
+	p = as_float(++tmp); //yeah, this isn't perfect
+        //p = std::nextafter(p, std::numeric_limits<T>::max());
+        auto watchPoint = FLT_MIN;
+        watchPoint = a ^ b;
+
+        bool isOrth = watchPoint == 0; //a.isOrtho(b);
+        if(isOrth){
+          orthoCount[r]++;
+          // score should be perturbed amount
+          if(i != 0) score += abs(p - backup);
+        }else{
+          // if falsely not detecting ortho, should be the dot prod
+          if(i == 0) score += abs(watchPoint); //a ^ b);  
+        }
+      }
+      p = backup;
+    }
+  results[0].s1 = score;
+  results[0].s2 = 0;
+}
+
 template <typename T>
 class DoOrthoPerturbTest: public QFPTest::TestBase {
 public:
@@ -12,7 +64,8 @@ public:
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
 #ifdef __CUDA__
-    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+    return DoCudaTest(ti, id, DoOPTKernel<T>, typeid(T).name(),
+		      1);
 #else
     using namespace QFPHelpers;
     using namespace QFPHelpers::FPHelpers;
@@ -28,16 +81,10 @@ public:
     // we use a double literal above as a workaround for Intel 15-16 compiler
     // bug:
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    QFPHelpers::Vector<T> a(dim, fun);
+    QFPHelpers::Vector<T> a(dim); //, fun);
+    for(decltype(dim) x = 0; x < dim; ++x) a[x] = fun();
     QFPHelpers::Vector<T> b = a.genOrthoVector();
 
-    QFPHelpers::info_stream << "starting dot product orthogonality test with a, b = "
-                            << std::endl;
-    for(decltype(dim) x = 0; x < dim; ++x)
-      QFPHelpers::info_stream << x << '\t';
-    QFPHelpers::info_stream << std::endl;
-    QFPHelpers::info_stream << a << std::endl;
-    QFPHelpers::info_stream << b << std::endl;
     T backup;
 
     for(decltype(dim) r = 0; r < dim; ++r){
