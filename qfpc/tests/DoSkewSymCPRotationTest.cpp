@@ -1,8 +1,30 @@
-#include "testBase.hpp"
-#include "QFPHelpers.hpp"
-
 #include <cmath>
 #include <typeinfo>
+
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
+#include "cudaTests.hpp"
+
+using namespace CUHelpers;
+
+template <typename T>
+GLOBAL
+void
+DoSkewSCPRKernel(const QFPTest::testInput ti, cudaResultElement* results){
+  Q_UNUSED(ti);
+  auto A = VectorCU<T>::getRandomVector(3).getUnitVector();
+  auto B = VectorCU<T>::getRandomVector(3).getUnitVector();
+  auto cross = A.cross(B); 
+  auto sine = cross.L2Norm();
+  auto cos = A ^ B;
+  auto sscpm = MatrixCU<T>::SkewSymCrossProdM(cross);
+  auto rMatrix = MatrixCU<T>::Identity(3) +
+    sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
+  auto result = rMatrix * A;
+  results[0].s1 = result.L1Distance(B);
+  results[0].s1 = result.LInfDistance(B);
+}
 
 template <typename T>
 class DoSkewSymCPRotationTest: public QFPTest::TestBase {
@@ -11,7 +33,8 @@ public:
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
 #ifdef __CUDA__
-    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+    return DoCudaTest(ti, id, DoSkewSCPRKernel<T>,
+		      typeid(T).name(), 1);
 #else
     // auto& min = ti.min;
     // auto& max = ti.max;
