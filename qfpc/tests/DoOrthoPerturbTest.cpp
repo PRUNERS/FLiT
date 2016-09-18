@@ -71,6 +71,8 @@ public:
   }
 
 protected:
+  virtual QFPTest::KernelFunction<T>* getKernel() { return DoOPTKernel; }
+  virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     using QFPHelpers::operator<<;
 
