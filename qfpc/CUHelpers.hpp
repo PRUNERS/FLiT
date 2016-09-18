@@ -53,23 +53,27 @@ public:
 
   HOST_DEVICE
   explicit
-  VectorCU(vsize_t dim): data(dim){}
+  VectorCU(vsize_t dim) : data(dim) {}
+  HOST VectorCU(std::initializer_list<T> l) : data(l) {}
+  HOST_DEVICE VectorCU(const T* array, vsize_t size) : data(array, size) {}
 
-  HOST_DEVICE
-  VectorCU&
-  operator=(const VectorCU& rhs){
-    data = rhs.data;
-    return *this;
-  }
+  // copy support
+  HOST_DEVICE VectorCU(const VectorCU& rhs):data(rhs.data){}
+  HOST_DEVICE VectorCU(const cuvector<T>& vals):data(vals){}
+  HOST_DEVICE VectorCU& operator=(const VectorCU& rhs) { data = rhs.data; return *this; }
+  HOST_DEVICE VectorCU& operator=(const cuvector<T>& vals) { data = vals; return *this; }
+
+  // move support
+  HOST_DEVICE VectorCU(VectorCU&& rhs):data(std::move(rhs.data)){}
+  HOST_DEVICE VectorCU(cuvector<T>&& vals):data(std::move(vals)){}
+  HOST_DEVICE VectorCU& operator=(VectorCU&& rhs) { data = std::move(rhs.data); return *this; }
+  HOST_DEVICE VectorCU& operator=(cuvector<T>&& vals) { data = std::move(vals); return *this; }
 
   HOST_DEVICE
   T&
   operator[](vsize_t index){
     return data[index];
   }
-
-  HOST_DEVICE
-  VectorCU(const VectorCU& rhs):data(rhs.data){}
 
   HOST_DEVICE  
   static

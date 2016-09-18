@@ -49,42 +49,40 @@ getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
-namespace FPHelpers {
-  HOST_DEVICE
-  inline float
-  as_float(uint32_t val) {
-    return *reinterpret_cast<float*>(&val);
-  }
+HOST_DEVICE
+inline float
+as_float(uint32_t val) {
+  return *reinterpret_cast<float*>(&val);
+}
 
-  HOST_DEVICE
-  inline double
-  as_float(uint64_t val) {
-     return *reinterpret_cast<double*>(&val);
-  }
+HOST_DEVICE
+inline double
+as_float(uint64_t val) {
+   return *reinterpret_cast<double*>(&val);
+}
 
-  inline long double
-  as_float(unsigned __int128 val) {
-    return *reinterpret_cast<long double*>(&val);
-  }
+inline long double
+as_float(unsigned __int128 val) {
+  return *reinterpret_cast<long double*>(&val);
+}
 
-  HOST_DEVICE
-  inline uint32_t
-  as_int(float val) {
-    return *reinterpret_cast<uint32_t*>(&val);
-  }
+HOST_DEVICE
+inline uint32_t
+as_int(float val) {
+  return *reinterpret_cast<uint32_t*>(&val);
+}
 
-  HOST_DEVICE
-  inline uint64_t
-  as_int(double val) {
-    return *reinterpret_cast<uint64_t*>(&val);
-  }
+HOST_DEVICE
+inline uint64_t
+as_int(double val) {
+  return *reinterpret_cast<uint64_t*>(&val);
+}
 
-  inline unsigned __int128
-  as_int(long double val) {
-    const unsigned __int128 zero = 0;
-    const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
-    return temp & (~zero >> 48);
-  }
+inline unsigned __int128
+as_int(long double val) {
+  const unsigned __int128 zero = 0;
+  const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
+  return temp & (~zero >> 48);
 }
 
 template<typename T>
@@ -95,26 +93,30 @@ class Vector {
   std::vector<T> data;
 public:
   Vector():data(0){}
-
-  Vector(std::initializer_list<T> l):data(l){}
-  
-  Vector(size_t size):data(size, 0){}
-
+  Vector(std::initializer_list<T> l) : data(l) {}
+  Vector(size_t size):data(size, 0) {}
   template <typename U>
   Vector(size_t size, U genFun):data(size, 0){
     std::generate(data.begin(), data.end(), genFun);
   }
 
+  // Copyable
   Vector(const Vector &v):data(v.data) {}
+  Vector(const std::vector<T> &data) : data(data) {}
+  Vector& operator=(const Vector &v) { data = v.data; return *this; }
+  Vector& operator=(const std::vector<T> &data) { this->data = data; return *this; }
 
-  size_t
-  size() const {return data.size();}
+  // Movable
+  Vector(Vector<T> &&v) : data(std::move(v.data)) {}
+  Vector(std::vector<T> &&data) : data(std::move(data)) {}
+  Vector& operator=(Vector<T> &&v) { data = std::move(v.data); return *this; }
+  Vector& operator=(std::vector<T> &&data) { this->data = std::move(data); return *this;}
 
-  T&
-  operator[](size_t indx){return data[indx];}
+  size_t size() const { return data.size(); }
+  T& operator[](size_t indx){return data[indx];}
+  const T& operator[](size_t indx) const {return data[indx];}
 
-  const T&
-  operator[](size_t indx) const {return data[indx];}
+  const std::vector<T>& getData() { return data; }
 
   Vector<T>
   operator*(T const &rhs){
@@ -128,12 +130,12 @@ public:
   static
   Vector<T>
   getRandomVector(size_t dim){
-    Vector<T> tmp(dim);
-    auto rand = getRandSeq();
-    for(size_t x = 0; x < dim; ++x){
-      tmp[x] = rand[x];
-    }
-    return tmp;
+    auto copy = getRandSeq();
+    copy.erase(copy.begin() + dim, copy.end());
+    // We need to make a copy of the copy because the first copy is
+    // std::vector<float>.  We need std::vector<T>.
+    std::vector<T> otherCopy(copy.begin(), copy.end());
+    return Vector<T>(std::move(otherCopy));
   }
 
   Vector<T>
@@ -215,7 +217,7 @@ public:
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
     for(uint x = 0; x < size(); ++x){
-      distance += fabs(data[x] - rhs.data[x]);
+      distance += std::abs(data[x] - rhs.data[x]);
     }
     return distance;
   }
@@ -250,7 +252,7 @@ public:
   LInfNorm() const {
     T retVal = 0;
     for(auto e: data){
-      T tmp = fabs(e);
+      T tmp = std::abs(e);
       if( tmp > retVal) retVal = tmp;
     }
     return retVal;
