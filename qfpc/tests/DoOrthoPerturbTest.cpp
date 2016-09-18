@@ -10,9 +10,16 @@ using namespace CUHelpers;
 template <typename T>
 GLOBAL
 void
-DoOPTKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
+DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
   using namespace QFPHelpers;
 
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+
+  auto ti = tiList[idx];
   auto iters = ti.iters;
   auto dim = ti.highestDim;
   double score = 0.0;
@@ -47,8 +54,8 @@ DoOPTKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* result
     }
     p = backup;
   }
-  results->s1 = score;
-  results->s2 = 0;
+  results[idx].s1 = score;
+  results[idx].s2 = 0;
 }
 
 template <typename T>

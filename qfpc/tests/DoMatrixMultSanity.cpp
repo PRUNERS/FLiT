@@ -12,12 +12,18 @@
 template <typename T>
 GLOBAL
 void
-DoMatrixMultSanityKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
+DoMatrixMultSanityKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  auto ti = tiList[idx];
   auto dim = ti.vals.size();
   auto b = CUHelpers::VectorCU<T>(ti.vals);
   auto c = CUHelpers::MatrixCU<T>::Identity(dim) * b;
-  results->s1 = c.L1Distance(b);
-  results->s2 = c.LInfDistance(b);
+  results[idx].s1 = c.L1Distance(b);
+  results[idx].s2 = c.LInfDistance(b);
 }
 
 template <typename T>

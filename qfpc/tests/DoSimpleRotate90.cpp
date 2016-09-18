@@ -10,16 +10,21 @@ using namespace CUHelpers;
 template <typename T>
 GLOBAL
 void
-DoSR90Kernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
-  VectorCU<T> A(ti.vals);
+DoSR90Kernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  VectorCU<T> A(tiList[idx].vals);
 
   VectorCU<T> expected(A.size());
   expected[0]=-A[1]; expected[1]=A[0]; expected[2]=A[2];
 
   auto done = A.rotateAboutZ_3d(M_PI/2);
   
-  results->s1 = done.L1Distance(expected);
-  results->s2 = done.LInfDistance(expected);
+  results[idx].s1 = done.L1Distance(expected);
+  results[idx].s2 = done.LInfDistance(expected);
 }
 
 template <typename T>
