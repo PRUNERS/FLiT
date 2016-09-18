@@ -371,6 +371,8 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
     }                                                    \
     virtual size_t getInputsPerRun() { return 0; }       \
   protected:                                             \
+    virtual QFPTest::KernelFunction<T>*                  \
+    getKernel() {return nullptr; }                       \
     virtual QFPTest::ResultType::mapped_type             \
     run_impl(const QFPTest::TestInput<T>&) { return {}; }\
   };                                                     \

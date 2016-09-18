@@ -11,7 +11,7 @@ template <typename T>
 GLOBAL
 void
 DoSkewSCPRKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
-  T* valData = ti.vals.data();
+  const T* valData = ti.vals.data();
   auto A = VectorCU<T>(valData, 3).getUnitVector();
   auto B = VectorCU<T>(valData + 3, 3).getUnitVector();
   auto cross = A.cross(B); 
@@ -43,7 +43,9 @@ public:
   }
 
 protected:
+  virtual QFPTest::KernelFunction<T>* getKernel() { return DoSkewSCPRKernel;}
 
+  virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     //    auto& crit = getWatchData<T>();
     QFPHelpers::info_stream << "entered " << id << std::endl;
