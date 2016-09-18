@@ -10,19 +10,24 @@ using namespace CUHelpers;
 template <typename T>
 GLOBAL
 void
-DoSkewSCPRKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
-  const T* valData = ti.vals.data();
+DoSkewSCPRKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  const T* valData = tiList[idx].vals.data();
   auto A = VectorCU<T>(valData, 3).getUnitVector();
   auto B = VectorCU<T>(valData + 3, 3).getUnitVector();
-  auto cross = A.cross(B); 
+  auto cross = A.cross(B);
   auto sine = cross.L2Norm();
   auto cos = A ^ B;
   auto sscpm = MatrixCU<T>::SkewSymCrossProdM(cross);
   auto rMatrix = MatrixCU<T>::Identity(3) +
     sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
   auto result = rMatrix * A;
-  results[0].s1 = result.L1Distance(B);
-  results[0].s1 = result.LInfDistance(B);
+  results[idx].s1 = result.L1Distance(B);
+  results[idx].s1 = result.LInfDistance(B);
 }
 
 template <typename T>

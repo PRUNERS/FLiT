@@ -69,7 +69,7 @@ struct CuTestInput {
 };
 
 template <typename T>
-using KernelFunction = void (const CuTestInput<T>, CudaResultElement*);
+using KernelFunction = void (const CuTestInput<T>*, CudaResultElement*);
 
 /** Calls a CUDA kernel function and returns the scores
  *
@@ -89,25 +89,41 @@ using KernelFunction = void (const CuTestInput<T>, CudaResultElement*);
  *   run
  */
 template <typename T>
-ResultType::mapped_type
-callKernel(KernelFunction<T>* kernel, const CuTestInput<T>& cti) {
+std::vector<ResultType::mapped_type>
+callKernel(KernelFunction<T>* kernel, const std::vector<TestInput<T>>& tiList) {
 #ifdef __CUDA__
-  CudaResultElement cuResult {};
+  std::unique_ptr<CuTestInput<T>[]> ctiList(new CuTestInput<T>[tiList.size()]);
+  for (size_t i = 0; i < tiList.size(); i++) {
+    ctiList[i] = CuTestInput<T>::fromTestInput(tiList[i]);
+  }
+  std::unique_ptr<CudaResultElement[]> cuResults(new CudaResultElement[tiList.size()]);
+  // Note: __CPUKERNEL__ mode is broken by the change to run the kernel in
+  // multithreaded mode.  Its compilation is broken.
+  // TODO: fix __CPUKERNEL__ mode for testing.
  #ifdef __CPUKERNEL__
-  kernel(cti, &cuResult);
+  kernel(ctiList, cuResults);
  #else  // not __CPUKERNEL__
+  CuTestInput<T>* deviceInput;
   CudaResultElement* deviceResult;
-  const auto resultSize = sizeof(CudaResultElement);
+  const auto inputSize = sizeof(CuTestInput<T>) * tiList.size();
+  const auto resultSize = sizeof(CudaResultElement) * tiList.size();
+  checkCudaErrors(cudaMalloc(&deviceInput, inputSize));
   checkCudaErrors(cudaMalloc(&deviceResult, resultSize));
-  kernel<<<1,1>>>(cti, deviceResult);
-  checkCudaErrors(cudaMemcpy(&cuResult, deviceResult, resultSize, cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaMemcpy(deviceInput, ctiList.get(), inputSize, cudaMemcpyHostToDevice));
+  kernel<<<tiList.size(),1>>>(deviceInput, deviceResult);
+  checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult, resultSize, cudaMemcpyDeviceToHost));
+  checkCudaErrors(cudaFree(deviceInput));
   checkCudaErrors(cudaFree(deviceResult));
  #endif // __CPUKERNEL__
-  return {cuResult.s1, cuResult.s2};
+  std::vector<ResultType::mapped_type> results;
+  for (size_t i = 0; i < tiList.size(); i++) {
+    results.emplace_back(cuResults[i].s1, cuResults[i].s2);
+  }
+  return results;
 #else  // not __CUDA__
   // Do nothing
   Q_UNUSED(kernel);
-  Q_UNUSED(cti);
+  Q_UNUSED(tiList);
   return {};
 #endif // __CUDA__
 }
@@ -142,32 +158,46 @@ public:
     ResultType results;
     auto stride = getInputsPerRun();
     auto runCount = ti.vals.size() / stride;
+
+    // Split up the input.  One for each run
     auto begin = ti.vals.begin();
+    std::vector<TestInput<T>> inputSequence;
+    TestInput<T> emptyInput {
+      ti.iters, ti.highestDim, ti.ulp_inc, ti.min, ti.max, {} };
+    emptyInput.vals.clear();
     for (decltype(runCount) i = 0; i < runCount; i++) {
       auto end = begin + stride;
+      TestInput<T> testRunInput = emptyInput;
+      testRunInput.vals = std::vector<T>(begin, end);
+      inputSequence.push_back(testRunInput);
+      begin = end;
+    }
 
-      TestInput<T> runInput {ti.iters, ti.highestDim, ti.ulp_inc, ti.min, ti.max, {}};
-      runInput.vals = std::vector<T>(begin, end);
-
+    // Run the tests
+    std::vector<ResultType::mapped_type> scoreList;
 #ifdef __CUDA__
-      ResultType::mapped_type scores;
-      auto kernel = getKernel();
-      if (kernel == nullptr) {
-        scores = run_impl(runInput);
-      } else {
-        auto cti = CuTestInput<T>::fromTestInput(ti);
-        scores = callKernel(kernel, cti);
+    ResultType::mapped_type scores;
+    auto kernel = getKernel();
+    if (kernel == nullptr) {
+      for (auto runInput : inputSequence) {
+        scoreList.push_back(run_impl(runInput));
       }
+    } else {
+      scoreList = callKernel(kernel, inputSequence);
+    }
 #else  // not __CUDA__
-      auto scores = run_impl(runInput);
+    for (auto runInput : inputSequence) {
+      scoreList.push_back(run_impl(runInput));
+    }
 #endif // __CUDA__
 
+    // Store and return the test results
+    for (size_t i = 0; i < scoreList.size(); i++) {
       std::string name = id;
       if (runCount != 1) {
         name += "_idx" + std::to_string(i);
       }
-      results.insert({{name, typeid(T).name()}, scores});
-      begin = end;
+      results.insert({{name, typeid(T).name()}, scoreList[i]});
     }
     return results;
   }

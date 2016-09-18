@@ -10,8 +10,14 @@ using namespace CUHelpers;
 template <typename T>
 GLOBAL
 void
-DoHGSBTestKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* result){
-  const T* valData = ti.vals.data();
+DoHGSBTestKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* result){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+
+  const T* valData = tiList[idx].vals.data();
   VectorCU<T> a(valData, 3);
   VectorCU<T> b(valData + 3, 3);
   VectorCU<T> c(valData + 6, 3);
@@ -29,8 +35,8 @@ DoHGSBTestKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* r
 
   double score = abs(o12) + abs(o13) + abs(o23);
 
-  result->s1 = score;
-  result->s2 = 0;
+  result[idx].s1 = score;
+  result[idx].s2 = 0;
 }
 
 template <typename T>

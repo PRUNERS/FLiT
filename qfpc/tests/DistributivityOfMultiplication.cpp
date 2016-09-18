@@ -17,15 +17,20 @@ using namespace CUHelpers;
 template <typename T>
 GLOBAL
 void
-DistOfMultKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
-  T a = ti.vals[0];
-  T b = ti.vals[1];
-  T c = ti.vals[2];
+DistOfMultKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  T a = tiList[idx].vals[0];
+  T b = tiList[idx].vals[1];
+  T c = tiList[idx].vals[2];
 
   auto distributed = (a * c) + (b * c);
   auto undistributed = (a + b) * c;
-  results->s1 = distributed;
-  results->s2 = undistributed;
+  results[idx].s1 = distributed;
+  results[idx].s2 = undistributed;
 
   printf("nextFin\n");
 }
