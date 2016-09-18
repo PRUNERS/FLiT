@@ -100,20 +100,4 @@ QFPTest::TestInput<T> DoHariGSImproved<T>::getDefaultInput() {
   return ti;
 }
 
-class DoHariGSImprovedFactory : public QFPTest::TestFactory {
-public:
-  DoHariGSImprovedFactory() {
-    QFPTest::registerTest("DoHariGSImproved", this);
-  }
-protected:
-  virtual createType create() {
-    return std::make_tuple(
-        std::make_shared<DoHariGSImproved<float>>("DoHariGSImproved"),
-        std::make_shared<DoHariGSImproved<double>>("DoHariGSImproved"),
-        /* null pointer for long double */
-        std::shared_ptr<QFPTest::TestBase<long double>> ()
-        );
-  }
-};
-static DoHariGSImprovedFactory global_DoHariGSImprovedFactory;
-//REGISTER_TYPE(DoHariGSImproved)
+REGISTER_TYPE(DoHariGSImproved)

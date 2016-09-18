@@ -42,7 +42,11 @@ extern thread_local InfoStream info_stream;
 std::vector<float>
 setRandSequence(size_t size, int32_t seed = RAND_SEED);
 
+std::vector<uint_fast32_t>
+getShuffleSeq(uint_fast32_t);
+
 extern const std::vector<float> float_rands;
+extern const std::vector<uint_fast32_t> shuffled_16;
   
 std::vector<float>
 getRandSeq();
@@ -191,7 +195,7 @@ public:
     return retVal;
   }
 
-  void
+  Vector<T>
   rotateAboutZ_3d(T rads){
     Matrix<T> t = {{(T)cos(rads), (T)-sin(rads), 0},
                    {(T)sin(rads), (T)cos(rads), 0},
@@ -200,8 +204,7 @@ public:
     Vector<T> tmp(*this);
     tmp = t * tmp;
     info_stream << "in rotateAboutZ, result is: " << tmp << std::endl;
-    data = tmp.data;
-
+    return tmp;
   }
 
   Vector<T>

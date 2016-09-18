@@ -9,6 +9,14 @@
 
 namespace QFPHelpers {
 
+std::vector<uint_fast32_t>
+getShuffleSeq(uint_fast32_t size){
+  std::vector<uint_fast32_t> retVal(size);
+  iota(retVal.begin(), retVal.end(), 0);
+  shuffle(retVal.begin(), retVal.end(), std::mt19937(RAND_SEED));
+  return retVal;
+}
+
 std::vector<float>
 setRandSequence(size_t size, int32_t seed){
   std::vector<float> ret(size);
@@ -20,6 +28,7 @@ setRandSequence(size_t size, int32_t seed){
 }
 
 const std::vector<float> float_rands = setRandSequence(RAND_VECT_SIZE);
+const std::vector<uint_fast32_t> shuffled_16  = getShuffleSeq(16);
 
 std::vector<float>
 getRandSeq(){return float_rands;}

@@ -1,8 +1,29 @@
-#include "testBase.hpp"
-#include "QFPHelpers.hpp"
-
 #include <cmath>
 #include <typeinfo>
+
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
+
+using namespace CUHelpers;
+
+template <typename T>
+GLOBAL
+void
+DoSkewSCPRKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
+  T* valData = ti.vals.data();
+  auto A = VectorCU<T>(valData, 3).getUnitVector();
+  auto B = VectorCU<T>(valData + 3, 3).getUnitVector();
+  auto cross = A.cross(B); 
+  auto sine = cross.L2Norm();
+  auto cos = A ^ B;
+  auto sscpm = MatrixCU<T>::SkewSymCrossProdM(cross);
+  auto rMatrix = MatrixCU<T>::Identity(3) +
+    sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
+  auto result = rMatrix * A;
+  results[0].s1 = result.L1Distance(B);
+  results[0].s1 = result.LInfDistance(B);
+}
 
 template <typename T>
 class DoSkewSymCPRotationTest: public QFPTest::TestBase<T> {

@@ -5,6 +5,51 @@
 #include <typeinfo>
 #include <iomanip>
 
+using namespace CUHelpers;
+
+template <typename T>
+GLOBAL
+void
+DoOPTKernel(const QFPTest::CuTestInput<T> ti, QFPTest::CudaResultElement* results){
+  using namespace QFPHelpers;
+
+  auto iters = ti.iters;
+  auto dim = ti.highestDim;
+  double score = 0.0;
+  cuvector<unsigned> orthoCount(dim, 0.0);
+  // we use a double literal above as a workaround for Intel 15-16 compiler
+  // bug:
+  // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
+  VectorCU<T> a(ti.vals);
+  VectorCU<T> b = a.genOrthoVector();
+
+  T backup;
+
+  for(decltype(dim) r = 0; r < dim; ++r){
+    T &p = a[r];
+    backup = p;
+    for(decltype(iters) i = 0; i < iters; ++i){
+      auto tmp = as_int(p);
+      p = as_float(++tmp); //yeah, this isn't perfect
+      //p = std::nextafter(p, std::numeric_limits<T>::max());
+      auto watchPoint = FLT_MIN;
+      watchPoint = a ^ b;
+
+      bool isOrth = watchPoint == 0; //a.isOrtho(b);
+      if(isOrth){
+        orthoCount[r]++;
+        // score should be perturbed amount
+        if(i != 0) score += abs(p - backup);
+      }else{
+        // if falsely not detecting ortho, should be the dot prod
+        if(i == 0) score += abs(watchPoint); //a ^ b);  
+      }
+    }
+    p = backup;
+  }
+  results->s1 = score;
+  results->s2 = 0;
+}
 
 template <typename T>
 class DoOrthoPerturbTest : public QFPTest::TestBase<T> {
@@ -17,10 +62,10 @@ public:
     ti.iters = 200;
     ti.ulp_inc = 1;
 
-    size_t indexer = 0;
-    auto fun = [&indexer]() { return static_cast<T>(1 << indexer++); };
-    // auto fun = [&indexer](){return 2.0 / pow((T)10.0, indexer++);};
-    ti.vals = QFPHelpers::Vector<T>(getInputsPerRun(), fun).getData();
+    auto dim = getInputsPerRun();
+    ti.highestDim = dim;
+    ti.vals = std::vector<T>(dim);
+    for(decltype(dim) x = 0; x < dim; ++x) ti.vals[x] = static_cast<T>(1 << x);
 
     return ti;
   }
@@ -41,21 +86,14 @@ protected:
     QFPHelpers::Vector<T> a(ti.vals);
     QFPHelpers::Vector<T> b = a.genOrthoVector();
 
-    QFPHelpers::info_stream << "starting dot product orthogonality test with a, b = "
-                << std::endl;
-    for(decltype(dim) x = 0; x < dim; ++x)
-      QFPHelpers::info_stream << x << '\t';
-    QFPHelpers::info_stream << std::endl;
-    QFPHelpers::info_stream << a << std::endl;
-    QFPHelpers::info_stream << b << std::endl;
     T backup;
 
     for(decltype(dim) r = 0; r < dim; ++r){
-    T &p = a[r];
+      T &p = a[r];
       backup = p;
       for(decltype(iters) i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
-        
+
         p = std::nextafter(p, std::numeric_limits<T>::max());
         // Added this for force watchpoint hits every cycle (well, two).  We
         // shouldn't really be hitting float min
