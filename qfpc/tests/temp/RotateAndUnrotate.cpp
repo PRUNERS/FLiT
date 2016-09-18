@@ -5,19 +5,23 @@
 #include <typeinfo>
 
 template <typename T>
-class RotateAndUnrotate: public QFPTest::TestBase {
+class RotateAndUnrotate: public QFPTest::TestBase<T> {
 public:
-  RotateAndUnrotate(std::string id) : QFPTest::TestBase(id){}
+  RotateAndUnrotate(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
-    Q_UNUSED(ti);
-#ifdef __CUDA__
-    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
-#else
-    // T min = ti.min;
-    // T max = ti.max;
+  virtual size_t getInputsPerRun() { return 3; }
+  virtual QFPTest::TestInput<T> getDefaultInput() {
+    QFPTest::TestInput<T> ti;
+    ti.min = -6;
+    ti.max = 6;
+    ti.vals = QFPHelpers::Vector<T>::getRandomVector(3).getData();
+    return ti;
+  }
+
+protected:
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto theta = M_PI;
-    auto A = QFPHelpers::Vector<T>::getRandomVector(3);
+    auto A = QFPHelpers::Vector<T>(ti.vals);
     auto orig = A;
     QFPHelpers::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);
@@ -33,9 +37,11 @@ public:
     }
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
-    return {{{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}}};
-#endif
+    return {dist, A.LInfDistance(orig)};
   }
+
+protected:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(RotateAndUnrotate)
