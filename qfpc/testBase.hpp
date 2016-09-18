@@ -222,6 +222,18 @@ protected:
   const std::string id;
 };
 
+/// A completely empty test that outputs nothing
+template <typename T>
+class NullTest : public TestBase<T> {
+public:
+  NullTest(std::string id) : TestBase<T>(std::move(id)) {}
+  virtual TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual ResultType run(const TestInput<T>&) { return {}; }
+protected:
+  virtual ResultType::mapped_type run_impl(const TestInput<T>&) { return {}; }
+};
+
 class TestFactory {
 public:
   template <typename F> std::shared_ptr<TestBase<F>> get();
@@ -278,8 +290,8 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
       return std::make_tuple(                               \
           std::make_shared<klass<float>>(#klass),           \
           std::make_shared<klass<double>>(#klass),          \
-          /* null pointer for long double */                \
-          std::shared_ptr<QFPTest::TestBase<long double>>() \
+          /* empty test for long double */                  \
+          std::make_shared<QFPTest::NullTest<long double>>(#klass) \
           );                                                \
     }                                                       \
   };                                                        \

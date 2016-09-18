@@ -115,8 +115,7 @@ int main(int argc, char* argv[]) {
       runTestWithDefaultInput<long double>(factory, scores);
     }
   }
-
-#ifdef __CUDA__
+#if defined(__CUDA__) && !defined(__CPUKERNEL__)
   cudaDeviceSynchronize();
 #endif
 
