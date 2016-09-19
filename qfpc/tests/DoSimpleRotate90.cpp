@@ -16,7 +16,8 @@ DoSR90Kernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* 
 #else
   auto idx = 0;
 #endif
-  VectorCU<T> A(tiList[idx].vals);
+  auto ti = tiList[idx];
+  VectorCU<T> A(ti.vals, ti.length);
 
   VectorCU<T> expected(A.size());
   expected[0]=-A[1]; expected[1]=A[0]; expected[2]=A[2];

@@ -45,31 +45,82 @@ struct CudaResultElement {
   double s2;
 };
 
+/** A simple structure used in CUDA tests.
+ *
+ * It stores some values and a pointer, but does not do dynamic allocation nor
+ * deallocation.  The struct does not own the vals pointer at all, just holds
+ * its value.
+ *
+ * The vals are intended to be read-only, because they are inputs.
+ */
 template <typename T>
 struct CuTestInput {
-  size_t iters;
-  size_t highestDim;
-  size_t ulp_inc;
-  T min;
-  T max;
-  cuvector<T> vals;
+  size_t iters = 100;
+  size_t highestDim = 0;
+  size_t ulp_inc = 1;
+  T min = -6;
+  T max = 6;
+  const T* vals = nullptr; // values with size length
+  size_t length = 0;
 
-  // In a separate function instead of constructor to still allow initializer
-  // lists to construct
+  /** Creates a CuTestInput object containing the same info as the TestInput
+   * 
+   * This is in a separate function instead of constructor to still allow
+   * initializer lists to construct
+   *
+   * Note, the vals pointer will point to the internal data from the TestInput
+   * object.  It is unsafe for the CuTestInput object to outlive this TestInput
+   * object unless you set a new value for vals.
+   */
   static CuTestInput<T> fromTestInput(const TestInput<T>& ti) {
-    return CuTestInput<T> {
-      ti.iters,
-      ti.highestDim,
-      ti.ulp_inc,
-      ti.min,
-      ti.max,
-      cuvector<T>(ti.vals),
-    };
+    CuTestInput<T> cti {};
+    cti.iters       = ti.iters;
+    cti.highestDim  = ti.highestDim;
+    cti.ulp_inc     = ti.ulp_inc;
+    cti.min         = ti.min;
+    cti.max         = ti.max;
+    cti.vals        = ti.vals.data();
+    cti.length      = ti.vals.size();
+    return cti;
   }
 };
 
+/** Definition of a kernel function used by CUDA tests
+ *
+ * @param arr: array of test input objects, already allocated and populated
+ * @param results: array where to store results, already allocated
+ */
 template <typename T>
 using KernelFunction = void (const CuTestInput<T>*, CudaResultElement*);
+
+template <typename T>
+using CudaDeleter = void (T*);
+
+template <typename T>
+std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
+#ifdef __CUDA__
+  T* arr;
+  const auto arrSize = sizeof(T) * length;
+
+  // Create the array
+  checkCudaErrors(cudaMalloc(&arr, arrSize));
+
+  // Store it in a smart pointer with a custom deleter
+  CudaDeleter<T>* deleter = [](T* p) { checkCudaErrors(cudaFree(p)); };
+  std::unique_ptr<T, CudaDeleter<T>*> ptr(arr, deleter);
+
+  // Copy over the vals array from hist into the device
+  if (vals != nullptr) {
+    checkCudaErrors(cudaMemcpy(ptr.get(), vals, arrSize, cudaMemcpyHostToDevice));
+  }
+
+  return ptr;
+#else
+  Q_UNUSED(vals);
+  Q_UNUSED(length);
+  throw std::runtime_error("Should not use makeCudaArr without CUDA enabled");
+#endif
+}
 
 /** Calls a CUDA kernel function and returns the scores
  *
@@ -84,46 +135,72 @@ using KernelFunction = void (const CuTestInput<T>*, CudaResultElement*);
  * memory for the result storage, and copying the result type back to the host
  * to be returned.
  *
- * @param kernel: A kernel function pointer
- * @param cti: The test input with enough inputs in cti.vals for exactly one
- *   run
+ * @param kernel: kernel function pointer to call with split up inputs
+ * @param ti: inputs for all tests runs, to be split by stride
+ * @param stride: how many inputs per test run
  */
 template <typename T>
 std::vector<ResultType::mapped_type>
-callKernel(KernelFunction<T>* kernel, const std::vector<TestInput<T>>& tiList) {
+runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
 #ifdef __CUDA__
-  std::unique_ptr<CuTestInput<T>[]> ctiList(new CuTestInput<T>[tiList.size()]);
-  for (size_t i = 0; i < tiList.size(); i++) {
-    ctiList[i] = CuTestInput<T>::fromTestInput(tiList[i]);
+  auto runCount = ti.vals.size() / stride;
+  std::unique_ptr<CuTestInput<T>[]> ctiList(new CuTestInput<T>[runCount]);
+  for (size_t i = 0; i < runCount; i++) {
+    ctiList[i] = CuTestInput<T>::fromTestInput(ti);
+    // just point to a place in the array, like a slice
+    ctiList[i].vals = ti.vals.data() + i * stride;
+    ctiList[i].length = stride;
   }
-  std::unique_ptr<CudaResultElement[]> cuResults(new CudaResultElement[tiList.size()]);
+  std::unique_ptr<CudaResultElement[]> cuResults(new CudaResultElement[runCount]);
   // Note: __CPUKERNEL__ mode is broken by the change to run the kernel in
   // multithreaded mode.  Its compilation is broken.
   // TODO: fix __CPUKERNEL__ mode for testing.
  #ifdef __CPUKERNEL__
   kernel(ctiList, cuResults);
  #else  // not __CPUKERNEL__
-  CuTestInput<T>* deviceInput;
-  CudaResultElement* deviceResult;
-  const auto inputSize = sizeof(CuTestInput<T>) * tiList.size();
-  const auto resultSize = sizeof(CudaResultElement) * tiList.size();
-  checkCudaErrors(cudaMalloc(&deviceInput, inputSize));
-  checkCudaErrors(cudaMalloc(&deviceResult, resultSize));
-  checkCudaErrors(cudaMemcpy(deviceInput, ctiList.get(), inputSize, cudaMemcpyHostToDevice));
-  kernel<<<tiList.size(),1>>>(deviceInput, deviceResult);
-  checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult, resultSize, cudaMemcpyDeviceToHost));
-  checkCudaErrors(cudaFree(deviceInput));
-  checkCudaErrors(cudaFree(deviceResult));
+  auto deviceVals = makeCudaArr(ti.vals.data(), ti.vals.size());
+  // Reset the pointer value to device addresses
+  for (size_t i = 0; i < runCount; i++) {
+    ctiList[i].vals = deviceVals.get() + i * stride;
+  }
+  auto deviceInput = makeCudaArr(ctiList.get(), runCount);
+  auto deviceResult = makeCudaArr<CudaResultElement>(nullptr, runCount);
+  kernel<<<runCount,1>>>(deviceInput.get(), deviceResult.get());
+  auto resultSize = sizeof(CudaResultElement) * runCount;
+  checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult.get(), resultSize,
+        cudaMemcpyDeviceToHost));
+
+  //T* deviceVals;
+  //CuTestInput<T>* deviceInput;
+  //CudaResultElement* deviceResult;
+  //const auto valSize = sizeof(T) * runCount * stride;
+  //const auto inputSize = sizeof(CuTestInput<T>) * runCount;
+  //const auto resultSize = sizeof(CudaResultElement) * runCount;
+  //checkCudaErrors(cudaMalloc(&deviceVals, valSize));
+  //checkCudaErrors(cudaMalloc(&deviceInput, inputSize));
+  //checkCudaErrors(cudaMalloc(&deviceResult, resultSize));
+  //// Reset the pointer value to device addresses
+  //for (size_t i = 0; i < runCount; i++) {
+  //  ctiList[i].vals = deviceVals + i * stride;
+  //}
+  //checkCudaErrors(cudaMemcpy(deviceVals, ti.vals.data(), valSize, cudaMemcpyHostToDevice));
+  //checkCudaErrors(cudaMemcpy(deviceInput, ctiList.get(), inputSize, cudaMemcpyHostToDevice));
+  //kernel<<<runCount,1>>>(deviceInput, deviceResult);
+  //checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult, resultSize, cudaMemcpyDeviceToHost));
+  //checkCudaErrors(cudaFree(deviceVals));
+  //checkCudaErrors(cudaFree(deviceInput));
+  //checkCudaErrors(cudaFree(deviceResult));
  #endif // __CPUKERNEL__
   std::vector<ResultType::mapped_type> results;
-  for (size_t i = 0; i < tiList.size(); i++) {
+  for (size_t i = 0; i < runCount; i++) {
     results.emplace_back(cuResults[i].s1, cuResults[i].s2);
   }
   return results;
 #else  // not __CUDA__
   // Do nothing
   Q_UNUSED(kernel);
-  Q_UNUSED(tiList);
+  Q_UNUSED(ti);
+  Q_UNUSED(stride);
   return {};
 #endif // __CUDA__
 }
@@ -183,7 +260,7 @@ public:
         scoreList.push_back(run_impl(runInput));
       }
     } else {
-      scoreList = callKernel(kernel, inputSequence);
+      scoreList = runKernel(kernel, ti, stride);
     }
 #else  // not __CUDA__
     for (auto runInput : inputSequence) {

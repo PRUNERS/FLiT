@@ -27,7 +27,7 @@ DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* r
   // we use a double literal above as a workaround for Intel 15-16 compiler
   // bug:
   // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-  VectorCU<T> a(ti.vals);
+  VectorCU<T> a(ti.vals, ti.length);
   VectorCU<T> b = a.genOrthoVector();
 
   T backup;

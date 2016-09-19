@@ -16,9 +16,9 @@ DoSkewSCPRKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultEleme
 #else
   auto idx = 0;
 #endif
-  const T* valData = tiList[idx].vals.data();
-  auto A = VectorCU<T>(valData, 3).getUnitVector();
-  auto B = VectorCU<T>(valData + 3, 3).getUnitVector();
+  const T* vals = tiList[idx].vals;
+  auto A = VectorCU<T>(vals, 3).getUnitVector();
+  auto B = VectorCU<T>(vals + 3, 3).getUnitVector();
   auto cross = A.cross(B);
   auto sine = cross.L2Norm();
   auto cos = A ^ B;

@@ -19,9 +19,8 @@ DoMatrixMultSanityKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaRes
   auto idx = 0;
 #endif
   auto ti = tiList[idx];
-  auto dim = ti.vals.size();
-  auto b = CUHelpers::VectorCU<T>(ti.vals);
-  auto c = CUHelpers::MatrixCU<T>::Identity(dim) * b;
+  auto b = CUHelpers::VectorCU<T>(ti.vals, ti.length);
+  auto c = CUHelpers::MatrixCU<T>::Identity(ti.length) * b;
   results[idx].s1 = c.L1Distance(b);
   results[idx].s2 = c.LInfDistance(b);
 }
