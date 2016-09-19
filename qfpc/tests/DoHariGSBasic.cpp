@@ -17,10 +17,10 @@ DoHGSBTestKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultEleme
   auto idx = 0;
 #endif
 
-  const T* valData = tiList[idx].vals.data();
-  VectorCU<T> a(valData, 3);
-  VectorCU<T> b(valData + 3, 3);
-  VectorCU<T> c(valData + 6, 3);
+  const T* vals = tiList[idx].vals;
+  VectorCU<T> a(vals, 3);
+  VectorCU<T> b(vals + 3, 3);
+  VectorCU<T> c(vals + 6, 3);
 
   auto r1 = a.getUnitVector();
   auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
