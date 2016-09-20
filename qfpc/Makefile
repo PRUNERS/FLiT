@@ -6,7 +6,8 @@ NVCC_VER := nvcc-7.5
 NVCC_REQUIRED += --std=c++11
 NVCC_REQUIRED += -O0
 NVCC_REQUIRED += -ccbin=g++-4.9
-NVCC_REQUIRED += -arch=sm_20
+DEVCAP ?= -arch=sm_20
+NVCC_REQUIRED += $(DEVCAP)
 
 NVCC_CFLAGS += -I .
 NVCC_CFLAGS += -x cu
