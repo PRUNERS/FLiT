@@ -4,17 +4,21 @@
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
-#include "cudaTests.hpp"
 
-using namespace CUHelpers;
 
 template <typename T>
 GLOBAL
 void
-RaUKern(const QFPTest::testInput ti, cudaResultElement* results){
-
+RaUKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+  using namespace CUHelpers;
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
   auto theta = M_PI;
-  auto A = VectorCU<T>::getRandomVector(3);
+  auto ti = tiList[idx];
+  auto A = VectorCU<T>(ti.vals, ti.length);
   auto orig = A;
   A = A.rotateAboutZ_3d(theta);
   A = A.rotateAboutZ_3d(-theta);
