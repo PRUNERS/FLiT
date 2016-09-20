@@ -8,6 +8,7 @@ class TrianglePHeron: public Triangle<T> {
 public:
   TrianglePHeron(std::string id):Triangle<T>(id){}
 
+protected:
   //computes using Heron's formula
   HOST_DEVICE
   T getArea(const T a,

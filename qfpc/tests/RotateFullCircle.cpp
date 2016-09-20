@@ -4,23 +4,29 @@
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
-#include "cudaTests.hpp"
 
 using namespace CUHelpers;
 
 template <typename T>
 GLOBAL
 void
-RFCKern(const QFPTest::testInput ti, cudaResultElement* results){
+RFCKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+
+  auto ti = tiList[idx];
   auto n = ti.iters;
-  auto A = VectorCU<T>::getRandomVector(3);
+  auto A = VectorCU<T>(ti.vals, ti.length);
   auto orig = A;
   T theta = 2 * M_PI / n;
   for(decltype(n) r = 0; r < n; ++r){
     A = A.rotateAboutZ_3d(theta);
   }
-  results[0].s1 = A.L1Distance(orig);
-  results[0].s2 = A.LInfDistance(orig);
+  results[idx].s1 = A.L1Distance(orig);
+  results[idx].s2 = A.LInfDistance(orig);
 }
 
 template <typename T>
@@ -41,7 +47,8 @@ public:
   }
 
 protected:
-
+  virtual QFPTest::KernelFunction<T>* getKernel() { return RFCKern; }
+  virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto n = ti.iters;
     QFPHelpers::Vector<T> A = QFPHelpers::Vector<T>(ti.vals);

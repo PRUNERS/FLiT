@@ -169,27 +169,6 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
   auto resultSize = sizeof(CudaResultElement) * runCount;
   checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult.get(), resultSize,
         cudaMemcpyDeviceToHost));
-
-  //T* deviceVals;
-  //CuTestInput<T>* deviceInput;
-  //CudaResultElement* deviceResult;
-  //const auto valSize = sizeof(T) * runCount * stride;
-  //const auto inputSize = sizeof(CuTestInput<T>) * runCount;
-  //const auto resultSize = sizeof(CudaResultElement) * runCount;
-  //checkCudaErrors(cudaMalloc(&deviceVals, valSize));
-  //checkCudaErrors(cudaMalloc(&deviceInput, inputSize));
-  //checkCudaErrors(cudaMalloc(&deviceResult, resultSize));
-  //// Reset the pointer value to device addresses
-  //for (size_t i = 0; i < runCount; i++) {
-  //  ctiList[i].vals = deviceVals + i * stride;
-  //}
-  //checkCudaErrors(cudaMemcpy(deviceVals, ti.vals.data(), valSize, cudaMemcpyHostToDevice));
-  //checkCudaErrors(cudaMemcpy(deviceInput, ctiList.get(), inputSize, cudaMemcpyHostToDevice));
-  //kernel<<<runCount,1>>>(deviceInput, deviceResult);
-  //checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult, resultSize, cudaMemcpyDeviceToHost));
-  //checkCudaErrors(cudaFree(deviceVals));
-  //checkCudaErrors(cudaFree(deviceInput));
-  //checkCudaErrors(cudaFree(deviceResult));
  #endif // __CPUKERNEL__
   std::vector<ResultType::mapped_type> results;
   for (size_t i = 0; i < runCount; i++) {
@@ -338,6 +317,7 @@ public:
   virtual size_t getInputsPerRun() { return 0; }
   virtual ResultType run(const TestInput<T>&) { return {}; }
 protected:
+  virtual KernelFunction<T>* getKernel() { return nullptr; }
   virtual ResultType::mapped_type run_impl(const TestInput<T>&) { return {}; }
 };
 
