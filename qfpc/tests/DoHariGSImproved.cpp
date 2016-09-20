@@ -29,8 +29,6 @@ DoHGSITestKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultEleme
   T o13 = r1 ^ r3;
   T o23 = r2 ^ r3;
 
-  printf("o12:%lf o13:%lf o23:%lf\n",(double)o12, (double)o13, (double)o23);
-
   double score = abs(o12) + abs(o13) + abs(o23);
 
   results[idx].s1 = score;

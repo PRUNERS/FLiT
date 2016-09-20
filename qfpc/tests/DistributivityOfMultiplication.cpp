@@ -32,7 +32,6 @@ DistOfMultKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultEleme
   results[idx].s1 = distributed;
   results[idx].s2 = undistributed;
 
-  printf("nextFin\n");
 }
 
 template <typename T>
