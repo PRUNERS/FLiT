@@ -4,26 +4,23 @@
 #include <cmath>
 #include <typeinfo>
 
-//#ifdef __CUDA__
-#include "cudaTests.hpp"
-//#include <helper_cuda.h>
-
 using namespace CUHelpers;
 
 
 template <typename T>
 GLOBAL
 void
-DoHGSBTestKernel(const QFPTest::testInput ti, cudaResultElement* results){
-  T e;
-  sizeof(T) == 4 ? e = powf(10, -4) : e = pow(10, -8);
+DoHGSBTestKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* result){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
 
-  VectorCU<T> a(3);
-  VectorCU<T> b(3);
-  VectorCU<T> c(3);
-  a[0]=1;a[1]=e;a[2]=e;
-  b[0]=1;b[1]=e;b[2]=0;
-  c[0]=1;c[1]=0;c[2]=e;
+  const T* vals = tiList[idx].vals;
+  VectorCU<T> a(vals, 3);
+  VectorCU<T> b(vals + 3, 3);
+  VectorCU<T> c(vals + 6, 3);
 
   auto r1 = a.getUnitVector();
   auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -38,34 +35,32 @@ DoHGSBTestKernel(const QFPTest::testInput ti, cudaResultElement* results){
 
   double score = abs(o12) + abs(o13) + abs(o23);
 
-  results[0].s1 = score;
-  results[0].s2 = 0;
+  result[idx].s1 = score;
+  result[idx].s2 = 0;
 }
 
-//#endif
-
 template <typename T>
-class DoHariGSBasic: public QFPTest::TestBase {
+class DoHariGSBasic: public QFPTest::TestBase<T> {
 public:
-  DoHariGSBasic(std::string id) : QFPTest::TestBase(id){}
+  DoHariGSBasic(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
-    Q_UNUSED(ti);
-#ifdef __CUDA__
-    //return DoHGSBTest<T>(ti, id);
-    return DoCudaTest(ti, id, DoHGSBTestKernel<T>, typeid(T).name(),
-		      1);
-#else
-    using namespace QFPHelpers;
+  virtual size_t getInputsPerRun() { return 9; }
+  virtual QFPTest::TestInput<T> getDefaultInput();
+
+protected:
+  virtual QFPTest::KernelFunction<T>* getKernel() { return DoHGSBTestKernel; } 
+  virtual
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+    using QFPHelpers::operator<<;
 
     //auto& crit = getWatchData<T>();
     long double score = 0.0;
-    T e;
-    sizeof(T) == 4 ? e = pow(10, -4) : sizeof(T) == 8 ? e = pow(10, -8) : e = pow(10, -10);
+
     //matrix = {a, b, c};
-    QFPHelpers::Vector<T> a = {1, e, e};
-    QFPHelpers::Vector<T> b = {1, e, 0};
-    QFPHelpers::Vector<T> c = {1, 0, e};
+    QFPHelpers::Vector<T> a = {ti.vals[0], ti.vals[1], ti.vals[2]};
+    QFPHelpers::Vector<T> b = {ti.vals[3], ti.vals[4], ti.vals[5]};
+    QFPHelpers::Vector<T> c = {ti.vals[6], ti.vals[7], ti.vals[8]};
+
     auto r1 = a.getUnitVector();
     //crit = r1[0];
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -74,31 +69,55 @@ public:
                r2 * (c ^ r2)).getUnitVector();
     //crit = r3[0];
     T o12 = r1 ^ r2;
-    //    crit = o12;
+    //crit = o12;
     T o13 = r1 ^ r3;
     //crit = o13;
     T o23 = r2 ^ r3;
     //crit = 023;
-    std::cout << "o12:" << o12 << "o13:" << o13 << "o23:" << o23 << std::endl;
-    if((score = fabs(o12) + fabs(o13) + fabs(o23)) != 0){
-      QFPHelpers::info_stream << "in: " << id << std::endl;
-      QFPHelpers::info_stream << "applied gram-schmidt to:" << std::endl;
-      QFPHelpers::info_stream << "a: " << a << std::endl;
-      QFPHelpers::info_stream << "b: " << b << std::endl;
-      QFPHelpers::info_stream << "c: " << c << std::endl;
-      QFPHelpers::info_stream << "resulting vectors were: " << std::endl;
-      QFPHelpers::info_stream << "r1: " << r1 << std::endl;
-      QFPHelpers::info_stream << "r2: " << r2 << std::endl;
-      QFPHelpers::info_stream << "r3: " << r3 << std::endl;
-      QFPHelpers::info_stream << "w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
-      QFPHelpers::info_stream << "score (bits): " <<
-        QFPHelpers::FPHelpers::as_int(score) << std::endl;
-      QFPHelpers::info_stream << "score (dec) :" << score << std::endl;
+    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
+      QFPHelpers::info_stream << id << ": applied gram-schmidt to:" << std::endl;
+      QFPHelpers::info_stream << id << ":   a: " << a << std::endl;
+      QFPHelpers::info_stream << id << ":   b: " << b << std::endl;
+      QFPHelpers::info_stream << id << ":   c: " << c << std::endl;
+      QFPHelpers::info_stream << id << ": resulting vectors were:" << std::endl;
+      QFPHelpers::info_stream << id << ":   r1: " << r1 << std::endl;
+      QFPHelpers::info_stream << id << ":   r2: " << r2 << std::endl;
+      QFPHelpers::info_stream << id << ":   r3: " << r3 << std::endl;
+      QFPHelpers::info_stream << id << ": w dot prods:  "
+                              << o12 << ", " << o13 << ", " << o23 << std::endl;
+      QFPHelpers::info_stream << id << ": score (bits): "
+                              << QFPHelpers::as_int(score) << std::endl;
+      QFPHelpers::info_stream << id << ": score (dec):  " << score << std::endl;
     }
-    return {{{id, typeid(T).name()}, {score, 0.0}}};
-#endif
+    return {score, 0.0};
   }
+
+protected:
+  using QFPTest::TestBase<T>::id;
 };
+
+namespace {
+  template <typename T> T getSmallValue();
+  template<> inline float getSmallValue() { return pow(10, -4); }
+  template<> inline double getSmallValue() { return pow(10, -8); }
+  template<> inline long double getSmallValue() { return pow(10, -10); }
+}
+
+template <typename T>
+QFPTest::TestInput<T> DoHariGSBasic<T>::getDefaultInput() {
+  T e = getSmallValue<T>();
+
+  QFPTest::TestInput<T> ti;
+
+  // Just one test
+  ti.vals = {
+    1, e, e,  // vec a
+    1, e, 0,  // vec b
+    1, 0, e,  // vec c
+  };
+  
+  return ti;
+}
 
 REGISTER_TYPE(DoHariGSBasic)
 

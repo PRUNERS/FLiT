@@ -3,6 +3,7 @@ TARGET ?= runTests_CUDA
 
 #CUDA
 NVCC := /usr/local/cuda-7.5/bin/nvcc
+#NVCC  := nvcc
 #NVCC := /usr/bin/g++-4.9
 NVCC_VER := nvcc-7.5
 NVCC_REQUIRED += --std=c++11

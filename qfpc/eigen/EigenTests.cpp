@@ -3,8 +3,7 @@
 
 //setup for Eigen library test suite
 //there's a race on this container -- switching to 1 concurrency
-std::map<std::string, QFPTest::resultType> eigenResults;
-//QFPTest::resultType eigenResults;
+std::map<std::string, QFPTest::ResultType> eigenResults;
 std::mutex eigenResults_mutex;
 std::mutex g_test_stack_mutex;
 
@@ -102,7 +101,6 @@ std::mutex g_test_stack_mutex;
 // REGISTER_TYPE(EigenCWiseop)
 
 
-//we're going to have to isolate InfoStream.hpppppp for multiple eigen tests
 #include "eigenMain.hpp"
 #include "eigen/unsupported/test/levenberg_marquardt.cpp"
 EIGEN_CLASS_DEF(EigenLevenbergMarquardt, levenberg_marquardt)

@@ -92,9 +92,9 @@ setWatching(bool watch){
   watching = watch;
 }
 
-  //output operator for resultType
+  //output operator for ResultType
 std::ostream&
-operator<<(std::ostream& os, const resultType& res){
+operator<<(std::ostream& os, const ResultType& res){
   // std::string name = r.first;
   // std::string prec;
   // long double s1;
