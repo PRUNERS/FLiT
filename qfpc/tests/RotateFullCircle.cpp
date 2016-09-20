@@ -1,8 +1,27 @@
-#include "testBase.hpp"
-#include "QFPHelpers.hpp"
-
 #include <cmath>
 #include <typeinfo>
+
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
+#include "cudaTests.hpp"
+
+using namespace CUHelpers;
+
+template <typename T>
+GLOBAL
+void
+RFCKern(const QFPTest::testInput ti, cudaResultElement* results){
+  auto n = ti.iters;
+  auto A = VectorCU<T>::getRandomVector(3);
+  auto orig = A;
+  T theta = 2 * M_PI / n;
+  for(decltype(n) r = 0; r < n; ++r){
+    A = A.rotateAboutZ_3d(theta);
+  }
+  results[0].s1 = A.L1Distance(orig);
+  results[0].s2 = A.LInfDistance(orig);
+}
 
 template <typename T>
 class RotateFullCircle: public QFPTest::TestBase {
@@ -11,7 +30,8 @@ public:
 
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
 #ifdef __CUDA__
-    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+     return DoCudaTest(ti, id, RFCKern<T>,
+		      typeid(T).name(), 1);
 #else
     auto n = ti.iters;
     // T min = ti.min;

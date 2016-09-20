@@ -9,6 +9,7 @@ public:
   TrianglePHeron(std::string id):Triangle<T>(id){}
 
   //computes using Heron's formula
+  HOST_DEVICE
   T getArea(const T a,
             const T b,
             const T c){
