@@ -24,19 +24,27 @@ RFCKern(const QFPTest::testInput ti, cudaResultElement* results){
 }
 
 template <typename T>
-class RotateFullCircle: public QFPTest::TestBase {
+class RotateFullCircle: public QFPTest::TestBase<T> {
 public:
-  RotateFullCircle(std::string id) : QFPTest::TestBase(id){}
+  RotateFullCircle(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
-#ifdef __CUDA__
-     return DoCudaTest(ti, id, RFCKern<T>,
-		      typeid(T).name(), 1);
-#else
+  virtual size_t getInputsPerRun() { return 3; }
+  virtual QFPTest::TestInput<T> getDefaultInput() {
+    QFPTest::TestInput<T> ti;
+    ti.min = -6;
+    ti.max = 6;
+    ti.iters = 200;
+    auto n = getInputsPerRun();
+    ti.highestDim = n;
+    ti.vals = QFPHelpers::Vector<T>::getRandomVector(n).getData();
+    return ti;
+  }
+
+protected:
+
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto n = ti.iters;
-    // T min = ti.min;
-    // T max = ti.max;
-    QFPHelpers::Vector<T> A = QFPHelpers::Vector<T>::getRandomVector(3);
+    QFPHelpers::Vector<T> A = QFPHelpers::Vector<T>(ti.vals);
     auto orig = A;
     T theta = 2 * M_PI / n;
     QFPHelpers::info_stream << "Rotate full circle in " << n << " increments, A is: " << A << std::endl;
@@ -52,9 +60,11 @@ public:
     }
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
-    return {{{id, typeid(T).name()}, {A.L1Distance(orig), A.LInfDistance(orig)}}};
-#endif
+    return {A.L1Distance(orig), A.LInfDistance(orig)};
   }
+
+private:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(RotateFullCircle)

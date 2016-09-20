@@ -52,13 +52,13 @@ cpow<double>(double a, double b){return pow(a,b);}
 
 template <typename T>
 T
-ccos(T val){ return 0;}
+ccos(T /*val*/){ return 0; }
 
 template<>
 HOST_DEVICE
 inline
 float
-ccos<float>(float val){return cosf(val);}
+ccos<float>(float val){ return cosf(val); }
 
 
 template<>
@@ -69,7 +69,7 @@ ccos<double>(double val){return cos(val);}
 
 template <typename T>
 T
-csin(T val){ return 0;}
+csin(T /*val*/){ return 0;}
 
 template<>
 HOST_DEVICE
@@ -112,14 +112,21 @@ public:
 
   HOST_DEVICE
   explicit
-  VectorCU(vsize_t dim): data(dim){}
+  VectorCU(vsize_t dim) : data(dim) {}
+  HOST VectorCU(std::initializer_list<T> l) : data(l) {}
+  HOST_DEVICE VectorCU(const T* array, vsize_t size) : data(array, size) {}
 
-  HOST_DEVICE
-  VectorCU&
-  operator=(const VectorCU& rhs){
-    data = rhs.data;
-    return *this;
-  }
+  // copy support
+  HOST_DEVICE VectorCU(const VectorCU& rhs):data(rhs.data){}
+  HOST_DEVICE VectorCU(const cuvector<T>& vals):data(vals){}
+  HOST_DEVICE VectorCU& operator=(const VectorCU& rhs) { data = rhs.data; return *this; }
+  HOST_DEVICE VectorCU& operator=(const cuvector<T>& vals) { data = vals; return *this; }
+
+  // move support
+  HOST_DEVICE VectorCU(VectorCU&& rhs):data(std::move(rhs.data)){}
+  HOST_DEVICE VectorCU(cuvector<T>&& vals):data(std::move(vals)){}
+  HOST_DEVICE VectorCU& operator=(VectorCU&& rhs) { data = std::move(rhs.data); return *this; }
+  HOST_DEVICE VectorCU& operator=(cuvector<T>&& vals) { data = std::move(vals); return *this; }
 
   HOST_DEVICE
   T&
@@ -134,7 +141,10 @@ public:
   }
 
   HOST_DEVICE
-  VectorCU(const VectorCU& rhs):data(rhs.data){}
+  inline vsize_t
+  size() const noexcept {
+    return data.size();
+  }
 
   HOST_DEVICE  
   static

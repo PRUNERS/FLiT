@@ -15,39 +15,30 @@ using namespace CUHelpers;
 
 
 using namespace QFPHelpers;
-using namespace QFPHelpers::FPHelpers;
 using namespace QFPTest;
 
-int
-getPrecID(std::string s){
-  if(s == "f") return 0;
-  if(s == "d") return 1;
-  return 2; //long double
-}
-
 void
-loadStringFromEnv(std::string &dest, std::string var, std::string defVal){
-  // std::cout << "in lsfe, var is: " << var << std::endl;
-  if(std::getenv(var.c_str()) == NULL){
+loadStringFromEnv(std::string &dest, const std::string &var,
+                  const std::string &defVal) {
+  if(std::getenv(var.c_str()) == nullptr) {
     dest = defVal;
-  }else{
+  } else {
     dest = std::getenv(var.c_str());
   }
-  // std::cout << "env is: " << dest << std::endl;
 }
 
 void
-loadIntFromEnv(int &dest, std::string var, int defVal){
+loadIntFromEnv(int &dest, const std::string &var, int defVal){
   const char* res = std::getenv(var.c_str());
-  if(res == NULL || std::strlen(res) == 0){
+  if(res == nullptr || std::strlen(res) == 0) {
     dest = defVal;
-  }else{
-    dest = std::atoi(std::getenv(var.c_str()));
+  } else {
+    dest = std::atoi(res);
   }
 }
 
 void
-outputResults(const QFPTest::resultType& scores){
+outputResults(const QFPTest::ResultType& scores){
   for(const auto& i: scores){
     std::cout
       << "HOST,SWITCHES,COMPILER,"
@@ -62,8 +53,18 @@ outputResults(const QFPTest::resultType& scores){
   }
 }
 
-int
-main(int argc, char* argv[]){
+template <typename F>
+void runTestWithDefaultInput(QFPTest::TestFactory* factory,
+                             QFPTest::ResultType& totScores) {
+  auto test = factory->get<F>();
+  auto ip = test->getDefaultInput();
+
+  auto scores = test->run(ip);
+  totScores.insert(scores.begin(), scores.end());
+  info_stream.flushout();
+}
+
+int main(int argc, char* argv[]) {
 
   std::string NO_WATCHS;
   loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
@@ -79,16 +80,10 @@ main(int argc, char* argv[]){
   loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
   bool doOne = TEST != "all";
   if((TEST == "all") != (PRECISION == "all")){ //all or one
-    std::cerr << argv[0] << " must be ran with one or all tests selected."
+    std::cerr << argv[0] << " must be run with one or all tests selected."
               << std::endl;
-    return 0;
+    return 1;
   }
-
-  size_t iters = 200;
-  size_t dim = 16;
-  size_t ulp_inc = 1;
-  float min = -6.0;
-  float max = 6.0;
 
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
@@ -97,38 +92,34 @@ main(int argc, char* argv[]){
   CUHelpers::initDeviceData();
 #endif
 
-  QFPTest::resultType scores;
-
-  scores.clear();
-
   if(NO_WATCHS != "true"){
     QFPTest::setWatching();
   }
 
-  //singleton
-  if(doOne){
-    QFPTest::testInput ip{iters, dim, ulp_inc, min, max};
-    auto plist = TestBase::getTests()[TEST]->create();
-    auto score = (*plist[getPrecID(PRECISION)])(ip);
-    for(auto& p: plist) delete p;
-    scores.insert(score.begin(), score.end());
-    outputResults(scores);
-  }else{
-
-    QFPTest::testInput ip{iters, dim, ulp_inc, min, max};
-    scores.clear();
-    for(auto& t : TestBase::getTests()){
-      auto plist = t.second->create();
-      for(auto pt : plist){
-        auto score = (*pt)(ip);
-        scores.insert(score.begin(), score.end());
-      }
+  QFPTest::ResultType scores;
+  if(doOne) {
+    auto factory = getTests()[TEST];
+    std::string precision(PRECISION);
+    if(precision == "f") {
+      runTestWithDefaultInput<float>(factory, scores);
+    } else if (precision == "d") {
+      runTestWithDefaultInput<double>(factory, scores);
+    } else {
+      runTestWithDefaultInput<long double>(factory, scores);
     }
-    outputResults(scores);
+  } else {
+    for(auto& t : getTests()) {
+      auto factory = t.second;
+      runTestWithDefaultInput<float>(factory, scores);
+      runTestWithDefaultInput<double>(factory, scores);
+      runTestWithDefaultInput<long double>(factory, scores);
+    }
   }
 #if defined(__CUDA__) && !defined(__CPUKERNEL__)
   cudaDeviceSynchronize();
 #endif
+
+  outputResults(scores);
 }
 
 
