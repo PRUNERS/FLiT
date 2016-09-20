@@ -18,6 +18,37 @@
 
 namespace CUHelpers{
 
+template <typename T>
+T
+csqrt(T val){ return 0;}
+
+template<>
+HOST_DEVICE
+inline
+float
+csqrt<float>(float val){return sqrtf(val);}
+
+template<>
+HOST_DEVICE
+inline
+double
+csqrt<double>(double val){return sqrt(val);}
+
+template <typename T>
+T
+cpow(T a, T b){ return 0;}
+
+template<>
+HOST_DEVICE
+inline
+float
+cpow<float>(float a, float b){return powf(a,b);}
+
+template<>
+HOST_DEVICE
+inline
+double
+cpow<double>(double a, double b){return pow(a,b);}
 
 template <typename T>
 T

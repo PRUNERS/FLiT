@@ -1,11 +1,16 @@
 #ifndef TRIANGLE_HPP
 #define TRIANGLE_HPP
 
-#include "testBase.hpp"
-#include "QFPHelpers.hpp"
-
 #include <cmath>
 #include <typeinfo>
+
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
+#include "cudaTests.hpp"
+
+using namespace CUHelpers;
+using namespace std::placeholders;
 
 template <typename T>
 class Triangle: public QFPTest::TestBase<T> {
