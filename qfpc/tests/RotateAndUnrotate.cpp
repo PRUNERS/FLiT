@@ -1,8 +1,26 @@
-#include "testBase.hpp"
-#include "QFPHelpers.hpp"
-
 #include <cmath>
 #include <typeinfo>
+
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
+#include "cudaTests.hpp"
+
+using namespace CUHelpers;
+
+template <typename T>
+GLOBAL
+void
+RaUKern(const QFPTest::testInput ti, cudaResultElement* results){
+
+  auto theta = M_PI;
+  auto A = VectorCU<T>::getRandomVector(3);
+  auto orig = A;
+  A = A.rotateAboutZ_3d(theta);
+  A = A.rotateAboutZ_3d(-theta);
+  results[0].s1 = A.L1Distance(orig);
+  results[0].s2 = A.LInfDistance(orig);
+}
 
 template <typename T>
 class RotateAndUnrotate: public QFPTest::TestBase {
@@ -12,7 +30,8 @@ public:
   QFPTest::resultType operator()(const QFPTest::testInput& ti) {
     Q_UNUSED(ti);
 #ifdef __CUDA__
-    return {{{id, typeid(T).name()}, {0.0, 0.0}}};
+     return DoCudaTest(ti, id, RaUKern<T>,
+		      typeid(T).name(), 1);
 #else
     // T min = ti.min;
     // T max = ti.max;

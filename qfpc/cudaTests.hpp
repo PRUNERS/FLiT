@@ -16,6 +16,6 @@ typedef void (*kernelPtr)(const QFPTest::testInput, cudaResultElement*);
 QFPTest::resultType
 DoCudaTest(const QFPTest::testInput&,
            std::string id,
-           kernelPtr,
+           kernelPtr&,
 	   std::string tID,
 	   uint32_t);

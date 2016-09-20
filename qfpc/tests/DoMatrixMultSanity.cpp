@@ -19,6 +19,7 @@ DoMatrixMultSanityKernel(const QFPTest::testInput ti, cudaResultElement* results
   results[0].s1 = c.L1Distance(b);
   results[0].s2 = c.LInfDistance(b);
 }
+
 template <typename T>
 class DoMatrixMultSanity: public QFPTest::TestBase {
 public:
