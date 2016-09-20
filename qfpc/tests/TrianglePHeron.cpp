@@ -15,10 +15,19 @@ T getCArea(const T a,
     return CUHelpers::csqrt((T)s * (s-a) * (s-b) * (s-c));
 }
 
+<<<<<<< HEAD
 template <typename T>
 T getArea(const T a,
           const T b,
           const T c){
+=======
+protected:
+  //computes using Heron's formula
+  HOST_DEVICE
+  T getArea(const T a,
+            const T b,
+            const T c){
+>>>>>>> 6f8d63913ba9f23a6376f86de4534ebe1ddada1b
     T s = (a + b + c ) / 2;
     return sqrt(s * (s-a) * (s-b) * (s-c));
 }

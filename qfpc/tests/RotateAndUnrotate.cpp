@@ -22,8 +22,8 @@ RaUKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* resul
   auto orig = A;
   A = A.rotateAboutZ_3d(theta);
   A = A.rotateAboutZ_3d(-theta);
-  results[0].s1 = A.L1Distance(orig);
-  results[0].s2 = A.LInfDistance(orig);
+  results[idx].s1 = A.L1Distance(orig);
+  results[idx].s2 = A.LInfDistance(orig);
 }
 
 template <typename T>
@@ -41,6 +41,8 @@ public:
   }
 
 protected:
+  virtual QFPTest::KernelFunction<T>* getKernel() { return RaUKern; }
+  virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto theta = M_PI;
     auto A = QFPHelpers::Vector<T>(ti.vals);
