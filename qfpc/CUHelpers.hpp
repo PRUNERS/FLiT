@@ -20,35 +20,35 @@ namespace CUHelpers{
 
 template <typename T>
 T
-csqrt(T val){ return 0;}
+csqrt(T /*val*/){ return 0; }
 
 template<>
 HOST_DEVICE
 inline
 float
-csqrt<float>(float val){return sqrtf(val);}
+csqrt<float>(float val) { return sqrtf(val); }
 
 template<>
 HOST_DEVICE
 inline
 double
-csqrt<double>(double val){return sqrt(val);}
+csqrt<double>(double val) { return sqrt(val);}
 
 template <typename T>
 T
-cpow(T a, T b){ return 0;}
+cpow(T /*a*/, T /*b*/){ return 0; }
 
 template<>
 HOST_DEVICE
 inline
 float
-cpow<float>(float a, float b){return powf(a,b);}
+cpow<float>(float a, float b) { return powf(a,b); }
 
 template<>
 HOST_DEVICE
 inline
 double
-cpow<double>(double a, double b){return pow(a,b);}
+cpow<double>(double a, double b) { return pow(a,b); }
 
 template <typename T>
 T
@@ -65,23 +65,23 @@ template<>
 HOST_DEVICE
 inline
 double
-ccos<double>(double val){return cos(val);}
+ccos<double>(double val){ return cos(val); }
 
 template <typename T>
 T
-csin(T /*val*/){ return 0;}
+csin(T /*val*/){ return 0; }
 
 template<>
 HOST_DEVICE
 inline
 float
-csin<float>(float val){return sinf(val);}
+csin<float>(float val){ return sinf(val); }
 
 template<>
 HOST_DEVICE
 inline
 double
-csin<double>(double val){return sin(val);}
+csin<double>(double val){ return sin(val); }
 
 void
 initDeviceData();
