@@ -1,0 +1,18 @@
+# These are the fp affecting switches for CUDA (7.5).
+# We will naively apply these (though the docs say
+# that, for instance, --use_fast_math implies
+# --ftz=true --prec-div=false --prec-sqrt=false
+# --fmad=true.
+# Also, for now, we'll just use O0 for the host.
+
+FASTM := --use_fast_math
+FTZT   := --ftz=true
+FTZF   := --ftz=false
+PRECDT := --prec-div=true
+PRECDF := --prec-div=false
+PRECST := --prec-sqrt=true
+PRECSF := --prec-sqrt=false
+FMADT  := --fmad=true
+FMADF  := --fmad=false
+
+CUSWITCHES := FASTM FTZT FTZF PRECDT PRECDF PRECST PRECSF FMADT FMADF

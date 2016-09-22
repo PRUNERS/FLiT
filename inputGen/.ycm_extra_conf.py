@@ -32,6 +32,8 @@ flags = [
     '-x', 'c++',
     '-isystem', '/usr/include',
     '-isystem', '/usr/local/include',
+    '-I../qfpc',
+    '-I../qfpc/tests',
     ]
 
 

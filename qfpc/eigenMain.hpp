@@ -59,7 +59,7 @@
 #include "split_test_helper.hpp"
 #include "testBase.hpp"
 
-extern std::map<std::string, QFPTest::resultType> eigenResults;
+extern std::map<std::string, QFPTest::ResultType> eigenResults;
 extern std::mutex eigenResults_mutex;
 extern std::mutex g_test_stack_mutex;
 
