@@ -16,55 +16,77 @@
 #include <algorithm>
 #include <mutex>
 
+#include "CUHelpers.hpp"
+
 #ifndef Q_UNUSED
 #define Q_UNUSED(x) (void)x
 #endif
 
-#ifdef __CUDA__
-#include <cuda.h>
-#include <thrust/device_vector>
-#include <thrust/host_vector>
-#endif
+// #ifdef __CUDA__
+// #define HOST_DEVICE __host__ __device__
+// #else
+// #define HOST_DEVICE
+// #endif
+
 
 namespace QFPHelpers {
 
 const int RAND_SEED = 1;
+const int RAND_VECT_SIZE = 256;
+
 extern thread_local InfoStream info_stream;
+  //this section provides a pregenerated random
+  //sequence that can be used by tests, including
+  //CUDA
+
+std::vector<float>
+setRandSequence(size_t size, int32_t seed = RAND_SEED);
+
+std::vector<uint_fast32_t>
+getShuffleSeq(uint_fast32_t);
+
+extern const std::vector<float> float_rands;
+extern const std::vector<uint_fast32_t> shuffled_16;
+  
+std::vector<float>
+getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 
-namespace FPHelpers {
-  inline float
-  as_float(uint32_t val) {
-    return *reinterpret_cast<float*>(&val);
-  }
+HOST_DEVICE
+inline float
+as_float(uint32_t val) {
+  return *reinterpret_cast<float*>(&val);
+}
 
-  inline double
-  as_float(uint64_t val) {
-     return *reinterpret_cast<double*>(&val);
-  }
+HOST_DEVICE
+inline double
+as_float(uint64_t val) {
+   return *reinterpret_cast<double*>(&val);
+}
 
-  inline long double
-  as_float(unsigned __int128 val) {
-    return *reinterpret_cast<long double*>(&val);
-  }
+inline long double
+as_float(unsigned __int128 val) {
+  return *reinterpret_cast<long double*>(&val);
+}
 
-  inline uint32_t
-  as_int(float val) {
-    return *reinterpret_cast<uint32_t*>(&val);
-  }
+HOST_DEVICE
+inline uint32_t
+as_int(float val) {
+  return *reinterpret_cast<uint32_t*>(&val);
+}
 
-  inline uint64_t
-  as_int(double val) {
-    return *reinterpret_cast<uint64_t*>(&val);
-  }
+HOST_DEVICE
+inline uint64_t
+as_int(double val) {
+  return *reinterpret_cast<uint64_t*>(&val);
+}
 
-  inline unsigned __int128
-  as_int(long double val) {
-    const unsigned __int128 zero = 0;
-    const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
-    return temp & (~zero >> 48);
-  }
+inline unsigned __int128
+as_int(long double val) {
+  const unsigned __int128 zero = 0;
+  const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
+  return temp & (~zero >> 48);
 }
 
 template<typename T>
@@ -75,21 +97,30 @@ class Vector {
   std::vector<T> data;
 public:
   Vector():data(0){}
-  Vector(std::initializer_list<T> l):data(l){}
-  Vector(size_t size):data(size, 0){}
+  Vector(std::initializer_list<T> l) : data(l) {}
+  Vector(size_t size):data(size, 0) {}
   template <typename U>
   Vector(size_t size, U genFun):data(size, 0){
     std::generate(data.begin(), data.end(), genFun);
   }
+
+  // Copyable
   Vector(const Vector &v):data(v.data) {}
-  size_t
-  size() const {return data.size();}
+  Vector(const std::vector<T> &data) : data(data) {}
+  Vector& operator=(const Vector &v) { data = v.data; return *this; }
+  Vector& operator=(const std::vector<T> &data) { this->data = data; return *this; }
 
-  T&
-  operator[](size_t indx){return data[indx];}
+  // Movable
+  Vector(Vector<T> &&v) : data(std::move(v.data)) {}
+  Vector(std::vector<T> &&data) : data(std::move(data)) {}
+  Vector& operator=(Vector<T> &&v) { data = std::move(v.data); return *this; }
+  Vector& operator=(std::vector<T> &&data) { this->data = std::move(data); return *this;}
 
-  const T&
-  operator[](size_t indx) const {return data[indx];}
+  size_t size() const { return data.size(); }
+  T& operator[](size_t indx){return data[indx];}
+  const T& operator[](size_t indx) const {return data[indx];}
+
+  const std::vector<T>& getData() { return data; }
 
   Vector<T>
   operator*(T const &rhs){
@@ -102,17 +133,13 @@ public:
 
   static
   Vector<T>
-  getRandomVector(size_t dim, T min_inc, T max_exc,
-                  std::mt19937::result_type seed = 0,
-                  bool doSeed = true){
-    std::mt19937 gen;
-    if(doSeed) gen.seed(seed);
-    std::uniform_real_distribution<T> dist(min_inc,max_exc);
-    Vector<T> tmp(dim);
-    for(auto& i: tmp.data){
-      i = dist(gen);
-    }
-    return tmp;
+  getRandomVector(size_t dim){
+    auto copy = getRandSeq();
+    copy.erase(copy.begin() + dim, copy.end());
+    // We need to make a copy of the copy because the first copy is
+    // std::vector<float>.  We need std::vector<T>.
+    std::vector<T> otherCopy(copy.begin(), copy.end());
+    return Vector<T>(std::move(otherCopy));
   }
 
   Vector<T>
@@ -124,6 +151,7 @@ public:
   bool
   operator==(Vector<T> const &b){
     bool retVal = true;
+    if(b.data.size() != this->data.size()) return false;
     for(uint x = 0; x < size(); ++x){
       if(data[x] != b.data[x]){
         retVal = false;
@@ -155,6 +183,7 @@ public:
     Vector<T> retVal(size());
     std::vector<T> seq(size());
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
+    
     shuffle(seq.begin(), seq.end(), std::mt19937(RAND_SEED));
     //do pairwise swap
     for(uint i = 0; i < size(); i += 2){
@@ -166,20 +195,7 @@ public:
     return retVal;
   }
 
-  T
-  getLInfNorm(){
-    T retVal;
-    std::pair<int, T> largest;
-    for(int x = 0; x < data.size(); ++x){
-      T abe = fabs(data[x]);
-      if(abe > largest.second){
-        largest.first = x;
-        largest.second = abe;
-      }
-    }
-  }
-
-  void
+  Vector<T>
   rotateAboutZ_3d(T rads){
     Matrix<T> t = {{(T)cos(rads), (T)-sin(rads), 0},
                    {(T)sin(rads), (T)cos(rads), 0},
@@ -188,8 +204,7 @@ public:
     Vector<T> tmp(*this);
     tmp = t * tmp;
     info_stream << "in rotateAboutZ, result is: " << tmp << std::endl;
-    data = tmp.data;
-
+    return tmp;
   }
 
   Vector<T>
@@ -205,7 +220,7 @@ public:
   L1Distance(Vector<T> const &rhs) const {
     T distance = 0;
     for(uint x = 0; x < size(); ++x){
-      distance += fabs(data[x] - rhs.data[x]);
+      distance += std::abs(data[x] - rhs.data[x]);
     }
     return distance;
   }
@@ -240,7 +255,7 @@ public:
   LInfNorm() const {
     T retVal = 0;
     for(auto e: data){
-      T tmp = fabs(e);
+      T tmp = std::abs(e);
       if( tmp > retVal) retVal = tmp;
     }
     return retVal;
@@ -338,7 +353,7 @@ public:
 
 
   bool
-  operator==(Matrix<T> const &rhs){
+  operator==(Matrix<T> const &rhs) const {
     bool retVal = true;
     for(uint x = 0; x < data.size(); ++x){
       for(uint y = 0; y < data[0].size(); ++y){

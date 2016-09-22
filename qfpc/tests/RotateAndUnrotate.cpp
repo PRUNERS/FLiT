@@ -1,19 +1,51 @@
-#include "testBase.hpp"
-#include "QFPHelpers.hpp"
-
 #include <cmath>
 #include <typeinfo>
 
-template <typename T>
-class RotateAndUnrotate: public QFPTest::TestBase {
-public:
-  RotateAndUnrotate(std::string id) : QFPTest::TestBase(id){}
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
 
-  QFPTest::resultType operator()(const QFPTest::testInput& ti) {
-    T min = ti.min;
-    T max = ti.max;
+
+template <typename T>
+GLOBAL
+void
+RaUKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+  using namespace CUHelpers;
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  auto theta = M_PI;
+  auto ti = tiList[idx];
+  auto A = VectorCU<T>(ti.vals, ti.length);
+  auto orig = A;
+  A = A.rotateAboutZ_3d(theta);
+  A = A.rotateAboutZ_3d(-theta);
+  results[idx].s1 = A.L1Distance(orig);
+  results[idx].s2 = A.LInfDistance(orig);
+}
+
+template <typename T>
+class RotateAndUnrotate: public QFPTest::TestBase<T> {
+public:
+  RotateAndUnrotate(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+
+  virtual size_t getInputsPerRun() { return 3; }
+  virtual QFPTest::TestInput<T> getDefaultInput() {
+    QFPTest::TestInput<T> ti;
+    ti.min = -6;
+    ti.max = 6;
+    ti.vals = QFPHelpers::Vector<T>::getRandomVector(3).getData();
+    return ti;
+  }
+
+protected:
+  virtual QFPTest::KernelFunction<T>* getKernel() { return RaUKern; }
+  virtual
+  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto theta = M_PI;
-    auto A = QFPHelpers::Vector<T>::getRandomVector(3, min, max);
+    auto A = QFPHelpers::Vector<T>(ti.vals);
     auto orig = A;
     QFPHelpers::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);
@@ -29,8 +61,11 @@ public:
     }
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
-    return {{{id, typeid(T).name()}, {dist, A.LInfDistance(orig)}}};
+    return {dist, A.LInfDistance(orig)};
   }
+
+protected:
+  using QFPTest::TestBase<T>::id;
 };
 
 REGISTER_TYPE(RotateAndUnrotate)
