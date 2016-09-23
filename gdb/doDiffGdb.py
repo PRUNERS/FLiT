@@ -1,28 +1,23 @@
 #!/usr/bin/env python3
 
 # this is the launcher for QFP_gdb
-# where: testid is one of:
-#  0: DoOrthoPerturbTestP2
-#  1: DoOrthoPerturbTestN2
-#  2: DoMatrixMultSanity
-#  3: DoSimpleRotate90
-#  4: RotateAndUnrotate
-#  5: RotateFullCircle
-#  6: DoSkewSymPRotationTest
-#  7: DoHariGSBasic
-#  8: DoHariGSImproved
-
-
 
 import sys
 from subprocess import check_output
 import os
 
-def usage():             #  1         2           3        4              5                   6
-    print(sys.argv[0] + '[bin1 path] [bin2 path] [testid] [prec = f|d|e] [sort = lt|gt|ns|bi] [emacsNoWindow = t|f]')
+def usage():
+    'Prints usage information'
+    print('Usage:\n')
+    print(sys.argv[0] + ' [bin1 path] [bin2 path] [testid1] [prec1 = f|d|e]\n'
+          + '             [sort1 = lt|gt|ns|bi] [testid2] [prec2] [sort2]\n'
+          + '             [emacsNoWindow = t|f]\n'
+          )
 
-
-if len(sys.argv) < 6 or len(sys.argv) > 7:
+if '-h' in sys.argv or '--help' in sys.argv:
+    usage()
+    exit(0)
+if len(sys.argv) < 8 or len(sys.argv) > 9:
     usage()
     exit(1)
 
@@ -31,16 +26,19 @@ emacs = check_output('which emacs', shell=True)[:-1]  #remove newline from which
 ln = check_output('which ln', shell=True)[:-1]
 
 topDir = os.path.dirname(__file__)
-inf1 = os.path.realpath(sys.argv[1])
-inf2 = os.path.realpath(sys.argv[2])
-os.environ['TEST'] = sys.argv[3]
-os.environ['PRECISION'] = sys.argv[4]
-os.environ['SORT'] = sys.argv[5]
+inf1 = os.path.realpath('qfpc/' + sys.argv[1])
+inf2 = os.path.realpath('qfpc/' + sys.argv[2])
+os.environ['TEST1'] = sys.argv[3]
+os.environ['PRECISION1'] = sys.argv[4]
+os.environ['SORT1'] = sys.argv[5]
+os.environ['TEST2'] = sys.argv[6]
+os.environ['PRECISION2'] = sys.argv[7]
+os.environ['SORT2'] = sys.argv[8]
 os.environ['NO_WATCH'] = 'false'
 os.environ["PARAMS"] = ""
 NW = True
-if len(sys.argv) >= 7:
-    if sys.argv[6] == 'f':
+if len(sys.argv) >= 10:
+    if sys.argv[9] == 'f':
         NW = False
 
 sys.path.append(topDir)
@@ -56,10 +54,10 @@ try:
     cmd = [emacs, '--eval=(gdb "gdb -i=mi inf1")']
     if NW:
         cmd.append('-nw')
-    cmd_out = check_output(cmd)
-    
-except CalledProcessError:
-    print(cmd_out)
+    check_output(cmd)
+
+except CalledProcessError as ex:
+    print(ex.output)
     exit(1)
 
 exit(0)
