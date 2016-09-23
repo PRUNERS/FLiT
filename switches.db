@@ -1,0 +1,44 @@
+SSE -mfpmath=sse -mtune=native
+UNSOPTS -funsafe-math-optimizations
+AVX -mavx
+O0 -O0
+O3 -O3
+O2 -O2
+O1 -O1
+FPCONT -ffp-contract=on
+MCONSTS -fmerge-all-constants
+FSTORE -ffloat-store
+FASTM -ffast-math
+FASTEXPREC -fexcess-precision=fast
+STDEXPREC -fexcess-precision=standard
+ASSOCMATH -fassociative-math
+RECIPMATH -freciprocal-math
+FINMATH -ffinite-math-only
+NOTRAP -fno-trapping-math
+ROUNDINGMATH -frounding-math
+SIGNALNAN -fsignaling-nans
+SINGLEPRECCONST -fsingle-precision-constant
+LIMITEDRANGE -fcx-limited-range
+FORTRULES -fcx-fortran-rules
+FLUSHDEN -ftz
+NOFLUSHDEN -no-ftz
+PRECDIV -prec-div
+NOPRECDIV -no-prec-div
+ENAFMA -fma
+DISFMA -no-fma
+FPTRAP -fp-trap=common
+ROUNDUSR -fp-port
+COMPTRANS -mp1
+FPMODPRE -fp-model=precise
+FPMODSRC -fp-model=source
+FPMODDBL -fp-model=double
+FPMODEXT -fp-model=extended
+FPMODEXC -fp-model=except
+FPMODSTR -fp-model=strict
+FPMODFST1 -fp-model fast=1
+FPMODFST2 -fp-model fast=2
+DEFFLAGS 
+FMAGCC -O2 -mavx2 -mfma
+FMACLG -O1 -mavx2 -mfma
+FMAICC -O1 -march=core-avx2
+

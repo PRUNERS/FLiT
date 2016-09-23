@@ -6,12 +6,10 @@ if [[ ! -e "~/.postgresql" ]]; then
     cp /local/.postgresql/* ~/.postresql/
 fi
 
-if [[ ! -e results ]]; then
-    mkdir results
-fi
-rm results/*
-cd perpVects
-make -j $1 -f Makefile2
+mkdir -p results
+#rm results/*
+cd qfpc
+make -j $1
 
 if [[ $VERBOSE != 'verbose' ]]; then
     cd ../results

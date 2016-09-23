@@ -1,0 +1,57 @@
+#CC := clang++
+CC := g++-4.9
+FFLAGS ?=
+TARGET ?= runTests
+
+CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
+
+CPPFLAGS += $(FFLAGS)
+CPPFLAGS += -std=c++11
+CPPFLAGS += -Wno-shift-count-overflow
+CPPFLAGS += -Wall
+CPPFLAGS += -Wextra
+CPPFLAGS += -Werror
+#CPPFLAGS += -MMD
+CPPFLAGS += -I../gdb/inst
+CPPFLAGS += -I.
+CPPFLAGS += -isystem eigen
+CPPFLAGS += -isystem eigen/Eigen
+
+LINKFLAGS += -lm
+LINKFLAGS += -lpthread
+LINKFLAGS += -pthread
+
+DEPFLAGS += -MD -MF $*.d
+
+TESTS    := $(wildcard tests/*.cpp)
+SOURCE   := $(wildcard *.cpp)
+SOURCE   += $(TESTS)
+SOURCE   += eigen/EigenTests.cpp
+
+
+OBJ      := $(SOURCE:.cpp=.o)
+DEPS     := $(SOURCE:.cpp=.d)
+
+
+.PHONY : all
+all :  $(TARGET)
+
+$(TARGET) : $(OBJ)
+	$(CC) $(CPPFLAGS) $(LINKFLAGS) -o $@ $^
+
+%.o : %.cpp
+	$(CC) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
+
+.PRECIOUS: %.d
+-include $(SOURCE:%.cpp=%.d)
+
+.PHONY : clean
+clean :
+	rm -f $(OBJ)
+	rm -f $(DEPS)
+
+.PHONY: veryclean distclean
+veryclean : distclean
+distclean : clean
+	rm -f $(TARGET)
+

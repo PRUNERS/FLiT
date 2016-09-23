@@ -64,7 +64,7 @@ This shows a difference with g++ (5.x) on bihexal, but no difference with clang 
 
 Here're the differences:
 
-sawaya@bihexal:~/QFP/perpVects$ diff g++_bihexal_vanilla_out g++_bihexal_relaxed_out
+sawaya@bihexal:~/QFP/qfpc$ diff g++_bihexal_vanilla_out g++_bihexal_relaxed_out
 33c33
 < RotateAndUnrotate:    2.1684043449710088680149056017398834228515625e-19
 ---
