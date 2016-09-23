@@ -8,6 +8,8 @@ import sys
 import os
 import subprocess
 
+PINHOME=os.environ['HOME']/software/pin
+
 if not os.path.exists('opcodes'):
     os.makedirs('opcodes')
 
@@ -37,8 +39,8 @@ for f in glob.glob('*'):
 
             os.environ['TEST'] = t
             try:
-                print(subprocess.check_output(['../pin/pin/pin', '-t',
-                                               '../pin/pin/source/tools/SimpleExamples/obj-intel64/opcodemix.so',
+                print(subprocess.check_output([PIHHOME + '/pin', '-t',
+                                               PINHOME + '/source/tools/SimpleExamples/obj-intel64/opcodemix.so',
                                                '-o', 'opcodes/' + f + '_' + p + '_' + t, '--', './' +
                                                f]))
             except:
