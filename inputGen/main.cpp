@@ -44,9 +44,10 @@ runTestbed(const std::string &testName, const std::vector<T> &inputs) {
 
 
 template<typename T>
-void runTest(std::string testName, uint divergentCount, uint maxTries) {
-  const std::function<T()> randGen = []() {
-    return generateRandomFloat<T>(RandomFloatType::Positive);
+void runTest(std::string testName, uint divergentCount, uint maxTries,
+             RandType rType = RandType::UniformFP) {
+  const std::function<T()> randGen = [rType]() {
+    return generateRandomFloat<T>(RandomFloatType::Positive, rType);
   };
 
   std::cout << testName << "(" << typeid(T).name() << "): "
@@ -83,10 +84,11 @@ void runTest(std::string testName, uint divergentCount, uint maxTries) {
             << std::endl;
 }
 
-void runAllPrecisions(const std::string testName, uint divergentCount, uint maxTries) {
-  runTest<float>(testName, divergentCount, maxTries);
-  runTest<double>(testName, divergentCount, maxTries);
-  runTest<long double>(testName, divergentCount, maxTries);
+void runAllPrecisions(const std::string testName, uint divergentCount,
+                      uint maxTries, RandType rType = RandType::UniformFP) {
+  runTest<float>(testName, divergentCount, maxTries, rType);
+  runTest<double>(testName, divergentCount, maxTries, rType);
+  runTest<long double>(testName, divergentCount, maxTries, rType);
 }
 
 std::vector<std::string> getTestNames() {
@@ -121,6 +123,7 @@ struct ProgramArguments {
     All,
   };
   PrecisionType type = PrecisionType::Float;
+  RandType randType = RandType::UniformFP;
   uint maxTries = 1000;
   bool outputToFile = false;
   std::string outFilename;
@@ -157,7 +160,8 @@ int main(int argCount, char* argList[]) {
   }
 
   for (auto test : parsedArgs.tests) {
-    runner(test, parsedArgs.divergentCount, parsedArgs.maxTries);
+    runner(test, parsedArgs.divergentCount, parsedArgs.maxTries,
+           parsedArgs.randType);
   }
 
   return 0;
@@ -168,8 +172,8 @@ ProgramArguments parseArgs(int argCount, char* argList[]) {
     "Usage:\n"
     "  inputGen [-h]\n"
     "  inputGen --list-tests\n"
-    "  inputGen [-f|-d|-e|-a] [-m MAX_TRIES] [-o FILENAME] [-i NUM_DIVERGENT_INPUTS]\n"
-    "           (--test TEST_NAME ... | --all-tests)\n"
+    "  inputGen [-f|-d|-e|-a] [-m MAX_TRIES] [-i NUM_DIVERGENT_INPUTS] [-o FILENAME]\n"
+    "           [-r RAND_TYPE] (--test TEST_NAME ... | --all-tests)\n"
     "\n"
     "Description:\n"
     "  Runs the particular tests under the optimization given in compilation.  The\n"
@@ -212,6 +216,13 @@ ProgramArguments parseArgs(int argCount, char* argList[]) {
     "\n"
     "  -o FILENAME, --output FILENAME\n"
     "      Where to output the report.  By default it outputs to stdout.\n"
+    "\n"
+    "  -r RAND_TYPE, --rand-type RAND_TYPE\n"
+    "      The type of random number distribution to use.  Choices are:\n"
+    "      - fp: Uniform over the floating-point number space\n"
+    "      - real: Uniform over the real number line, then projected to\n"
+    "        floating-point space\n"
+    "      The default is \"fp\".\n"
     "\n"
     ;
 
@@ -268,9 +279,21 @@ ProgramArguments parseArgs(int argCount, char* argList[]) {
     } else if (arg == "--all-tests") {
       auto allTests = getTestNames();
       parsedArgs.tests.insert(parsedArgs.tests.end(), allTests.begin(), allTests.end());
+    } else if (arg == "-r" || arg == "--rand-type") {
+      auto& nextArg = args[++i];
+      if (nextArg == "fp") {
+        parsedArgs.randType = RandType::UniformFP;
+      } else if (nextArg == "real") {
+        parsedArgs.randType = RandType::UniformReals;
+      } else {
+        std::cerr << "Error: unrecognized rand-type: " << nextArg << std::endl;
+        std::cerr << "  Use the --help option for more information" << std::endl;
+        exit(1);
+      }
     } else {
       std::cerr << "Error: unrecognized argument: " << arg << std::endl;
       std::cerr << "  Use the --help option for more information" << std::endl;
+      exit(1);
     }
   }
 
