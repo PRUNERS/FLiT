@@ -41,7 +41,7 @@ void
 outputResults(const QFPTest::ResultType& scores){
   for(const auto& i: scores){
     std::cout
-      << "HOST,SWITCHES,COMPILER,"
+      << "HOST,SWITCHES,OPTL,COMPILER,"
       << i.first.second << ",us,"
       << i.second.first << ","
       << as_int(i.second.first) << ","

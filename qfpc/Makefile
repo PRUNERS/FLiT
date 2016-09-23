@@ -100,7 +100,8 @@ define RULE
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)_$(strip $3)
 	-./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
-	-sed -i 's/SWITCHES/$($(strip $1)) $($(strip $3))/g' $$@
+	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
+	-sed -i 's/OPTL/$($(strip $3))/g' $$@
 	-sed -i 's/COMPILER/$($(strip $2))/g' $$@
 	-sed -i 's/FILENAME/$2_$(hostname)_$(strip $1)_$(strip $3)/g' $$@
 
@@ -120,6 +121,7 @@ $(NVCC_VER)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $(NVCC_VER)_$(hostname)_$(s
 	-./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
 	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
+	-sed -i 's/OPTL//g' $$@
 	-sed -i 's/COMPILER/$(NVCC_VER)/g' $$@
 	-sed -i 's/FILENAME/$(NVCC_VER)_$(hostname)_$(strip $1)/g' $$@
 
