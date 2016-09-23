@@ -8,7 +8,7 @@ import sys
 import os
 import subprocess
 
-PINHOME=os.environ['HOME']/software/pin
+PINHOME=os.environ['HOME'] + '/software/pin'
 
 if not os.path.exists('opcodes'):
     os.makedirs('opcodes')
