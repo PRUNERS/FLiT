@@ -87,3 +87,33 @@ unsigned __int128 randGenerator128() {
   };
   return generator128();
 }
+
+float randRealFloatGenerator() {
+  static auto seed = generateSeed();
+  static std::mt19937 generator32(seed);
+  static std::uniform_real_distribution<float> distribution(
+      std::numeric_limits<float>::min(),
+      std::numeric_limits<float>::max()
+      );
+  return distribution(generator32);
+}
+
+double randRealDoubleGenerator() {
+  static auto seed = generateSeed();
+  static std::mt19937_64 generator64(seed);
+  static std::uniform_real_distribution<double> distribution(
+      std::numeric_limits<double>::min(),
+      std::numeric_limits<double>::max()
+      );
+  return distribution(generator64);
+}
+
+long double randRealLongDoubleGenerator() {
+  static auto seed = generateSeed();
+  static std::mt19937_64 generator64(seed);
+  static std::uniform_real_distribution<long double> distribution(
+      std::numeric_limits<long double>::min(),
+      std::numeric_limits<long double>::max()
+      );
+  return distribution(generator64);
+}

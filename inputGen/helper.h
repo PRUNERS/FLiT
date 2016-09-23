@@ -15,24 +15,53 @@ void printTestVal(const std::string &funcName, long double val);
 uint32_t randGenerator32();
 uint64_t randGenerator64();
 unsigned __int128 randGenerator128();
+float randRealFloatGenerator();
+double randRealDoubleGenerator();
+long double randRealLongDoubleGenerator();
 
+
+enum class RandType {
+  UniformFP,    // uniform on the space of Floating-Point(FP) numbers
+  UniformReals, // uniform on the real number line, then projected to FP
+};
 
 template <typename F>
-F generateFloatBits();
+F generateFloatBits(RandType type = RandType::UniformFP);
 
 template<> inline
-float generateFloatBits<float>() {
-  return QFPHelpers::as_float(randGenerator32());
+float generateFloatBits<float>(RandType type) {
+  switch (type) {
+    case RandType::UniformFP:
+      return QFPHelpers::as_float(randGenerator32());
+    case RandType::UniformReals:
+      return randRealFloatGenerator();
+    default:
+      throw std::runtime_error("Unimplemented rand type");
+  }
 }
 
 template<> inline
-double generateFloatBits<double>() {
-  return QFPHelpers::as_float(randGenerator64());
+double generateFloatBits<double>(RandType type) {
+  switch (type) {
+    case RandType::UniformFP:
+      return QFPHelpers::as_float(randGenerator64());
+    case RandType::UniformReals:
+      return randRealDoubleGenerator();
+    default:
+      throw std::runtime_error("Unimplemented rand type");
+  }
 }
 
 template<> inline
-long double generateFloatBits<long double>() {
-  return QFPHelpers::as_float(randGenerator128());
+long double generateFloatBits<long double>(RandType type) {
+  switch (type) {
+    case RandType::UniformFP:
+      return QFPHelpers::as_float(randGenerator128());
+    case RandType::UniformReals:
+      return randRealLongDoubleGenerator();
+    default:
+      throw std::runtime_error("Unimplemented rand type");
+  }
 }
 
 enum class RandomFloatType {
@@ -42,7 +71,8 @@ enum class RandomFloatType {
 };
 
 template <typename T>
-T generateRandomFloat(RandomFloatType fType = RandomFloatType::Any) {
+T generateRandomFloat(RandomFloatType fType = RandomFloatType::Any,
+                      RandType rType = RandType::UniformFP) {
   static_assert(
       std::is_floating_point<T>::value,
       "generateRandomFloats() can only be used with floating point types"
@@ -51,7 +81,7 @@ T generateRandomFloat(RandomFloatType fType = RandomFloatType::Any) {
   // Generate a random floating point number
   T val;
   do {
-    val = generateFloatBits<T>();
+    val = generateFloatBits<T>(rType);
   } while (isnan(val));
 
   // Convert the values based on the desired qualities
