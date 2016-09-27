@@ -40,7 +40,7 @@ CC_REQUIRED += -lpthread
 CC_REQUIRED += -pthread
 CC_REQUIRED += -I../gdb/inst
 CC_REQUIRED += -I.
-
+ 
 
 #Eigen includes
 
