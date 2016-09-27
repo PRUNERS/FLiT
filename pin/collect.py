@@ -10,6 +10,8 @@ import subprocess
 
 PINHOME=os.environ['HOME'] + '/software/pin'
 
+print('PINHOME is: ' + PINHOME)
+
 if not os.path.exists('opcodes'):
     os.makedirs('opcodes')
 
@@ -17,11 +19,11 @@ for f in glob.glob('*'):
     if f[:-4] == 'out_':
         continue
     splt = f.split('_')
-    if len(splt) != 3:
+    if len(splt) != 4:
         continue
     compiler = splt[0]
     host = splt[1]
-    flags = splt[2]
+    flags = splt[2] + '_' + splt[3]
     for p in ['f', 'd', 'e']:
         os.environ['PRECISION'] = p
         for t in ['DistributivityOfMultiplication',
@@ -39,7 +41,7 @@ for f in glob.glob('*'):
 
             os.environ['TEST'] = t
             try:
-                print(subprocess.check_output([PIHHOME + '/pin', '-t',
+                print(subprocess.check_output([PINHOME + '/pin', '-t',
                                                PINHOME + '/source/tools/SimpleExamples/obj-intel64/opcodemix.so',
                                                '-o', 'opcodes/' + f + '_' + p + '_' + t, '--', './' +
                                                f]))

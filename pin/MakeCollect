@@ -1,0 +1,37 @@
+PINPATH := $(HOME)/software/pin
+
+OUTDIR := opcounts
+
+SOURCE := $(wildcard *_O0)
+SOURCE += $(wilcard *_O1)
+SOURCE += $(wildcard *_O2)
+SOURCE += $(wildcard *_O3)
+
+TESTS := DistributivityOfMultiplication RotateAndUnrotate DoSkewSymCPRotationTest\
+	DoHariGSBasic DoHariGSImproved DoSimpleRotate90 TrianglePHeron\
+	DoMatrixMultSanity DoOrthoPerturbTest TrianglePSylv RotateFullCircle
+
+PRECISIONS := f d e
+
+TARGETS := $(foreach p, $(PRECISIONS), \
+	$(foreach t, $(TESTS), \
+	$(foreach f, $(SOURCE), \
+	$(strip $f)_$(strip $p)_$(strip $t))))
+
+.phony : all
+
+all : $(TARGETS)
+
+define RULE
+$1 : $2
+	-PRECISION=$(strip $3) \
+	TEST=$(strip $4) \
+	$(PINPATH)/pin -t \
+	$(PINPATH)/source/tools/SimpleExamples/obj-intel64/opcodemix.so \
+	-o $$@ -- ./$$<
+endef
+
+$(foreach p, $(PRECISIONS), \
+	$(foreach t, $(TESTS), \
+	$(foreach f, $(SOURCE), \
+	$(eval $(call RULE, $(strip $f)_$(strip $p)_$(strip $t), $(strip $f), $(strip $p), $(strip $t))))))
