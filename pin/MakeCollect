@@ -3,7 +3,7 @@ PINPATH := $(HOME)/software/pin
 OUTDIR := opcounts
 
 SOURCE := $(wildcard *_O0)
-SOURCE += $(wilcard *_O1)
+SOURCE += $(wildcard *_O1)
 SOURCE += $(wildcard *_O2)
 SOURCE += $(wildcard *_O3)
 
