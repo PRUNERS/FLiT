@@ -43,12 +43,12 @@ TrianglePHKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement
 
   double score = 0.0;
 
-  for(T pos = 1; pos <= a; pos += delta){
-    auto crit = getCArea(a,b,c);
+  for(T pos = 0; pos <= a; pos += delta){
     b = csqrt(cpow(pos, (T)2.0) +
 	      cpow(maxval, (T)2.0));
     c = csqrt(cpow(a - pos, (T)2.0) +
 	      cpow(maxval, (T)2.0));
+    auto crit = getCArea(a,b,c);
     score += abs(crit - checkVal);
   }
   results[idx].s1 = score;
@@ -88,12 +88,12 @@ protected:
 
     long double score = 0;
 
-    for(T pos = 1; pos <= a; pos += delta){
-      auto crit = getArea(a,b,c);
+    for(T pos = 0; pos <= a; pos += delta){
       b = std::sqrt(std::pow(pos, 2) +
                     std::pow(maxval, 2));
       c = std::sqrt(std::pow(a - pos, 2) +
                     std::pow(maxval, 2));
+      auto crit = getArea(a,b,c);
       score += std::abs(crit - checkVal);
     }
     return {score, 0.0};
