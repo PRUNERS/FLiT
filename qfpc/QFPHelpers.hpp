@@ -15,6 +15,8 @@
 #include <random>
 #include <algorithm>
 #include <mutex>
+#include <vector>
+
 
 #include "CUHelpers.hpp"
 
