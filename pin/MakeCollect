@@ -9,7 +9,10 @@ SOURCE += $(wildcard *_O3)
 
 TESTS := DistributivityOfMultiplication RotateAndUnrotate DoSkewSymCPRotationTest\
 	DoHariGSBasic DoHariGSImproved DoSimpleRotate90 TrianglePHeron\
-	DoMatrixMultSanity DoOrthoPerturbTest TrianglePSylv RotateFullCircle
+	DoMatrixMultSanity DoOrthoPerturbTest TrianglePSylv RotateFullCircle\
+	FtoDecToF subnormal dotProd simpleReduction addTOL addSub divc\
+	zeroMinusX zeroDivX xDivOne xDivNegOne negAdivB twiceCast negAminB\
+	xMinuxX negAplusB aXbDivC aXbXc aPbPc xPc1EqC2 xPc1NegC2
 
 PRECISIONS := f d e
 
