@@ -89,6 +89,18 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
+template <typename T>
+T
+get_tiny1(){
+  return (T)0.0;
+}
+
+template <typename T>
+T
+get_tiny2(){
+  return (T)0.0;
+}
+
 template<typename T>
 class Matrix;
 
