@@ -28,8 +28,8 @@ def usage():
 
 if len(sys.argv) > 1:
     notes = sys.argv[1]
-    for x in range(2, len(sys.argv), 2):
-        hostinfo.append([sys.argv[x], int(sys.argv[x+1])])
+    # for x in range(2, len(sys.argv), 2):
+    #     hostinfo.append([sys.argv[x], int(sys.argv[x+1])])
 else:
     usage()
     exit(1)
@@ -55,19 +55,20 @@ else:
 #             ])
 #         print(stdo)
 
-if verbose == '':
+#if verbose == '':
 #    chdir('results')
+stdo = check_output([
+    psql, '-d', 'qfp',
+    '-c',
+    'INSERT INTO runs (rdate, notes) VALUES (\'' +
+    str(datetime.date.today()) +
+    '\', \'' + notes + '\');'
+])
+for f in glob.iglob('*'):
     stdo = check_output([
         psql, '-d', 'qfp',
-        '-c',
-        'INSERT INTO runs (rdate, notes) VALUES (\'' +
-            str(datetime.date.today()) +
-            '\', \'' + notes + '\');'
-        ])
-    for f in glob.iglob('masterRes*'):
-        stdo = check_output([
-            psql, '-d', 'qfp',
-            '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'
-            ])
-        print(stdo)
-    
+        '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'
+    ])
+    print(stdo)
+        
+        
