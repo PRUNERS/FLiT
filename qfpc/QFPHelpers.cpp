@@ -80,7 +80,12 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
     ostreamMutex.lock();
     auto bflags = os.flags();
     os.flags(std::ios::hex & ~std::ios::showbase);
-    os << "0x" << hi << lo;
+    os << "0x" << hi;
+    if(lo != 0){
+      os << lo;
+    }else{
+      os << "0000000000000000";
+    }
     os.flags( bflags );
     ostreamMutex.unlock();
   }
