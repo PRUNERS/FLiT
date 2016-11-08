@@ -9,22 +9,12 @@
 
 namespace QFPHelpers {
 
-std::vector<uint_fast32_t>
+const std::vector<uint_fast32_t>
 getShuffleSeq(uint_fast32_t size){
   std::vector<uint_fast32_t> retVal(size);
   iota(retVal.begin(), retVal.end(), 0);
   shuffle(retVal.begin(), retVal.end(), std::mt19937(RAND_SEED));
   return retVal;
-}
-
-std::vector<float>
-setRandSequence(size_t size, int32_t seed){
-  std::vector<float> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<float> dist(-6.0, 6.0);
-  for(auto& i: ret) i = dist(gen);
-  return ret;
 }
 
 template <>
@@ -63,29 +53,45 @@ get_tiny2<long double>(){
   return 3.362103143112093506263e-4931L;
 }
 
-const std::vector<float> float_rands = setRandSequence(RAND_VECT_SIZE);
+  //const std::vector<float> float_rands = setRandSequence<float>(RAND_VECT_SIZE);
 const std::vector<uint_fast32_t> shuffled_16  = getShuffleSeq(16);
 
-std::vector<float>
-getRandSeq(){return float_rands;}
+template<>
+const std::vector<float>&
+getRandSeq<float>(){return float_rands;}
 
+template<>
+const std::vector<double>&
+getRandSeq<double>(){return double_rands;}
+
+template<>
+const std::vector<long double>&
+getRandSeq<long double>(){return long_rands;}
+
+const std::vector<float> float_rands = setRandSeq<float>(RAND_VECT_SIZE);
+const std::vector<double> double_rands = setRandSeq<double>(RAND_VECT_SIZE);
+const std::vector<long double> long_rands = setRandSeq<long double>(RAND_VECT_SIZE);
+
+  
 thread_local InfoStream info_stream;
 std::mutex ostreamMutex;
 
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
   if(i == 0) os << 0;
   else{
+    std::ostringstream ost;
     uint64_t hi = i >> 64;
     uint64_t lo = (uint64_t)i;
     ostreamMutex.lock();
     auto bflags = os.flags();
     os.flags(std::ios::hex & ~std::ios::showbase);
+    ost.flags(std::ios::hex & ~std::ios::showbase);
+    ost << lo;    
     os << "0x" << hi;
-    if(lo != 0){
-      os << lo;
-    }else{
-      os << "0000000000000000";
+    for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
+      os << "0";
     }
+    os << ost.str();
     os.flags( bflags );
     ostreamMutex.unlock();
   }
