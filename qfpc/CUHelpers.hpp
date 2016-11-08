@@ -205,7 +205,7 @@ public:
   L1Distance(VectorCU<T> const &rhs) const {
     T distance = 0;
     for(vsize_t x = 0; x < data.size(); ++x){
-      distance += fabs(data[x] - rhs.data[x]);
+      distance += std::abs(data[x] - rhs.data[x]);
     }
     return distance;
   }
