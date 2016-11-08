@@ -36,21 +36,57 @@ namespace QFPHelpers {
 const int RAND_SEED = 1;
 const int RAND_VECT_SIZE = 256;
 
+inline
+float
+get_next_type(long double x){
+  Q_UNUSED(x);
+  return 0.0f;
+}
+
+inline
+double
+get_next_type(float x){
+  Q_UNUSED(x);
+  return 0.0;
+}
+
+inline
+long double
+get_next_type(double x){
+  Q_UNUSED(x);
+  return 0.0l;
+}
+
+
 extern thread_local InfoStream info_stream;
   //this section provides a pregenerated random
   //sequence that can be used by tests, including
   //CUDA
 
-std::vector<float>
-setRandSequence(size_t size, int32_t seed = RAND_SEED);
-
-std::vector<uint_fast32_t>
+template <typename T>
+const std::vector<T>
+setRandSeq(size_t size, int32_t seed = RAND_SEED){
+    //there may be a bug with float uniform_real_dist
+    //it is giving very different results than double or long double
+  std::vector<T> ret(size);
+  std::mt19937 gen;
+  gen.seed(seed);
+  std::uniform_real_distribution<double> dist(-6.0, 6.0);
+  for(auto& i: ret) i = (T)dist(gen);
+  return ret;
+}
+  
+const std::vector<uint_fast32_t>
 getShuffleSeq(uint_fast32_t);
 
 extern const std::vector<float> float_rands;
+extern const std::vector<double> double_rands;
+extern const std::vector<long double> long_rands;
+
 extern const std::vector<uint_fast32_t> shuffled_16;
-  
-std::vector<float>
+
+template <typename T>
+std::vector<T> const &
 getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
@@ -148,7 +184,7 @@ public:
   static
   Vector<T>
   getRandomVector(size_t dim){
-    auto copy = getRandSeq();
+    auto copy = getRandSeq<T>();
     copy.erase(copy.begin() + dim, copy.end());
     // We need to make a copy of the copy because the first copy is
     // std::vector<float>.  We need std::vector<T>.

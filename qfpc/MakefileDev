@@ -1,5 +1,5 @@
 #CC := clang++
-CC := g++-4.9
+CC := g++
 FFLAGS ?=
 TARGET ?= runTests
 
