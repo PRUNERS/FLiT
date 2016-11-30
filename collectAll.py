@@ -8,44 +8,43 @@ import glob
 
 import prepDBHost
 
-HOSTFILE = hostfile
-
-
-home_dir = os.path.dirname(os.path.realpath(__file__))
+home_dir = path.dirname(path.realpath(__file__))
 
 #constants
 git = check_output('which git', shell=True)[:-1]
 psql = check_output('which psql', shell=True)[:-1]
 
+#vars
 notes = ''
 DBINIT = 'prepDBHost.py'
 BRANCH = 'unified_script'
 
 def usage():
-    print('usage: ' + sys.argv[0] + '"notes"')
-    print('\tyou must populate ' + home_dir + '/' HOSTFILE + ' with')
-    print('\t\trun and db host info (see file for details)')
+    print('usage: ' + sys.argv[0] + ' "notes"')
+    print('\tyou must populate ' + home_dir + '/hostfile.py with')
+    print('\trun and db host info (see file for details)')
 
 
 if len(sys.argv) == 2:
     notes = sys.argv[1]
     try:
-        import HOSTFILE
-    except:
+        import hostfile
+    except ImportError:
+        print('missing hostfile.py')
         usage()
         exit(1)
 else:
     usage()
     exit(1)
 
-run_hosts = HOSTFILE.RUN_HOSTS
-db_host = HOSTFILE.DB_HOST
+run_hosts = hostfile.RUN_HOSTS
+db_host = hostfile.DB_HOST
 
 #clear space on db host -- copy and exec prepDBHost.py
-print('preparing workspace on DB server, ' + db_host + '...')
+print('preparing workspace on DB server, ' + db_host[1] + '...')
 print(check_output(['scp', DBINIT, db_host[0] + '@' + db_host[1] + ':~/']))
 print(check_output(['ssh', db_host[0] + '@' + db_host[1],
-                    '.' + DBINIT]))
+                    './' + DBINIT]))
 
 #Now it's time to do the 
 for h in run_hosts:
@@ -67,7 +66,7 @@ for h in run_hosts:
     #copy results to DB server
     stdo = check_output([
         'scp',
-        h[0] + '@' h[1] + ':~/remote_qfp/qfp/results/*.tgz',
+        h[0] + '@' + h[1] + ':~/remote_qfp/qfp/results/*.tgz',
         db_host[0] + '@' + db_host[1] + ':~/' + prepDBHost.COLL_DIR
     ])
     print(stdo)
@@ -80,10 +79,10 @@ print(stdo)
 #now import results into database
 stdo = check_output(['ssh', db_host[0] + '@' + db_host[1],
                      "psql qfp -c dofullflitimport('" +
-                     prepDBHost.COLL_DIR + "','"
+                     prepDBHost.COLL_DIR + "','" +
                      notes + "')"
                      ])
 
 #done!
 
-print('data collection is complete, results stored in DB @ ' + db_host
+print('data collection is complete, results stored in DB @ ' + db_host[1])
