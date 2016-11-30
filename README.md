@@ -51,9 +51,9 @@ Contents:
 ## Prerequisites and Setup ##
 
 FLiT is designed to build and excute its test suite on a variety of hosts and
-compilers.  However, there are two types of hosts whose environments must be
+compilers.  However, there are three types of hosts whose environments must be
 considered &mdash; the _primary_ host, from which you will be envoking the
-tests, and zero or more  _remote_ hosts, where tests may also execute and
+tests, a _database_ host, and zero or more  _remote_ hosts, where tests may also execute and
 return data to the _primary_.
 
 Also, these instructions assume mostly that you have *root* access on your
@@ -76,6 +76,7 @@ After you have installed git, you can clone this repository
 cd [location for FLiT to live]
 git clone https://github.com/Geof23/QFP.git
 cd QFP
+git checkout unified_script
 ```
 
 ### Software ###
