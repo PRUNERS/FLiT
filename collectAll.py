@@ -51,6 +51,7 @@ for h in run_hosts:
     print('collecting data from ' + h[1])
     stdo = check_output([
         'ssh', h[0] + '@' + h[1],
+        'if [[ -e /tmp ]]; then cd /tmp; fi && ' +
         'if [[ -e remote_qfp ]]; then ' +
         'rm -fr remote_qfp; ' +
         'fi && ' +
