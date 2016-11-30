@@ -1,4 +1,4 @@
-PINPATH := $(HOME)/software/pin
+#needs to have PINPATH set before callling
 
 OUTDIR := opcounts
 

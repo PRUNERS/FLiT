@@ -26,13 +26,13 @@ CLANG := clang++
 INTEL := icpc
 
 #COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
-COMPILERS := CLANG
+COMPILERS := CLANG INTEL GCC
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
 VERBOSE ?=
 
-CC_GEN_OPTS ?= -O0 -ggdb
+#CC_GEN_OPTS ?= -O0 -ggdb
 CC_REQUIRED  = -std=c++14
 CC_REQUIRED += -Wno-shift-count-overflow
 #CC_REQUIRED += -lstdc++
@@ -79,16 +79,19 @@ SOURCE	    += eigen/EigenTests.cpp
 
 hostname    := $(shell hostname)
 
+
+
 ifdef HAS_CUDA
 CUTARGETS := $(foreach s, $(CUSWITCHES), \
 		$(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
 endif
 
+ifndef CUDA_ONLY
 TARGETS     := $(foreach c, $(COMPILERS), \
 	$(foreach s, $(SWITCHES), \
 	$(foreach o, $(OPCODES), \
 	$c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE))))
-
+endif
 
 VERBOSE_OUTPUT := $(TARGETS:%=%_out_$(VERBOSE))
 
@@ -147,8 +150,9 @@ cleanResults : $(TARGETS) $(CUTARGETS)
 .PHONY : archive
 archive : cleanResults
 	mkdir -p ../results
-	-tar -zcf ../results/$(hostname).tgz *$(hostname)*
-	rm -f *$(hostname)*
+	mv *$(hostname)* ../results
+	#-tar -zcf ../results/$(hostname).tgz *$(hostname)*
+	#rm -f *$(hostname)*
 
 .PHONY : clean
 clean :

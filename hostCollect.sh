@@ -1,24 +1,33 @@
 #!/bin/bash -x
 
-#this is for Cloudlab
-if [[ ! -e "~/.postgresql" ]]; then
-    mkdir ~/.postgresql
-    cp /local/.postgresql/* ~/.postresql/
-fi
-
 mkdir -p results
-#rm results/*
+
+#do the full test suite
 cd qfpc
+if [[ $2 == True ]]
+then
+    export CUDA_ONLY=True
+fi
 make -j $1
 
-if [[ $VERBOSE != 'verbose' ]]; then
-    cd ../results
-    tar -zxf *.tgz
-    cat *out_ >> masterRes_$(hostname)
-    # git add masterRes_$(hostname)
-    # git commit -m 'data collecton from $(hostname)'
-    # git push
-    # $(which psql) -d qfp -h bihexal.cs.utah.edu -U sawaya -c "select importQFPResults('$PWD/masterRes');"
-    exit $?
+#setup pin tool
+cd ..
+if [[ -e pin_tool ]]; then
+    rm -fr pin_tool
 fi
-exit 0
+mkdir pin_tool
+cd pin_tool
+wget http://software.intel.com/sites/landingpage/pintool/downloads/pin-3.0-76991-gcc-linux.tar.gz
+tar xf pin*
+rm *.gz
+mv pin* pin
+export PINPATH=$(pwd)/pin
+
+#run pin tests
+cd ../results
+make -j $1 -f ../pin/MakeCollect
+
+#zip up all outputs
+tar zcf $(hostname)_flit.tgz *
+
+exit $?

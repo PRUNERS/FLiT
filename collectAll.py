@@ -1,74 +1,89 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 from subprocess import call, check_output
-from os import chdir, getcwd, remove, environ
+from os import chdir, getcwd, remove, environ, path
 import sys
 import datetime
 import glob
 
+import prepDBHost
 
-hostinfo = [
-    ['u0422778@kingspeak1.chpc.utah.edu', 12],
-    ['sawaya@bihexal.cs.utah.edu', 24],
-    ['sawaya@gaussr.cs.utah.edu', 8],
-    ['sawaya@ms0620.utah.cloudlab.us', 8]
-]
+HOSTFILE = hostfile
+
+
+home_dir = os.path.dirname(os.path.realpath(__file__))
 
 #constants
 git = check_output('which git', shell=True)[:-1]
 psql = check_output('which psql', shell=True)[:-1]
+
 notes = ''
-verbose = ''
-if environ.get("VERBOSE") == 'verbose':
-    verbose = 'verbose'
-    
+DBINIT = 'prepDBHost.py'
+BRANCH = 'unified_script'
 
 def usage():
-    print('usage: ' + sys.argv[0] + ' notes [optional: fqdn procs, ... ]')
-    print('where fqdn = host to run tests on; procs is number of processes to use')
+    print('usage: ' + sys.argv[0] + '"notes"')
+    print('\tyou must populate ' + home_dir + '/' HOSTFILE + ' with')
+    print('\t\trun and db host info (see file for details)')
 
-if len(sys.argv) > 1:
+
+if len(sys.argv) == 2:
     notes = sys.argv[1]
-    for x in range(2, len(sys.argv), 2):
-        hostinfo.append([sys.argv[x], int(sys.argv[x+1])])
+    try:
+        import HOSTFILE
+    except:
+        usage()
+        exit(1)
 else:
     usage()
     exit(1)
 
+run_hosts = HOSTFILE.RUN_HOSTS
+db_host = HOSTFILE.DB_HOST
 
-for h in hostinfo:
-    print('collecting data from ' + h[0])
-    stdo = check_output(['ssh', h[0], 'if [[ -e remote_qfp ]]; then ' +
-                         'rm -fr remote_qfp; ' +
-                         'fi && ' +
-                         'mkdir remote_qfp && cd remote_qfp && ' +
-                         'git clone https://github.com/geof23/qfp && ' +
-                         'cd qfp && ' +
-                         'git checkout rel_lt && ' +
-                         'git pull && ' +
-                         'VERBOSE=' + verbose + ' ./hostCollect.sh ' + str(h[1])])
-    print(stdo)
-    if verbose == '':
-        stdo = check_output([
-            'scp',
-            h[0] + ':~/remote_qfp/qfp/results/masterRes*',
-            'results/masterRes' + h[0]
-            ])
-        print(stdo)
+#clear space on db host -- copy and exec prepDBHost.py
+print('preparing workspace on DB server, ' + db_host + '...')
+print(check_output(['scp', DBINIT, db_host[0] + '@' + db_host[1] + ':~/']))
+print(check_output(['ssh', db_host[0] + '@' + db_host[1],
+                    '.' + DBINIT]))
 
-if verbose == '':
-    chdir('results')
+#Now it's time to do the 
+for h in run_hosts:
+    print('collecting data from ' + h[1])
     stdo = check_output([
-        psql, '-d', 'qfp',
-        '-c',
-        'INSERT INTO runs (rdate, notes) VALUES (\'' +
-            str(datetime.date.today()) +
-            '\', \'' + notes + '\');'
-        ])
-    for f in glob.iglob('masterRes*'):
-        stdo = check_output([
-            psql, '-d', 'qfp',
-            '-c', 'select importQFPResults(\'' + getcwd() + '/' + f + '\');'
-            ])
-        print(stdo)
-    
+        'ssh', h[0] + '@' + h[1],
+        'if [[ -e remote_qfp ]]; then ' +
+        'rm -fr remote_qfp; ' +
+        'fi && ' +
+        'mkdir remote_qfp && cd remote_qfp && ' +
+        'git clone https://github.com/geof23/qfp && ' +
+        'cd qfp && ' +
+        'git checkout ' + BRANCH + ' && ' +
+        'git pull && ' +
+        './hostCollect.sh ' +
+        str(h[2]) + ' ' + str(h[3])
+    ])
+    print(stdo)
+    #copy results to DB server
+    stdo = check_output([
+        'scp',
+        h[0] + '@' h[1] + ':~/remote_qfp/qfp/results/*.tgz',
+        db_host[0] + '@' + db_host[1] + ':~/' + prepDBHost.COLL_DIR
+    ])
+    print(stdo)
+
+#unpack result files @ db server
+stdo = check_output(['ssh', db_host[0] + '@' + db_host[1],
+                     'cd ' + COLL_DIR + ' && ' +
+                     'for f in *.tgz; do tar xf $f; done'])
+print(stdo)
+#now import results into database
+stdo = check_output(['ssh', db_host[0] + '@' + db_host[1],
+                     "psql qfp -c dofullflitimport('" +
+                     prepDBHost.COLL_DIR + "','"
+                     notes + "')"
+                     ])
+
+#done!
+
+print('data collection is complete, results stored in DB @ ' + db_host
