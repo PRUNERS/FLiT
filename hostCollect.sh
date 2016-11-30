@@ -17,6 +17,10 @@ if [[ -e pin_tool ]]; then
 fi
 mkdir pin_tool
 cd pin_tool
+pushd .
+cd pin/source/tools/SimpleExamples
+make obj-intel64/opcodemix.so
+popd
 wget http://software.intel.com/sites/landingpage/pintool/downloads/pin-3.0-76991-gcc-linux.tar.gz
 tar xf pin*
 rm *.gz
