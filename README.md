@@ -2,23 +2,23 @@
 
 [![FLiT Bird](/flit.png)](https://github.com/Geof23/QFP "FLiT")
 
-Floating-point Litmus Tests is a test infrastructure for detecting varibility in 
-floating-point code caused by variations in compiler code generation,
+Floating-point Litmus Tests is a test infrastructure for detecting varibility
+in floating-point code caused by variations in compiler code generation,
 hardware and execution environments.
 
-FLiT works by building many versions of the test suite, using multiple 
-c++ compilers, floating-point related settings (i.e. flags) and optimization
-levels.  These tests are then executed on target platforms, where a 
+FLiT works by building many versions of the test suite, using multiple c++
+compilers, floating-point related settings (i.e. flags) and optimization
+levels.  These tests are then executed on target platforms, where a
 representative 'score' is collected into a database, along with the other
-parameters relevant to the execution, such as host, compiler configuration
-and compiler vendor.  In addition to the user-configured test output, we collect
-counts of each assembly opcode executed (currently, this works with Intel 
+parameters relevant to the execution, such as host, compiler configuration and
+compiler vendor.  In addition to the user-configured test output, we collect
+counts of each assembly opcode executed (currently, this works with Intel
 architectures only, using their PIN dynamic binary instrumentation tool).
 
-After executing the suite and collecting the data, it is easy to see how 
-results may diverge using only different compiler settings, etc.  Also,
-the developer is able to understand how to configure their build environment
-for their target architecture(s) such that they can expect consistent
+After executing the suite and collecting the data, it is easy to see how
+results may diverge using only different compiler settings, etc.  Also, the
+developer is able to understand how to configure their build environment for
+their target architecture(s) such that they can expect consistent
 floating-point computations.
 
 It consists of the following components:
@@ -29,48 +29,60 @@ It consists of the following components:
 * an execution disbursement system
 * a SQL database for collecting results
   * a collection of queries to help the user understand results
-  * some data analysis tools, utilizing machine intelligence (such as k-means 
-	clustering)
-	
+  * some data analysis tools, utilizing machine intelligence (such as k-means
+  clustering)
+
 Contents:
 
 * [Prerequisites and Setup](#prerequisites-and-setup)
+  * [Clone this repository](#clone-and-configure-flit-git)
   * [Software](#software)
-      * [python3, including the _dev_ package](#install-python3)
-      * [gcc 5.2+](#install-gcc)
-	  * [git (used from 1.7.1 to 2.5)](#install-git)
-	  * [PostgreSQL 9.4.7+](#configuring-postgresql-database)
-	  * [Intel PIN 3.0+](#download-pin)
-	  * [CUDA Toolkit 7.5+](#setup-cuda-7.5)
-  * [FLiT](#clone-and-configure-flit-git)
+    * [python3, including the _dev_ package](#install-python3)
+    * [gcc 5.2+](#install-gcc)
+    * [PostgreSQL 9.4.7+](#configuring-postgresql-database)
+    * [Intel PIN 3.0+](#download-pin)
+    * [CUDA Toolkit 7.5+](#setup-cuda-7.5)
   * [Configuring FLiT](#configuring-test-flit-run)
-	* [Adding a new test](#adding-a-new-test)
+  * [Adding a new test](#adding-a-new-test)
   * [Running FLiT](#running-qc)
   * [Examining data &mdash; a sample query](#sample-query)
 
 
 ## Prerequisites and Setup ##
 
-FLiT is designed to build and excute its test suite on a variety of
-hosts and compilers.  However, there are two types of hosts whose
-environments must be considered &mdash; the _primary_ host, from which you
-will be envoking the tests, and zero or more  _remote_ hosts, where
-tests may also execute and return data to the _primary_.
+FLiT is designed to build and excute its test suite on a variety of hosts and
+compilers.  However, there are two types of hosts whose environments must be
+considered &mdash; the _primary_ host, from which you will be envoking the
+tests, and zero or more  _remote_ hosts, where tests may also execute and
+return data to the _primary_.
 
-Also, these instructions assume mostly that you have *root* access
-on your system.  It is possible with many package managers and
-source builds to install locally, but is beyond the scope of
-these instructions.
+Also, these instructions assume mostly that you have *root* access on your
+system.  It is possible with many package managers and source builds to install
+locally, but is beyond the scope of these instructions.
 
-Our demonstration system for these instructions is Ubuntu &mdash;
-other Unix based systems should work similarly (including Mac OSX 10).
+Our demonstration system for these instructions is Ubuntu &mdash; other Unix
+based systems should work similarly (including Mac OSX 10).
+
+### Clone FLiT ###
+
+In order to clone FLiT, you will need git on your system.  If you do not have
+git, then install it:
+
+```sudo apt-get install git```
+
+After you have installed git, you can clone this repository
+
+```
+cd [location for FLiT to live]
+git clone https://github.com/Geof23/QFP.git
+cd QFP
+```
 
 ### Software ###
 
-Here we'll describe the dependencies that you must have on your
-systems to use FLiT.  There are again, two types of systems:
-the primary system that you will directly execute commands
-from and the remote systems that will collect data.
+Here we'll describe the dependencies that you must have on your systems to use
+FLiT.  There are again, two types of systems: the primary system that you will
+directly execute commands from and the remote systems that will collect data.
 
 * [python3, python3-dev](#install-python3)
 * [gcc 5.2+](#install-gcc)
@@ -90,9 +102,9 @@ from and the remote systems that will collect data.
 * [CUDA Toolkit 7.5+](#setup-cuda)
 
 
-On Ubuntu 15.10, everything was obtained with apt-get satisfactorily,
-except we have to build gdb from the binutils-gdb (unless your package
-manager provides at least 7.11).
+On Ubuntu 15.10, everything was obtained with apt-get satisfactorily, except we
+have to build gdb from the binutils-gdb (unless your package manager provides
+at least 7.11).
 
 #### Install python3 ####
 
@@ -113,22 +125,9 @@ gcc on the _remote_ hosts, you must have this version.  It is
 recommended that you install _both_ versions.  FLiT will
 use 4.9 for CUDA and 5.2 for the rest of the test suite.
 
-#### Clone and Configure FLiT git ####
-
-```
-cd [location for FLiT to live]
-git clone https://github.com/Geof23/QFP.git
-```
-
-#### Install git ####
-
-It is hard to find a system without git.  But:
-
-```sudo apt-get install git```
-
 #### Setup CUDA 7.5 ####
 
-This is beyond the scope of this document, but the NVidia instructional 
+This is beyond the scope of this document, but the NVidia instructional
 documents are quite helpful.  This is step is _optional_, only required
 if you'd like to explore the variability of CUDA kernels.
 
@@ -168,7 +167,7 @@ you   15850  0.0  0.0   8216  2164 pts/8    R+   17:18   0:00 grep --color=auto 
 
 Also, this output shows that the _postgres_ user has been added to the system.
 
-We include a _database dump file_ that you may use to easily configure
+We include a SQL script that you may use to easily configure
 the FLiT database.
 
 ##### Modify the restoration file #####
@@ -176,8 +175,13 @@ the FLiT database.
 This is necessary to make you the owner of the tables, etc.
 
 ```
-cd qfp/db/db_backup
-sed -i 's/sawaya/[your system username]/g' dumpfile
+sed -i 's/sawaya/[your system username]/g' db/qfp.sql
+```
+
+For example, if my username is fred, then the command would be
+
+```
+sed -i 's/sawaya/fred/g' db/qfp.sql
 ```
 
 ##### Import the Database #####
@@ -185,7 +189,7 @@ sed -i 's/sawaya/[your system username]/g' dumpfile
 This will set up the actual tables and sequences used by QC:
 
 ```
-psql qfp < dumpfile
+psql qfp < db/qfp.sql
 ```
 
 ### Configuring test (QC) run ###
@@ -245,9 +249,9 @@ This script will push the project out to the hosts that you indicate in this dat
 ```
 hostinfo = [['u0422778@kingspeak.chpc.utah.edu', 12],
             ['sawaya@bihexal.cs.utah.edu', 24],
-	                ['sawaya@gaussr.cs.utah.edu', 4],
-			            ['sawaya@ms0123.utah.cloudlab.us', 1]]
-				    ```
+            ['sawaya@gaussr.cs.utah.edu', 4],
+            ['sawaya@ms0123.utah.cloudlab.us', 1]]
+```
 
 For each host, the _hostCollect.py_ script is executed, running the makefile, which
 builds and runs the tests for all configurations.  Results are groomed and collected
