@@ -73,7 +73,7 @@ SOURCE      += $(TESTS)
 # CUOBJ       := $(CUSOURCE:%.cu=%.o)
 CUSOURCE    += $(TESTS)
 CUSOURCE    += $(wildcard *.cpp)
-CUOBJ	    += $(CUSOURCE:%.cpp=%.o)
+CUOBJ	      += $(CUSOURCE:%.cpp=%.o)
 
 SOURCE	    += eigen/EigenTests.cpp
 
