@@ -1,0 +1,3 @@
+[submodule "qfpc/S3FP"]
+	path = qfpc/S3FP
+	url = https://github.com/soarlab/S3FP.git
