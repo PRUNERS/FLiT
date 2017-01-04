@@ -51,9 +51,9 @@ Contents:
 ## Prerequisites and Setup ##
 
 FLiT is designed to build and excute its test suite on a variety of hosts and
-compilers.  However, there are two types of hosts whose environments must be
+compilers.  However, there are three types of hosts whose environments must be
 considered &mdash; the _primary_ host, from which you will be envoking the
-tests, and zero or more  _remote_ hosts, where tests may also execute and
+tests, a _database_ host, and zero or more  _remote_ hosts, where tests may also execute and
 return data to the _primary_.
 
 Also, these instructions assume mostly that you have *root* access on your
@@ -76,6 +76,7 @@ After you have installed git, you can clone this repository
 cd [location for FLiT to live]
 git clone https://github.com/Geof23/QFP.git
 cd QFP
+git checkout unified_script
 ```
 
 ### Software ###
@@ -170,31 +171,15 @@ Also, this output shows that the _postgres_ user has been added to the system.
 We include a SQL script that you may use to easily configure
 the FLiT database.
 
-##### Modify the restoration file #####
+'''
+cd db
+./create_database.sh
+'''
 
-This is necessary to make you the owner of the tables, etc.
+This will create the flit database and add the required schemas.
 
-```
-sed -i 's/sawaya/[your system username]/g' db/qfp.sql
-```
 
-For example, if my username is fred, then the command would be
-
-```
-sed -i 's/sawaya/fred/g' db/qfp.sql
-```
-
-##### Import the Database #####
-
-This will set up the actual tables and sequences used by QC:
-
-```
-psql qfp < db/qfp.sql
-```
-
-### Configuring test (QC) run ###
-
-This is where the QC run is configured.
+##### Configure FLiT #####
 
 There are a few things you can control regarding the parameters
 that will be covered in the tests.
