@@ -1,9 +1,11 @@
-CC := clang++
-#CC := g++
+#CC := clang++
+CC := g++
 FFLAGS ?=
 TARGET ?= runTests
 
 CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
+CPPFLAGS += -IS3FP/examples/include
+CPPFLAGS += -DWFT=float -DSCH_LIB
 
 CPPFLAGS += $(FFLAGS)
 CPPFLAGS += -std=c++11
@@ -20,6 +22,7 @@ CPPFLAGS += -isystem eigen/Eigen
 LINKFLAGS += -lm
 LINKFLAGS += -lpthread
 LINKFLAGS += -pthread
+LINKFLAGS += -lquadmath #for S3FP
 
 DEPFLAGS += -MD -MF $*.d
 
