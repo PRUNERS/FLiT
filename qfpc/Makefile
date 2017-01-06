@@ -21,7 +21,7 @@ HAS_CUDA      := $(shell command -v nvcc 2> /dev/null)
 #compiler specific flags may be set here
 GCC := g++
 #CLANG := $(if $(shell which clang++-3.6), clang++-3.6, clang++)
-CLANG := clang++
+CLANG := clang++-3.9
 #PG := pgCC  #doesn't fully support c++11 (even 15.7!) so not in list
 INTEL := icpc
 
@@ -42,6 +42,11 @@ CC_REQUIRED += -lpthread
 CC_REQUIRED += -pthread
 CC_REQUIRED += -I../gdb/inst
 CC_REQUIRED += -I.
+
+CC_REQUIRED += -IS3FP/examples/include
+CC_REQUIRED += -DWFT=float -DSCH_LIB
+CC_REQUIRED += -lquadmath
+
 #CC_REQUIRED +=  -mlong-double-80
 
 
