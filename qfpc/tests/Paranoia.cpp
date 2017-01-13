@@ -158,94 +158,30 @@ lines
 4090-4110   PrintIfNPositive
 4640-4850   TestPartialUnderflow
 
-=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
-
-Below is an "ed script" that splits para.c into 10 files
-of the form part[1-8].c, subs.c, and msgs.c, plus a header
-file, paranoia.h, that these files require.
-
-r paranoia.c
-$
-?SPLIT
-+,$w msgs.c
- .,$d
-?SPLIT
- .d
-+d
--,$w subs.c
--,$d
-?part8
-+d
-?include
- .,$w part8.c
- .,$d
--d
-?part7
-+d
-?include
- .,$w part7.c
- .,$d
--d
-?part6
-+d
-?include
- .,$w part6.c
- .,$d
--d
-?part5
-+d
-?include
- .,$w part5.c
- .,$d
--d
-?part4
-+d
-?include
- .,$w part4.c
- .,$d
--d
-?part3
-+d
-?include
- .,$w part3.c
- .,$d
--d
-?part2
-+d
-?include
- .,$w part2.c
- .,$d
-?SPLIT
- .d
-1,/^#include/-1d
-1,$w part1.c
-/Computed constants/,$d
-1,$s/^int/extern &/
-1,$s/^FLOAT/extern &/
-1,$s/^char/extern &/
-1,$s! = .*!;!
-/^Guard/,/^Round/s/^/extern /
-/^jmp_buf/s/^/extern /
-/^Sig_type/s/^/extern /
-s/$/\
-extern void Sigfpe();/
-w paranoia.h
-q
-
 */
+
+#include "testBase.hpp"
+#include "QFPHelpers.hpp"
+#include "CUHelpers.hpp"
 
 #include <cstdio>
 #include <cstdlib>
-#ifndef NOSIGNAL
 #include <csignal>
-#endif
 #include <csetjmp>
 #include <cmath>
 
-#if !defined(EXIT_SUCCESS)
-#define EXIT_SUCCESS 0
-#define EXIT_FAILURE 1
-#endif
+#define KEYBOARD 0
+#define False    0
+#define True     1
+#define Yes      1
+#define No       0
+#define Chopped  2
+#define Rounded  1
+#define Other    0
+#define Flaw     3
+#define Defect   2
+#define Serious  1
+#define Failure  0
 
 #ifdef Single
 #define FLOAT    float
@@ -263,137 +199,131 @@ q
 #define SQRT(x)   sqrt(x)
 #endif
 
-void   BadCond(int K_, const char *T_);
-void   Characteristics(void);
-void   Heading(void);
-void   History(void);
-void   Instructions(void);
-void   IsYeqX(void);
-void   NewD(void);
-void   Pause(void);
-void   PrintIfNPositive(void);
-FLOAT  Random(void);
-void   SR3750(void);
-void   SR3980(void);
-FLOAT  Sign(FLOAT X_);
-void   SqXMinX(int ErrKind_);
-void   TstCond(int K_, int Valid_, const char *T_);
-void   TstPtUf(void);
-int    main(void);
-void   msglist(const char **s_);
-void   notify(const char *s_);
-double pow(double x_, double y_);
-
-jmp_buf ovfl_buf;
-extern "C" void Sigfpe(int i);
+extern "C" void sigfpe(int i);
 extern "C" 
 {
-    typedef void (*Sig_type)(int);
+  typedef void (*SigType)(int);
 }
 
-Sig_type sigsave;
-
-#define KEYBOARD 0
-
-FLOAT Radix, BInvrse, RadixD2, BMinusU2;
-
-/*Small floating point constants.*/
-FLOAT Zero = 0.0;
-FLOAT Half = 0.5;
-FLOAT One = 1.0;
-FLOAT Two = 2.0;
-FLOAT Three = 3.0;
-FLOAT Four = 4.0;
-FLOAT Five = 5.0;
-FLOAT Eight = 8.0;
-FLOAT Nine = 9.0;
-FLOAT TwentySeven = 27.0;
-FLOAT ThirtyTwo = 32.0;
-FLOAT TwoForty = 240.0;
-FLOAT MinusOne = -1.0;
-FLOAT OneAndHalf = 1.5;
-/*Integer constants*/
-int NoTrials = 20; /*Number of tests for commutativity. */
-#define False 0
-#define True 1
-
-/* Definitions for declared types
-  Guard == (Yes, No);
-  Rounding == (Chopped, Rounded, Other);
-  Message == packed array [1..40] of char;
-  Class == (Flaw, Defect, Serious, Failure);
-    */
-#define Yes 1
-#define No  0
-#define Chopped 2
-#define Rounded 1
-#define Other   0
-#define Flaw    3
-#define Defect  2
-#define Serious 1
-#define Failure 0
 typedef int Guard, Rounding, Class;
 typedef char Message;
 
-/* Declarations of Variables */
-int Indx;
-char ch[8];
-FLOAT AInvrse, A1;
-FLOAT C, CInvrse;
-FLOAT D, FourD;
-FLOAT E0, E1, Exp2, E3, MinSqEr;
-FLOAT SqEr, MaxSqEr, E9;
-FLOAT Third;
-FLOAT F6, F9;
-FLOAT H, HInvrse;
-int I;
-FLOAT StickyBit, J;
-FLOAT MyZero;
-FLOAT Precision;
-FLOAT Q, Q9;
-FLOAT R, Random9;
-FLOAT T, Underflow, S;
-FLOAT OneUlp, UfThold, U1, U2;
-FLOAT V, V0, V9;
-FLOAT W;
-FLOAT X, X1, X2, X8, Random1;
-FLOAT Y, Y1, Y2, Random2;
-FLOAT Z, PseudoZero, Z1, Z2, Z9;
-int ErrCnt[4];
-int fpecount;
-int Milestone;
-int PageNo;
-int M, N, N1;
-Guard GMult, GDiv, GAddSub;
-Rounding RMult, RDiv, RAddSub, RSqrt;
-int Break, Done, NotMonot, Monot, Anomaly, IEEE,
-    SqRWrng, UfNGrad;
-/* Computed constants. */
-/*U1  gap below 1.0, i.e, 1.0-U1 is next number below 1.0 */
-/*U2  gap above 1.0, i.e, 1.0+U2 is next number above 1.0 */
+template <typename F>
+class Paranoia : public QFPTest::TestBase<F> {
+public:
+  Paranoia(std::string id) : QFPTest::TestBase<F>(std::move(id)) {}
+
+  virtual size_t getInputsPerRun() { return 1; }
+  virtual QFPTest::TestInput<F> getDefaultInput()
+  { QFPTest::TestInput<F> ti; ti.vals = { 1.0 }; return ti; }
+
+protected:
+  virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<F>& ti);
+
+  void   BadCond(int K_, const char *T_);
+  void   Characteristics(void);
+  void   Heading(void);
+  void   History(void);
+  void   Instructions(void);
+  void   IsYeqX(void);
+  void   NewD(void);
+  void   Pause(void);
+  void   PrintIfNPositive(void);
+  F      Random(void);
+  void   SR3750(void);
+  void   SR3980(void);
+  F      Sign(F X_);
+  void   SqXMinX(int ErrKind_);
+  void   TstCond(int K_, int Valid_, const char *T_);
+  void   TstPtUf(void);
+  void   msglist(const char **s_);
+  void   notify(const char *s_);
+  F      pow(F x_, F y_);
+
+protected:
+  using QFPTest::TestBase<F>::id;
+
+
+  F Radix, BInvrse, RadixD2, BMinusU2;
+
+  /*Small floating point constants.*/
+  F Zero = 0.0;
+  F Half = 0.5;
+  F One = 1.0;
+  F Two = 2.0;
+  F Three = 3.0;
+  F Four = 4.0;
+  F Five = 5.0;
+  F Eight = 8.0;
+  F Nine = 9.0;
+  F TwentySeven = 27.0;
+  F ThirtyTwo = 32.0;
+  F TwoForty = 240.0;
+  F MinusOne = -1.0;
+  F OneAndHalf = 1.5;
+
+  /*Integer constants*/
+  int NoTrials = 20; /*Number of tests for commutativity. */
+
+  /* Declarations of Variables */
+  int Indx;
+  char ch[8];
+  F AInvrse, A1;
+  F C, CInvrse;
+  F D, FourD;
+  F E0, E1, Exp2, E3, MinSqEr;
+  F SqEr, MaxSqEr, E9;
+  F Third;
+  F F6, F9;
+  F H, HInvrse;
+  int I;
+  F StickyBit, J;
+  F MyZero;
+  F Precision;
+  F Q, Q9;
+  F R, Random9;
+  F T, Underflow, S;
+  F OneUlp, UfThold, U1, U2;
+  F V, V0, V9;
+  F W;
+  F X, X1, X2, X8, Random1;
+  F Y, Y1, Y2, Random2;
+  F Z, PseudoZero, Z1, Z2, Z9;
+  int ErrCnt[4];
+  int Milestone;
+  int PageNo;
+  int M, N, N1;
+  Guard GMult, GDiv, GAddSub;
+  Rounding RMult, RDiv, RAddSub, RSqrt;
+  int Break, Done, NotMonot, Monot, Anomaly, IEEE,
+      SqRWrng, UfNGrad;
+};
+REGISTER_TYPE(Paranoia)
+
+namespace {
+  int fpecount = 0;
+  jmp_buf ovfl_buf;
+  SigType sigsave = nullptr;
+}
 
 /* floating point exception receiver */
-void Sigfpe(int i)
+void sigfpe(int i)
 {
+  Q_UNUSED(i);
   fpecount++;
   printf("\n* * * FLOATING-POINT ERROR * * *\n");
   (void)fflush(stdout);
   if (sigsave) {
-#ifndef NOSIGNAL
     (void)signal(SIGFPE, sigsave);
-#endif
-    sigsave = 0;
+    sigsave = nullptr;
     longjmp(ovfl_buf, 1);
-    }
+  }
   abort();
 }
 
-int main(void)
+template <typename F>
+QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<F>& ti)
 {
-#ifdef mc
-  char *out;
-  ieee_flags("set", "precision", "double", &out);
-#endif
   /* First two assignments use integer right-hand sides. */
   Zero = 0;
   One = 1;
@@ -417,9 +347,7 @@ int main(void)
   /*=============================================*/
   Milestone = 0;
   /*=============================================*/
-#ifndef NOSIGNAL
-  (void)signal(SIGFPE, Sigfpe);
-#endif
+  (void)signal(SIGFPE, sigfpe);
   Instructions();
   Pause();
   Heading();
@@ -456,18 +384,6 @@ int main(void)
   TstCond (Failure, Half + MinusOne + Half == Zero,
       "1/2 + (-1) + 1/2 != 0");
   /*=============================================*/
-  /*SPLIT
-  part2();
-  part3();
-  part4();
-  part5();
-  part6();
-  part7();
-  part8();
-  }
-#include "paranoia.h"
-part2(){
-*/
   Milestone = 10;
   /*=============================================*/
   TstCond (Failure, (Nine == Three * Three)
@@ -671,11 +587,6 @@ part2(){
     }
   Pause();
   /*=============================================*/
-  /*SPLIT
-  }
-#include "paranoia.h"
-part3(){
-*/
   Milestone = 35;
   /*=============================================*/
   if (Radix >= Two) {
@@ -896,11 +807,6 @@ part3(){
   TstCond (Failure, (BInvrse * Radix - Half == Half),
        "Radix * ( 1 / Radix ) differs from 1");
   /*=============================================*/
-  /*SPLIT
-  }
-#include "paranoia.h"
-part4(){
-*/
   Milestone = 50;
   /*=============================================*/
   TstCond (Failure, ((F9 + U1) - Half == Half)
@@ -1095,11 +1001,6 @@ part4(){
     printf("sqrt(X) is non-monotonic for X near %.7e .\n", Y);
     }
   /*=============================================*/
-  /*SPLIT
-  }
-#include "paranoia.h"
-part5(){
-*/
   Milestone = 80;
   /*=============================================*/
   MinSqEr = MinSqEr + Half;
@@ -1311,11 +1212,6 @@ part5(){
   if (N > 0) Pause();
   else printf("\n");
   /*=============================================*/
-  /*SPLIT
-  }
-#include "paranoia.h"
-part6(){
-*/
   Milestone = 110;
   /*=============================================*/
   printf("Seeking Underflow thresholds UfThold and E0.\n");
@@ -1483,7 +1379,7 @@ part6(){
     }
   if (UfNGrad) {
     printf("\n");
-    sigsave = Sigfpe;
+    sigsave = sigfpe;
     if (setjmp(ovfl_buf)) {
       printf("Underflow / UfThold failed!\n");
       R = H + H;
@@ -1509,7 +1405,7 @@ part6(){
       printf("    if (X == Z)  ...  else");
       printf("  ... (f(X) - f(Z)) / (X - Z) ...\n");
       printf("encounter Division by Zero although actually\n");
-      sigsave = Sigfpe;
+      sigsave = sigfpe;
       if (setjmp(ovfl_buf)) printf("X / Z fails!\n");
       else printf("X / Z = 1 + %g .\n", (X / Z - Half) - Half);
       sigsave = 0;
@@ -1534,11 +1430,6 @@ part6(){
     printf("Range is too narrow; U1^%d Underflows.\n", I);
     }
   /*=============================================*/
-  /*SPLIT
-  }
-#include "paranoia.h"
-part7(){
-*/
   Milestone = 130;
   /*=============================================*/
   Y = - FLOOR(Half - TwoForty * LOG(UfThold) / LOG(HInvrse)) / TwoForty;
@@ -1650,7 +1541,7 @@ part7(){
   printf("This may generate an error.\n");
   Y = - CInvrse;
   V9 = HInvrse * Y;
-  sigsave = Sigfpe;
+  sigsave = sigfpe;
   if (setjmp(ovfl_buf)) { I = 0; V9 = Y; goto overflow; }
   do {
     V = Y;
@@ -1742,11 +1633,6 @@ overflow:
       }
     }
   /*=============================================*/
-  /*SPLIT
-  }
-#include "paranoia.h"
-part8(){
-*/
   Milestone = 190;
   /*=============================================*/
   Pause();
@@ -1771,7 +1657,7 @@ part8(){
       case 5: X = Radix;
       }
     Y = X;
-    sigsave = Sigfpe;
+    sigsave = sigfpe;
     if (setjmp(ovfl_buf))
       printf("  X / X  traps when X = %g\n", X);
     else {
@@ -1790,11 +1676,11 @@ part8(){
   MyZero = Zero;
   printf("\n");
   printf("What message and/or values does Division by Zero produce?\n") ;
-  sigsave = Sigfpe;
+  sigsave = sigfpe;
   printf("    Trying to compute 1 / 0 produces ...");
   if (!setjmp(ovfl_buf)) printf("  %.7e .\n", One / MyZero);
   sigsave = 0;
-  sigsave = Sigfpe;
+  sigsave = sigfpe;
   printf("\n    Trying to compute 0 / 0 produces ...");
   if (!setjmp(ovfl_buf)) printf("  %.7e .\n", Zero / MyZero);
   sigsave = 0;
@@ -1865,22 +1751,19 @@ part8(){
     printf("\nA total of %d floating point exceptions were registered.\n",
       fpecount);
   printf("END OF TEST.\n");
-  return 0;
+  return { Milestone, Zero };
   }
-
-/*SPLIT subs.c
-#include "paranoia.h"
-*/
 
 /* Sign */
 
-FLOAT Sign (FLOAT X)
+template <typename F>
+F Paranoia<F>::Sign (F X)
 { return X >= 0. ? 1.0 : -1.0; }
 
 /* Pause */
 
-void
-Pause(void)
+template <typename F>
+void Paranoia<F>::Pause(void)
 {
   printf("\nDiagnosis resumes after milestone Number %d", Milestone);
   printf("          Page: %d\n\n", PageNo);
@@ -1890,10 +1773,12 @@ Pause(void)
 
  /* TstCond */
 
-void TstCond (int K, int Valid, const char *T)
+template <typename F>
+void Paranoia<F>::TstCond (int K, int Valid, const char *T)
 { if (! Valid) { BadCond(K,T); printf(".\n"); } }
 
-void BadCond(int K, const char *T)
+template <typename F>
+void Paranoia<F>::BadCond(int K, const char *T)
 {
   static const char *msg[] = { "FAILURE", "SERIOUS DEFECT", "DEFECT", "FLAW" };
 
@@ -1908,10 +1793,10 @@ void BadCond(int K, const char *T)
    and returns the new value of Random1
 */
 
-FLOAT
-Random(void)
+template <typename F>
+F Paranoia<F>::Random(void)
 {
-  FLOAT X, Y;
+  F X, Y;
 
   X = Random1 + Random9;
   Y = X * X;
@@ -1924,7 +1809,8 @@ Random(void)
 
 /* SqXMinX */
 
-void SqXMinX (int ErrKind)
+template <typename F>
+void Paranoia<F>::SqXMinX (int ErrKind)
 {
   FLOAT XA, XB;
 
@@ -1943,8 +1829,8 @@ void SqXMinX (int ErrKind)
 
 /* NewD */
 
-void
-NewD(void)
+template <typename F>
+void Paranoia<F>::NewD(void)
 {
   X = Z1 * Q;
   X = FLOOR(Half - X / Radix) * Radix + X;
@@ -1959,8 +1845,8 @@ NewD(void)
 
 /* SR3750 */
 
-void
-SR3750(void)
+template <typename F>
+void Paranoia<F>::SR3750(void)
 {
   if (! ((X - Radix < Z2 - Radix) || (X - Z2 > W - Z2))) {
     I = I + 1;
@@ -1977,8 +1863,8 @@ SR3750(void)
 
 /* IsYeqX */
 
-void
-IsYeqX(void)
+template <typename F>
+void Paranoia<F>::IsYeqX(void)
 {
   if (Y != X) {
     if (N <= 0) {
@@ -1997,8 +1883,8 @@ IsYeqX(void)
 
 /* SR3980 */
 
-void
-SR3980(void)
+template <typename F>
+void Paranoia<F>::SR3980(void)
 {
   do {
     Q = (FLOAT) I;
@@ -2011,22 +1897,22 @@ SR3980(void)
 
 /* PrintIfNPositive */
 
-void
-PrintIfNPositive(void)
+template <typename F>
+void Paranoia<F>::PrintIfNPositive(void)
 {
   if (N > 0) printf("Similar discrepancies have occurred %d times.\n", N);
   }
 
 /* TstPtUf */
 
-void
-TstPtUf(void)
+template <typename F>
+void Paranoia<F>::TstPtUf(void)
 {
   N = 0;
   if (Z != Zero) {
     printf("Since comparison denies Z = 0, evaluating ");
     printf("(Z + Z) / Z should be safe.\n");
-    sigsave = Sigfpe;
+    sigsave = sigfpe;
     if (setjmp(ovfl_buf)) goto very_serious;
     Q9 = (Z + Z) / Z;
     printf("What the machine gets for (Z + Z) / Z is  %.17e .\n",
@@ -2078,20 +1964,24 @@ very_serious:
     }
   }
 
-void notify(const char *s)
+template <typename F>
+void Paranoia<F>::notify(const char *s)
 {
   printf("%s test appears to be inconsistent...\n", s);
   printf("   PLEASE NOTIFY KARPINKSI!\n");
   }
 
-/*SPLIT msgs.c */
+
+/* msglist */
+
+template <typename F>
+void Paranoia<F>::msglist(const char **s)
+{ while(*s) printf("%s\n", *s++); }
 
 /* Instructions */
 
-void msglist(const char **s)
-{ while(*s) printf("%s\n", *s++); }
-
-void Instructions(void)
+template <typename F>
+void Paranoia<F>::Instructions(void)
 {
   static const char *instr[] = {
   "Lest this program stop prematurely, i.e. before displaying\n",
@@ -2110,8 +2000,8 @@ void Instructions(void)
 
 /* Heading */
 
-void
-Heading(void)
+template<typename F>
+void Paranoia<F>::Heading(void)
 {
   static const char *head[] = {
   "Users are invited to help debug and augment this program so it will",
@@ -2139,8 +2029,8 @@ Heading(void)
 
 /* Characteristics */
 
-void
-Characteristics(void)
+template <typename F>
+void Paranoia<F>::Characteristics(void)
 {
   static const char *chars[] = {
    "Running this program should reveal these characteristics:",
@@ -2167,8 +2057,8 @@ Characteristics(void)
   msglist(chars);
   }
 
-void
-History(void)
+template <typename F>
+void Paranoia<F>::History(void)
 { /* History */
  /* Converted from Brian Wichmann's Pascal version to C by Thos Sumner,
   with further massaging by David M. Gay. */
@@ -2196,24 +2086,24 @@ History(void)
   msglist(hist);
   }
 
-double
-pow(double x, double y) /* return x ^ y (exponentiation) */
+template <typename F>
+F Paranoia<F>::pow(F x, F y) /* return x ^ y (exponentiation) */
 {
-  double xy, ye;
-  long i;
+  F xy, ye;
+  long long i;
   int ex, ey = 0, flip = 0;
 
   if (!y) return 1.0;
 
-  if ((y < -1100. || y > 1100.) && x != -1.) return exp(y * log(x));
+  if ((y < -1100. || y > 1100.) && x != -1.) return std::exp(y * std::log(x));
 
   if (y < 0.) { y = -y; flip = 1; }
-  y = modf(y, &ye);
-  if (y) xy = exp(y * log(x));
+  y = std::modf(y, &ye);
+  if (y) xy = std::exp(y * std::log(x));
   else xy = 1.0;
   /* next several lines assume >= 32 bit integers */
-  x = frexp(x, &ex);
-  if ((i = (long)ye, i)) for(;;) {
+  x = std::frexp(x, &ex);
+  if ((i = static_cast<long long>(ye), i)) for(;;) {
     if (i & 1) { xy *= x; ey += ex; }
     if (!(i >>= 1)) break;
     x *= x;
@@ -2221,5 +2111,5 @@ pow(double x, double y) /* return x ^ y (exponentiation) */
     if (x < .5) { x *= 2.; ex -= 1; }
     }
   if (flip) { xy = 1. / xy; ey = -ey; }
-  return ldexp(xy, ey);
+  return std::ldexp(xy, ey);
 }
