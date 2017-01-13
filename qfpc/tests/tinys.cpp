@@ -42,7 +42,7 @@ protected:
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
-    uint16_t ddigs = nlim.digits * std::log10(2);
+    uint16_t ddigs = nlim.digits * std::log10(2) + 1;
     std::ostringstream res;
     res << std::setprecision(ddigs) << ti.vals[0];
     std::string dstr;

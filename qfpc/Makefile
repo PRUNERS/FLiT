@@ -21,12 +21,12 @@ HAS_CUDA      := $(shell command -v nvcc 2> /dev/null)
 #compiler specific flags may be set here
 GCC := g++
 #CLANG := $(if $(shell which clang++-3.6), clang++-3.6, clang++)
-CLANG := clang++-3.9
+CLANG := clang-3.8
 #PG := pgCC  #doesn't fully support c++11 (even 15.7!) so not in list
 INTEL := icpc
 
 #COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
-COMPILERS := CLANG INTEL GCC
+COMPILERS := CLANG
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
@@ -164,3 +164,5 @@ clean :
 	rm -f $(TARGETS)
 	rm -f $(CUTARGETS)
 	rm -f $(VERBOSE_OUTPUT)
+	rm -f *.o
+	rm -f *.d
