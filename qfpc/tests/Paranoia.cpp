@@ -98,12 +98,12 @@ identifiers as follows [Note: A few changes have been made for C]:
 BASIC   C               BASIC   C               BASIC   C
 
    A                       J                       S    StickyBit
-   A1   AInverse           J0   NoErrors           T
-   B    Radix                    [Failure]         T0   Underflow
-   B1   BInverse           J1   NoErrors           T2   ThirtyTwo
-   B2   RadixD2                  [SeriousDefect]   T5   OneAndHalf
-   B9   BMinusU2           J2   NoErrors           T7   TwentySeven
-   C                             [Defect]          T8   TwoForty
+   a1   AInverse           J0   NoErrors           T
+   B    radix                    [Failure]         T0   Underflow
+   B1   BInverse           J1   NoErrors           T2   thirtyTwo
+   B2   radixD2                  [SeriousDefect]   T5   oneAndHalf
+   B9   bMinusU2           J2   NoErrors           T7   twentySeven
+   C                             [Defect]          T8   twoForty
    C1   CInverse           J3   NoErrors           U    OneUlp
    D                             [Flaw]            U0   UnderflowThreshold
    D4   FourD              K    PageNo             U1
@@ -111,14 +111,14 @@ BASIC   C               BASIC   C               BASIC   C
    E1                      M                       V
    E2   Exp2               N                       V0
    E3                      N1                      V8
-   E5   MinSqEr            O    Zero               V9
-   E6   SqEr               O1   One                W
-   E7   MaxSqEr            O2   Two                X
-   E8                      O3   Three              X1
-   E9                      O4   Four               X8
-   F1   MinusOne           O5   Five               X9   Random1
-   F2   Half               O8   Eight              Y
-   F3   Third              O9   Nine               Y1
+   E5   MinSqEr            O    zero               V9
+   E6   SqEr               O1   one                W
+   E7   MaxSqEr            O2   two                X
+   E8                      O3   three              X1
+   E9                      O4   four               X8
+   F1   minusOne           O5   five               X9   Random1
+   F2   half               O8   eight              Y
+   F3   Third              O9   nine               Y1
    F6                      P    Precision          Y2
    F9                      Q                       Y9   Random2
    G1   GMult              Q8                      Z
@@ -127,7 +127,7 @@ BASIC   C               BASIC   C               BASIC   C
    H                       R1   RMult              Z2
    H1   HInverse           R2   RDiv               Z9
    I                       R3   RAddSub
-   IO   NoTrials           R4   RSqrt
+   IO   noTrials           R4   RSqrt
    I3   IEEE               R9   Random9
 
    SqRWrng
@@ -147,15 +147,15 @@ correspondence is as follows:
 BASIC       Pascal
 lines
 
-  90- 140   Pause
- 170- 250   Instructions
- 380- 460   Heading
- 480- 670   Characteristics
- 690- 870   History
-2940-2950   Random
-3710-3740   NewD
+  90- 140   pause
+ 170- 250   instructions
+ 380- 460   heading
+ 480- 670   characteristics
+ 690- 870   history
+2940-2950   random
+3710-3740   newD
 4040-4080   DoesYequalX
-4090-4110   PrintIfNPositive
+4090-4110   printIfNPositive
 4640-4850   TestPartialUnderflow
 
 */
@@ -183,27 +183,8 @@ lines
 #define Serious  1
 #define Failure  0
 
-#ifdef Single
-#define FLOAT    float
-#define FABS(x)  (float)fabs((double)(x))
-#define FLOOR(x) (float)floor((double)(x))
-#define LOG(x)   (float)log((double)(x))
-#define POW(x,y) (float)pow((double)(x),(double)(y))
-#define SQRT(x)  (float)sqrt((double)(x))
-#else
-#define FLOAT     double
-#define FABS(x)   fabs(x)
-#define FLOOR(x)  floor(x)
-#define LOG(x)    log(x)
-#define POW(x,y)  pow(x,y)
-#define SQRT(x)   sqrt(x)
-#endif
-
 extern "C" void sigfpe(int i);
-extern "C" 
-{
-  typedef void (*SigType)(int);
-}
+extern "C" typedef void (*SigType)(int);
 
 typedef int Guard, Rounding, Class;
 typedef char Message;
@@ -220,22 +201,22 @@ public:
 protected:
   virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<F>& ti);
 
-  void   BadCond(int K_, const char *T_);
-  void   Characteristics(void);
-  void   Heading(void);
-  void   History(void);
-  void   Instructions(void);
-  void   IsYeqX(void);
-  void   NewD(void);
-  void   Pause(void);
-  void   PrintIfNPositive(void);
-  F      Random(void);
-  void   SR3750(void);
-  void   SR3980(void);
-  F      Sign(F X_);
-  void   SqXMinX(int ErrKind_);
-  void   TstCond(int K_, int Valid_, const char *T_);
-  void   TstPtUf(void);
+  void   badCond(int K_, const char *T_);
+  void   characteristics(void);
+  void   heading(void);
+  void   history(void);
+  void   instructions(void);
+  void   isYEqX(void);
+  void   newD(void);
+  void   pause(void);
+  void   printIfNPositive(void);
+  F      random(void);
+  void   sr3750(void);
+  void   sr3980(void);
+  F      sign(F X_);
+  void   sqXMinX(int ErrKind_);
+  void   tstCond(int K_, int Valid_, const char *T_);
+  void   tstPtUf(void);
   void   msglist(const char **s_);
   void   notify(const char *s_);
   F      pow(F x_, F y_);
@@ -244,31 +225,31 @@ protected:
   using QFPTest::TestBase<F>::id;
 
 
-  F Radix, BInvrse, RadixD2, BMinusU2;
+  F radix, bInverse, radixD2, bMinusU2;
 
   /*Small floating point constants.*/
-  F Zero = 0.0;
-  F Half = 0.5;
-  F One = 1.0;
-  F Two = 2.0;
-  F Three = 3.0;
-  F Four = 4.0;
-  F Five = 5.0;
-  F Eight = 8.0;
-  F Nine = 9.0;
-  F TwentySeven = 27.0;
-  F ThirtyTwo = 32.0;
-  F TwoForty = 240.0;
-  F MinusOne = -1.0;
-  F OneAndHalf = 1.5;
+  F zero = 0.0;
+  F half = 0.5;
+  F one = 1.0;
+  F two = 2.0;
+  F three = 3.0;
+  F four = 4.0;
+  F five = 5.0;
+  F eight = 8.0;
+  F nine = 9.0;
+  F twentySeven = 27.0;
+  F thirtyTwo = 32.0;
+  F twoForty = 240.0;
+  F minusOne = -1.0;
+  F oneAndHalf = 1.5;
 
   /*Integer constants*/
-  int NoTrials = 20; /*Number of tests for commutativity. */
+  int noTrials = 20; /*Number of tests for commutativity. */
 
   /* Declarations of Variables */
-  int Indx;
+  int indx;
   char ch[8];
-  F AInvrse, A1;
+  F aInverse, a1;
   F C, CInvrse;
   F D, FourD;
   F E0, E1, Exp2, E3, MinSqEr;
@@ -325,20 +306,20 @@ template <typename F>
 QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<F>& ti)
 {
   /* First two assignments use integer right-hand sides. */
-  Zero = 0;
-  One = 1;
-  Two = One + One;
-  Three = Two + One;
-  Four = Three + One;
-  Five = Four + One;
-  Eight = Four + Four;
-  Nine = Three * Three;
-  TwentySeven = Nine * Three;
-  ThirtyTwo = Four * Eight;
-  TwoForty = Four * Five * Three * Four;
-  MinusOne = -One;
-  Half = One / Two;
-  OneAndHalf = One + Half;
+  zero = 0;
+  one = 1;
+  two = one + one;
+  three = two + one;
+  four = three + one;
+  five = four + one;
+  eight = four + four;
+  nine = three * three;
+  twentySeven = nine * three;
+  thirtyTwo = four * eight;
+  twoForty = four * five * three * four;
+  minusOne = -one;
+  half = one / two;
+  oneAndHalf = one + half;
   ErrCnt[Failure] = 0;
   ErrCnt[Serious] = 0;
   ErrCnt[Defect] = 0;
@@ -348,206 +329,206 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   Milestone = 0;
   /*=============================================*/
   (void)signal(SIGFPE, sigfpe);
-  Instructions();
-  Pause();
-  Heading();
-  Pause();
-  Characteristics();
-  Pause();
-  History();
-  Pause();
+  instructions();
+  pause();
+  heading();
+  pause();
+  characteristics();
+  pause();
+  history();
+  pause();
   /*=============================================*/
   Milestone = 7;
   /*=============================================*/
   printf("Program is now RUNNING tests on small integers:\n");
 
-  TstCond (Failure, (Zero + Zero == Zero) && (One - One == Zero)
-       && (One > Zero) && (One + One == Two),
+  tstCond (Failure, (zero + zero == zero) && (one - one == zero)
+       && (one > zero) && (one + one == two),
       "0+0 != 0, 1-1 != 0, 1 <= 0, or 1+1 != 2");
-  Z = - Zero;
+  Z = - zero;
   if (Z != 0.0) {
     ErrCnt[Failure] = ErrCnt[Failure] + 1;
     printf("Comparison alleges that -0.0 is Non-zero!\n");
     U1 = 0.001;
-    Radix = 1;
-    TstPtUf();
+    radix = 1;
+    tstPtUf();
     }
-  TstCond (Failure, (Three == Two + One) && (Four == Three + One)
-       && (Four + Two * (- Two) == Zero)
-       && (Four - Three - One == Zero),
+  tstCond (Failure, (three == two + one) && (four == three + one)
+       && (four + two * (- two) == zero)
+       && (four - three - one == zero),
        "3 != 2+1, 4 != 3+1, 4+2*(-2) != 0, or 4-3-1 != 0");
-  TstCond (Failure, (MinusOne == (0 - One))
-       && (MinusOne + One == Zero ) && (One + MinusOne == Zero)
-       && (MinusOne + FABS(One) == Zero)
-       && (MinusOne + MinusOne * MinusOne == Zero),
+  tstCond (Failure, (minusOne == (0 - one))
+       && (minusOne + one == zero ) && (one + minusOne == zero)
+       && (minusOne + std::abs(one) == zero)
+       && (minusOne + minusOne * minusOne == zero),
        "-1+1 != 0, (-1)+abs(1) != 0, or -1+(-1)*(-1) != 0");
-  TstCond (Failure, Half + MinusOne + Half == Zero,
+  tstCond (Failure, half + minusOne + half == zero,
       "1/2 + (-1) + 1/2 != 0");
   /*=============================================*/
   Milestone = 10;
   /*=============================================*/
-  TstCond (Failure, (Nine == Three * Three)
-       && (TwentySeven == Nine * Three) && (Eight == Four + Four)
-       && (ThirtyTwo == Eight * Four)
-       && (ThirtyTwo - TwentySeven - Four - One == Zero),
+  tstCond (Failure, (nine == three * three)
+       && (twentySeven == nine * three) && (eight == four + four)
+       && (thirtyTwo == eight * four)
+       && (thirtyTwo - twentySeven - four - one == zero),
        "9 != 3*3, 27 != 9*3, 32 != 8*4, or 32-27-4-1 != 0");
-  TstCond (Failure, (Five == Four + One) &&
-      (TwoForty == Four * Five * Three * Four)
-       && (TwoForty / Three - Four * Four * Five == Zero)
-       && ( TwoForty / Four - Five * Three * Four == Zero)
-       && ( TwoForty / Five - Four * Three * Four == Zero),
+  tstCond (Failure, (five == four + one) &&
+      (twoForty == four * five * three * four)
+       && (twoForty / three - four * four * five == zero)
+       && ( twoForty / four - five * three * four == zero)
+       && ( twoForty / five - four * three * four == zero),
       "5 != 4+1, 240/3 != 80, 240/4 != 60, or 240/5 != 48");
   if (ErrCnt[Failure] == 0) {
     printf("-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n");
     printf("\n");
     }
-  printf("Searching for Radix and Precision.\n");
-  W = One;
+  printf("Searching for radix and Precision.\n");
+  W = one;
   do  {
     W = W + W;
-    Y = W + One;
+    Y = W + one;
     Z = Y - W;
-    Y = Z - One;
-    } while (MinusOne + FABS(Y) < Zero);
+    Y = Z - one;
+    } while (minusOne + std::abs(Y) < zero);
   /*.. now W is just big enough that |((W+1)-W)-1| >= 1 ...*/
-  Precision = Zero;
-  Y = One;
+  Precision = zero;
+  Y = one;
   do  {
-    Radix = W + Y;
+    radix = W + Y;
     Y = Y + Y;
-    Radix = Radix - W;
-    } while ( Radix == Zero);
-  if (Radix < Two) Radix = One;
-  printf("Radix = %f .\n", Radix);
-  if (Radix != 1) {
-    W = One;
+    radix = radix - W;
+    } while ( radix == zero);
+  if (radix < two) radix = one;
+  printf("radix = %f .\n", radix);
+  if (radix != 1) {
+    W = one;
     do  {
-      Precision = Precision + One;
-      W = W * Radix;
-      Y = W + One;
-      } while ((Y - W) == One);
+      Precision = Precision + one;
+      W = W * radix;
+      Y = W + one;
+      } while ((Y - W) == one);
     }
-  /*... now W == Radix^Precision is barely too big to satisfy (W+1)-W == 1
+  /*... now W == radix^Precision is barely too big to satisfy (W+1)-W == 1
                                     ...*/
-  U1 = One / W;
-  U2 = Radix * U1;
+  U1 = one / W;
+  U2 = radix * U1;
   printf("Closest relative separation found is U1 = %.7e .\n\n", U1);
   printf("Recalculating radix and precision\n ");
 
   /*save old values*/
-  E0 = Radix;
+  E0 = radix;
   E1 = U1;
   E9 = U2;
   E3 = Precision;
 
-  X = Four / Three;
-  Third = X - One;
-  F6 = Half - Third;
+  X = four / three;
+  Third = X - one;
+  F6 = half - Third;
   X = F6 + F6;
-  X = FABS(X - Third);
+  X = std::abs(X - Third);
   if (X < U2) X = U2;
 
   /*... now X = (unknown no.) ulps of 1+...*/
   do  {
     U2 = X;
-    Y = Half * U2 + ThirtyTwo * U2 * U2;
-    Y = One + Y;
-    X = Y - One;
-    } while ( ! ((U2 <= X) || (X <= Zero)));
+    Y = half * U2 + thirtyTwo * U2 * U2;
+    Y = one + Y;
+    X = Y - one;
+    } while ( ! ((U2 <= X) || (X <= zero)));
 
   /*... now U2 == 1 ulp of 1 + ... */
-  X = Two / Three;
-  F6 = X - Half;
+  X = two / three;
+  F6 = X - half;
   Third = F6 + F6;
-  X = Third - Half;
-  X = FABS(X + F6);
+  X = Third - half;
+  X = std::abs(X + F6);
   if (X < U1) X = U1;
 
   /*... now  X == (unknown no.) ulps of 1 -... */
   do  {
     U1 = X;
-    Y = Half * U1 + ThirtyTwo * U1 * U1;
-    Y = Half - Y;
-    X = Half + Y;
-    Y = Half - X;
-    X = Half + Y;
-    } while ( ! ((U1 <= X) || (X <= Zero)));
+    Y = half * U1 + thirtyTwo * U1 * U1;
+    Y = half - Y;
+    X = half + Y;
+    Y = half - X;
+    X = half + Y;
+    } while ( ! ((U1 <= X) || (X <= zero)));
   /*... now U1 == 1 ulp of 1 - ... */
   if (U1 == E1) printf("confirms closest relative separation U1 .\n");
   else printf("gets better closest relative separation U1 = %.7e .\n", U1);
-  W = One / U1;
-  F9 = (Half - U1) + Half;
-  Radix = FLOOR(0.01 + U2 / U1);
-  if (Radix == E0) printf("Radix confirmed.\n");
-  else printf("MYSTERY: recalculated Radix = %.7e .\n", Radix);
-  TstCond (Defect, Radix <= Eight + Eight,
-       "Radix is too big: roundoff problems");
-  TstCond (Flaw, (Radix == Two) || (Radix == 10)
-       || (Radix == One), "Radix is not as good as 2 or 10");
+  W = one / U1;
+  F9 = (half - U1) + half;
+  radix = std::floor(0.01 + U2 / U1);
+  if (radix == E0) printf("radix confirmed.\n");
+  else printf("MYSTERY: recalculated radix = %.7e .\n", radix);
+  tstCond (Defect, radix <= eight + eight,
+       "radix is too big: roundoff problems");
+  tstCond (Flaw, (radix == two) || (radix == 10)
+       || (radix == one), "radix is not as good as 2 or 10");
   /*=============================================*/
   Milestone = 20;
   /*=============================================*/
-  TstCond (Failure, F9 - Half < Half,
+  tstCond (Failure, F9 - half < half,
        "(1-U1)-1/2 < 1/2 is FALSE, prog. fails?");
   X = F9;
   I = 1;
-  Y = X - Half;
-  Z = Y - Half;
-  TstCond (Failure, (X != One)
-       || (Z == Zero), "Comparison is fuzzy,X=1 but X-1/2-1/2 != 0");
-  X = One + U2;
+  Y = X - half;
+  Z = Y - half;
+  tstCond (Failure, (X != one)
+       || (Z == zero), "Comparison is fuzzy,X=1 but X-1/2-1/2 != 0");
+  X = one + U2;
   I = 0;
   /*=============================================*/
   Milestone = 25;
   /*=============================================*/
-  /*... BMinusU2 = nextafter(Radix, 0) */
-  BMinusU2 = Radix - One;
-  BMinusU2 = (BMinusU2 - U2) + One;
+  /*... bMinusU2 = nextafter(radix, 0) */
+  bMinusU2 = radix - one;
+  bMinusU2 = (bMinusU2 - U2) + one;
   /* Purify Integers */
-  if (Radix != One)  {
-    X = - TwoForty * LOG(U1) / LOG(Radix);
-    Y = FLOOR(Half + X);
-    if (FABS(X - Y) * Four < One) X = Y;
-    Precision = X / TwoForty;
-    Y = FLOOR(Half + Precision);
-    if (FABS(Precision - Y) * TwoForty < Half) Precision = Y;
+  if (radix != one)  {
+    X = - twoForty * std::log(U1) / std::log(radix);
+    Y = std::floor(half + X);
+    if (std::abs(X - Y) * four < one) X = Y;
+    Precision = X / twoForty;
+    Y = std::floor(half + Precision);
+    if (std::abs(Precision - Y) * twoForty < half) Precision = Y;
     }
-  if ((Precision != FLOOR(Precision)) || (Radix == One)) {
+  if ((Precision != std::floor(Precision)) || (radix == one)) {
     printf("Precision cannot be characterized by an Integer number\n");
     printf("of significant digits but, by itself, this is a minor flaw.\n");
     }
-  if (Radix == One)
+  if (radix == one)
     printf("logarithmic encoding has precision characterized solely by U1.\n");
-  else printf("The number of significant digits of the Radix is %f .\n",
+  else printf("The number of significant digits of the radix is %f .\n",
       Precision);
-  TstCond (Serious, U2 * Nine * Nine * TwoForty < One,
+  tstCond (Serious, U2 * nine * nine * twoForty < one,
        "Precision worse than 5 decimal figures  ");
   /*=============================================*/
   Milestone = 30;
   /*=============================================*/
   /* Test for extra-precise subepressions */
-  X = FABS(((Four / Three - One) - One / Four) * Three - One / Four);
+  X = std::abs(((four / three - one) - one / four) * three - one / four);
   do  {
     Z2 = X;
-    X = (One + (Half * Z2 + ThirtyTwo * Z2 * Z2)) - One;
-    } while ( ! ((Z2 <= X) || (X <= Zero)));
-  X = Y = Z = FABS((Three / Four - Two / Three) * Three - One / Four);
+    X = (one + (half * Z2 + thirtyTwo * Z2 * Z2)) - one;
+    } while ( ! ((Z2 <= X) || (X <= zero)));
+  X = Y = Z = std::abs((three / four - two / three) * three - one / four);
   do  {
     Z1 = Z;
-    Z = (One / Two - ((One / Two - (Half * Z1 + ThirtyTwo * Z1 * Z1))
-      + One / Two)) + One / Two;
-    } while ( ! ((Z1 <= Z) || (Z <= Zero)));
+    Z = (one / two - ((one / two - (half * Z1 + thirtyTwo * Z1 * Z1))
+      + one / two)) + one / two;
+    } while ( ! ((Z1 <= Z) || (Z <= zero)));
   do  {
     do  {
       Y1 = Y;
-      Y = (Half - ((Half - (Half * Y1 + ThirtyTwo * Y1 * Y1)) + Half
-        )) + Half;
-      } while ( ! ((Y1 <= Y) || (Y <= Zero)));
+      Y = (half - ((half - (half * Y1 + thirtyTwo * Y1 * Y1)) + half
+        )) + half;
+      } while ( ! ((Y1 <= Y) || (Y <= zero)));
     X1 = X;
-    X = ((Half * X1 + ThirtyTwo * X1 * X1) - F9) + F9;
-    } while ( ! ((X1 <= X) || (X <= Zero)));
+    X = ((half * X1 + thirtyTwo * X1 * X1) - F9) + F9;
+    } while ( ! ((X1 <= X) || (X <= zero)));
   if ((X1 != Y1) || (X1 != Z1)) {
-    BadCond(Serious, "Disagreements among the values X1, Y1, Z1,\n");
+    badCond(Serious, "Disagreements among the values X1, Y1, Z1,\n");
     printf("respectively  %.7e,  %.7e,  %.7e,\n", X1, Y1, Z1);
     printf("are symptoms of inconsistencies introduced\n");
     printf("by extra-precise evaluation of arithmetic subexpressions.\n");
@@ -558,127 +539,127 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   else  {
     if ((Z1 != U1) || (Z2 != U2)) {
       if ((Z1 >= U1) || (Z2 >= U2)) {
-        BadCond(Failure, "");
+        badCond(Failure, "");
         notify("Precision");
         printf("\tU1 = %.7e, Z1 - U1 = %.7e\n",U1,Z1-U1);
         printf("\tU2 = %.7e, Z2 - U2 = %.7e\n",U2,Z2-U2);
         }
       else {
-        if ((Z1 <= Zero) || (Z2 <= Zero)) {
-          printf("Because of unusual Radix = %f", Radix);
+        if ((Z1 <= zero) || (Z2 <= zero)) {
+          printf("Because of unusual radix = %f", radix);
           printf(", or exact rational arithmetic a result\n");
           printf("Z1 = %.7e, or Z2 = %.7e ", Z1, Z2);
           notify("of an\nextra-precision");
           }
-        if (Z1 != Z2 || Z1 > Zero) {
+        if (Z1 != Z2 || Z1 > zero) {
           X = Z1 / U1;
           Y = Z2 / U2;
           if (Y > X) X = Y;
-          Q = - LOG(X);
+          Q = - std::log(X);
           printf("Some subexpressions appear to be calculated extra\n");
           printf("precisely with about %g extra B-digits, i.e.\n",
-            (Q / LOG(Radix)));
+            (Q / std::log(radix)));
           printf("roughly %g extra significant decimals.\n",
-            Q / LOG(10.));
+            Q / std::log(10.));
           }
         printf("That feature is not tested further by this program.\n");
         }
       }
     }
-  Pause();
+  pause();
   /*=============================================*/
   Milestone = 35;
   /*=============================================*/
-  if (Radix >= Two) {
-    X = W / (Radix * Radix);
-    Y = X + One;
+  if (radix >= two) {
+    X = W / (radix * radix);
+    Y = X + one;
     Z = Y - X;
     T = Z + U2;
     X = T - Z;
-    TstCond (Failure, X == U2,
+    tstCond (Failure, X == U2,
       "Subtraction is not normalized X=Y,X+Z != Y+Z!");
     if (X == U2) printf(
       "Subtraction appears to be normalized, as it should be.");
     }
   printf("\nChecking for guard digit in *, /, and -.\n");
-  Y = F9 * One;
-  Z = One * F9;
-  X = F9 - Half;
-  Y = (Y - Half) - X;
-  Z = (Z - Half) - X;
-  X = One + U2;
-  T = X * Radix;
-  R = Radix * X;
-  X = T - Radix;
-  X = X - Radix * U2;
-  T = R - Radix;
-  T = T - Radix * U2;
-  X = X * (Radix - One);
-  T = T * (Radix - One);
-  if ((X == Zero) && (Y == Zero) && (Z == Zero) && (T == Zero)) GMult = Yes;
+  Y = F9 * one;
+  Z = one * F9;
+  X = F9 - half;
+  Y = (Y - half) - X;
+  Z = (Z - half) - X;
+  X = one + U2;
+  T = X * radix;
+  R = radix * X;
+  X = T - radix;
+  X = X - radix * U2;
+  T = R - radix;
+  T = T - radix * U2;
+  X = X * (radix - one);
+  T = T * (radix - one);
+  if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)) GMult = Yes;
   else {
     GMult = No;
-    TstCond (Serious, False,
+    tstCond (Serious, False,
       "* lacks a Guard Digit, so 1*X != X");
     }
-  Z = Radix * U2;
-  X = One + Z;
-  Y = FABS((X + Z) - X * X) - U2;
-  X = One - U2;
-  Z = FABS((X - U2) - X * X) - U1;
-  TstCond (Failure, (Y <= Zero)
-       && (Z <= Zero), "* gets too many final digits wrong.\n");
-  Y = One - U2;
-  X = One + U2;
-  Z = One / Y;
+  Z = radix * U2;
+  X = one + Z;
+  Y = std::abs((X + Z) - X * X) - U2;
+  X = one - U2;
+  Z = std::abs((X - U2) - X * X) - U1;
+  tstCond (Failure, (Y <= zero)
+       && (Z <= zero), "* gets too many final digits wrong.\n");
+  Y = one - U2;
+  X = one + U2;
+  Z = one / Y;
   Y = Z - X;
-  X = One / Three;
-  Z = Three / Nine;
+  X = one / three;
+  Z = three / nine;
   X = X - Z;
-  T = Nine / TwentySeven;
+  T = nine / twentySeven;
   Z = Z - T;
-  TstCond(Defect, X == Zero && Y == Zero && Z == Zero,
+  tstCond(Defect, X == zero && Y == zero && Z == zero,
     "Division lacks a Guard Digit, so error can exceed 1 ulp\nor  1/3  and  3/9  and  9/27 may disagree");
-  Y = F9 / One;
-  X = F9 - Half;
-  Y = (Y - Half) - X;
-  X = One + U2;
-  T = X / One;
+  Y = F9 / one;
+  X = F9 - half;
+  Y = (Y - half) - X;
+  X = one + U2;
+  T = X / one;
   X = T - X;
-  if ((X == Zero) && (Y == Zero) && (Z == Zero)) GDiv = Yes;
+  if ((X == zero) && (Y == zero) && (Z == zero)) GDiv = Yes;
   else {
     GDiv = No;
-    TstCond (Serious, False,
+    tstCond (Serious, False,
       "Division lacks a Guard Digit, so X/1 != X");
     }
-  X = One / (One + U2);
-  Y = X - Half - Half;
-  TstCond (Serious, Y < Zero,
+  X = one / (one + U2);
+  Y = X - half - half;
+  tstCond (Serious, Y < zero,
        "Computed value of 1/1.000..1 >= 1");
-  X = One - U2;
-  Y = One + Radix * U2;
-  Z = X * Radix;
-  T = Y * Radix;
-  R = Z / Radix;
-  StickyBit = T / Radix;
+  X = one - U2;
+  Y = one + radix * U2;
+  Z = X * radix;
+  T = Y * radix;
+  R = Z / radix;
+  StickyBit = T / radix;
   X = R - X;
   Y = StickyBit - Y;
-  TstCond (Failure, X == Zero && Y == Zero,
+  tstCond (Failure, X == zero && Y == zero,
       "* and/or / gets too many last digits wrong");
-  Y = One - U1;
-  X = One - F9;
-  Y = One - Y;
-  T = Radix - U2;
-  Z = Radix - BMinusU2;
-  T = Radix - T;
+  Y = one - U1;
+  X = one - F9;
+  Y = one - Y;
+  T = radix - U2;
+  Z = radix - bMinusU2;
+  T = radix - T;
   if ((X == U1) && (Y == U1) && (Z == U2) && (T == U2)) GAddSub = Yes;
   else {
     GAddSub = No;
-    TstCond (Serious, False,
+    tstCond (Serious, False,
       "- lacks Guard Digit, so cancellation is obscured");
     }
-  if (F9 != One && F9 - One >= Zero) {
-    BadCond(Serious, "comparison alleges  (1-U1) < 1  although\n");
+  if (F9 != one && F9 - one >= zero) {
+    badCond(Serious, "comparison alleges  (1-U1) < 1  although\n");
     printf("  subtraction yields  (1-U1) - 1 = 0 , thereby vitiating\n");
     printf("  such precautions against division by zero as\n");
     printf("  ...  if (X == 1.0) {.....} else {.../(X-1.0)...}\n");
@@ -688,53 +669,53 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   /*=============================================*/
   Milestone = 40;
   /*=============================================*/
-  Pause();
+  pause();
   printf("Checking rounding on multiply, divide and add/subtract.\n");
   RMult = Other;
   RDiv = Other;
   RAddSub = Other;
-  RadixD2 = Radix / Two;
-  A1 = Two;
+  radixD2 = radix / two;
+  a1 = two;
   Done = False;
   do  {
-    AInvrse = Radix;
+    aInverse = radix;
     do  {
-      X = AInvrse;
-      AInvrse = AInvrse / A1;
-      } while ( ! (FLOOR(AInvrse) != AInvrse));
-    Done = (X == One) || (A1 > Three);
-    if (! Done) A1 = Nine + One;
+      X = aInverse;
+      aInverse = aInverse / a1;
+      } while ( ! (std::floor(aInverse) != aInverse));
+    Done = (X == one) || (a1 > three);
+    if (! Done) a1 = nine + one;
     } while ( ! (Done));
-  if (X == One) A1 = Radix;
-  AInvrse = One / A1;
-  X = A1;
-  Y = AInvrse;
+  if (X == one) a1 = radix;
+  aInverse = one / a1;
+  X = a1;
+  Y = aInverse;
   Done = False;
   do  {
-    Z = X * Y - Half;
-    TstCond (Failure, Z == Half,
+    Z = X * Y - half;
+    tstCond (Failure, Z == half,
       "X * (1/X) differs from 1");
-    Done = X == Radix;
-    X = Radix;
-    Y = One / X;
+    Done = X == radix;
+    X = radix;
+    Y = one / X;
     } while ( ! (Done));
-  Y2 = One + U2;
-  Y1 = One - U2;
-  X = OneAndHalf - U2;
-  Y = OneAndHalf + U2;
+  Y2 = one + U2;
+  Y1 = one - U2;
+  X = oneAndHalf - U2;
+  Y = oneAndHalf + U2;
   Z = (X - U2) * Y2;
   T = Y * Y1;
   Z = Z - X;
   T = T - X;
   X = X * Y2;
   Y = (Y + U2) * Y1;
-  X = X - OneAndHalf;
-  Y = Y - OneAndHalf;
-  if ((X == Zero) && (Y == Zero) && (Z == Zero) && (T <= Zero)) {
-    X = (OneAndHalf + U2) * Y2;
-    Y = OneAndHalf - U2 - U2;
-    Z = OneAndHalf + U2 + U2;
-    T = (OneAndHalf - U2) * Y1;
+  X = X - oneAndHalf;
+  Y = Y - oneAndHalf;
+  if ((X == zero) && (Y == zero) && (Z == zero) && (T <= zero)) {
+    X = (oneAndHalf + U2) * Y2;
+    Y = oneAndHalf - U2 - U2;
+    Z = oneAndHalf + U2 + U2;
+    T = (oneAndHalf - U2) * Y1;
     X = X - (Z + U2);
     StickyBit = Y * Y1;
     S = Z * Y2;
@@ -744,15 +725,15 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     StickyBit = (Y2 + U2) * Y1;
     Y1 = Y2 * Y1;
     StickyBit = StickyBit - Y2;
-    Y1 = Y1 - Half;
-    if ((X == Zero) && (Y == Zero) && (Z == Zero) && (T == Zero)
-      && ( StickyBit == Zero) && (Y1 == Half)) {
+    Y1 = Y1 - half;
+    if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
+      && ( StickyBit == zero) && (Y1 == half)) {
       RMult = Rounded;
       printf("Multiplication appears to round correctly.\n");
       }
-    else  if ((X + U2 == Zero) && (Y < Zero) && (Z + U2 == Zero)
-        && (T < Zero) && (StickyBit + U2 == Zero)
-        && (Y1 < Half)) {
+    else  if ((X + U2 == zero) && (Y < zero) && (Z + U2 == zero)
+        && (T < zero) && (StickyBit + U2 == zero)
+        && (Y1 < half)) {
         RMult = Chopped;
         printf("Multiplication appears to chop.\n");
         }
@@ -763,79 +744,79 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   /*=============================================*/
   Milestone = 45;
   /*=============================================*/
-  Y2 = One + U2;
-  Y1 = One - U2;
-  Z = OneAndHalf + U2 + U2;
+  Y2 = one + U2;
+  Y1 = one - U2;
+  Z = oneAndHalf + U2 + U2;
   X = Z / Y2;
-  T = OneAndHalf - U2 - U2;
+  T = oneAndHalf - U2 - U2;
   Y = (T - U2) / Y1;
   Z = (Z + U2) / Y2;
-  X = X - OneAndHalf;
+  X = X - oneAndHalf;
   Y = Y - T;
   T = T / Y1;
-  Z = Z - (OneAndHalf + U2);
-  T = (U2 - OneAndHalf) + T;
-  if (! ((X > Zero) || (Y > Zero) || (Z > Zero) || (T > Zero))) {
-    X = OneAndHalf / Y2;
-    Y = OneAndHalf - U2;
-    Z = OneAndHalf + U2;
+  Z = Z - (oneAndHalf + U2);
+  T = (U2 - oneAndHalf) + T;
+  if (! ((X > zero) || (Y > zero) || (Z > zero) || (T > zero))) {
+    X = oneAndHalf / Y2;
+    Y = oneAndHalf - U2;
+    Z = oneAndHalf + U2;
     X = X - Y;
-    T = OneAndHalf / Y1;
+    T = oneAndHalf / Y1;
     Y = Y / Y1;
     T = T - (Z + U2);
     Y = Y - Z;
     Z = Z / Y2;
     Y1 = (Y2 + U2) / Y2;
-    Z = Z - OneAndHalf;
+    Z = Z - oneAndHalf;
     Y2 = Y1 - Y2;
     Y1 = (F9 - U1) / F9;
-    if ((X == Zero) && (Y == Zero) && (Z == Zero) && (T == Zero)
-      && (Y2 == Zero) && (Y2 == Zero)
-      && (Y1 - Half == F9 - Half )) {
+    if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
+      && (Y2 == zero) && (Y2 == zero)
+      && (Y1 - half == F9 - half )) {
       RDiv = Rounded;
       printf("Division appears to round correctly.\n");
       if (GDiv == No) notify("Division");
       }
-    else if ((X < Zero) && (Y < Zero) && (Z < Zero) && (T < Zero)
-      && (Y2 < Zero) && (Y1 - Half < F9 - Half)) {
+    else if ((X < zero) && (Y < zero) && (Z < zero) && (T < zero)
+      && (Y2 < zero) && (Y1 - half < F9 - half)) {
       RDiv = Chopped;
       printf("Division appears to chop.\n");
       }
     }
   if (RDiv == Other) printf("/ is neither chopped nor correctly rounded.\n");
-  BInvrse = One / Radix;
-  TstCond (Failure, (BInvrse * Radix - Half == Half),
-       "Radix * ( 1 / Radix ) differs from 1");
+  bInverse = one / radix;
+  tstCond (Failure, (bInverse * radix - half == half),
+       "radix * ( 1 / radix ) differs from 1");
   /*=============================================*/
   Milestone = 50;
   /*=============================================*/
-  TstCond (Failure, ((F9 + U1) - Half == Half)
-       && ((BMinusU2 + U2 ) - One == Radix - One),
+  tstCond (Failure, ((F9 + U1) - half == half)
+       && ((bMinusU2 + U2 ) - one == radix - one),
        "Incomplete carry-propagation in Addition");
-  X = One - U1 * U1;
-  Y = One + U2 * (One - U2);
-  Z = F9 - Half;
-  X = (X - Half) - Z;
-  Y = Y - One;
-  if ((X == Zero) && (Y == Zero)) {
+  X = one - U1 * U1;
+  Y = one + U2 * (one - U2);
+  Z = F9 - half;
+  X = (X - half) - Z;
+  Y = Y - one;
+  if ((X == zero) && (Y == zero)) {
     RAddSub = Chopped;
     printf("Add/Subtract appears to be chopped.\n");
     }
   if (GAddSub == Yes) {
-    X = (Half + U2) * U2;
-    Y = (Half - U2) * U2;
-    X = One + X;
-    Y = One + Y;
-    X = (One + U2) - X;
-    Y = One - Y;
-    if ((X == Zero) && (Y == Zero)) {
-      X = (Half + U2) * U1;
-      Y = (Half - U2) * U1;
-      X = One - X;
-      Y = One - Y;
+    X = (half + U2) * U2;
+    Y = (half - U2) * U2;
+    X = one + X;
+    Y = one + Y;
+    X = (one + U2) - X;
+    Y = one - Y;
+    if ((X == zero) && (Y == zero)) {
+      X = (half + U2) * U1;
+      Y = (half - U2) * U1;
+      X = one - X;
+      Y = one - Y;
       X = F9 - X;
-      Y = One - Y;
-      if ((X == Zero) && (Y == Zero)) {
+      Y = one - Y;
+      if ((X == zero) && (Y == zero)) {
         RAddSub = Rounded;
         printf("Addition/Subtraction appears to round correctly.\n");
         if (GAddSub == No) notify("Add/Subtract");
@@ -845,48 +826,48 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     else printf("Addition/Subtraction neither rounds nor chops.\n");
     }
   else printf("Addition/Subtraction neither rounds nor chops.\n");
-  S = One;
-  X = One + Half * (One + Half);
-  Y = (One + U2) * Half;
+  S = one;
+  X = one + half * (one + half);
+  Y = (one + U2) * half;
   Z = X - Y;
   T = Y - X;
   StickyBit = Z + T;
-  if (StickyBit != Zero) {
-    S = Zero;
-    BadCond(Flaw, "(X - Y) + (Y - X) is non zero!\n");
+  if (StickyBit != zero) {
+    S = zero;
+    badCond(Flaw, "(X - Y) + (Y - X) is non zero!\n");
     }
-  StickyBit = Zero;
+  StickyBit = zero;
   if ((GMult == Yes) && (GDiv == Yes) && (GAddSub == Yes)
     && (RMult == Rounded) && (RDiv == Rounded)
-    && (RAddSub == Rounded) && (FLOOR(RadixD2) == RadixD2)) {
+    && (RAddSub == Rounded) && (std::floor(radixD2) == radixD2)) {
     printf("Checking for sticky bit.\n");
-    X = (Half + U1) * U2;
-    Y = Half * U2;
-    Z = One + Y;
-    T = One + X;
-    if ((Z - One <= Zero) && (T - One >= U2)) {
+    X = (half + U1) * U2;
+    Y = half * U2;
+    Z = one + Y;
+    T = one + X;
+    if ((Z - one <= zero) && (T - one >= U2)) {
       Z = T + Y;
       Y = Z - X;
-      if ((Z - T >= U2) && (Y - T == Zero)) {
-        X = (Half + U1) * U1;
-        Y = Half * U1;
-        Z = One - Y;
-        T = One - X;
-        if ((Z - One == Zero) && (T - F9 == Zero)) {
-          Z = (Half - U1) * U1;
+      if ((Z - T >= U2) && (Y - T == zero)) {
+        X = (half + U1) * U1;
+        Y = half * U1;
+        Z = one - Y;
+        T = one - X;
+        if ((Z - one == zero) && (T - F9 == zero)) {
+          Z = (half - U1) * U1;
           T = F9 - Z;
           Q = F9 - Y;
-          if ((T - F9 == Zero) && (F9 - U1 - Q == Zero)) {
-            Z = (One + U2) * OneAndHalf;
-            T = (OneAndHalf + U2) - Z + U2;
-            X = One + Half / Radix;
-            Y = One + Radix * U2;
+          if ((T - F9 == zero) && (F9 - U1 - Q == zero)) {
+            Z = (one + U2) * oneAndHalf;
+            T = (oneAndHalf + U2) - Z + U2;
+            X = one + half / radix;
+            Y = one + radix * U2;
             Z = X * Y;
-            if (T == Zero && X + Radix * U2 - Z == Zero) {
-              if (Radix != Two) {
-                X = Two + U2;
-                Y = X / Two;
-                if ((Y - One == Zero)) StickyBit = S;
+            if (T == zero && X + radix * U2 - Z == zero) {
+              if (radix != two) {
+                X = two + U2;
+                Y = X / two;
+                if ((Y - one == zero)) StickyBit = S;
                 }
               else StickyBit = S;
               }
@@ -895,9 +876,9 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       }
     }
-  if (StickyBit == One) printf("Sticky bit apparently used correctly.\n");
+  if (StickyBit == one) printf("Sticky bit apparently used correctly.\n");
   else printf("Sticky bit used incorrectly or not at all.\n");
-  TstCond (Flaw, !(GMult == No || GDiv == No || GAddSub == No ||
+  tstCond (Flaw, !(GMult == No || GDiv == No || GAddSub == No ||
       RMult == Other || RDiv == Other || RAddSub == Other),
     "lack(s) of guard digits or failure(s) to correctly round or chop\n(noted above) count as one flaw in the final tally below");
   /*=============================================*/
@@ -905,85 +886,85 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   /*=============================================*/
   printf("\n");
   printf("Does Multiplication commute?  ");
-  printf("Testing on %d random pairs.\n", NoTrials);
-  Random9 = SQRT(3.0);
+  printf("Testing on %d random pairs.\n", noTrials);
+  Random9 = std::sqrt(3.0);
   Random1 = Third;
   I = 1;
   do  {
-    X = Random();
-    Y = Random();
+    X = random();
+    Y = random();
     Z9 = Y * X;
     Z = X * Y;
     Z9 = Z - Z9;
     I = I + 1;
-    } while ( ! ((I > NoTrials) || (Z9 != Zero)));
-  if (I == NoTrials) {
-    Random1 = One + Half / Three;
-    Random2 = (U2 + U1) + One;
+    } while ( ! ((I > noTrials) || (Z9 != zero)));
+  if (I == noTrials) {
+    Random1 = one + half / three;
+    Random2 = (U2 + U1) + one;
     Z = Random1 * Random2;
     Y = Random2 * Random1;
-    Z9 = (One + Half / Three) * ((U2 + U1) + One) - (One + Half /
-      Three) * ((U2 + U1) + One);
+    Z9 = (one + half / three) * ((U2 + U1) + one) - (one + half /
+      three) * ((U2 + U1) + one);
     }
-  if (! ((I == NoTrials) || (Z9 == Zero)))
-    BadCond(Defect, "X * Y == Y * X trial fails.\n");
-  else printf("     No failures found in %d integer pairs.\n", NoTrials);
+  if (! ((I == noTrials) || (Z9 == zero)))
+    badCond(Defect, "X * Y == Y * X trial fails.\n");
+  else printf("     No failures found in %d integer pairs.\n", noTrials);
   /*=============================================*/
   Milestone = 70;
   /*=============================================*/
   printf("\nRunning test of square root(x).\n");
-  TstCond (Failure, (Zero == SQRT(Zero))
-       && (- Zero == SQRT(- Zero))
-       && (One == SQRT(One)), "Square root of 0.0, -0.0 or 1.0 wrong");
-  MinSqEr = Zero;
-  MaxSqEr = Zero;
-  J = Zero;
-  X = Radix;
+  tstCond (Failure, (zero == std::sqrt(zero))
+       && (- zero == std::sqrt(- zero))
+       && (one == std::sqrt(one)), "Square root of 0.0, -0.0 or 1.0 wrong");
+  MinSqEr = zero;
+  MaxSqEr = zero;
+  J = zero;
+  X = radix;
   OneUlp = U2;
-  SqXMinX (Serious);
-  X = BInvrse;
-  OneUlp = BInvrse * U1;
-  SqXMinX (Serious);
+  sqXMinX (Serious);
+  X = bInverse;
+  OneUlp = bInverse * U1;
+  sqXMinX (Serious);
   X = U1;
   OneUlp = U1 * U1;
-  SqXMinX (Serious);
-  if (J != Zero) Pause();
-  printf("Testing if sqrt(X * X) == X for %d Integers X.\n", NoTrials);
-  J = Zero;
-  X = Two;
-  Y = Radix;
-  if ((Radix != One)) do  {
+  sqXMinX (Serious);
+  if (J != zero) pause();
+  printf("Testing if sqrt(X * X) == X for %d Integers X.\n", noTrials);
+  J = zero;
+  X = two;
+  Y = radix;
+  if ((radix != one)) do  {
     X = Y;
-    Y = Radix * Y;
-    } while ( ! ((Y - X >= NoTrials)));
+    Y = radix * Y;
+    } while ( ! ((Y - X >= noTrials)));
   OneUlp = X * U2;
   I = 1;
-  while (I <= NoTrials) {
-    X = X + One;
-    SqXMinX (Defect);
-    if (J > Zero) break;
+  while (I <= noTrials) {
+    X = X + one;
+    sqXMinX (Defect);
+    if (J > zero) break;
     I = I + 1;
     }
   printf("Test for sqrt monotonicity.\n");
   I = - 1;
-  X = BMinusU2;
-  Y = Radix;
-  Z = Radix + Radix * U2;
+  X = bMinusU2;
+  Y = radix;
+  Z = radix + radix * U2;
   NotMonot = False;
   Monot = False;
   while ( ! (NotMonot || Monot)) {
     I = I + 1;
-    X = SQRT(X);
-    Q = SQRT(Y);
-    Z = SQRT(Z);
+    X = std::sqrt(X);
+    Q = std::sqrt(Y);
+    Z = std::sqrt(Z);
     if ((X > Q) || (Q > Z)) NotMonot = True;
     else {
-      Q = FLOOR(Q + Half);
-      if ((I > 0) || (Radix == Q * Q)) Monot = True;
+      Q = std::floor(Q + half);
+      if ((I > 0) || (radix == Q * Q)) Monot = True;
       else if (I > 0) {
       if (I > 1) Monot = True;
       else {
-        Y = Y * BInvrse;
+        Y = Y * bInverse;
         X = Y - U1;
         Z = Y + U1;
         }
@@ -997,36 +978,36 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     }
   if (Monot) printf("sqrt has passed a test for Monotonicity.\n");
   else {
-    BadCond(Defect, "");
+    badCond(Defect, "");
     printf("sqrt(X) is non-monotonic for X near %.7e .\n", Y);
     }
   /*=============================================*/
   Milestone = 80;
   /*=============================================*/
-  MinSqEr = MinSqEr + Half;
-  MaxSqEr = MaxSqEr - Half;
-  Y = (SQRT(One + U2) - One) / U2;
-  SqEr = (Y - One) + U2 / Eight;
+  MinSqEr = MinSqEr + half;
+  MaxSqEr = MaxSqEr - half;
+  Y = (std::sqrt(one + U2) - one) / U2;
+  SqEr = (Y - one) + U2 / eight;
   if (SqEr > MaxSqEr) MaxSqEr = SqEr;
-  SqEr = Y + U2 / Eight;
+  SqEr = Y + U2 / eight;
   if (SqEr < MinSqEr) MinSqEr = SqEr;
-  Y = ((SQRT(F9) - U2) - (One - U2)) / U1;
-  SqEr = Y + U1 / Eight;
+  Y = ((std::sqrt(F9) - U2) - (one - U2)) / U1;
+  SqEr = Y + U1 / eight;
   if (SqEr > MaxSqEr) MaxSqEr = SqEr;
-  SqEr = (Y + One) + U1 / Eight;
+  SqEr = (Y + one) + U1 / eight;
   if (SqEr < MinSqEr) MinSqEr = SqEr;
   OneUlp = U2;
   X = OneUlp;
-  for( Indx = 1; Indx <= 3; ++Indx) {
-    Y = SQRT((X + U1 + X) + F9);
-    Y = ((Y - U2) - ((One - U2) + X)) / OneUlp;
-    Z = ((U1 - X) + F9) * Half * X * X / OneUlp;
-    SqEr = (Y + Half) + Z;
+  for( indx = 1; indx <= 3; ++indx) {
+    Y = std::sqrt((X + U1 + X) + F9);
+    Y = ((Y - U2) - ((one - U2) + X)) / OneUlp;
+    Z = ((U1 - X) + F9) * half * X * X / OneUlp;
+    SqEr = (Y + half) + Z;
     if (SqEr < MinSqEr) MinSqEr = SqEr;
-    SqEr = (Y - Half) + Z;
+    SqEr = (Y - half) + Z;
     if (SqEr > MaxSqEr) MaxSqEr = SqEr;
-    if (((Indx == 1) || (Indx == 3)))
-      X = OneUlp * Sign (X) * FLOOR(Eight / (Nine * SQRT(OneUlp)));
+    if (((indx == 1) || (indx == 3)))
+      X = OneUlp * sign (X) * std::floor(eight / (nine * std::sqrt(OneUlp)));
     else {
       OneUlp = U1;
       X = - OneUlp;
@@ -1038,81 +1019,81 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   SqRWrng = False;
   Anomaly = False;
   RSqrt = Other; /* ~dgh */
-  if (Radix != One) {
+  if (radix != one) {
     printf("Testing whether sqrt is rounded or chopped.\n");
-    D = FLOOR(Half + POW(Radix, One + Precision - FLOOR(Precision)));
-  /* ... == Radix^(1 + fract) if (Precision == Integer + fract. */
-    X = D / Radix;
-    Y = D / A1;
-    if ((X != FLOOR(X)) || (Y != FLOOR(Y))) {
+    D = std::floor(half + pow(radix, one + Precision - std::floor(Precision)));
+  /* ... == radix^(1 + fract) if (Precision == Integer + fract. */
+    X = D / radix;
+    Y = D / a1;
+    if ((X != std::floor(X)) || (Y != std::floor(Y))) {
       Anomaly = True;
       }
     else {
-      X = Zero;
+      X = zero;
       Z2 = X;
-      Y = One;
+      Y = one;
       Y2 = Y;
-      Z1 = Radix - One;
-      FourD = Four * D;
+      Z1 = radix - one;
+      FourD = four * D;
       do  {
         if (Y2 > Z2) {
-          Q = Radix;
+          Q = radix;
           Y1 = Y;
           do  {
-            X1 = FABS(Q + FLOOR(Half - Q / Y1) * Y1);
+            X1 = std::abs(Q + std::floor(half - Q / Y1) * Y1);
             Q = Y1;
             Y1 = X1;
-            } while ( ! (X1 <= Zero));
-          if (Q <= One) {
+            } while ( ! (X1 <= zero));
+          if (Q <= one) {
             Z2 = Y2;
             Z = Y;
             }
           }
-        Y = Y + Two;
-        X = X + Eight;
+        Y = Y + two;
+        X = X + eight;
         Y2 = Y2 + X;
         if (Y2 >= FourD) Y2 = Y2 - FourD;
         } while ( ! (Y >= D));
       X8 = FourD - Z2;
       Q = (X8 + Z * Z) / FourD;
-      X8 = X8 / Eight;
-      if (Q != FLOOR(Q)) Anomaly = True;
+      X8 = X8 / eight;
+      if (Q != std::floor(Q)) Anomaly = True;
       else {
         Break = False;
         do  {
           X = Z1 * Z;
-          X = X - FLOOR(X / Radix) * Radix;
-          if (X == One)
+          X = X - std::floor(X / radix) * radix;
+          if (X == one)
             Break = True;
           else
-            Z1 = Z1 - One;
-          } while ( ! (Break || (Z1 <= Zero)));
-        if ((Z1 <= Zero) && (! Break)) Anomaly = True;
+            Z1 = Z1 - one;
+          } while ( ! (Break || (Z1 <= zero)));
+        if ((Z1 <= zero) && (! Break)) Anomaly = True;
         else {
-          if (Z1 > RadixD2) Z1 = Z1 - Radix;
+          if (Z1 > radixD2) Z1 = Z1 - radix;
           do  {
-            NewD();
+            newD();
             } while ( ! (U2 * D >= F9));
-          if (D * Radix - D != W - D) Anomaly = True;
+          if (D * radix - D != W - D) Anomaly = True;
           else {
             Z2 = D;
             I = 0;
-            Y = D + (One + Z) * Half;
+            Y = D + (one + Z) * half;
             X = D + Z + Q;
-            SR3750();
-            Y = D + (One - Z) * Half + D;
+            sr3750();
+            Y = D + (one - Z) * half + D;
             X = D - Z + D;
             X = X + Q + X;
-            SR3750();
-            NewD();
+            sr3750();
+            newD();
             if (D - Z2 != W - Z2) Anomaly = True;
             else {
-              Y = (D - Z2) + (Z2 + (One - Z) * Half);
+              Y = (D - Z2) + (Z2 + (one - Z) * half);
               X = (D - Z2) + (Z2 - Z + Q);
-              SR3750();
-              Y = (One + Z) * Half;
+              sr3750();
+              Y = (one + Z) * half;
               X = Q;
-              SR3750();
+              sr3750();
               if (I == 0) Anomaly = True;
               }
             }
@@ -1120,20 +1101,20 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       }
     if ((I == 0) || Anomaly) {
-      BadCond(Failure, "Anomalous arithmetic with Integer < ");
-      printf("Radix^Precision = %.7e\n", W);
+      badCond(Failure, "Anomalous arithmetic with Integer < ");
+      printf("radix^Precision = %.7e\n", W);
       printf(" fails test whether sqrt rounds or chops.\n");
       SqRWrng = True;
       }
     }
   if (! Anomaly) {
-    if (! ((MinSqEr < Zero) || (MaxSqEr > Zero))) {
+    if (! ((MinSqEr < zero) || (MaxSqEr > zero))) {
       RSqrt = Rounded;
       printf("Square root appears to be correctly rounded.\n");
       }
     else  {
-      if ((MaxSqEr + U2 > U2 - Half) || (MinSqEr > Half)
-        || (MinSqEr + Radix < Half)) SqRWrng = True;
+      if ((MaxSqEr + U2 > U2 - half) || (MinSqEr > half)
+        || (MinSqEr + radix < half)) SqRWrng = True;
       else {
         RSqrt = Chopped;
         printf("Square root appears to be chopped.\n");
@@ -1142,91 +1123,91 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     }
   if (SqRWrng) {
     printf("Square root is neither chopped nor correctly rounded.\n");
-    printf("Observed errors run from %.7e ", MinSqEr - Half);
-    printf("to %.7e ulps.\n", Half + MaxSqEr);
-    TstCond (Serious, MaxSqEr - MinSqEr < Radix * Radix,
+    printf("Observed errors run from %.7e ", MinSqEr - half);
+    printf("to %.7e ulps.\n", half + MaxSqEr);
+    tstCond (Serious, MaxSqEr - MinSqEr < radix * radix,
       "sqrt gets too many last digits wrong");
     }
   /*=============================================*/
   Milestone = 90;
   /*=============================================*/
-  Pause();
+  pause();
   printf("Testing powers Z^i for small Integers Z and i.\n");
   N = 0;
   /* ... test powers of zero. */
   I = 0;
-  Z = -Zero;
+  Z = -zero;
   M = 3;
   Break = False;
   do  {
-    X = One;
-    SR3980();
+    X = one;
+    sr3980();
     if (I <= 10) {
       I = 1023;
-      SR3980();
+      sr3980();
       }
-    if (Z == MinusOne) Break = True;
+    if (Z == minusOne) Break = True;
     else {
-      Z = MinusOne;
-      PrintIfNPositive();
+      Z = minusOne;
+      printIfNPositive();
       N = 0;
-      /* .. if(-1)^N is invalid, replace MinusOne by One. */
+      /* .. if(-1)^N is invalid, replace minusOne by one. */
       I = - 4;
       }
     } while ( ! Break);
-  PrintIfNPositive();
+  printIfNPositive();
   N1 = N;
   N = 0;
-  Z = A1;
-  M = (int)(FLOOR(Two * LOG(W) / LOG(A1)));
+  Z = a1;
+  M = (int)(std::floor(two * std::log(W) / std::log(a1)));
   Break = False;
   do  {
     X = Z;
     I = 1;
-    SR3980();
-    if (Z == AInvrse) Break = True;
-    else Z = AInvrse;
+    sr3980();
+    if (Z == aInverse) Break = True;
+    else Z = aInverse;
     } while ( ! (Break));
   /*=============================================*/
     Milestone = 100;
   /*=============================================*/
-  /*  Powers of Radix have been tested, */
+  /*  Powers of radix have been tested, */
   /*         next try a few primes     */
-  M = NoTrials;
-  Z = Three;
+  M = noTrials;
+  Z = three;
   do  {
     X = Z;
     I = 1;
-    SR3980();
+    sr3980();
     do  {
-      Z = Z + Two;
-      } while ( Three * FLOOR(Z / Three) == Z );
-    } while ( Z < Eight * Three );
+      Z = Z + two;
+      } while ( three * std::floor(Z / three) == Z );
+    } while ( Z < eight * three );
   if (N > 0) {
     printf("Errors like this may invalidate financial calculations\n");
     printf("\tinvolving interest rates.\n");
     }
-  PrintIfNPositive();
+  printIfNPositive();
   N += N1;
   if (N == 0) printf("... no discrepancis found.\n");
-  if (N > 0) Pause();
+  if (N > 0) pause();
   else printf("\n");
   /*=============================================*/
   Milestone = 110;
   /*=============================================*/
   printf("Seeking Underflow thresholds UfThold and E0.\n");
   D = U1;
-  if (Precision != FLOOR(Precision)) {
-    D = BInvrse;
+  if (Precision != std::floor(Precision)) {
+    D = bInverse;
     X = Precision;
     do  {
-      D = D * BInvrse;
-      X = X - One;
-      } while ( X > Zero);
+      D = D * bInverse;
+      X = X - one;
+      } while ( X > zero);
     }
-  Y = One;
+  Y = one;
   Z = D;
-  /* ... D is power of 1/Radix < 1. */
+  /* ... D is power of 1/radix < 1. */
   do  {
     C = Y;
     Y = Z;
@@ -1239,76 +1220,76 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Y = Z;
     Z = Y * D;
     } while ((Y > Z) && (Z + Z > Z));
-  if (Radix < Two) HInvrse = Two;
-  else HInvrse = Radix;
-  H = One / HInvrse;
-  /* ... 1/HInvrse == H == Min(1/Radix, 1/2) */
-  CInvrse = One / C;
+  if (radix < two) HInvrse = two;
+  else HInvrse = radix;
+  H = one / HInvrse;
+  /* ... 1/HInvrse == H == Min(1/radix, 1/2) */
+  CInvrse = one / C;
   E0 = C;
   Z = E0 * H;
-  /* ...1/Radix^(BIG Integer) << 1 << CInvrse == 1/C */
+  /* ...1/radix^(BIG Integer) << 1 << CInvrse == 1/C */
   do  {
     Y = E0;
     E0 = Z;
     Z = E0 * H;
     } while ((E0 > Z) && (Z + Z > Z));
   UfThold = E0;
-  E1 = Zero;
-  Q = Zero;
+  E1 = zero;
+  Q = zero;
   E9 = U2;
-  S = One + E9;
+  S = one + E9;
   D = C * S;
   if (D <= C) {
-    E9 = Radix * U2;
-    S = One + E9;
+    E9 = radix * U2;
+    S = one + E9;
     D = C * S;
     if (D <= C) {
-      BadCond(Failure, "multiplication gets too many last digits wrong.\n");
+      badCond(Failure, "multiplication gets too many last digits wrong.\n");
       Underflow = E0;
-      Y1 = Zero;
+      Y1 = zero;
       PseudoZero = Z;
-      Pause();
+      pause();
       }
     }
   else {
     Underflow = D;
     PseudoZero = Underflow * H;
-    UfThold = Zero;
+    UfThold = zero;
     do  {
       Y1 = Underflow;
       Underflow = PseudoZero;
       if (E1 + E1 <= E1) {
         Y2 = Underflow * HInvrse;
-        E1 = FABS(Y1 - Y2);
+        E1 = std::abs(Y1 - Y2);
         Q = Y1;
-        if ((UfThold == Zero) && (Y1 != Y2)) UfThold = Y1;
+        if ((UfThold == zero) && (Y1 != Y2)) UfThold = Y1;
         }
       PseudoZero = PseudoZero * H;
       } while ((Underflow > PseudoZero)
         && (PseudoZero + PseudoZero > PseudoZero));
     }
   /* Comment line 4530 .. 4560 */
-  if (PseudoZero != Zero) {
+  if (PseudoZero != zero) {
     printf("\n");
     Z = PseudoZero;
   /* ... Test PseudoZero for "phoney- zero" violates */
   /* ... PseudoZero < Underflow or PseudoZero < PseudoZero + PseudoZero
        ... */
-    if (PseudoZero <= Zero) {
-      BadCond(Failure, "Positive expressions can underflow to an\n");
+    if (PseudoZero <= zero) {
+      badCond(Failure, "Positive expressions can underflow to an\n");
       printf("allegedly negative value\n");
       printf("PseudoZero that prints out as: %g .\n", PseudoZero);
       X = - PseudoZero;
-      if (X <= Zero) {
+      if (X <= zero) {
         printf("But -PseudoZero, which should be\n");
         printf("positive, isn't; it prints out as  %g .\n", X);
         }
       }
     else {
-      BadCond(Flaw, "Underflow can stick at an allegedly positive\n");
+      badCond(Flaw, "Underflow can stick at an allegedly positive\n");
       printf("value PseudoZero that prints out as %g .\n", PseudoZero);
       }
-    TstPtUf();
+    tstPtUf();
     }
   /*=============================================*/
   Milestone = 120;
@@ -1317,12 +1298,12 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     S = H * S;
     E0 = Underflow;
     }
-  if (! ((E1 == Zero) || (E1 == E0))) {
-    BadCond(Defect, "");
+  if (! ((E1 == zero) || (E1 == E0))) {
+    badCond(Defect, "");
     if (E1 < E0) {
       printf("Products underflow at a higher");
       printf(" threshold than differences.\n");
-      if (PseudoZero == Zero)
+      if (PseudoZero == zero)
       E0 = E1;
       }
     else {
@@ -1332,31 +1313,31 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     }
   printf("Smallest strictly positive number found is E0 = %g .\n", E0);
   Z = E0;
-  TstPtUf();
+  tstPtUf();
   Underflow = E0;
   if (N == 1) Underflow = Y;
   I = 4;
-  if (E1 == Zero) I = 3;
-  if (UfThold == Zero) I = I - 2;
+  if (E1 == zero) I = 3;
+  if (UfThold == zero) I = I - 2;
   UfNGrad = True;
   switch (I)  {
     case  1:
     UfThold = Underflow;
     if ((CInvrse * Q) != ((CInvrse * Y) * S)) {
       UfThold = Y;
-      BadCond(Failure, "Either accuracy deteriorates as numbers\n");
+      badCond(Failure, "Either accuracy deteriorates as numbers\n");
       printf("approach a threshold = %.17e\n", UfThold);;
       printf(" coming down from %.17e\n", C);
       printf(" or else multiplication gets too many last digits wrong.\n");
       }
-    Pause();
+    pause();
     break;
 
     case  2:
-    BadCond(Failure, "Underflow confuses Comparison, which alleges that\n");
+    badCond(Failure, "Underflow confuses Comparison, which alleges that\n");
     printf("Q == Y while denying that |Q - Y| == 0; these values\n");
     printf("print out as Q = %.17e, Y = %.17e .\n", Q, Y2);
-    printf ("|Q - Y| = %.17e .\n" , FABS(Q - Y2));
+    printf ("|Q - Y| = %.17e .\n" , std::abs(Q - Y2));
     UfThold = Q;
     break;
 
@@ -1366,13 +1347,13 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
 
     case  4:
     if ((Q == UfThold) && (E1 == E0)
-      && (FABS( UfThold - E1 / E9) <= E1)) {
+      && (std::abs( UfThold - E1 / E9) <= E1)) {
       UfNGrad = False;
       printf("Underflow is gradual; it incurs Absolute Error =\n");
       printf("(roundoff in UfThold) < E0.\n");
       Y = E0 * CInvrse;
-      Y = Y * (OneAndHalf + U2);
-      X = CInvrse * (One + U2);
+      Y = Y * (oneAndHalf + U2);
+      X = CInvrse * (one + U2);
       Y = Y / X;
       IEEE = (Y == E0);
       }
@@ -1384,18 +1365,18 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       printf("Underflow / UfThold failed!\n");
       R = H + H;
       }
-    else R = SQRT(Underflow / UfThold);
+    else R = std::sqrt(Underflow / UfThold);
     sigsave = 0;
     if (R <= H) {
       Z = R * UfThold;
-      X = Z * (One + R * H * (One + H));
+      X = Z * (one + R * H * (one + H));
       }
     else {
       Z = UfThold;
-      X = Z * (One + H * H * (One + H));
+      X = Z * (one + H * H * (one + H));
       }
-    if (! ((X == Z) || (X - Z != Zero))) {
-      BadCond(Flaw, "");
+    if (! ((X == Z) || (X - Z != zero))) {
+      badCond(Flaw, "");
       printf("X = %.17e\n\tis not equal to Z = %.17e .\n", X, Z);
       Z9 = X - Z;
       printf("yet X - Z yields %.17e .\n", Z9);
@@ -1404,10 +1385,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       printf("confusion when innocent statements like\n");;
       printf("    if (X == Z)  ...  else");
       printf("  ... (f(X) - f(Z)) / (X - Z) ...\n");
-      printf("encounter Division by Zero although actually\n");
+      printf("encounter Division by zero although actually\n");
       sigsave = sigfpe;
       if (setjmp(ovfl_buf)) printf("X / Z fails!\n");
-      else printf("X / Z = 1 + %g .\n", (X / Z - Half) - Half);
+      else printf("X / Z = 1 + %g .\n", (X / Z - half) - half);
       sigsave = 0;
       }
     }
@@ -1420,11 +1401,11 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   Y2 = Y * U1;
   if (Y2 <= UfThold) {
     if (Y > E0) {
-      BadCond(Defect, "");
+      badCond(Defect, "");
       I = 5;
       }
     else {
-      BadCond(Serious, "");
+      badCond(Serious, "");
       I = 4;
       }
     printf("Range is too narrow; U1^%d Underflows.\n", I);
@@ -1432,21 +1413,21 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   /*=============================================*/
   Milestone = 130;
   /*=============================================*/
-  Y = - FLOOR(Half - TwoForty * LOG(UfThold) / LOG(HInvrse)) / TwoForty;
+  Y = - std::floor(half - twoForty * std::log(UfThold) / std::log(HInvrse)) / twoForty;
   Y2 = Y + Y;
   printf("Since underflow occurs below the threshold\n");
   printf("UfThold = (%.17e) ^ (%.17e)\nonly underflow ", HInvrse, Y);
   printf("should afflict the expression\n\t(%.17e) ^ (%.17e);\n", HInvrse, Y);
-  V9 = POW(HInvrse, Y2);
+  V9 = pow(HInvrse, Y2);
   printf("actually calculating yields: %.17e .\n", V9);
-  if (! ((V9 >= Zero) && (V9 <= (Radix + Radix + E9) * UfThold))) {
-    BadCond(Serious, "this is not between 0 and underflow\n");
+  if (! ((V9 >= zero) && (V9 <= (radix + radix + E9) * UfThold))) {
+    badCond(Serious, "this is not between 0 and underflow\n");
     printf("   threshold = %.17e .\n", UfThold);
     }
-  else if (! (V9 > UfThold * (One + E9)))
+  else if (! (V9 > UfThold * (one + E9)))
     printf("This computed value is O.K.\n");
   else {
-    BadCond(Defect, "this is not between 0 and underflow\n");
+    badCond(Defect, "this is not between 0 and underflow\n");
     printf("   threshold = %.17e .\n", UfThold);
     }
   /*=============================================*/
@@ -1454,10 +1435,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   /*=============================================*/
   printf("\n");
   /* ...calculate Exp2 == exp(2) == 7.389056099... */
-  X = Zero;
+  X = zero;
   I = 2;
-  Y = Two * Three;
-  Q = Zero;
+  Y = two * three;
+  Q = zero;
   N = 0;
   do  {
     Z = X;
@@ -1467,7 +1448,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     X = Z + R;
     Q = (Z - X) + R;
     } while(X > Z);
-  Z = (OneAndHalf + One / Eight) + X / (OneAndHalf * ThirtyTwo);
+  Z = (oneAndHalf + one / eight) + X / (oneAndHalf * thirtyTwo);
   X = Z * Z;
   Exp2 = X * X;
   X = F9;
@@ -1475,14 +1456,14 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   printf("Testing X^((X + 1) / (X - 1)) vs. exp(2) = %.17e as X -> 1.\n",
     Exp2);
   for(I = 1;;) {
-    Z = X - BInvrse;
-    Z = (X + One) / (Z - (One - BInvrse));
-    Q = POW(X, Z) - Exp2;
-    if (FABS(Q) > TwoForty * U2) {
+    Z = X - bInverse;
+    Z = (X + one) / (Z - (one - bInverse));
+    Q = pow(X, Z) - Exp2;
+    if (std::abs(Q) > twoForty * U2) {
       N = 1;
-       V9 = (X - BInvrse) - (One - BInvrse);
-      BadCond(Defect, "Calculated");
-      printf(" %.17e for\n", POW(X,Z));
+       V9 = (X - bInverse) - (one - bInverse);
+      badCond(Defect, "Calculated");
+      printf(" %.17e for\n", pow(X,Z));
       printf("\t(1 + (%.17e) ^ (%.17e);\n", V9, Z);
       printf("\tdiffers from correct value by %.17e .\n", Q);
       printf("\tThis much error may spoil financial\n");
@@ -1490,19 +1471,19 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       break;
       }
     else {
-      Z = (Y - X) * Two + Y;
+      Z = (Y - X) * two + Y;
       X = Y;
       Y = Z;
-      Z = One + (X - F9)*(X - F9);
-      if (Z > One && I < NoTrials) I++;
+      Z = one + (X - F9)*(X - F9);
+      if (Z > one && I < noTrials) I++;
       else  {
-        if (X > One) {
+        if (X > one) {
           if (N == 0)
              printf("Accuracy seems adequate.\n");
           break;
           }
         else {
-          X = One + U2;
+          X = one + U2;
           Y = U2 + U2;
           Y += X;
           I = 1;
@@ -1515,28 +1496,28 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   /*=============================================*/
   printf("Testing powers Z^Q at four nearly extreme values.\n");
   N = 0;
-  Z = A1;
-  Q = FLOOR(Half - LOG(C) / LOG(A1));
+  Z = a1;
+  Q = std::floor(half - std::log(C) / std::log(a1));
   Break = False;
   do  {
     X = CInvrse;
-    Y = POW(Z, Q);
-    IsYeqX();
+    Y = pow(Z, Q);
+    isYEqX();
     Q = - Q;
     X = C;
-    Y = POW(Z, Q);
-    IsYeqX();
-    if (Z < One) Break = True;
-    else Z = AInvrse;
+    Y = pow(Z, Q);
+    isYEqX();
+    if (Z < one) Break = True;
+    else Z = aInverse;
     } while ( ! (Break));
-  PrintIfNPositive();
+  printIfNPositive();
   if (N == 0) printf(" ... no discrepancies found.\n");
   printf("\n");
 
   /*=============================================*/
   Milestone = 160;
   /*=============================================*/
-  Pause();
+  pause();
   printf("Searching for Overflow threshold:\n");
   printf("This may generate an error.\n");
   Y = - CInvrse;
@@ -1559,29 +1540,29 @@ overflow:
   if (V - Y == V + V0) printf("Seems O.K.\n");
   else {
     printf("finds a ");
-    BadCond(Flaw, "-(-Y) differs from Y.\n");
+    badCond(Flaw, "-(-Y) differs from Y.\n");
     }
   if (Z != Y) {
-    BadCond(Serious, "");
+    badCond(Serious, "");
     printf("overflow past %.17e\n\tshrinks to %.17e .\n", Y, Z);
     }
   if (I) {
     Y = V * (HInvrse * U2 - HInvrse);
-    Z = Y + ((One - HInvrse) * U2) * V;
+    Z = Y + ((one - HInvrse) * U2) * V;
     if (Z < V0) Y = Z;
     if (Y < V0) V = Y;
     if (V0 - V < V0) V = V0;
     }
   else {
     V = Y * (HInvrse * U2 - HInvrse);
-    V = V + ((One - HInvrse) * U2) * Y;
+    V = V + ((one - HInvrse) * U2) * Y;
     }
   printf("Overflow threshold is V  = %.17e .\n", V);
   if (I) printf("Overflow saturates at V0 = %.17e .\n", V0);
   else printf("There is no saturation value because the system traps on overflow.\n");
-  V9 = V * One;
+  V9 = V * one;
   printf("No Overflow should be signaled for V * 1 = %.17e\n", V9);
-  V9 = V / One;
+  V9 = V / one;
   printf("                           nor for V / 1 = %.17e .\n", V9);
   printf("Any overflow signal separating this * from the one\n");
   printf("above is a DEFECT.\n");
@@ -1589,7 +1570,7 @@ overflow:
   Milestone = 170;
   /*=============================================*/
   if (!(-V < V && -V0 < V0 && -UfThold < V && UfThold < V)) {
-    BadCond(Failure, "Comparisons involving ");
+    badCond(Failure, "Comparisons involving ");
     printf("+-%g, +-%g\nand +-%g are confused by Overflow.",
       V, V0, UfThold);
     }
@@ -1597,19 +1578,19 @@ overflow:
   Milestone = 175;
   /*=============================================*/
   printf("\n");
-  for(Indx = 1; Indx <= 3; ++Indx) {
-    switch (Indx)  {
+  for(indx = 1; indx <= 3; ++indx) {
+    switch (indx)  {
       case 1: Z = UfThold; break;
       case 2: Z = E0; break;
       case 3: Z = PseudoZero; break;
       }
-    if (Z != Zero) {
-      V9 = SQRT(Z);
+    if (Z != zero) {
+      V9 = std::sqrt(Z);
       Y = V9 * V9;
-      if (Y / (One - Radix * E9) < Z
-         || Y > (One + Radix * E9) * Z) { /* dgh: + E9 --> * E9 */
-        if (V9 > U1) BadCond(Serious, "");
-        else BadCond(Defect, "");
+      if (Y / (one - radix * E9) < Z
+         || Y > (one + radix * E9) * Z) { /* dgh: + E9 --> * E9 */
+        if (V9 > U1) badCond(Serious, "");
+        else badCond(Defect, "");
         printf("Comparison alleges that what prints as Z = %.17e\n", Z);
         printf(" is too far from sqrt(Z) ^ 2 = %.17e .\n", Y);
         }
@@ -1618,16 +1599,16 @@ overflow:
   /*=============================================*/
   Milestone = 180;
   /*=============================================*/
-  for(Indx = 1; Indx <= 2; ++Indx) {
-    if (Indx == 1) Z = V;
+  for(indx = 1; indx <= 2; ++indx) {
+    if (indx == 1) Z = V;
     else Z = V0;
-    V9 = SQRT(Z);
-    X = (One - Radix * E9) * V9;
+    V9 = std::sqrt(Z);
+    X = (one - radix * E9) * V9;
     V9 = V9 * X;
-    if (((V9 < (One - Two * Radix * E9) * Z) || (V9 > Z))) {
+    if (((V9 < (one - two * radix * E9) * Z) || (V9 > Z))) {
       Y = V9;
-      if (X < W) BadCond(Serious, "");
-      else BadCond(Defect, "");
+      if (X < W) badCond(Serious, "");
+      else badCond(Defect, "");
       printf("Comparison alleges that Z = %17e\n", Z);
       printf(" is too far from sqrt(Z) ^ 2 (%.17e) .\n", Y);
       }
@@ -1635,12 +1616,12 @@ overflow:
   /*=============================================*/
   Milestone = 190;
   /*=============================================*/
-  Pause();
+  pause();
   X = UfThold * V;
-  Y = Radix * Radix;
-  if (X*Y < One || X > Y) {
-    if (X * Y < U1 || X > Y/U1) BadCond(Defect, "Badly");
-    else BadCond(Flaw, "");
+  Y = radix * radix;
+  if (X*Y < one || X > Y) {
+    if (X * Y < U1 || X > Y/U1) badCond(Defect, "Badly");
+    else badCond(Flaw, "");
 
     printf(" unbalanced range; UfThold * V = %.17e\n\t%s\n",
       X, "is too far from 1.\n");
@@ -1648,23 +1629,23 @@ overflow:
   /*=============================================*/
   Milestone = 200;
   /*=============================================*/
-  for (Indx = 1; Indx <= 5; ++Indx)  {
+  for (indx = 1; indx <= 5; ++indx)  {
     X = F9;
-    switch (Indx)  {
-      case 2: X = One + U2; break;
+    switch (indx)  {
+      case 2: X = one + U2; break;
       case 3: X = V; break;
       case 4: X = UfThold; break;
-      case 5: X = Radix;
+      case 5: X = radix;
       }
     Y = X;
     sigsave = sigfpe;
     if (setjmp(ovfl_buf))
       printf("  X / X  traps when X = %g\n", X);
     else {
-      V9 = (Y / X - Half) - Half;
-      if (V9 == Zero) continue;
-      if (V9 == - U1 && Indx < 5) BadCond(Flaw, "");
-      else BadCond(Serious, "");
+      V9 = (Y / X - half) - half;
+      if (V9 == zero) continue;
+      if (V9 == - U1 && indx < 5) badCond(Flaw, "");
+      else badCond(Serious, "");
       printf("  X / X differs from 1 when X = %.17e\n", X);
       printf("  instead, X / X - 1/2 - 1/2 = %.17e .\n", V9);
       }
@@ -1673,21 +1654,21 @@ overflow:
   /*=============================================*/
   Milestone = 210;
   /*=============================================*/
-  MyZero = Zero;
+  MyZero = zero;
   printf("\n");
-  printf("What message and/or values does Division by Zero produce?\n") ;
+  printf("What message and/or values does Division by zero produce?\n") ;
   sigsave = sigfpe;
   printf("    Trying to compute 1 / 0 produces ...");
-  if (!setjmp(ovfl_buf)) printf("  %.7e .\n", One / MyZero);
+  if (!setjmp(ovfl_buf)) printf("  %.7e .\n", one / MyZero);
   sigsave = 0;
   sigsave = sigfpe;
   printf("\n    Trying to compute 0 / 0 produces ...");
-  if (!setjmp(ovfl_buf)) printf("  %.7e .\n", Zero / MyZero);
+  if (!setjmp(ovfl_buf)) printf("  %.7e .\n", zero / MyZero);
   sigsave = 0;
   /*=============================================*/
   Milestone = 220;
   /*=============================================*/
-  Pause();
+  pause();
   printf("\n");
   {
     static const char *msg[] = {
@@ -1728,14 +1709,14 @@ overflow:
       && (RAddSub == Rounded) && (RSqrt == Rounded)))
       printf("The arithmetic diagnosed seems Satisfactory.\n");
     else {
-      if (StickyBit >= One &&
-        (Radix - Two) * (Radix - Nine - One) == Zero) {
+      if (StickyBit >= one &&
+        (radix - two) * (radix - nine - one) == zero) {
         printf("Rounding appears to conform to ");
         printf("the proposed IEEE standard P");
-        if ((Radix == Two) &&
-           ((Precision - Four * Three * Two) *
-            ( Precision - TwentySeven -
-             TwentySeven + One) == Zero))
+        if ((radix == two) &&
+           ((Precision - four * three * two) *
+            ( Precision - twentySeven -
+             twentySeven + one) == zero))
           printf("754");
         else printf("854");
         if (IEEE) printf(".\n");
@@ -1751,19 +1732,19 @@ overflow:
     printf("\nA total of %d floating point exceptions were registered.\n",
       fpecount);
   printf("END OF TEST.\n");
-  return { Milestone, Zero };
+  return { Milestone, fpecount + ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect] + ErrCnt[Flaw] };
   }
 
-/* Sign */
+/* sign */
 
 template <typename F>
-F Paranoia<F>::Sign (F X)
+F Paranoia<F>::sign (F X)
 { return X >= 0. ? 1.0 : -1.0; }
 
-/* Pause */
+/* pause */
 
 template <typename F>
-void Paranoia<F>::Pause(void)
+void Paranoia<F>::pause(void)
 {
   printf("\nDiagnosis resumes after milestone Number %d", Milestone);
   printf("          Page: %d\n\n", PageNo);
@@ -1771,14 +1752,14 @@ void Paranoia<F>::Pause(void)
   ++PageNo;
   }
 
- /* TstCond */
+ /* tstCond */
 
 template <typename F>
-void Paranoia<F>::TstCond (int K, int Valid, const char *T)
-{ if (! Valid) { BadCond(K,T); printf(".\n"); } }
+void Paranoia<F>::tstCond (int K, int Valid, const char *T)
+{ if (! Valid) { badCond(K,T); printf(".\n"); } }
 
 template <typename F>
-void Paranoia<F>::BadCond(int K, const char *T)
+void Paranoia<F>::badCond(int K, const char *T)
 {
   static const char *msg[] = { "FAILURE", "SERIOUS DEFECT", "DEFECT", "FLAW" };
 
@@ -1786,15 +1767,15 @@ void Paranoia<F>::BadCond(int K, const char *T)
   printf("%s:  %s", msg[K], T);
   }
 
-/* Random */
-/*  Random computes
+/* random */
+/*  random computes
      X = (Random1 + Random9)^5
-     Random1 = X - FLOOR(X) + 0.000005 * X;
+     Random1 = X - std::floor(X) + 0.000005 * X;
    and returns the new value of Random1
 */
 
 template <typename F>
-F Paranoia<F>::Random(void)
+F Paranoia<F>::random(void)
 {
   F X, Y;
 
@@ -1802,75 +1783,75 @@ F Paranoia<F>::Random(void)
   Y = X * X;
   Y = Y * Y;
   X = X * Y;
-  Y = X - FLOOR(X);
+  Y = X - std::floor(X);
   Random1 = Y + X * 0.000005;
   return(Random1);
   }
 
-/* SqXMinX */
+/* sqXMinX */
 
 template <typename F>
-void Paranoia<F>::SqXMinX (int ErrKind)
+void Paranoia<F>::sqXMinX (int ErrKind)
 {
-  FLOAT XA, XB;
+  F XA, XB;
 
-  XB = X * BInvrse;
+  XB = X * bInverse;
   XA = X - XB;
-  SqEr = ((SQRT(X * X) - XB) - XA) / OneUlp;
-  if (SqEr != Zero) {
+  SqEr = ((std::sqrt(X * X) - XB) - XA) / OneUlp;
+  if (SqEr != zero) {
     if (SqEr < MinSqEr) MinSqEr = SqEr;
     if (SqEr > MaxSqEr) MaxSqEr = SqEr;
     J = J + 1.0;
-    BadCond(ErrKind, "\n");
+    badCond(ErrKind, "\n");
     printf("sqrt( %.17e) - %.17e  = %.17e\n", X * X, X, OneUlp * SqEr);
     printf("\tinstead of correct value 0 .\n");
     }
   }
 
-/* NewD */
+/* newD */
 
 template <typename F>
-void Paranoia<F>::NewD(void)
+void Paranoia<F>::newD(void)
 {
   X = Z1 * Q;
-  X = FLOOR(Half - X / Radix) * Radix + X;
-  Q = (Q - X * Z) / Radix + X * X * (D / Radix);
-  Z = Z - Two * X * D;
-  if (Z <= Zero) {
+  X = std::floor(half - X / radix) * radix + X;
+  Q = (Q - X * Z) / radix + X * X * (D / radix);
+  Z = Z - two * X * D;
+  if (Z <= zero) {
     Z = - Z;
     Z1 = - Z1;
     }
-  D = Radix * D;
+  D = radix * D;
   }
 
-/* SR3750 */
+/* sr3750 */
 
 template <typename F>
-void Paranoia<F>::SR3750(void)
+void Paranoia<F>::sr3750(void)
 {
-  if (! ((X - Radix < Z2 - Radix) || (X - Z2 > W - Z2))) {
+  if (! ((X - radix < Z2 - radix) || (X - Z2 > W - Z2))) {
     I = I + 1;
-    X2 = SQRT(X * D);
+    X2 = std::sqrt(X * D);
     Y2 = (X2 - Z2) - (Y - Z2);
-    X2 = X8 / (Y - Half);
-    X2 = X2 - Half * X2 * X2;
-    SqEr = (Y2 + Half) + (Half - X2);
+    X2 = X8 / (Y - half);
+    X2 = X2 - half * X2 * X2;
+    SqEr = (Y2 + half) + (half - X2);
     if (SqEr < MinSqEr) MinSqEr = SqEr;
     SqEr = Y2 - X2;
     if (SqEr > MaxSqEr) MaxSqEr = SqEr;
     }
   }
 
-/* IsYeqX */
+/* isYEqX */
 
 template <typename F>
-void Paranoia<F>::IsYeqX(void)
+void Paranoia<F>::isYEqX(void)
 {
   if (Y != X) {
     if (N <= 0) {
-      if (Z == Zero && Q <= Zero)
+      if (Z == zero && Q <= zero)
         printf("WARNING:  computing\n");
-      else BadCond(Defect, "computing\n");
+      else badCond(Defect, "computing\n");
       printf("\t(%.17e) ^ (%.17e)\n", Z, Q);
       printf("\tyielded %.17e;\n", Y);
       printf("\twhich compared unequal to correct %.17e ;\n",
@@ -1881,35 +1862,35 @@ void Paranoia<F>::IsYeqX(void)
     }
   }
 
-/* SR3980 */
+/* sr3980 */
 
 template <typename F>
-void Paranoia<F>::SR3980(void)
+void Paranoia<F>::sr3980(void)
 {
   do {
-    Q = (FLOAT) I;
-    Y = POW(Z, Q);
-    IsYeqX();
+    Q = static_cast<F>(I);
+    Y = pow(Z, Q);
+    isYEqX();
     if (++I > M) break;
     X = Z * X;
     } while ( X < W );
   }
 
-/* PrintIfNPositive */
+/* printIfNPositive */
 
 template <typename F>
-void Paranoia<F>::PrintIfNPositive(void)
+void Paranoia<F>::printIfNPositive(void)
 {
   if (N > 0) printf("Similar discrepancies have occurred %d times.\n", N);
   }
 
-/* TstPtUf */
+/* tstPtUf */
 
 template <typename F>
-void Paranoia<F>::TstPtUf(void)
+void Paranoia<F>::tstPtUf(void)
 {
   N = 0;
-  if (Z != Zero) {
+  if (Z != zero) {
     printf("Since comparison denies Z = 0, evaluating ");
     printf("(Z + Z) / Z should be safe.\n");
     sigsave = sigfpe;
@@ -1917,12 +1898,12 @@ void Paranoia<F>::TstPtUf(void)
     Q9 = (Z + Z) / Z;
     printf("What the machine gets for (Z + Z) / Z is  %.17e .\n",
       Q9);
-    if (FABS(Q9 - Two) < Radix * U2) {
+    if (std::abs(Q9 - two) < radix * U2) {
       printf("This is O.K., provided Over/Underflow");
       printf(" has NOT just been signaled.\n");
       }
     else {
-      if ((Q9 < One) || (Q9 > Two)) {
+      if ((Q9 < one) || (Q9 > two)) {
 very_serious:
         N = 1;
         ErrCnt [Serious] = ErrCnt [Serious] + 1;
@@ -1935,17 +1916,17 @@ very_serious:
         }
       }
     sigsave = 0;
-    V9 = Z * One;
+    V9 = Z * one;
     Random1 = V9;
-    V9 = One * Z;
+    V9 = one * Z;
     Random2 = V9;
-    V9 = Z / One;
+    V9 = Z / one;
     if ((Z == Random1) && (Z == Random2) && (Z == V9)) {
-      if (N > 0) Pause();
+      if (N > 0) pause();
       }
     else {
       N = 1;
-      BadCond(Defect, "What prints as Z = ");
+      badCond(Defect, "What prints as Z = ");
       printf("%.17e\n\tcompares different from  ", Z);
       if (Z != Random1) printf("Z * 1 = %.17e ", Random1);
       if (! ((Z == Random2)
@@ -1954,12 +1935,12 @@ very_serious:
       if (! (Z == V9)) printf("Z / 1 = %.17e\n", V9);
       if (Random2 != Random1) {
         ErrCnt [Defect] = ErrCnt [Defect] + 1;
-        BadCond(Defect, "Multiplication does not commute!\n");
+        badCond(Defect, "Multiplication does not commute!\n");
         printf("\tComparison alleges that 1 * Z = %.17e\n",
           Random2);
         printf("\tdiffers from Z * 1 = %.17e\n", Random1);
         }
-      Pause();
+      pause();
       }
     }
   }
@@ -1978,16 +1959,16 @@ template <typename F>
 void Paranoia<F>::msglist(const char **s)
 { while(*s) printf("%s\n", *s++); }
 
-/* Instructions */
+/* instructions */
 
 template <typename F>
-void Paranoia<F>::Instructions(void)
+void Paranoia<F>::instructions(void)
 {
   static const char *instr[] = {
   "Lest this program stop prematurely, i.e. before displaying\n",
   "    `END OF TEST',\n",
   "try to persuade the computer NOT to terminate execution when an",
-  "error like Over/Underflow or Division by Zero occurs, but rather",
+  "error like Over/Underflow or Division by zero occurs, but rather",
   "to persevere with a surrogate value after, perhaps, displaying some",
   "warning.  If persuasion avails naught, don't despair but run this",
   "program anyway to see how many milestones it passes, and then",
@@ -1998,10 +1979,10 @@ void Paranoia<F>::Instructions(void)
   msglist(instr);
   }
 
-/* Heading */
+/* heading */
 
 template<typename F>
-void Paranoia<F>::Heading(void)
+void Paranoia<F>::heading(void)
 {
   static const char *head[] = {
   "Users are invited to help debug and augment this program so it will",
@@ -2027,18 +2008,18 @@ void Paranoia<F>::Heading(void)
   msglist(head);
   }
 
-/* Characteristics */
+/* characteristics */
 
 template <typename F>
-void Paranoia<F>::Characteristics(void)
+void Paranoia<F>::characteristics(void)
 {
   static const char *chars[] = {
    "Running this program should reveal these characteristics:",
-  "     Radix = 1, 2, 4, 8, 10, 16, 100, 256 ...",
+  "     radix = 1, 2, 4, 8, 10, 16, 100, 256 ...",
   "     Precision = number of significant digits carried.",
-  "     U2 = Radix/Radix^Precision = One Ulp",
+  "     U2 = radix/radix^Precision = one Ulp",
   "\t(OneUlpnit in the Last Place) of 1.000xxx .",
-  "     U1 = 1/Radix^Precision = One Ulp of numbers a little less than 1.0 .",
+  "     U1 = 1/radix^Precision = one Ulp of numbers a little less than 1.0 .",
   "     Adequacy of guard digits for Mult., Div. and Subt.",
   "     Whether arithmetic is chopped, correctly rounded, or something else",
   "\tfor Mult., Div., Add/Subt. and Sqrt.",
@@ -2058,8 +2039,8 @@ void Paranoia<F>::Characteristics(void)
   }
 
 template <typename F>
-void Paranoia<F>::History(void)
-{ /* History */
+void Paranoia<F>::history(void)
+{ /* history */
  /* Converted from Brian Wichmann's Pascal version to C by Thos Sumner,
   with further massaging by David M. Gay. */
 
@@ -2073,7 +2054,7 @@ void Paranoia<F>::History(void)
   "program called `MACHAR', which can be found at the end of the",
   "book  `Software Manual for the Elementary Functions' (1980) by",
   "W. J. Cody and W. Waite. Although both programs try to discover",
-  "the Radix, Precision and range (over/underflow thresholds)",
+  "the radix, Precision and range (over/underflow thresholds)",
   "of the arithmetic, this program tries to cope with a wider variety",
   "of pathologies, and to say how well the arithmetic is implemented.",
   "\nThe program is based upon a conventional radix representation for",
@@ -2090,7 +2071,7 @@ template <typename F>
 F Paranoia<F>::pow(F x, F y) /* return x ^ y (exponentiation) */
 {
   F xy, ye;
-  long long i;
+  long i;
   int ex, ey = 0, flip = 0;
 
   if (!y) return 1.0;
@@ -2103,7 +2084,7 @@ F Paranoia<F>::pow(F x, F y) /* return x ^ y (exponentiation) */
   else xy = 1.0;
   /* next several lines assume >= 32 bit integers */
   x = std::frexp(x, &ex);
-  if ((i = static_cast<long long>(ye), i)) for(;;) {
+  if ((i = static_cast<long>(ye), i)) for(;;) {
     if (i & 1) { xy *= x; ey += ex; }
     if (!(i >>= 1)) break;
     x *= x;
