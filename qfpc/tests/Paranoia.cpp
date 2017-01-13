@@ -164,6 +164,11 @@ lines
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
 
+#include <chrono>
+#include <exception>
+#include <string>
+#include <thread>
+
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>
@@ -189,6 +194,21 @@ extern "C" typedef void (*SigType)(int);
 typedef int Guard, Rounding, Class;
 typedef char Message;
 
+using QFPHelpers::info_stream;
+using std::endl;
+
+/// A custom exception to throw from Paranoia<F>::checkTimeout()
+class TimeoutError : public std::exception {
+public:
+  TimeoutError(std::string msg) : message("Timeout Error: " + msg) {}
+  virtual ~TimeoutError() {}
+  virtual const char* what() const noexcept {
+    return message.c_str();
+  }
+private:
+  const std::string message;
+};
+
 template <typename F>
 class Paranoia : public QFPTest::TestBase<F> {
 public:
@@ -201,6 +221,8 @@ public:
 protected:
   virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<F>& ti);
 
+  void   setTimeout(long millis);  // starts the timer for checkTimeout()
+  void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
   void   badCond(int K_, const char *T_);
   void   characteristics(void);
   void   heading(void);
@@ -224,6 +246,8 @@ protected:
 protected:
   using QFPTest::TestBase<F>::id;
 
+  std::chrono::steady_clock::time_point startTime;
+  std::chrono::steady_clock::time_point timeoutTime;
 
   F radix, bInverse, radixD2, bMinusU2;
 
@@ -305,6 +329,8 @@ void sigfpe(int i)
 template <typename F>
 QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<F>& ti)
 {
+  int timeoutMillis = 1000;
+
   /* First two assignments use integer right-hand sides. */
   zero = 0;
   one = 1;
@@ -325,1415 +351,1496 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   ErrCnt[Defect] = 0;
   ErrCnt[Flaw] = 0;
   PageNo = 1;
-  /*=============================================*/
-  Milestone = 0;
-  /*=============================================*/
-  (void)signal(SIGFPE, sigfpe);
-  instructions();
-  pause();
-  heading();
-  pause();
-  characteristics();
-  pause();
-  history();
-  pause();
-  /*=============================================*/
-  Milestone = 7;
-  /*=============================================*/
-  printf("Program is now RUNNING tests on small integers:\n");
+  try {
+    /*=============================================*/
+    Milestone = 0;
+    /*=============================================*/
+    (void)signal(SIGFPE, sigfpe);
+    instructions();
+    pause();
+    heading();
+    pause();
+    characteristics();
+    pause();
+    history();
+    pause();
+    /*=============================================*/
+    Milestone = 7;
+    /*=============================================*/
+    printf("Program is now RUNNING tests on small integers:\n");
 
-  tstCond (Failure, (zero + zero == zero) && (one - one == zero)
-       && (one > zero) && (one + one == two),
-      "0+0 != 0, 1-1 != 0, 1 <= 0, or 1+1 != 2");
-  Z = - zero;
-  if (Z != 0.0) {
-    ErrCnt[Failure] = ErrCnt[Failure] + 1;
-    printf("Comparison alleges that -0.0 is Non-zero!\n");
-    U1 = 0.001;
-    radix = 1;
-    tstPtUf();
-    }
-  tstCond (Failure, (three == two + one) && (four == three + one)
-       && (four + two * (- two) == zero)
-       && (four - three - one == zero),
-       "3 != 2+1, 4 != 3+1, 4+2*(-2) != 0, or 4-3-1 != 0");
-  tstCond (Failure, (minusOne == (0 - one))
-       && (minusOne + one == zero ) && (one + minusOne == zero)
-       && (minusOne + std::abs(one) == zero)
-       && (minusOne + minusOne * minusOne == zero),
-       "-1+1 != 0, (-1)+abs(1) != 0, or -1+(-1)*(-1) != 0");
-  tstCond (Failure, half + minusOne + half == zero,
-      "1/2 + (-1) + 1/2 != 0");
-  /*=============================================*/
-  Milestone = 10;
-  /*=============================================*/
-  tstCond (Failure, (nine == three * three)
-       && (twentySeven == nine * three) && (eight == four + four)
-       && (thirtyTwo == eight * four)
-       && (thirtyTwo - twentySeven - four - one == zero),
-       "9 != 3*3, 27 != 9*3, 32 != 8*4, or 32-27-4-1 != 0");
-  tstCond (Failure, (five == four + one) &&
-      (twoForty == four * five * three * four)
-       && (twoForty / three - four * four * five == zero)
-       && ( twoForty / four - five * three * four == zero)
-       && ( twoForty / five - four * three * four == zero),
-      "5 != 4+1, 240/3 != 80, 240/4 != 60, or 240/5 != 48");
-  if (ErrCnt[Failure] == 0) {
-    printf("-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n");
-    printf("\n");
-    }
-  printf("Searching for radix and Precision.\n");
-  W = one;
-  do  {
-    W = W + W;
-    Y = W + one;
-    Z = Y - W;
-    Y = Z - one;
-    } while (minusOne + std::abs(Y) < zero);
-  /*.. now W is just big enough that |((W+1)-W)-1| >= 1 ...*/
-  Precision = zero;
-  Y = one;
-  do  {
-    radix = W + Y;
-    Y = Y + Y;
-    radix = radix - W;
-    } while ( radix == zero);
-  if (radix < two) radix = one;
-  printf("radix = %f .\n", radix);
-  if (radix != 1) {
+    tstCond (Failure, (zero + zero == zero) && (one - one == zero)
+         && (one > zero) && (one + one == two),
+        "0+0 != 0, 1-1 != 0, 1 <= 0, or 1+1 != 2");
+    Z = - zero;
+    if (Z != 0.0) {
+      ErrCnt[Failure] = ErrCnt[Failure] + 1;
+      printf("Comparison alleges that -0.0 is Non-zero!\n");
+      U1 = 0.001;
+      radix = 1;
+      tstPtUf();
+      }
+    tstCond (Failure, (three == two + one) && (four == three + one)
+         && (four + two * (- two) == zero)
+         && (four - three - one == zero),
+         "3 != 2+1, 4 != 3+1, 4+2*(-2) != 0, or 4-3-1 != 0");
+    tstCond (Failure, (minusOne == (0 - one))
+         && (minusOne + one == zero ) && (one + minusOne == zero)
+         && (minusOne + std::abs(one) == zero)
+         && (minusOne + minusOne * minusOne == zero),
+         "-1+1 != 0, (-1)+abs(1) != 0, or -1+(-1)*(-1) != 0");
+    tstCond (Failure, half + minusOne + half == zero,
+        "1/2 + (-1) + 1/2 != 0");
+    /*=============================================*/
+    Milestone = 10;
+    /*=============================================*/
+    tstCond (Failure, (nine == three * three)
+         && (twentySeven == nine * three) && (eight == four + four)
+         && (thirtyTwo == eight * four)
+         && (thirtyTwo - twentySeven - four - one == zero),
+         "9 != 3*3, 27 != 9*3, 32 != 8*4, or 32-27-4-1 != 0");
+    tstCond (Failure, (five == four + one) &&
+        (twoForty == four * five * three * four)
+         && (twoForty / three - four * four * five == zero)
+         && ( twoForty / four - five * three * four == zero)
+         && ( twoForty / five - four * three * four == zero),
+        "5 != 4+1, 240/3 != 80, 240/4 != 60, or 240/5 != 48");
+    if (ErrCnt[Failure] == 0) {
+      printf("-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n");
+      printf("\n");
+      }
+    printf("Searching for radix and Precision.\n");
     W = one;
+    setTimeout(timeoutMillis); // 2 seconds
     do  {
-      Precision = Precision + one;
-      W = W * radix;
+      checkTimeout();
+      W = W + W;
       Y = W + one;
-      } while ((Y - W) == one);
-    }
-  /*... now W == radix^Precision is barely too big to satisfy (W+1)-W == 1
-                                    ...*/
-  U1 = one / W;
-  U2 = radix * U1;
-  printf("Closest relative separation found is U1 = %.7e .\n\n", U1);
-  printf("Recalculating radix and precision\n ");
-
-  /*save old values*/
-  E0 = radix;
-  E1 = U1;
-  E9 = U2;
-  E3 = Precision;
-
-  X = four / three;
-  Third = X - one;
-  F6 = half - Third;
-  X = F6 + F6;
-  X = std::abs(X - Third);
-  if (X < U2) X = U2;
-
-  /*... now X = (unknown no.) ulps of 1+...*/
-  do  {
-    U2 = X;
-    Y = half * U2 + thirtyTwo * U2 * U2;
-    Y = one + Y;
-    X = Y - one;
-    } while ( ! ((U2 <= X) || (X <= zero)));
-
-  /*... now U2 == 1 ulp of 1 + ... */
-  X = two / three;
-  F6 = X - half;
-  Third = F6 + F6;
-  X = Third - half;
-  X = std::abs(X + F6);
-  if (X < U1) X = U1;
-
-  /*... now  X == (unknown no.) ulps of 1 -... */
-  do  {
-    U1 = X;
-    Y = half * U1 + thirtyTwo * U1 * U1;
-    Y = half - Y;
-    X = half + Y;
-    Y = half - X;
-    X = half + Y;
-    } while ( ! ((U1 <= X) || (X <= zero)));
-  /*... now U1 == 1 ulp of 1 - ... */
-  if (U1 == E1) printf("confirms closest relative separation U1 .\n");
-  else printf("gets better closest relative separation U1 = %.7e .\n", U1);
-  W = one / U1;
-  F9 = (half - U1) + half;
-  radix = std::floor(0.01 + U2 / U1);
-  if (radix == E0) printf("radix confirmed.\n");
-  else printf("MYSTERY: recalculated radix = %.7e .\n", radix);
-  tstCond (Defect, radix <= eight + eight,
-       "radix is too big: roundoff problems");
-  tstCond (Flaw, (radix == two) || (radix == 10)
-       || (radix == one), "radix is not as good as 2 or 10");
-  /*=============================================*/
-  Milestone = 20;
-  /*=============================================*/
-  tstCond (Failure, F9 - half < half,
-       "(1-U1)-1/2 < 1/2 is FALSE, prog. fails?");
-  X = F9;
-  I = 1;
-  Y = X - half;
-  Z = Y - half;
-  tstCond (Failure, (X != one)
-       || (Z == zero), "Comparison is fuzzy,X=1 but X-1/2-1/2 != 0");
-  X = one + U2;
-  I = 0;
-  /*=============================================*/
-  Milestone = 25;
-  /*=============================================*/
-  /*... bMinusU2 = nextafter(radix, 0) */
-  bMinusU2 = radix - one;
-  bMinusU2 = (bMinusU2 - U2) + one;
-  /* Purify Integers */
-  if (radix != one)  {
-    X = - twoForty * std::log(U1) / std::log(radix);
-    Y = std::floor(half + X);
-    if (std::abs(X - Y) * four < one) X = Y;
-    Precision = X / twoForty;
-    Y = std::floor(half + Precision);
-    if (std::abs(Precision - Y) * twoForty < half) Precision = Y;
-    }
-  if ((Precision != std::floor(Precision)) || (radix == one)) {
-    printf("Precision cannot be characterized by an Integer number\n");
-    printf("of significant digits but, by itself, this is a minor flaw.\n");
-    }
-  if (radix == one)
-    printf("logarithmic encoding has precision characterized solely by U1.\n");
-  else printf("The number of significant digits of the radix is %f .\n",
-      Precision);
-  tstCond (Serious, U2 * nine * nine * twoForty < one,
-       "Precision worse than 5 decimal figures  ");
-  /*=============================================*/
-  Milestone = 30;
-  /*=============================================*/
-  /* Test for extra-precise subepressions */
-  X = std::abs(((four / three - one) - one / four) * three - one / four);
-  do  {
-    Z2 = X;
-    X = (one + (half * Z2 + thirtyTwo * Z2 * Z2)) - one;
-    } while ( ! ((Z2 <= X) || (X <= zero)));
-  X = Y = Z = std::abs((three / four - two / three) * three - one / four);
-  do  {
-    Z1 = Z;
-    Z = (one / two - ((one / two - (half * Z1 + thirtyTwo * Z1 * Z1))
-      + one / two)) + one / two;
-    } while ( ! ((Z1 <= Z) || (Z <= zero)));
-  do  {
+      Z = Y - W;
+      Y = Z - one;
+      } while (minusOne + std::abs(Y) < zero);
+    /*.. now W is just big enough that |((W+1)-W)-1| >= 1 ...*/
+    Precision = zero;
+    Y = one;
+    setTimeout(timeoutMillis); // 2 seconds
     do  {
-      Y1 = Y;
-      Y = (half - ((half - (half * Y1 + thirtyTwo * Y1 * Y1)) + half
-        )) + half;
-      } while ( ! ((Y1 <= Y) || (Y <= zero)));
-    X1 = X;
-    X = ((half * X1 + thirtyTwo * X1 * X1) - F9) + F9;
-    } while ( ! ((X1 <= X) || (X <= zero)));
-  if ((X1 != Y1) || (X1 != Z1)) {
-    badCond(Serious, "Disagreements among the values X1, Y1, Z1,\n");
-    printf("respectively  %.7e,  %.7e,  %.7e,\n", X1, Y1, Z1);
-    printf("are symptoms of inconsistencies introduced\n");
-    printf("by extra-precise evaluation of arithmetic subexpressions.\n");
-    notify("Possibly some part of this");
-    if ((X1 == U1) || (Y1 == U1) || (Z1 == U1))  printf(
-      "That feature is not tested further by this program.\n") ;
-    }
-  else  {
-    if ((Z1 != U1) || (Z2 != U2)) {
-      if ((Z1 >= U1) || (Z2 >= U2)) {
-        badCond(Failure, "");
-        notify("Precision");
-        printf("\tU1 = %.7e, Z1 - U1 = %.7e\n",U1,Z1-U1);
-        printf("\tU2 = %.7e, Z2 - U2 = %.7e\n",U2,Z2-U2);
-        }
-      else {
-        if ((Z1 <= zero) || (Z2 <= zero)) {
-          printf("Because of unusual radix = %f", radix);
-          printf(", or exact rational arithmetic a result\n");
-          printf("Z1 = %.7e, or Z2 = %.7e ", Z1, Z2);
-          notify("of an\nextra-precision");
-          }
-        if (Z1 != Z2 || Z1 > zero) {
-          X = Z1 / U1;
-          Y = Z2 / U2;
-          if (Y > X) X = Y;
-          Q = - std::log(X);
-          printf("Some subexpressions appear to be calculated extra\n");
-          printf("precisely with about %g extra B-digits, i.e.\n",
-            (Q / std::log(radix)));
-          printf("roughly %g extra significant decimals.\n",
-            Q / std::log(10.));
-          }
-        printf("That feature is not tested further by this program.\n");
-        }
+      checkTimeout();
+      radix = W + Y;
+      Y = Y + Y;
+      radix = radix - W;
+      } while ( radix == zero);
+    if (radix < two) radix = one;
+    printf("radix = %f .\n", radix);
+    if (radix != 1) {
+      W = one;
+      setTimeout(timeoutMillis); // 2 seconds
+      do  {
+        checkTimeout();
+        Precision = Precision + one;
+        W = W * radix;
+        Y = W + one;
+        } while ((Y - W) == one);
       }
-    }
-  pause();
-  /*=============================================*/
-  Milestone = 35;
-  /*=============================================*/
-  if (radix >= two) {
-    X = W / (radix * radix);
-    Y = X + one;
-    Z = Y - X;
-    T = Z + U2;
-    X = T - Z;
-    tstCond (Failure, X == U2,
-      "Subtraction is not normalized X=Y,X+Z != Y+Z!");
-    if (X == U2) printf(
-      "Subtraction appears to be normalized, as it should be.");
-    }
-  printf("\nChecking for guard digit in *, /, and -.\n");
-  Y = F9 * one;
-  Z = one * F9;
-  X = F9 - half;
-  Y = (Y - half) - X;
-  Z = (Z - half) - X;
-  X = one + U2;
-  T = X * radix;
-  R = radix * X;
-  X = T - radix;
-  X = X - radix * U2;
-  T = R - radix;
-  T = T - radix * U2;
-  X = X * (radix - one);
-  T = T * (radix - one);
-  if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)) GMult = Yes;
-  else {
-    GMult = No;
-    tstCond (Serious, False,
-      "* lacks a Guard Digit, so 1*X != X");
-    }
-  Z = radix * U2;
-  X = one + Z;
-  Y = std::abs((X + Z) - X * X) - U2;
-  X = one - U2;
-  Z = std::abs((X - U2) - X * X) - U1;
-  tstCond (Failure, (Y <= zero)
-       && (Z <= zero), "* gets too many final digits wrong.\n");
-  Y = one - U2;
-  X = one + U2;
-  Z = one / Y;
-  Y = Z - X;
-  X = one / three;
-  Z = three / nine;
-  X = X - Z;
-  T = nine / twentySeven;
-  Z = Z - T;
-  tstCond(Defect, X == zero && Y == zero && Z == zero,
-    "Division lacks a Guard Digit, so error can exceed 1 ulp\nor  1/3  and  3/9  and  9/27 may disagree");
-  Y = F9 / one;
-  X = F9 - half;
-  Y = (Y - half) - X;
-  X = one + U2;
-  T = X / one;
-  X = T - X;
-  if ((X == zero) && (Y == zero) && (Z == zero)) GDiv = Yes;
-  else {
-    GDiv = No;
-    tstCond (Serious, False,
-      "Division lacks a Guard Digit, so X/1 != X");
-    }
-  X = one / (one + U2);
-  Y = X - half - half;
-  tstCond (Serious, Y < zero,
-       "Computed value of 1/1.000..1 >= 1");
-  X = one - U2;
-  Y = one + radix * U2;
-  Z = X * radix;
-  T = Y * radix;
-  R = Z / radix;
-  StickyBit = T / radix;
-  X = R - X;
-  Y = StickyBit - Y;
-  tstCond (Failure, X == zero && Y == zero,
-      "* and/or / gets too many last digits wrong");
-  Y = one - U1;
-  X = one - F9;
-  Y = one - Y;
-  T = radix - U2;
-  Z = radix - bMinusU2;
-  T = radix - T;
-  if ((X == U1) && (Y == U1) && (Z == U2) && (T == U2)) GAddSub = Yes;
-  else {
-    GAddSub = No;
-    tstCond (Serious, False,
-      "- lacks Guard Digit, so cancellation is obscured");
-    }
-  if (F9 != one && F9 - one >= zero) {
-    badCond(Serious, "comparison alleges  (1-U1) < 1  although\n");
-    printf("  subtraction yields  (1-U1) - 1 = 0 , thereby vitiating\n");
-    printf("  such precautions against division by zero as\n");
-    printf("  ...  if (X == 1.0) {.....} else {.../(X-1.0)...}\n");
-    }
-  if (GMult == Yes && GDiv == Yes && GAddSub == Yes) printf(
-    "     *, /, and - appear to have guard digits, as they should.\n");
-  /*=============================================*/
-  Milestone = 40;
-  /*=============================================*/
-  pause();
-  printf("Checking rounding on multiply, divide and add/subtract.\n");
-  RMult = Other;
-  RDiv = Other;
-  RAddSub = Other;
-  radixD2 = radix / two;
-  a1 = two;
-  Done = False;
-  do  {
-    aInverse = radix;
+    /*... now W == radix^Precision is barely too big to satisfy (W+1)-W == 1
+                                      ...*/
+    U1 = one / W;
+    U2 = radix * U1;
+    printf("Closest relative separation found is U1 = %.7e .\n\n", U1);
+    printf("Recalculating radix and precision\n ");
+
+    /*save old values*/
+    E0 = radix;
+    E1 = U1;
+    E9 = U2;
+    E3 = Precision;
+
+    X = four / three;
+    Third = X - one;
+    F6 = half - Third;
+    X = F6 + F6;
+    X = std::abs(X - Third);
+    if (X < U2) X = U2;
+
+    /*... now X = (unknown no.) ulps of 1+...*/
+    setTimeout(timeoutMillis); // 2 seconds
     do  {
-      X = aInverse;
-      aInverse = aInverse / a1;
-      } while ( ! (std::floor(aInverse) != aInverse));
-    Done = (X == one) || (a1 > three);
-    if (! Done) a1 = nine + one;
-    } while ( ! (Done));
-  if (X == one) a1 = radix;
-  aInverse = one / a1;
-  X = a1;
-  Y = aInverse;
-  Done = False;
-  do  {
-    Z = X * Y - half;
-    tstCond (Failure, Z == half,
-      "X * (1/X) differs from 1");
-    Done = X == radix;
-    X = radix;
-    Y = one / X;
-    } while ( ! (Done));
-  Y2 = one + U2;
-  Y1 = one - U2;
-  X = oneAndHalf - U2;
-  Y = oneAndHalf + U2;
-  Z = (X - U2) * Y2;
-  T = Y * Y1;
-  Z = Z - X;
-  T = T - X;
-  X = X * Y2;
-  Y = (Y + U2) * Y1;
-  X = X - oneAndHalf;
-  Y = Y - oneAndHalf;
-  if ((X == zero) && (Y == zero) && (Z == zero) && (T <= zero)) {
-    X = (oneAndHalf + U2) * Y2;
-    Y = oneAndHalf - U2 - U2;
-    Z = oneAndHalf + U2 + U2;
-    T = (oneAndHalf - U2) * Y1;
-    X = X - (Z + U2);
-    StickyBit = Y * Y1;
-    S = Z * Y2;
-    T = T - Y;
-    Y = (U2 - Y) + StickyBit;
-    Z = S - (Z + U2 + U2);
-    StickyBit = (Y2 + U2) * Y1;
-    Y1 = Y2 * Y1;
-    StickyBit = StickyBit - Y2;
-    Y1 = Y1 - half;
-    if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
-      && ( StickyBit == zero) && (Y1 == half)) {
-      RMult = Rounded;
-      printf("Multiplication appears to round correctly.\n");
+      checkTimeout();
+      U2 = X;
+      Y = half * U2 + thirtyTwo * U2 * U2;
+      Y = one + Y;
+      X = Y - one;
+      } while ( ! ((U2 <= X) || (X <= zero)));
+
+    /*... now U2 == 1 ulp of 1 + ... */
+    X = two / three;
+    F6 = X - half;
+    Third = F6 + F6;
+    X = Third - half;
+    X = std::abs(X + F6);
+    if (X < U1) X = U1;
+
+    /*... now  X == (unknown no.) ulps of 1 -... */
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      U1 = X;
+      Y = half * U1 + thirtyTwo * U1 * U1;
+      Y = half - Y;
+      X = half + Y;
+      Y = half - X;
+      X = half + Y;
+      } while ( ! ((U1 <= X) || (X <= zero)));
+    /*... now U1 == 1 ulp of 1 - ... */
+    if (U1 == E1) printf("confirms closest relative separation U1 .\n");
+    else printf("gets better closest relative separation U1 = %.7e .\n", U1);
+    W = one / U1;
+    F9 = (half - U1) + half;
+    radix = std::floor(0.01 + U2 / U1);
+    if (radix == E0) printf("radix confirmed.\n");
+    else printf("MYSTERY: recalculated radix = %.7e .\n", radix);
+    tstCond (Defect, radix <= eight + eight,
+         "radix is too big: roundoff problems");
+    tstCond (Flaw, (radix == two) || (radix == 10)
+         || (radix == one), "radix is not as good as 2 or 10");
+    /*=============================================*/
+    Milestone = 20;
+    /*=============================================*/
+    tstCond (Failure, F9 - half < half,
+         "(1-U1)-1/2 < 1/2 is FALSE, prog. fails?");
+    X = F9;
+    I = 1;
+    Y = X - half;
+    Z = Y - half;
+    tstCond (Failure, (X != one)
+         || (Z == zero), "Comparison is fuzzy,X=1 but X-1/2-1/2 != 0");
+    X = one + U2;
+    I = 0;
+    /*=============================================*/
+    Milestone = 25;
+    /*=============================================*/
+    /*... bMinusU2 = nextafter(radix, 0) */
+    bMinusU2 = radix - one;
+    bMinusU2 = (bMinusU2 - U2) + one;
+    /* Purify Integers */
+    if (radix != one)  {
+      X = - twoForty * std::log(U1) / std::log(radix);
+      Y = std::floor(half + X);
+      if (std::abs(X - Y) * four < one) X = Y;
+      Precision = X / twoForty;
+      Y = std::floor(half + Precision);
+      if (std::abs(Precision - Y) * twoForty < half) Precision = Y;
       }
-    else  if ((X + U2 == zero) && (Y < zero) && (Z + U2 == zero)
-        && (T < zero) && (StickyBit + U2 == zero)
-        && (Y1 < half)) {
-        RMult = Chopped;
-        printf("Multiplication appears to chop.\n");
+    if ((Precision != std::floor(Precision)) || (radix == one)) {
+      printf("Precision cannot be characterized by an Integer number\n");
+      printf("of significant digits but, by itself, this is a minor flaw.\n");
+      }
+    if (radix == one)
+      printf("logarithmic encoding has precision characterized solely by U1.\n");
+    else printf("The number of significant digits of the radix is %f .\n",
+        Precision);
+    tstCond (Serious, U2 * nine * nine * twoForty < one,
+         "Precision worse than 5 decimal figures  ");
+    /*=============================================*/
+    Milestone = 30;
+    /*=============================================*/
+    /* Test for extra-precise subepressions */
+    X = std::abs(((four / three - one) - one / four) * three - one / four);
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      Z2 = X;
+      X = (one + (half * Z2 + thirtyTwo * Z2 * Z2)) - one;
+      } while ( ! ((Z2 <= X) || (X <= zero)));
+    X = Y = Z = std::abs((three / four - two / three) * three - one / four);
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      Z1 = Z;
+      Z = (one / two - ((one / two - (half * Z1 + thirtyTwo * Z1 * Z1))
+        + one / two)) + one / two;
+      } while ( ! ((Z1 <= Z) || (Z <= zero)));
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      do  {
+        checkTimeout();
+        Y1 = Y;
+        Y = (half - ((half - (half * Y1 + thirtyTwo * Y1 * Y1)) + half
+          )) + half;
+        } while ( ! ((Y1 <= Y) || (Y <= zero)));
+      X1 = X;
+      X = ((half * X1 + thirtyTwo * X1 * X1) - F9) + F9;
+      } while ( ! ((X1 <= X) || (X <= zero)));
+    if ((X1 != Y1) || (X1 != Z1)) {
+      badCond(Serious, "Disagreements among the values X1, Y1, Z1,\n");
+      printf("respectively  %.7e,  %.7e,  %.7e,\n", X1, Y1, Z1);
+      printf("are symptoms of inconsistencies introduced\n");
+      printf("by extra-precise evaluation of arithmetic subexpressions.\n");
+      notify("Possibly some part of this");
+      if ((X1 == U1) || (Y1 == U1) || (Z1 == U1))  printf(
+        "That feature is not tested further by this program.\n") ;
+      }
+    else  {
+      if ((Z1 != U1) || (Z2 != U2)) {
+        if ((Z1 >= U1) || (Z2 >= U2)) {
+          badCond(Failure, "");
+          notify("Precision");
+          printf("\tU1 = %.7e, Z1 - U1 = %.7e\n",U1,Z1-U1);
+          printf("\tU2 = %.7e, Z2 - U2 = %.7e\n",U2,Z2-U2);
+          }
+        else {
+          if ((Z1 <= zero) || (Z2 <= zero)) {
+            printf("Because of unusual radix = %f", radix);
+            printf(", or exact rational arithmetic a result\n");
+            printf("Z1 = %.7e, or Z2 = %.7e ", Z1, Z2);
+            notify("of an\nextra-precision");
+            }
+          if (Z1 != Z2 || Z1 > zero) {
+            X = Z1 / U1;
+            Y = Z2 / U2;
+            if (Y > X) X = Y;
+            Q = - std::log(X);
+            printf("Some subexpressions appear to be calculated extra\n");
+            printf("precisely with about %g extra B-digits, i.e.\n",
+              (Q / std::log(radix)));
+            printf("roughly %g extra significant decimals.\n",
+              Q / std::log(10.));
+            }
+          printf("That feature is not tested further by this program.\n");
+          }
         }
-      else printf("* is neither chopped nor correctly rounded.\n");
-    if ((RMult == Rounded) && (GMult == No)) notify("Multiplication");
-    }
-  else printf("* is neither chopped nor correctly rounded.\n");
-  /*=============================================*/
-  Milestone = 45;
-  /*=============================================*/
-  Y2 = one + U2;
-  Y1 = one - U2;
-  Z = oneAndHalf + U2 + U2;
-  X = Z / Y2;
-  T = oneAndHalf - U2 - U2;
-  Y = (T - U2) / Y1;
-  Z = (Z + U2) / Y2;
-  X = X - oneAndHalf;
-  Y = Y - T;
-  T = T / Y1;
-  Z = Z - (oneAndHalf + U2);
-  T = (U2 - oneAndHalf) + T;
-  if (! ((X > zero) || (Y > zero) || (Z > zero) || (T > zero))) {
-    X = oneAndHalf / Y2;
-    Y = oneAndHalf - U2;
-    Z = oneAndHalf + U2;
-    X = X - Y;
-    T = oneAndHalf / Y1;
-    Y = Y / Y1;
-    T = T - (Z + U2);
-    Y = Y - Z;
-    Z = Z / Y2;
-    Y1 = (Y2 + U2) / Y2;
-    Z = Z - oneAndHalf;
-    Y2 = Y1 - Y2;
-    Y1 = (F9 - U1) / F9;
-    if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
-      && (Y2 == zero) && (Y2 == zero)
-      && (Y1 - half == F9 - half )) {
-      RDiv = Rounded;
-      printf("Division appears to round correctly.\n");
-      if (GDiv == No) notify("Division");
       }
-    else if ((X < zero) && (Y < zero) && (Z < zero) && (T < zero)
-      && (Y2 < zero) && (Y1 - half < F9 - half)) {
-      RDiv = Chopped;
-      printf("Division appears to chop.\n");
+    pause();
+    /*=============================================*/
+    Milestone = 35;
+    /*=============================================*/
+    if (radix >= two) {
+      X = W / (radix * radix);
+      Y = X + one;
+      Z = Y - X;
+      T = Z + U2;
+      X = T - Z;
+      tstCond (Failure, X == U2,
+        "Subtraction is not normalized X=Y,X+Z != Y+Z!");
+      if (X == U2) printf(
+        "Subtraction appears to be normalized, as it should be.");
       }
-    }
-  if (RDiv == Other) printf("/ is neither chopped nor correctly rounded.\n");
-  bInverse = one / radix;
-  tstCond (Failure, (bInverse * radix - half == half),
-       "radix * ( 1 / radix ) differs from 1");
-  /*=============================================*/
-  Milestone = 50;
-  /*=============================================*/
-  tstCond (Failure, ((F9 + U1) - half == half)
-       && ((bMinusU2 + U2 ) - one == radix - one),
-       "Incomplete carry-propagation in Addition");
-  X = one - U1 * U1;
-  Y = one + U2 * (one - U2);
-  Z = F9 - half;
-  X = (X - half) - Z;
-  Y = Y - one;
-  if ((X == zero) && (Y == zero)) {
-    RAddSub = Chopped;
-    printf("Add/Subtract appears to be chopped.\n");
-    }
-  if (GAddSub == Yes) {
-    X = (half + U2) * U2;
-    Y = (half - U2) * U2;
-    X = one + X;
-    Y = one + Y;
-    X = (one + U2) - X;
+    printf("\nChecking for guard digit in *, /, and -.\n");
+    Y = F9 * one;
+    Z = one * F9;
+    X = F9 - half;
+    Y = (Y - half) - X;
+    Z = (Z - half) - X;
+    X = one + U2;
+    T = X * radix;
+    R = radix * X;
+    X = T - radix;
+    X = X - radix * U2;
+    T = R - radix;
+    T = T - radix * U2;
+    X = X * (radix - one);
+    T = T * (radix - one);
+    if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)) GMult = Yes;
+    else {
+      GMult = No;
+      tstCond (Serious, False,
+        "* lacks a Guard Digit, so 1*X != X");
+      }
+    Z = radix * U2;
+    X = one + Z;
+    Y = std::abs((X + Z) - X * X) - U2;
+    X = one - U2;
+    Z = std::abs((X - U2) - X * X) - U1;
+    tstCond (Failure, (Y <= zero)
+         && (Z <= zero), "* gets too many final digits wrong.\n");
+    Y = one - U2;
+    X = one + U2;
+    Z = one / Y;
+    Y = Z - X;
+    X = one / three;
+    Z = three / nine;
+    X = X - Z;
+    T = nine / twentySeven;
+    Z = Z - T;
+    tstCond(Defect, X == zero && Y == zero && Z == zero,
+      "Division lacks a Guard Digit, so error can exceed 1 ulp\nor  1/3  and  3/9  and  9/27 may disagree");
+    Y = F9 / one;
+    X = F9 - half;
+    Y = (Y - half) - X;
+    X = one + U2;
+    T = X / one;
+    X = T - X;
+    if ((X == zero) && (Y == zero) && (Z == zero)) GDiv = Yes;
+    else {
+      GDiv = No;
+      tstCond (Serious, False,
+        "Division lacks a Guard Digit, so X/1 != X");
+      }
+    X = one / (one + U2);
+    Y = X - half - half;
+    tstCond (Serious, Y < zero,
+         "Computed value of 1/1.000..1 >= 1");
+    X = one - U2;
+    Y = one + radix * U2;
+    Z = X * radix;
+    T = Y * radix;
+    R = Z / radix;
+    StickyBit = T / radix;
+    X = R - X;
+    Y = StickyBit - Y;
+    tstCond (Failure, X == zero && Y == zero,
+        "* and/or / gets too many last digits wrong");
+    Y = one - U1;
+    X = one - F9;
     Y = one - Y;
+    T = radix - U2;
+    Z = radix - bMinusU2;
+    T = radix - T;
+    if ((X == U1) && (Y == U1) && (Z == U2) && (T == U2)) GAddSub = Yes;
+    else {
+      GAddSub = No;
+      tstCond (Serious, False,
+        "- lacks Guard Digit, so cancellation is obscured");
+      }
+    if (F9 != one && F9 - one >= zero) {
+      badCond(Serious, "comparison alleges  (1-U1) < 1  although\n");
+      printf("  subtraction yields  (1-U1) - 1 = 0 , thereby vitiating\n");
+      printf("  such precautions against division by zero as\n");
+      printf("  ...  if (X == 1.0) {.....} else {.../(X-1.0)...}\n");
+      }
+    if (GMult == Yes && GDiv == Yes && GAddSub == Yes) printf(
+      "     *, /, and - appear to have guard digits, as they should.\n");
+    /*=============================================*/
+    Milestone = 40;
+    /*=============================================*/
+    pause();
+    printf("Checking rounding on multiply, divide and add/subtract.\n");
+    RMult = Other;
+    RDiv = Other;
+    RAddSub = Other;
+    radixD2 = radix / two;
+    a1 = two;
+    Done = False;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      aInverse = radix;
+      do  {
+        checkTimeout();
+        X = aInverse;
+        aInverse = aInverse / a1;
+        } while ( ! (std::floor(aInverse) != aInverse));
+      Done = (X == one) || (a1 > three);
+      if (! Done) a1 = nine + one;
+      } while ( ! (Done));
+    if (X == one) a1 = radix;
+    aInverse = one / a1;
+    X = a1;
+    Y = aInverse;
+    Done = False;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      Z = X * Y - half;
+      tstCond (Failure, Z == half,
+        "X * (1/X) differs from 1");
+      Done = X == radix;
+      X = radix;
+      Y = one / X;
+      } while ( ! (Done));
+    Y2 = one + U2;
+    Y1 = one - U2;
+    X = oneAndHalf - U2;
+    Y = oneAndHalf + U2;
+    Z = (X - U2) * Y2;
+    T = Y * Y1;
+    Z = Z - X;
+    T = T - X;
+    X = X * Y2;
+    Y = (Y + U2) * Y1;
+    X = X - oneAndHalf;
+    Y = Y - oneAndHalf;
+    if ((X == zero) && (Y == zero) && (Z == zero) && (T <= zero)) {
+      X = (oneAndHalf + U2) * Y2;
+      Y = oneAndHalf - U2 - U2;
+      Z = oneAndHalf + U2 + U2;
+      T = (oneAndHalf - U2) * Y1;
+      X = X - (Z + U2);
+      StickyBit = Y * Y1;
+      S = Z * Y2;
+      T = T - Y;
+      Y = (U2 - Y) + StickyBit;
+      Z = S - (Z + U2 + U2);
+      StickyBit = (Y2 + U2) * Y1;
+      Y1 = Y2 * Y1;
+      StickyBit = StickyBit - Y2;
+      Y1 = Y1 - half;
+      if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
+        && ( StickyBit == zero) && (Y1 == half)) {
+        RMult = Rounded;
+        printf("Multiplication appears to round correctly.\n");
+        }
+      else  if ((X + U2 == zero) && (Y < zero) && (Z + U2 == zero)
+          && (T < zero) && (StickyBit + U2 == zero)
+          && (Y1 < half)) {
+          RMult = Chopped;
+          printf("Multiplication appears to chop.\n");
+          }
+        else printf("* is neither chopped nor correctly rounded.\n");
+      if ((RMult == Rounded) && (GMult == No)) notify("Multiplication");
+      }
+    else printf("* is neither chopped nor correctly rounded.\n");
+    /*=============================================*/
+    Milestone = 45;
+    /*=============================================*/
+    Y2 = one + U2;
+    Y1 = one - U2;
+    Z = oneAndHalf + U2 + U2;
+    X = Z / Y2;
+    T = oneAndHalf - U2 - U2;
+    Y = (T - U2) / Y1;
+    Z = (Z + U2) / Y2;
+    X = X - oneAndHalf;
+    Y = Y - T;
+    T = T / Y1;
+    Z = Z - (oneAndHalf + U2);
+    T = (U2 - oneAndHalf) + T;
+    if (! ((X > zero) || (Y > zero) || (Z > zero) || (T > zero))) {
+      X = oneAndHalf / Y2;
+      Y = oneAndHalf - U2;
+      Z = oneAndHalf + U2;
+      X = X - Y;
+      T = oneAndHalf / Y1;
+      Y = Y / Y1;
+      T = T - (Z + U2);
+      Y = Y - Z;
+      Z = Z / Y2;
+      Y1 = (Y2 + U2) / Y2;
+      Z = Z - oneAndHalf;
+      Y2 = Y1 - Y2;
+      Y1 = (F9 - U1) / F9;
+      if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
+        && (Y2 == zero) && (Y2 == zero)
+        && (Y1 - half == F9 - half )) {
+        RDiv = Rounded;
+        printf("Division appears to round correctly.\n");
+        if (GDiv == No) notify("Division");
+        }
+      else if ((X < zero) && (Y < zero) && (Z < zero) && (T < zero)
+        && (Y2 < zero) && (Y1 - half < F9 - half)) {
+        RDiv = Chopped;
+        printf("Division appears to chop.\n");
+        }
+      }
+    if (RDiv == Other) printf("/ is neither chopped nor correctly rounded.\n");
+    bInverse = one / radix;
+    tstCond (Failure, (bInverse * radix - half == half),
+         "radix * ( 1 / radix ) differs from 1");
+    /*=============================================*/
+    Milestone = 50;
+    /*=============================================*/
+    tstCond (Failure, ((F9 + U1) - half == half)
+         && ((bMinusU2 + U2 ) - one == radix - one),
+         "Incomplete carry-propagation in Addition");
+    X = one - U1 * U1;
+    Y = one + U2 * (one - U2);
+    Z = F9 - half;
+    X = (X - half) - Z;
+    Y = Y - one;
     if ((X == zero) && (Y == zero)) {
-      X = (half + U2) * U1;
-      Y = (half - U2) * U1;
-      X = one - X;
-      Y = one - Y;
-      X = F9 - X;
+      RAddSub = Chopped;
+      printf("Add/Subtract appears to be chopped.\n");
+      }
+    if (GAddSub == Yes) {
+      X = (half + U2) * U2;
+      Y = (half - U2) * U2;
+      X = one + X;
+      Y = one + Y;
+      X = (one + U2) - X;
       Y = one - Y;
       if ((X == zero) && (Y == zero)) {
-        RAddSub = Rounded;
-        printf("Addition/Subtraction appears to round correctly.\n");
-        if (GAddSub == No) notify("Add/Subtract");
+        X = (half + U2) * U1;
+        Y = (half - U2) * U1;
+        X = one - X;
+        Y = one - Y;
+        X = F9 - X;
+        Y = one - Y;
+        if ((X == zero) && (Y == zero)) {
+          RAddSub = Rounded;
+          printf("Addition/Subtraction appears to round correctly.\n");
+          if (GAddSub == No) notify("Add/Subtract");
+          }
+        else printf("Addition/Subtraction neither rounds nor chops.\n");
         }
       else printf("Addition/Subtraction neither rounds nor chops.\n");
       }
     else printf("Addition/Subtraction neither rounds nor chops.\n");
-    }
-  else printf("Addition/Subtraction neither rounds nor chops.\n");
-  S = one;
-  X = one + half * (one + half);
-  Y = (one + U2) * half;
-  Z = X - Y;
-  T = Y - X;
-  StickyBit = Z + T;
-  if (StickyBit != zero) {
-    S = zero;
-    badCond(Flaw, "(X - Y) + (Y - X) is non zero!\n");
-    }
-  StickyBit = zero;
-  if ((GMult == Yes) && (GDiv == Yes) && (GAddSub == Yes)
-    && (RMult == Rounded) && (RDiv == Rounded)
-    && (RAddSub == Rounded) && (std::floor(radixD2) == radixD2)) {
-    printf("Checking for sticky bit.\n");
-    X = (half + U1) * U2;
-    Y = half * U2;
-    Z = one + Y;
-    T = one + X;
-    if ((Z - one <= zero) && (T - one >= U2)) {
-      Z = T + Y;
-      Y = Z - X;
-      if ((Z - T >= U2) && (Y - T == zero)) {
-        X = (half + U1) * U1;
-        Y = half * U1;
-        Z = one - Y;
-        T = one - X;
-        if ((Z - one == zero) && (T - F9 == zero)) {
-          Z = (half - U1) * U1;
-          T = F9 - Z;
-          Q = F9 - Y;
-          if ((T - F9 == zero) && (F9 - U1 - Q == zero)) {
-            Z = (one + U2) * oneAndHalf;
-            T = (oneAndHalf + U2) - Z + U2;
-            X = one + half / radix;
-            Y = one + radix * U2;
-            Z = X * Y;
-            if (T == zero && X + radix * U2 - Z == zero) {
-              if (radix != two) {
-                X = two + U2;
-                Y = X / two;
-                if ((Y - one == zero)) StickyBit = S;
+    S = one;
+    X = one + half * (one + half);
+    Y = (one + U2) * half;
+    Z = X - Y;
+    T = Y - X;
+    StickyBit = Z + T;
+    if (StickyBit != zero) {
+      S = zero;
+      badCond(Flaw, "(X - Y) + (Y - X) is non zero!\n");
+      }
+    StickyBit = zero;
+    if ((GMult == Yes) && (GDiv == Yes) && (GAddSub == Yes)
+      && (RMult == Rounded) && (RDiv == Rounded)
+      && (RAddSub == Rounded) && (std::floor(radixD2) == radixD2)) {
+      printf("Checking for sticky bit.\n");
+      X = (half + U1) * U2;
+      Y = half * U2;
+      Z = one + Y;
+      T = one + X;
+      if ((Z - one <= zero) && (T - one >= U2)) {
+        Z = T + Y;
+        Y = Z - X;
+        if ((Z - T >= U2) && (Y - T == zero)) {
+          X = (half + U1) * U1;
+          Y = half * U1;
+          Z = one - Y;
+          T = one - X;
+          if ((Z - one == zero) && (T - F9 == zero)) {
+            Z = (half - U1) * U1;
+            T = F9 - Z;
+            Q = F9 - Y;
+            if ((T - F9 == zero) && (F9 - U1 - Q == zero)) {
+              Z = (one + U2) * oneAndHalf;
+              T = (oneAndHalf + U2) - Z + U2;
+              X = one + half / radix;
+              Y = one + radix * U2;
+              Z = X * Y;
+              if (T == zero && X + radix * U2 - Z == zero) {
+                if (radix != two) {
+                  X = two + U2;
+                  Y = X / two;
+                  if ((Y - one == zero)) StickyBit = S;
+                  }
+                else StickyBit = S;
                 }
-              else StickyBit = S;
               }
             }
           }
         }
       }
-    }
-  if (StickyBit == one) printf("Sticky bit apparently used correctly.\n");
-  else printf("Sticky bit used incorrectly or not at all.\n");
-  tstCond (Flaw, !(GMult == No || GDiv == No || GAddSub == No ||
-      RMult == Other || RDiv == Other || RAddSub == Other),
-    "lack(s) of guard digits or failure(s) to correctly round or chop\n(noted above) count as one flaw in the final tally below");
-  /*=============================================*/
-  Milestone = 60;
-  /*=============================================*/
-  printf("\n");
-  printf("Does Multiplication commute?  ");
-  printf("Testing on %d random pairs.\n", noTrials);
-  Random9 = std::sqrt(3.0);
-  Random1 = Third;
-  I = 1;
-  do  {
-    X = random();
-    Y = random();
-    Z9 = Y * X;
-    Z = X * Y;
-    Z9 = Z - Z9;
-    I = I + 1;
-    } while ( ! ((I > noTrials) || (Z9 != zero)));
-  if (I == noTrials) {
-    Random1 = one + half / three;
-    Random2 = (U2 + U1) + one;
-    Z = Random1 * Random2;
-    Y = Random2 * Random1;
-    Z9 = (one + half / three) * ((U2 + U1) + one) - (one + half /
-      three) * ((U2 + U1) + one);
-    }
-  if (! ((I == noTrials) || (Z9 == zero)))
-    badCond(Defect, "X * Y == Y * X trial fails.\n");
-  else printf("     No failures found in %d integer pairs.\n", noTrials);
-  /*=============================================*/
-  Milestone = 70;
-  /*=============================================*/
-  printf("\nRunning test of square root(x).\n");
-  tstCond (Failure, (zero == std::sqrt(zero))
-       && (- zero == std::sqrt(- zero))
-       && (one == std::sqrt(one)), "Square root of 0.0, -0.0 or 1.0 wrong");
-  MinSqEr = zero;
-  MaxSqEr = zero;
-  J = zero;
-  X = radix;
-  OneUlp = U2;
-  sqXMinX (Serious);
-  X = bInverse;
-  OneUlp = bInverse * U1;
-  sqXMinX (Serious);
-  X = U1;
-  OneUlp = U1 * U1;
-  sqXMinX (Serious);
-  if (J != zero) pause();
-  printf("Testing if sqrt(X * X) == X for %d Integers X.\n", noTrials);
-  J = zero;
-  X = two;
-  Y = radix;
-  if ((radix != one)) do  {
-    X = Y;
-    Y = radix * Y;
-    } while ( ! ((Y - X >= noTrials)));
-  OneUlp = X * U2;
-  I = 1;
-  while (I <= noTrials) {
-    X = X + one;
-    sqXMinX (Defect);
-    if (J > zero) break;
-    I = I + 1;
-    }
-  printf("Test for sqrt monotonicity.\n");
-  I = - 1;
-  X = bMinusU2;
-  Y = radix;
-  Z = radix + radix * U2;
-  NotMonot = False;
-  Monot = False;
-  while ( ! (NotMonot || Monot)) {
-    I = I + 1;
-    X = std::sqrt(X);
-    Q = std::sqrt(Y);
-    Z = std::sqrt(Z);
-    if ((X > Q) || (Q > Z)) NotMonot = True;
-    else {
-      Q = std::floor(Q + half);
-      if ((I > 0) || (radix == Q * Q)) Monot = True;
-      else if (I > 0) {
-      if (I > 1) Monot = True;
+    if (StickyBit == one) printf("Sticky bit apparently used correctly.\n");
+    else printf("Sticky bit used incorrectly or not at all.\n");
+    tstCond (Flaw, !(GMult == No || GDiv == No || GAddSub == No ||
+        RMult == Other || RDiv == Other || RAddSub == Other),
+      "lack(s) of guard digits or failure(s) to correctly round or chop\n(noted above) count as one flaw in the final tally below");
+    /*=============================================*/
+    Milestone = 60;
+    /*=============================================*/
+    printf("\n");
+    printf("Does Multiplication commute?  ");
+    printf("Testing on %d random pairs.\n", noTrials);
+    Random9 = std::sqrt(3.0);
+    Random1 = Third;
+    I = 1;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      X = random();
+      Y = random();
+      Z9 = Y * X;
+      Z = X * Y;
+      Z9 = Z - Z9;
+      I = I + 1;
+      } while ( ! ((I > noTrials) || (Z9 != zero)));
+    if (I == noTrials) {
+      Random1 = one + half / three;
+      Random2 = (U2 + U1) + one;
+      Z = Random1 * Random2;
+      Y = Random2 * Random1;
+      Z9 = (one + half / three) * ((U2 + U1) + one) - (one + half /
+        three) * ((U2 + U1) + one);
+      }
+    if (! ((I == noTrials) || (Z9 == zero)))
+      badCond(Defect, "X * Y == Y * X trial fails.\n");
+    else printf("     No failures found in %d integer pairs.\n", noTrials);
+    /*=============================================*/
+    Milestone = 70;
+    /*=============================================*/
+    printf("\nRunning test of square root(x).\n");
+    tstCond (Failure, (zero == std::sqrt(zero))
+         && (- zero == std::sqrt(- zero))
+         && (one == std::sqrt(one)), "Square root of 0.0, -0.0 or 1.0 wrong");
+    MinSqEr = zero;
+    MaxSqEr = zero;
+    J = zero;
+    X = radix;
+    OneUlp = U2;
+    sqXMinX (Serious);
+    X = bInverse;
+    OneUlp = bInverse * U1;
+    sqXMinX (Serious);
+    X = U1;
+    OneUlp = U1 * U1;
+    sqXMinX (Serious);
+    if (J != zero) pause();
+    printf("Testing if sqrt(X * X) == X for %d Integers X.\n", noTrials);
+    J = zero;
+    X = two;
+    Y = radix;
+    setTimeout(timeoutMillis); // 2 seconds
+    if ((radix != one)) do  {
+      checkTimeout();
+      X = Y;
+      Y = radix * Y;
+      } while ( ! ((Y - X >= noTrials)));
+    OneUlp = X * U2;
+    I = 1;
+    setTimeout(timeoutMillis); // 2 seconds
+    while (I <= noTrials) {
+      checkTimeout();
+      X = X + one;
+      sqXMinX (Defect);
+      if (J > zero) break;
+      I = I + 1;
+      }
+    printf("Test for sqrt monotonicity.\n");
+    I = - 1;
+    X = bMinusU2;
+    Y = radix;
+    Z = radix + radix * U2;
+    NotMonot = False;
+    Monot = False;
+    setTimeout(timeoutMillis); // 2 seconds
+    while ( ! (NotMonot || Monot)) {
+      checkTimeout();
+      I = I + 1;
+      X = std::sqrt(X);
+      Q = std::sqrt(Y);
+      Z = std::sqrt(Z);
+      if ((X > Q) || (Q > Z)) NotMonot = True;
       else {
-        Y = Y * bInverse;
-        X = Y - U1;
-        Z = Y + U1;
-        }
-      }
-      else {
-        Y = Q;
-        X = Y - U2;
-        Z = Y + U2;
-        }
-      }
-    }
-  if (Monot) printf("sqrt has passed a test for Monotonicity.\n");
-  else {
-    badCond(Defect, "");
-    printf("sqrt(X) is non-monotonic for X near %.7e .\n", Y);
-    }
-  /*=============================================*/
-  Milestone = 80;
-  /*=============================================*/
-  MinSqEr = MinSqEr + half;
-  MaxSqEr = MaxSqEr - half;
-  Y = (std::sqrt(one + U2) - one) / U2;
-  SqEr = (Y - one) + U2 / eight;
-  if (SqEr > MaxSqEr) MaxSqEr = SqEr;
-  SqEr = Y + U2 / eight;
-  if (SqEr < MinSqEr) MinSqEr = SqEr;
-  Y = ((std::sqrt(F9) - U2) - (one - U2)) / U1;
-  SqEr = Y + U1 / eight;
-  if (SqEr > MaxSqEr) MaxSqEr = SqEr;
-  SqEr = (Y + one) + U1 / eight;
-  if (SqEr < MinSqEr) MinSqEr = SqEr;
-  OneUlp = U2;
-  X = OneUlp;
-  for( indx = 1; indx <= 3; ++indx) {
-    Y = std::sqrt((X + U1 + X) + F9);
-    Y = ((Y - U2) - ((one - U2) + X)) / OneUlp;
-    Z = ((U1 - X) + F9) * half * X * X / OneUlp;
-    SqEr = (Y + half) + Z;
-    if (SqEr < MinSqEr) MinSqEr = SqEr;
-    SqEr = (Y - half) + Z;
-    if (SqEr > MaxSqEr) MaxSqEr = SqEr;
-    if (((indx == 1) || (indx == 3)))
-      X = OneUlp * sign (X) * std::floor(eight / (nine * std::sqrt(OneUlp)));
-    else {
-      OneUlp = U1;
-      X = - OneUlp;
-      }
-    }
-  /*=============================================*/
-  Milestone = 85;
-  /*=============================================*/
-  SqRWrng = False;
-  Anomaly = False;
-  RSqrt = Other; /* ~dgh */
-  if (radix != one) {
-    printf("Testing whether sqrt is rounded or chopped.\n");
-    D = std::floor(half + pow(radix, one + Precision - std::floor(Precision)));
-  /* ... == radix^(1 + fract) if (Precision == Integer + fract. */
-    X = D / radix;
-    Y = D / a1;
-    if ((X != std::floor(X)) || (Y != std::floor(Y))) {
-      Anomaly = True;
-      }
-    else {
-      X = zero;
-      Z2 = X;
-      Y = one;
-      Y2 = Y;
-      Z1 = radix - one;
-      FourD = four * D;
-      do  {
-        if (Y2 > Z2) {
-          Q = radix;
-          Y1 = Y;
-          do  {
-            X1 = std::abs(Q + std::floor(half - Q / Y1) * Y1);
-            Q = Y1;
-            Y1 = X1;
-            } while ( ! (X1 <= zero));
-          if (Q <= one) {
-            Z2 = Y2;
-            Z = Y;
-            }
-          }
-        Y = Y + two;
-        X = X + eight;
-        Y2 = Y2 + X;
-        if (Y2 >= FourD) Y2 = Y2 - FourD;
-        } while ( ! (Y >= D));
-      X8 = FourD - Z2;
-      Q = (X8 + Z * Z) / FourD;
-      X8 = X8 / eight;
-      if (Q != std::floor(Q)) Anomaly = True;
-      else {
-        Break = False;
-        do  {
-          X = Z1 * Z;
-          X = X - std::floor(X / radix) * radix;
-          if (X == one)
-            Break = True;
-          else
-            Z1 = Z1 - one;
-          } while ( ! (Break || (Z1 <= zero)));
-        if ((Z1 <= zero) && (! Break)) Anomaly = True;
+        Q = std::floor(Q + half);
+        if ((I > 0) || (radix == Q * Q)) Monot = True;
+        else if (I > 0) {
+        if (I > 1) Monot = True;
         else {
-          if (Z1 > radixD2) Z1 = Z1 - radix;
+          Y = Y * bInverse;
+          X = Y - U1;
+          Z = Y + U1;
+          }
+        }
+        else {
+          Y = Q;
+          X = Y - U2;
+          Z = Y + U2;
+          }
+        }
+      }
+    if (Monot) printf("sqrt has passed a test for Monotonicity.\n");
+    else {
+      badCond(Defect, "");
+      printf("sqrt(X) is non-monotonic for X near %.7e .\n", Y);
+      }
+    /*=============================================*/
+    Milestone = 80;
+    /*=============================================*/
+    MinSqEr = MinSqEr + half;
+    MaxSqEr = MaxSqEr - half;
+    Y = (std::sqrt(one + U2) - one) / U2;
+    SqEr = (Y - one) + U2 / eight;
+    if (SqEr > MaxSqEr) MaxSqEr = SqEr;
+    SqEr = Y + U2 / eight;
+    if (SqEr < MinSqEr) MinSqEr = SqEr;
+    Y = ((std::sqrt(F9) - U2) - (one - U2)) / U1;
+    SqEr = Y + U1 / eight;
+    if (SqEr > MaxSqEr) MaxSqEr = SqEr;
+    SqEr = (Y + one) + U1 / eight;
+    if (SqEr < MinSqEr) MinSqEr = SqEr;
+    OneUlp = U2;
+    X = OneUlp;
+    for( indx = 1; indx <= 3; ++indx) {
+      Y = std::sqrt((X + U1 + X) + F9);
+      Y = ((Y - U2) - ((one - U2) + X)) / OneUlp;
+      Z = ((U1 - X) + F9) * half * X * X / OneUlp;
+      SqEr = (Y + half) + Z;
+      if (SqEr < MinSqEr) MinSqEr = SqEr;
+      SqEr = (Y - half) + Z;
+      if (SqEr > MaxSqEr) MaxSqEr = SqEr;
+      if (((indx == 1) || (indx == 3)))
+        X = OneUlp * sign (X) * std::floor(eight / (nine * std::sqrt(OneUlp)));
+      else {
+        OneUlp = U1;
+        X = - OneUlp;
+        }
+      }
+    /*=============================================*/
+    Milestone = 85;
+    /*=============================================*/
+    SqRWrng = False;
+    Anomaly = False;
+    RSqrt = Other; /* ~dgh */
+    if (radix != one) {
+      printf("Testing whether sqrt is rounded or chopped.\n");
+      D = std::floor(half + pow(radix, one + Precision - std::floor(Precision)));
+    /* ... == radix^(1 + fract) if (Precision == Integer + fract. */
+      X = D / radix;
+      Y = D / a1;
+      if ((X != std::floor(X)) || (Y != std::floor(Y))) {
+        Anomaly = True;
+        }
+      else {
+        X = zero;
+        Z2 = X;
+        Y = one;
+        Y2 = Y;
+        Z1 = radix - one;
+        FourD = four * D;
+        setTimeout(timeoutMillis); // 2 seconds
+        do  {
+          checkTimeout();
+          if (Y2 > Z2) {
+            Q = radix;
+            Y1 = Y;
+            do  {
+              checkTimeout();
+              X1 = std::abs(Q + std::floor(half - Q / Y1) * Y1);
+              Q = Y1;
+              Y1 = X1;
+              } while ( ! (X1 <= zero));
+            if (Q <= one) {
+              Z2 = Y2;
+              Z = Y;
+              }
+            }
+          Y = Y + two;
+          X = X + eight;
+          Y2 = Y2 + X;
+          if (Y2 >= FourD) Y2 = Y2 - FourD;
+          } while ( ! (Y >= D));
+        X8 = FourD - Z2;
+        Q = (X8 + Z * Z) / FourD;
+        X8 = X8 / eight;
+        if (Q != std::floor(Q)) Anomaly = True;
+        else {
+          Break = False;
+          setTimeout(timeoutMillis); // 2 seconds
           do  {
-            newD();
-            } while ( ! (U2 * D >= F9));
-          if (D * radix - D != W - D) Anomaly = True;
+            checkTimeout();
+            X = Z1 * Z;
+            X = X - std::floor(X / radix) * radix;
+            if (X == one)
+              Break = True;
+            else
+              Z1 = Z1 - one;
+            } while ( ! (Break || (Z1 <= zero)));
+          if ((Z1 <= zero) && (! Break)) Anomaly = True;
           else {
-            Z2 = D;
-            I = 0;
-            Y = D + (one + Z) * half;
-            X = D + Z + Q;
-            sr3750();
-            Y = D + (one - Z) * half + D;
-            X = D - Z + D;
-            X = X + Q + X;
-            sr3750();
-            newD();
-            if (D - Z2 != W - Z2) Anomaly = True;
+            if (Z1 > radixD2) Z1 = Z1 - radix;
+            setTimeout(timeoutMillis); // 2 seconds
+            do  {
+              checkTimeout();
+              newD();
+              } while ( ! (U2 * D >= F9));
+            if (D * radix - D != W - D) Anomaly = True;
             else {
-              Y = (D - Z2) + (Z2 + (one - Z) * half);
-              X = (D - Z2) + (Z2 - Z + Q);
+              Z2 = D;
+              I = 0;
+              Y = D + (one + Z) * half;
+              X = D + Z + Q;
               sr3750();
-              Y = (one + Z) * half;
-              X = Q;
+              Y = D + (one - Z) * half + D;
+              X = D - Z + D;
+              X = X + Q + X;
               sr3750();
-              if (I == 0) Anomaly = True;
+              newD();
+              if (D - Z2 != W - Z2) Anomaly = True;
+              else {
+                Y = (D - Z2) + (Z2 + (one - Z) * half);
+                X = (D - Z2) + (Z2 - Z + Q);
+                sr3750();
+                Y = (one + Z) * half;
+                X = Q;
+                sr3750();
+                if (I == 0) Anomaly = True;
+                }
               }
             }
           }
         }
-      }
-    if ((I == 0) || Anomaly) {
-      badCond(Failure, "Anomalous arithmetic with Integer < ");
-      printf("radix^Precision = %.7e\n", W);
-      printf(" fails test whether sqrt rounds or chops.\n");
-      SqRWrng = True;
-      }
-    }
-  if (! Anomaly) {
-    if (! ((MinSqEr < zero) || (MaxSqEr > zero))) {
-      RSqrt = Rounded;
-      printf("Square root appears to be correctly rounded.\n");
-      }
-    else  {
-      if ((MaxSqEr + U2 > U2 - half) || (MinSqEr > half)
-        || (MinSqEr + radix < half)) SqRWrng = True;
-      else {
-        RSqrt = Chopped;
-        printf("Square root appears to be chopped.\n");
+      if ((I == 0) || Anomaly) {
+        badCond(Failure, "Anomalous arithmetic with Integer < ");
+        printf("radix^Precision = %.7e\n", W);
+        printf(" fails test whether sqrt rounds or chops.\n");
+        SqRWrng = True;
         }
       }
-    }
-  if (SqRWrng) {
-    printf("Square root is neither chopped nor correctly rounded.\n");
-    printf("Observed errors run from %.7e ", MinSqEr - half);
-    printf("to %.7e ulps.\n", half + MaxSqEr);
-    tstCond (Serious, MaxSqEr - MinSqEr < radix * radix,
-      "sqrt gets too many last digits wrong");
-    }
-  /*=============================================*/
-  Milestone = 90;
-  /*=============================================*/
-  pause();
-  printf("Testing powers Z^i for small Integers Z and i.\n");
-  N = 0;
-  /* ... test powers of zero. */
-  I = 0;
-  Z = -zero;
-  M = 3;
-  Break = False;
-  do  {
-    X = one;
-    sr3980();
-    if (I <= 10) {
-      I = 1023;
+    if (! Anomaly) {
+      if (! ((MinSqEr < zero) || (MaxSqEr > zero))) {
+        RSqrt = Rounded;
+        printf("Square root appears to be correctly rounded.\n");
+        }
+      else  {
+        if ((MaxSqEr + U2 > U2 - half) || (MinSqEr > half)
+          || (MinSqEr + radix < half)) SqRWrng = True;
+        else {
+          RSqrt = Chopped;
+          printf("Square root appears to be chopped.\n");
+          }
+        }
+      }
+    if (SqRWrng) {
+      printf("Square root is neither chopped nor correctly rounded.\n");
+      printf("Observed errors run from %.7e ", MinSqEr - half);
+      printf("to %.7e ulps.\n", half + MaxSqEr);
+      tstCond (Serious, MaxSqEr - MinSqEr < radix * radix,
+        "sqrt gets too many last digits wrong");
+      }
+    /*=============================================*/
+    Milestone = 90;
+    /*=============================================*/
+    pause();
+    printf("Testing powers Z^i for small Integers Z and i.\n");
+    N = 0;
+    /* ... test powers of zero. */
+    I = 0;
+    Z = -zero;
+    M = 3;
+    Break = False;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      X = one;
       sr3980();
-      }
-    if (Z == minusOne) Break = True;
-    else {
-      Z = minusOne;
-      printIfNPositive();
-      N = 0;
-      /* .. if(-1)^N is invalid, replace minusOne by one. */
-      I = - 4;
-      }
-    } while ( ! Break);
-  printIfNPositive();
-  N1 = N;
-  N = 0;
-  Z = a1;
-  M = (int)(std::floor(two * std::log(W) / std::log(a1)));
-  Break = False;
-  do  {
-    X = Z;
-    I = 1;
-    sr3980();
-    if (Z == aInverse) Break = True;
-    else Z = aInverse;
-    } while ( ! (Break));
-  /*=============================================*/
-    Milestone = 100;
-  /*=============================================*/
-  /*  Powers of radix have been tested, */
-  /*         next try a few primes     */
-  M = noTrials;
-  Z = three;
-  do  {
-    X = Z;
-    I = 1;
-    sr3980();
+      if (I <= 10) {
+        I = 1023;
+        sr3980();
+        }
+      if (Z == minusOne) Break = True;
+      else {
+        Z = minusOne;
+        printIfNPositive();
+        N = 0;
+        /* .. if(-1)^N is invalid, replace minusOne by one. */
+        I = - 4;
+        }
+      } while ( ! Break);
+    printIfNPositive();
+    N1 = N;
+    N = 0;
+    Z = a1;
+    M = (int)(std::floor(two * std::log(W) / std::log(a1)));
+    Break = False;
+    setTimeout(timeoutMillis); // 2 seconds
     do  {
-      Z = Z + two;
-      } while ( three * std::floor(Z / three) == Z );
-    } while ( Z < eight * three );
-  if (N > 0) {
-    printf("Errors like this may invalidate financial calculations\n");
-    printf("\tinvolving interest rates.\n");
-    }
-  printIfNPositive();
-  N += N1;
-  if (N == 0) printf("... no discrepancis found.\n");
-  if (N > 0) pause();
-  else printf("\n");
-  /*=============================================*/
-  Milestone = 110;
-  /*=============================================*/
-  printf("Seeking Underflow thresholds UfThold and E0.\n");
-  D = U1;
-  if (Precision != std::floor(Precision)) {
-    D = bInverse;
-    X = Precision;
+      checkTimeout();
+      X = Z;
+      I = 1;
+      sr3980();
+      if (Z == aInverse) Break = True;
+      else Z = aInverse;
+      } while ( ! (Break));
+    /*=============================================*/
+      Milestone = 100;
+    /*=============================================*/
+    /*  Powers of radix have been tested, */
+    /*         next try a few primes     */
+    M = noTrials;
+    Z = three;
+    setTimeout(timeoutMillis); // 2 seconds
     do  {
-      D = D * bInverse;
-      X = X - one;
-      } while ( X > zero);
-    }
-  Y = one;
-  Z = D;
-  /* ... D is power of 1/radix < 1. */
-  do  {
-    C = Y;
-    Y = Z;
-    Z = Y * Y;
-    } while ((Y > Z) && (Z + Z > Z));
-  Y = C;
-  Z = Y * D;
-  do  {
-    C = Y;
-    Y = Z;
+      X = Z;
+      I = 1;
+      sr3980();
+      do  {
+        checkTimeout();
+        Z = Z + two;
+        } while ( three * std::floor(Z / three) == Z );
+      } while ( Z < eight * three );
+    if (N > 0) {
+      printf("Errors like this may invalidate financial calculations\n");
+      printf("\tinvolving interest rates.\n");
+      }
+    printIfNPositive();
+    N += N1;
+    if (N == 0) printf("... no discrepancis found.\n");
+    if (N > 0) pause();
+    else printf("\n");
+    /*=============================================*/
+    Milestone = 110;
+    /*=============================================*/
+    printf("Seeking Underflow thresholds UfThold and E0.\n");
+    D = U1;
+    if (Precision != std::floor(Precision)) {
+      D = bInverse;
+      X = Precision;
+      setTimeout(timeoutMillis); // 2 seconds
+      do  {
+        checkTimeout();
+        D = D * bInverse;
+        X = X - one;
+        } while ( X > zero);
+      }
+    Y = one;
+    Z = D;
+    /* ... D is power of 1/radix < 1. */
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      C = Y;
+      Y = Z;
+      Z = Y * Y;
+      } while ((Y > Z) && (Z + Z > Z));
+    Y = C;
     Z = Y * D;
-    } while ((Y > Z) && (Z + Z > Z));
-  if (radix < two) HInvrse = two;
-  else HInvrse = radix;
-  H = one / HInvrse;
-  /* ... 1/HInvrse == H == Min(1/radix, 1/2) */
-  CInvrse = one / C;
-  E0 = C;
-  Z = E0 * H;
-  /* ...1/radix^(BIG Integer) << 1 << CInvrse == 1/C */
-  do  {
-    Y = E0;
-    E0 = Z;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      C = Y;
+      Y = Z;
+      Z = Y * D;
+      } while ((Y > Z) && (Z + Z > Z));
+    if (radix < two) HInvrse = two;
+    else HInvrse = radix;
+    H = one / HInvrse;
+    /* ... 1/HInvrse == H == Min(1/radix, 1/2) */
+    CInvrse = one / C;
+    E0 = C;
     Z = E0 * H;
-    } while ((E0 > Z) && (Z + Z > Z));
-  UfThold = E0;
-  E1 = zero;
-  Q = zero;
-  E9 = U2;
-  S = one + E9;
-  D = C * S;
-  if (D <= C) {
-    E9 = radix * U2;
+    /* ...1/radix^(BIG Integer) << 1 << CInvrse == 1/C */
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      Y = E0;
+      E0 = Z;
+      Z = E0 * H;
+      } while ((E0 > Z) && (Z + Z > Z));
+    UfThold = E0;
+    E1 = zero;
+    Q = zero;
+    E9 = U2;
     S = one + E9;
     D = C * S;
     if (D <= C) {
-      badCond(Failure, "multiplication gets too many last digits wrong.\n");
-      Underflow = E0;
-      Y1 = zero;
-      PseudoZero = Z;
-      pause();
-      }
-    }
-  else {
-    Underflow = D;
-    PseudoZero = Underflow * H;
-    UfThold = zero;
-    do  {
-      Y1 = Underflow;
-      Underflow = PseudoZero;
-      if (E1 + E1 <= E1) {
-        Y2 = Underflow * HInvrse;
-        E1 = std::abs(Y1 - Y2);
-        Q = Y1;
-        if ((UfThold == zero) && (Y1 != Y2)) UfThold = Y1;
-        }
-      PseudoZero = PseudoZero * H;
-      } while ((Underflow > PseudoZero)
-        && (PseudoZero + PseudoZero > PseudoZero));
-    }
-  /* Comment line 4530 .. 4560 */
-  if (PseudoZero != zero) {
-    printf("\n");
-    Z = PseudoZero;
-  /* ... Test PseudoZero for "phoney- zero" violates */
-  /* ... PseudoZero < Underflow or PseudoZero < PseudoZero + PseudoZero
-       ... */
-    if (PseudoZero <= zero) {
-      badCond(Failure, "Positive expressions can underflow to an\n");
-      printf("allegedly negative value\n");
-      printf("PseudoZero that prints out as: %g .\n", PseudoZero);
-      X = - PseudoZero;
-      if (X <= zero) {
-        printf("But -PseudoZero, which should be\n");
-        printf("positive, isn't; it prints out as  %g .\n", X);
+      E9 = radix * U2;
+      S = one + E9;
+      D = C * S;
+      if (D <= C) {
+        badCond(Failure, "multiplication gets too many last digits wrong.\n");
+        Underflow = E0;
+        Y1 = zero;
+        PseudoZero = Z;
+        pause();
         }
       }
     else {
-      badCond(Flaw, "Underflow can stick at an allegedly positive\n");
-      printf("value PseudoZero that prints out as %g .\n", PseudoZero);
+      Underflow = D;
+      PseudoZero = Underflow * H;
+      UfThold = zero;
+      setTimeout(timeoutMillis); // 2 seconds
+      do  {
+        checkTimeout();
+        Y1 = Underflow;
+        Underflow = PseudoZero;
+        if (E1 + E1 <= E1) {
+          Y2 = Underflow * HInvrse;
+          E1 = std::abs(Y1 - Y2);
+          Q = Y1;
+          if ((UfThold == zero) && (Y1 != Y2)) UfThold = Y1;
+          }
+        PseudoZero = PseudoZero * H;
+        } while ((Underflow > PseudoZero)
+          && (PseudoZero + PseudoZero > PseudoZero));
       }
+    /* Comment line 4530 .. 4560 */
+    if (PseudoZero != zero) {
+      printf("\n");
+      Z = PseudoZero;
+    /* ... Test PseudoZero for "phoney- zero" violates */
+    /* ... PseudoZero < Underflow or PseudoZero < PseudoZero + PseudoZero
+         ... */
+      if (PseudoZero <= zero) {
+        badCond(Failure, "Positive expressions can underflow to an\n");
+        printf("allegedly negative value\n");
+        printf("PseudoZero that prints out as: %g .\n", PseudoZero);
+        X = - PseudoZero;
+        if (X <= zero) {
+          printf("But -PseudoZero, which should be\n");
+          printf("positive, isn't; it prints out as  %g .\n", X);
+          }
+        }
+      else {
+        badCond(Flaw, "Underflow can stick at an allegedly positive\n");
+        printf("value PseudoZero that prints out as %g .\n", PseudoZero);
+        }
+      tstPtUf();
+      }
+    /*=============================================*/
+    Milestone = 120;
+    /*=============================================*/
+    if (CInvrse * Y > CInvrse * Y1) {
+      S = H * S;
+      E0 = Underflow;
+      }
+    if (! ((E1 == zero) || (E1 == E0))) {
+      badCond(Defect, "");
+      if (E1 < E0) {
+        printf("Products underflow at a higher");
+        printf(" threshold than differences.\n");
+        if (PseudoZero == zero)
+        E0 = E1;
+        }
+      else {
+        printf("Difference underflows at a higher");
+        printf(" threshold than products.\n");
+        }
+      }
+    printf("Smallest strictly positive number found is E0 = %g .\n", E0);
+    Z = E0;
     tstPtUf();
-    }
-  /*=============================================*/
-  Milestone = 120;
-  /*=============================================*/
-  if (CInvrse * Y > CInvrse * Y1) {
-    S = H * S;
-    E0 = Underflow;
-    }
-  if (! ((E1 == zero) || (E1 == E0))) {
-    badCond(Defect, "");
-    if (E1 < E0) {
-      printf("Products underflow at a higher");
-      printf(" threshold than differences.\n");
-      if (PseudoZero == zero)
-      E0 = E1;
-      }
-    else {
-      printf("Difference underflows at a higher");
-      printf(" threshold than products.\n");
-      }
-    }
-  printf("Smallest strictly positive number found is E0 = %g .\n", E0);
-  Z = E0;
-  tstPtUf();
-  Underflow = E0;
-  if (N == 1) Underflow = Y;
-  I = 4;
-  if (E1 == zero) I = 3;
-  if (UfThold == zero) I = I - 2;
-  UfNGrad = True;
-  switch (I)  {
-    case  1:
-    UfThold = Underflow;
-    if ((CInvrse * Q) != ((CInvrse * Y) * S)) {
-      UfThold = Y;
-      badCond(Failure, "Either accuracy deteriorates as numbers\n");
-      printf("approach a threshold = %.17e\n", UfThold);;
-      printf(" coming down from %.17e\n", C);
-      printf(" or else multiplication gets too many last digits wrong.\n");
-      }
-    pause();
-    break;
+    Underflow = E0;
+    if (N == 1) Underflow = Y;
+    I = 4;
+    if (E1 == zero) I = 3;
+    if (UfThold == zero) I = I - 2;
+    UfNGrad = True;
+    switch (I)  {
+      case  1:
+      UfThold = Underflow;
+      if ((CInvrse * Q) != ((CInvrse * Y) * S)) {
+        UfThold = Y;
+        badCond(Failure, "Either accuracy deteriorates as numbers\n");
+        printf("approach a threshold = %.17e\n", UfThold);;
+        printf(" coming down from %.17e\n", C);
+        printf(" or else multiplication gets too many last digits wrong.\n");
+        }
+      pause();
+      break;
 
-    case  2:
-    badCond(Failure, "Underflow confuses Comparison, which alleges that\n");
-    printf("Q == Y while denying that |Q - Y| == 0; these values\n");
-    printf("print out as Q = %.17e, Y = %.17e .\n", Q, Y2);
-    printf ("|Q - Y| = %.17e .\n" , std::abs(Q - Y2));
-    UfThold = Q;
-    break;
+      case  2:
+      badCond(Failure, "Underflow confuses Comparison, which alleges that\n");
+      printf("Q == Y while denying that |Q - Y| == 0; these values\n");
+      printf("print out as Q = %.17e, Y = %.17e .\n", Q, Y2);
+      printf ("|Q - Y| = %.17e .\n" , std::abs(Q - Y2));
+      UfThold = Q;
+      break;
 
-    case  3:
-    X = X;
-    break;
+      case  3:
+      X = X;
+      break;
 
-    case  4:
-    if ((Q == UfThold) && (E1 == E0)
-      && (std::abs( UfThold - E1 / E9) <= E1)) {
-      UfNGrad = False;
-      printf("Underflow is gradual; it incurs Absolute Error =\n");
-      printf("(roundoff in UfThold) < E0.\n");
-      Y = E0 * CInvrse;
-      Y = Y * (oneAndHalf + U2);
-      X = CInvrse * (one + U2);
-      Y = Y / X;
-      IEEE = (Y == E0);
+      case  4:
+      if ((Q == UfThold) && (E1 == E0)
+        && (std::abs( UfThold - E1 / E9) <= E1)) {
+        UfNGrad = False;
+        printf("Underflow is gradual; it incurs Absolute Error =\n");
+        printf("(roundoff in UfThold) < E0.\n");
+        Y = E0 * CInvrse;
+        Y = Y * (oneAndHalf + U2);
+        X = CInvrse * (one + U2);
+        Y = Y / X;
+        IEEE = (Y == E0);
+        }
       }
-    }
-  if (UfNGrad) {
-    printf("\n");
-    sigsave = sigfpe;
-    if (setjmp(ovfl_buf)) {
-      printf("Underflow / UfThold failed!\n");
-      R = H + H;
-      }
-    else R = std::sqrt(Underflow / UfThold);
-    sigsave = 0;
-    if (R <= H) {
-      Z = R * UfThold;
-      X = Z * (one + R * H * (one + H));
-      }
-    else {
-      Z = UfThold;
-      X = Z * (one + H * H * (one + H));
-      }
-    if (! ((X == Z) || (X - Z != zero))) {
-      badCond(Flaw, "");
-      printf("X = %.17e\n\tis not equal to Z = %.17e .\n", X, Z);
-      Z9 = X - Z;
-      printf("yet X - Z yields %.17e .\n", Z9);
-      printf("    Should this NOT signal Underflow, ");
-      printf("this is a SERIOUS DEFECT\nthat causes ");
-      printf("confusion when innocent statements like\n");;
-      printf("    if (X == Z)  ...  else");
-      printf("  ... (f(X) - f(Z)) / (X - Z) ...\n");
-      printf("encounter Division by zero although actually\n");
+    if (UfNGrad) {
+      printf("\n");
       sigsave = sigfpe;
-      if (setjmp(ovfl_buf)) printf("X / Z fails!\n");
-      else printf("X / Z = 1 + %g .\n", (X / Z - half) - half);
+      if (setjmp(ovfl_buf)) {
+        printf("Underflow / UfThold failed!\n");
+        R = H + H;
+        }
+      else R = std::sqrt(Underflow / UfThold);
+      sigsave = 0;
+      if (R <= H) {
+        Z = R * UfThold;
+        X = Z * (one + R * H * (one + H));
+        }
+      else {
+        Z = UfThold;
+        X = Z * (one + H * H * (one + H));
+        }
+      if (! ((X == Z) || (X - Z != zero))) {
+        badCond(Flaw, "");
+        printf("X = %.17e\n\tis not equal to Z = %.17e .\n", X, Z);
+        Z9 = X - Z;
+        printf("yet X - Z yields %.17e .\n", Z9);
+        printf("    Should this NOT signal Underflow, ");
+        printf("this is a SERIOUS DEFECT\nthat causes ");
+        printf("confusion when innocent statements like\n");;
+        printf("    if (X == Z)  ...  else");
+        printf("  ... (f(X) - f(Z)) / (X - Z) ...\n");
+        printf("encounter Division by zero although actually\n");
+        sigsave = sigfpe;
+        if (setjmp(ovfl_buf)) printf("X / Z fails!\n");
+        else printf("X / Z = 1 + %g .\n", (X / Z - half) - half);
+        sigsave = 0;
+        }
+      }
+    printf("The Underflow threshold is %.17e, %s\n", UfThold,
+         " below which");
+    printf("calculation may suffer larger Relative error than ");
+    printf("merely roundoff.\n");
+    Y2 = U1 * U1;
+    Y = Y2 * Y2;
+    Y2 = Y * U1;
+    if (Y2 <= UfThold) {
+      if (Y > E0) {
+        badCond(Defect, "");
+        I = 5;
+        }
+      else {
+        badCond(Serious, "");
+        I = 4;
+        }
+      printf("Range is too narrow; U1^%d Underflows.\n", I);
+      }
+    /*=============================================*/
+    Milestone = 130;
+    /*=============================================*/
+    Y = - std::floor(half - twoForty * std::log(UfThold) / std::log(HInvrse)) / twoForty;
+    Y2 = Y + Y;
+    printf("Since underflow occurs below the threshold\n");
+    printf("UfThold = (%.17e) ^ (%.17e)\nonly underflow ", HInvrse, Y);
+    printf("should afflict the expression\n\t(%.17e) ^ (%.17e);\n", HInvrse, Y);
+    V9 = pow(HInvrse, Y2);
+    printf("actually calculating yields: %.17e .\n", V9);
+    if (! ((V9 >= zero) && (V9 <= (radix + radix + E9) * UfThold))) {
+      badCond(Serious, "this is not between 0 and underflow\n");
+      printf("   threshold = %.17e .\n", UfThold);
+      }
+    else if (! (V9 > UfThold * (one + E9)))
+      printf("This computed value is O.K.\n");
+    else {
+      badCond(Defect, "this is not between 0 and underflow\n");
+      printf("   threshold = %.17e .\n", UfThold);
+      }
+    /*=============================================*/
+    Milestone = 140;
+    /*=============================================*/
+    printf("\n");
+    /* ...calculate Exp2 == exp(2) == 7.389056099... */
+    X = zero;
+    I = 2;
+    Y = two * three;
+    Q = zero;
+    N = 0;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      Z = X;
+      I = I + 1;
+      Y = Y / (I + I);
+      R = Y + Q;
+      X = Z + R;
+      Q = (Z - X) + R;
+      } while(X > Z);
+    Z = (oneAndHalf + one / eight) + X / (oneAndHalf * thirtyTwo);
+    X = Z * Z;
+    Exp2 = X * X;
+    X = F9;
+    Y = X - U1;
+    printf("Testing X^((X + 1) / (X - 1)) vs. exp(2) = %.17e as X -> 1.\n",
+      Exp2);
+    for(I = 1;;) {
+      Z = X - bInverse;
+      Z = (X + one) / (Z - (one - bInverse));
+      Q = pow(X, Z) - Exp2;
+      if (std::abs(Q) > twoForty * U2) {
+        N = 1;
+         V9 = (X - bInverse) - (one - bInverse);
+        badCond(Defect, "Calculated");
+        printf(" %.17e for\n", pow(X,Z));
+        printf("\t(1 + (%.17e) ^ (%.17e);\n", V9, Z);
+        printf("\tdiffers from correct value by %.17e .\n", Q);
+        printf("\tThis much error may spoil financial\n");
+        printf("\tcalculations involving tiny interest rates.\n");
+        break;
+        }
+      else {
+        Z = (Y - X) * two + Y;
+        X = Y;
+        Y = Z;
+        Z = one + (X - F9)*(X - F9);
+        if (Z > one && I < noTrials) I++;
+        else  {
+          if (X > one) {
+            if (N == 0)
+               printf("Accuracy seems adequate.\n");
+            break;
+            }
+          else {
+            X = one + U2;
+            Y = U2 + U2;
+            Y += X;
+            I = 1;
+            }
+          }
+        }
+      }
+    /*=============================================*/
+    Milestone = 150;
+    /*=============================================*/
+    printf("Testing powers Z^Q at four nearly extreme values.\n");
+    N = 0;
+    Z = a1;
+    Q = std::floor(half - std::log(C) / std::log(a1));
+    Break = False;
+    setTimeout(timeoutMillis); // 2 seconds
+    do  {
+      checkTimeout();
+      X = CInvrse;
+      Y = pow(Z, Q);
+      isYEqX();
+      Q = - Q;
+      X = C;
+      Y = pow(Z, Q);
+      isYEqX();
+      if (Z < one) Break = True;
+      else Z = aInverse;
+      } while ( ! (Break));
+    printIfNPositive();
+    if (N == 0) printf(" ... no discrepancies found.\n");
+    printf("\n");
+
+    /*=============================================*/
+    Milestone = 160;
+    /*=============================================*/
+    pause();
+    printf("Searching for Overflow threshold:\n");
+    printf("This may generate an error.\n");
+    Y = - CInvrse;
+    V9 = HInvrse * Y;
+    sigsave = sigfpe;
+    if (setjmp(ovfl_buf)) { I = 0; V9 = Y; goto overflow; }
+    setTimeout(timeoutMillis); // 2 seconds
+    do {
+      checkTimeout();
+      V = Y;
+      Y = V9;
+      V9 = HInvrse * Y;
+      } while(V9 < Y);
+    I = 1;
+  overflow:
+    sigsave = 0;
+    Z = V9;
+    printf("Can `Z = -Y' overflow?\n");
+    printf("Trying it on Y = %.17e .\n", Y);
+    V9 = - Y;
+    V0 = V9;
+    if (V - Y == V + V0) printf("Seems O.K.\n");
+    else {
+      printf("finds a ");
+      badCond(Flaw, "-(-Y) differs from Y.\n");
+      }
+    if (Z != Y) {
+      badCond(Serious, "");
+      printf("overflow past %.17e\n\tshrinks to %.17e .\n", Y, Z);
+      }
+    if (I) {
+      Y = V * (HInvrse * U2 - HInvrse);
+      Z = Y + ((one - HInvrse) * U2) * V;
+      if (Z < V0) Y = Z;
+      if (Y < V0) V = Y;
+      if (V0 - V < V0) V = V0;
+      }
+    else {
+      V = Y * (HInvrse * U2 - HInvrse);
+      V = V + ((one - HInvrse) * U2) * Y;
+      }
+    printf("Overflow threshold is V  = %.17e .\n", V);
+    if (I) printf("Overflow saturates at V0 = %.17e .\n", V0);
+    else printf("There is no saturation value because the system traps on overflow.\n");
+    V9 = V * one;
+    printf("No Overflow should be signaled for V * 1 = %.17e\n", V9);
+    V9 = V / one;
+    printf("                           nor for V / 1 = %.17e .\n", V9);
+    printf("Any overflow signal separating this * from the one\n");
+    printf("above is a DEFECT.\n");
+    /*=============================================*/
+    Milestone = 170;
+    /*=============================================*/
+    if (!(-V < V && -V0 < V0 && -UfThold < V && UfThold < V)) {
+      badCond(Failure, "Comparisons involving ");
+      printf("+-%g, +-%g\nand +-%g are confused by Overflow.",
+        V, V0, UfThold);
+      }
+    /*=============================================*/
+    Milestone = 175;
+    /*=============================================*/
+    printf("\n");
+    for(indx = 1; indx <= 3; ++indx) {
+      switch (indx)  {
+        case 1: Z = UfThold; break;
+        case 2: Z = E0; break;
+        case 3: Z = PseudoZero; break;
+        }
+      if (Z != zero) {
+        V9 = std::sqrt(Z);
+        Y = V9 * V9;
+        if (Y / (one - radix * E9) < Z
+           || Y > (one + radix * E9) * Z) { /* dgh: + E9 --> * E9 */
+          if (V9 > U1) badCond(Serious, "");
+          else badCond(Defect, "");
+          printf("Comparison alleges that what prints as Z = %.17e\n", Z);
+          printf(" is too far from sqrt(Z) ^ 2 = %.17e .\n", Y);
+          }
+        }
+      }
+    /*=============================================*/
+    Milestone = 180;
+    /*=============================================*/
+    for(indx = 1; indx <= 2; ++indx) {
+      if (indx == 1) Z = V;
+      else Z = V0;
+      V9 = std::sqrt(Z);
+      X = (one - radix * E9) * V9;
+      V9 = V9 * X;
+      if (((V9 < (one - two * radix * E9) * Z) || (V9 > Z))) {
+        Y = V9;
+        if (X < W) badCond(Serious, "");
+        else badCond(Defect, "");
+        printf("Comparison alleges that Z = %17e\n", Z);
+        printf(" is too far from sqrt(Z) ^ 2 (%.17e) .\n", Y);
+        }
+      }
+    /*=============================================*/
+    Milestone = 190;
+    /*=============================================*/
+    pause();
+    X = UfThold * V;
+    Y = radix * radix;
+    if (X*Y < one || X > Y) {
+      if (X * Y < U1 || X > Y/U1) badCond(Defect, "Badly");
+      else badCond(Flaw, "");
+
+      printf(" unbalanced range; UfThold * V = %.17e\n\t%s\n",
+        X, "is too far from 1.\n");
+      }
+    /*=============================================*/
+    Milestone = 200;
+    /*=============================================*/
+    for (indx = 1; indx <= 5; ++indx)  {
+      X = F9;
+      switch (indx)  {
+        case 2: X = one + U2; break;
+        case 3: X = V; break;
+        case 4: X = UfThold; break;
+        case 5: X = radix;
+        }
+      Y = X;
+      sigsave = sigfpe;
+      if (setjmp(ovfl_buf))
+        printf("  X / X  traps when X = %g\n", X);
+      else {
+        V9 = (Y / X - half) - half;
+        if (V9 == zero) continue;
+        if (V9 == - U1 && indx < 5) badCond(Flaw, "");
+        else badCond(Serious, "");
+        printf("  X / X differs from 1 when X = %.17e\n", X);
+        printf("  instead, X / X - 1/2 - 1/2 = %.17e .\n", V9);
+        }
       sigsave = 0;
       }
-    }
-  printf("The Underflow threshold is %.17e, %s\n", UfThold,
-       " below which");
-  printf("calculation may suffer larger Relative error than ");
-  printf("merely roundoff.\n");
-  Y2 = U1 * U1;
-  Y = Y2 * Y2;
-  Y2 = Y * U1;
-  if (Y2 <= UfThold) {
-    if (Y > E0) {
-      badCond(Defect, "");
-      I = 5;
-      }
-    else {
-      badCond(Serious, "");
-      I = 4;
-      }
-    printf("Range is too narrow; U1^%d Underflows.\n", I);
-    }
-  /*=============================================*/
-  Milestone = 130;
-  /*=============================================*/
-  Y = - std::floor(half - twoForty * std::log(UfThold) / std::log(HInvrse)) / twoForty;
-  Y2 = Y + Y;
-  printf("Since underflow occurs below the threshold\n");
-  printf("UfThold = (%.17e) ^ (%.17e)\nonly underflow ", HInvrse, Y);
-  printf("should afflict the expression\n\t(%.17e) ^ (%.17e);\n", HInvrse, Y);
-  V9 = pow(HInvrse, Y2);
-  printf("actually calculating yields: %.17e .\n", V9);
-  if (! ((V9 >= zero) && (V9 <= (radix + radix + E9) * UfThold))) {
-    badCond(Serious, "this is not between 0 and underflow\n");
-    printf("   threshold = %.17e .\n", UfThold);
-    }
-  else if (! (V9 > UfThold * (one + E9)))
-    printf("This computed value is O.K.\n");
-  else {
-    badCond(Defect, "this is not between 0 and underflow\n");
-    printf("   threshold = %.17e .\n", UfThold);
-    }
-  /*=============================================*/
-  Milestone = 140;
-  /*=============================================*/
-  printf("\n");
-  /* ...calculate Exp2 == exp(2) == 7.389056099... */
-  X = zero;
-  I = 2;
-  Y = two * three;
-  Q = zero;
-  N = 0;
-  do  {
-    Z = X;
-    I = I + 1;
-    Y = Y / (I + I);
-    R = Y + Q;
-    X = Z + R;
-    Q = (Z - X) + R;
-    } while(X > Z);
-  Z = (oneAndHalf + one / eight) + X / (oneAndHalf * thirtyTwo);
-  X = Z * Z;
-  Exp2 = X * X;
-  X = F9;
-  Y = X - U1;
-  printf("Testing X^((X + 1) / (X - 1)) vs. exp(2) = %.17e as X -> 1.\n",
-    Exp2);
-  for(I = 1;;) {
-    Z = X - bInverse;
-    Z = (X + one) / (Z - (one - bInverse));
-    Q = pow(X, Z) - Exp2;
-    if (std::abs(Q) > twoForty * U2) {
-      N = 1;
-       V9 = (X - bInverse) - (one - bInverse);
-      badCond(Defect, "Calculated");
-      printf(" %.17e for\n", pow(X,Z));
-      printf("\t(1 + (%.17e) ^ (%.17e);\n", V9, Z);
-      printf("\tdiffers from correct value by %.17e .\n", Q);
-      printf("\tThis much error may spoil financial\n");
-      printf("\tcalculations involving tiny interest rates.\n");
-      break;
-      }
-    else {
-      Z = (Y - X) * two + Y;
-      X = Y;
-      Y = Z;
-      Z = one + (X - F9)*(X - F9);
-      if (Z > one && I < noTrials) I++;
-      else  {
-        if (X > one) {
-          if (N == 0)
-             printf("Accuracy seems adequate.\n");
-          break;
-          }
-        else {
-          X = one + U2;
-          Y = U2 + U2;
-          Y += X;
-          I = 1;
-          }
-        }
-      }
-    }
-  /*=============================================*/
-  Milestone = 150;
-  /*=============================================*/
-  printf("Testing powers Z^Q at four nearly extreme values.\n");
-  N = 0;
-  Z = a1;
-  Q = std::floor(half - std::log(C) / std::log(a1));
-  Break = False;
-  do  {
-    X = CInvrse;
-    Y = pow(Z, Q);
-    isYEqX();
-    Q = - Q;
-    X = C;
-    Y = pow(Z, Q);
-    isYEqX();
-    if (Z < one) Break = True;
-    else Z = aInverse;
-    } while ( ! (Break));
-  printIfNPositive();
-  if (N == 0) printf(" ... no discrepancies found.\n");
-  printf("\n");
-
-  /*=============================================*/
-  Milestone = 160;
-  /*=============================================*/
-  pause();
-  printf("Searching for Overflow threshold:\n");
-  printf("This may generate an error.\n");
-  Y = - CInvrse;
-  V9 = HInvrse * Y;
-  sigsave = sigfpe;
-  if (setjmp(ovfl_buf)) { I = 0; V9 = Y; goto overflow; }
-  do {
-    V = Y;
-    Y = V9;
-    V9 = HInvrse * Y;
-    } while(V9 < Y);
-  I = 1;
-overflow:
-  sigsave = 0;
-  Z = V9;
-  printf("Can `Z = -Y' overflow?\n");
-  printf("Trying it on Y = %.17e .\n", Y);
-  V9 = - Y;
-  V0 = V9;
-  if (V - Y == V + V0) printf("Seems O.K.\n");
-  else {
-    printf("finds a ");
-    badCond(Flaw, "-(-Y) differs from Y.\n");
-    }
-  if (Z != Y) {
-    badCond(Serious, "");
-    printf("overflow past %.17e\n\tshrinks to %.17e .\n", Y, Z);
-    }
-  if (I) {
-    Y = V * (HInvrse * U2 - HInvrse);
-    Z = Y + ((one - HInvrse) * U2) * V;
-    if (Z < V0) Y = Z;
-    if (Y < V0) V = Y;
-    if (V0 - V < V0) V = V0;
-    }
-  else {
-    V = Y * (HInvrse * U2 - HInvrse);
-    V = V + ((one - HInvrse) * U2) * Y;
-    }
-  printf("Overflow threshold is V  = %.17e .\n", V);
-  if (I) printf("Overflow saturates at V0 = %.17e .\n", V0);
-  else printf("There is no saturation value because the system traps on overflow.\n");
-  V9 = V * one;
-  printf("No Overflow should be signaled for V * 1 = %.17e\n", V9);
-  V9 = V / one;
-  printf("                           nor for V / 1 = %.17e .\n", V9);
-  printf("Any overflow signal separating this * from the one\n");
-  printf("above is a DEFECT.\n");
-  /*=============================================*/
-  Milestone = 170;
-  /*=============================================*/
-  if (!(-V < V && -V0 < V0 && -UfThold < V && UfThold < V)) {
-    badCond(Failure, "Comparisons involving ");
-    printf("+-%g, +-%g\nand +-%g are confused by Overflow.",
-      V, V0, UfThold);
-    }
-  /*=============================================*/
-  Milestone = 175;
-  /*=============================================*/
-  printf("\n");
-  for(indx = 1; indx <= 3; ++indx) {
-    switch (indx)  {
-      case 1: Z = UfThold; break;
-      case 2: Z = E0; break;
-      case 3: Z = PseudoZero; break;
-      }
-    if (Z != zero) {
-      V9 = std::sqrt(Z);
-      Y = V9 * V9;
-      if (Y / (one - radix * E9) < Z
-         || Y > (one + radix * E9) * Z) { /* dgh: + E9 --> * E9 */
-        if (V9 > U1) badCond(Serious, "");
-        else badCond(Defect, "");
-        printf("Comparison alleges that what prints as Z = %.17e\n", Z);
-        printf(" is too far from sqrt(Z) ^ 2 = %.17e .\n", Y);
-        }
-      }
-    }
-  /*=============================================*/
-  Milestone = 180;
-  /*=============================================*/
-  for(indx = 1; indx <= 2; ++indx) {
-    if (indx == 1) Z = V;
-    else Z = V0;
-    V9 = std::sqrt(Z);
-    X = (one - radix * E9) * V9;
-    V9 = V9 * X;
-    if (((V9 < (one - two * radix * E9) * Z) || (V9 > Z))) {
-      Y = V9;
-      if (X < W) badCond(Serious, "");
-      else badCond(Defect, "");
-      printf("Comparison alleges that Z = %17e\n", Z);
-      printf(" is too far from sqrt(Z) ^ 2 (%.17e) .\n", Y);
-      }
-    }
-  /*=============================================*/
-  Milestone = 190;
-  /*=============================================*/
-  pause();
-  X = UfThold * V;
-  Y = radix * radix;
-  if (X*Y < one || X > Y) {
-    if (X * Y < U1 || X > Y/U1) badCond(Defect, "Badly");
-    else badCond(Flaw, "");
-
-    printf(" unbalanced range; UfThold * V = %.17e\n\t%s\n",
-      X, "is too far from 1.\n");
-    }
-  /*=============================================*/
-  Milestone = 200;
-  /*=============================================*/
-  for (indx = 1; indx <= 5; ++indx)  {
-    X = F9;
-    switch (indx)  {
-      case 2: X = one + U2; break;
-      case 3: X = V; break;
-      case 4: X = UfThold; break;
-      case 5: X = radix;
-      }
-    Y = X;
+    /*=============================================*/
+    Milestone = 210;
+    /*=============================================*/
+    MyZero = zero;
+    printf("\n");
+    printf("What message and/or values does Division by zero produce?\n") ;
     sigsave = sigfpe;
-    if (setjmp(ovfl_buf))
-      printf("  X / X  traps when X = %g\n", X);
-    else {
-      V9 = (Y / X - half) - half;
-      if (V9 == zero) continue;
-      if (V9 == - U1 && indx < 5) badCond(Flaw, "");
-      else badCond(Serious, "");
-      printf("  X / X differs from 1 when X = %.17e\n", X);
-      printf("  instead, X / X - 1/2 - 1/2 = %.17e .\n", V9);
-      }
+    printf("    Trying to compute 1 / 0 produces ...");
+    if (!setjmp(ovfl_buf)) printf("  %.7e .\n", one / MyZero);
     sigsave = 0;
-    }
-  /*=============================================*/
-  Milestone = 210;
-  /*=============================================*/
-  MyZero = zero;
-  printf("\n");
-  printf("What message and/or values does Division by zero produce?\n") ;
-  sigsave = sigfpe;
-  printf("    Trying to compute 1 / 0 produces ...");
-  if (!setjmp(ovfl_buf)) printf("  %.7e .\n", one / MyZero);
-  sigsave = 0;
-  sigsave = sigfpe;
-  printf("\n    Trying to compute 0 / 0 produces ...");
-  if (!setjmp(ovfl_buf)) printf("  %.7e .\n", zero / MyZero);
-  sigsave = 0;
-  /*=============================================*/
-  Milestone = 220;
-  /*=============================================*/
-  pause();
-  printf("\n");
-  {
-    static const char *msg[] = {
-      "FAILUREs  encountered =",
-      "SERIOUS DEFECTs  discovered =",
-      "DEFECTs  discovered =",
-      "FLAWs  discovered =" };
-    int i;
-    for(i = 0; i < 4; i++) if (ErrCnt[i])
-      printf("The number of  %-29s %d.\n",
-        msg[i], ErrCnt[i]);
-    }
-  printf("\n");
-  if ((ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect]
-      + ErrCnt[Flaw]) > 0) {
-    if ((ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[
-      Defect] == 0) && (ErrCnt[Flaw] > 0)) {
-      printf("The arithmetic diagnosed seems ");
-      printf("Satisfactory though flawed.\n");
+    sigsave = sigfpe;
+    printf("\n    Trying to compute 0 / 0 produces ...");
+    if (!setjmp(ovfl_buf)) printf("  %.7e .\n", zero / MyZero);
+    sigsave = 0;
+    /*=============================================*/
+    Milestone = 220;
+    /*=============================================*/
+    pause();
+    printf("\n");
+    {
+      static const char *msg[] = {
+        "FAILUREs  encountered =",
+        "SERIOUS DEFECTs  discovered =",
+        "DEFECTs  discovered =",
+        "FLAWs  discovered =" };
+      int i;
+      for(i = 0; i < 4; i++) if (ErrCnt[i])
+        printf("The number of  %-29s %d.\n",
+          msg[i], ErrCnt[i]);
       }
-    if ((ErrCnt[Failure] + ErrCnt[Serious] == 0)
-      && ( ErrCnt[Defect] > 0)) {
-      printf("The arithmetic diagnosed may be Acceptable\n");
-      printf("despite inconvenient Defects.\n");
-      }
-    if ((ErrCnt[Failure] + ErrCnt[Serious]) > 0) {
-      printf("The arithmetic diagnosed has ");
-      printf("unacceptable Serious Defects.\n");
-      }
-    if (ErrCnt[Failure] > 0) {
-      printf("Potentially fatal FAILURE may have spoiled this");
-      printf(" program's subsequent diagnoses.\n");
-      }
-    }
-  else {
-    printf("No failures, defects nor flaws have been discovered.\n");
-    if (! ((RMult == Rounded) && (RDiv == Rounded)
-      && (RAddSub == Rounded) && (RSqrt == Rounded)))
-      printf("The arithmetic diagnosed seems Satisfactory.\n");
-    else {
-      if (StickyBit >= one &&
-        (radix - two) * (radix - nine - one) == zero) {
-        printf("Rounding appears to conform to ");
-        printf("the proposed IEEE standard P");
-        if ((radix == two) &&
-           ((Precision - four * three * two) *
-            ( Precision - twentySeven -
-             twentySeven + one) == zero))
-          printf("754");
-        else printf("854");
-        if (IEEE) printf(".\n");
-        else {
-          printf(",\nexcept for possibly Double Rounding");
-          printf(" during Gradual Underflow.\n");
-          }
+    printf("\n");
+    if ((ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect]
+        + ErrCnt[Flaw]) > 0) {
+      if ((ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[
+        Defect] == 0) && (ErrCnt[Flaw] > 0)) {
+        printf("The arithmetic diagnosed seems ");
+        printf("Satisfactory though flawed.\n");
         }
-      printf("The arithmetic diagnosed appears to be Excellent!\n");
+      if ((ErrCnt[Failure] + ErrCnt[Serious] == 0)
+        && ( ErrCnt[Defect] > 0)) {
+        printf("The arithmetic diagnosed may be Acceptable\n");
+        printf("despite inconvenient Defects.\n");
+        }
+      if ((ErrCnt[Failure] + ErrCnt[Serious]) > 0) {
+        printf("The arithmetic diagnosed has ");
+        printf("unacceptable Serious Defects.\n");
+        }
+      if (ErrCnt[Failure] > 0) {
+        printf("Potentially fatal FAILURE may have spoiled this");
+        printf(" program's subsequent diagnoses.\n");
+        }
       }
-    }
-  if (fpecount)
-    printf("\nA total of %d floating point exceptions were registered.\n",
-      fpecount);
-  printf("END OF TEST.\n");
-  return { Milestone, fpecount + ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect] + ErrCnt[Flaw] };
+    else {
+      printf("No failures, defects nor flaws have been discovered.\n");
+      if (! ((RMult == Rounded) && (RDiv == Rounded)
+        && (RAddSub == Rounded) && (RSqrt == Rounded)))
+        printf("The arithmetic diagnosed seems Satisfactory.\n");
+      else {
+        if (StickyBit >= one &&
+          (radix - two) * (radix - nine - one) == zero) {
+          printf("Rounding appears to conform to ");
+          printf("the proposed IEEE standard P");
+          if ((radix == two) &&
+             ((Precision - four * three * two) *
+              ( Precision - twentySeven -
+               twentySeven + one) == zero))
+            printf("754");
+          else printf("854");
+          if (IEEE) printf(".\n");
+          else {
+            printf(",\nexcept for possibly Double Rounding");
+            printf(" during Gradual Underflow.\n");
+            }
+          }
+        printf("The arithmetic diagnosed appears to be Excellent!\n");
+        }
+      }
+    if (fpecount)
+      printf("\nA total of %d floating point exceptions were registered.\n",
+        fpecount);
+    printf("END OF TEST.\n");
   }
+  catch (const TimeoutError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": timeout occurred" << endl;
+  }
+  return { Milestone, fpecount + ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect] + ErrCnt[Flaw] };
+}
+
+/* setTimeout */
+
+template <typename F>
+void Paranoia<F>::setTimeout(long millis) {
+  startTime = std::chrono::steady_clock::now();
+  auto timeout = std::chrono::duration<int, std::milli>(millis);
+  timeoutTime = startTime + timeout;
+}
+
+/* checkTimeout */
+
+template <typename F>
+void Paranoia<F>::checkTimeout() {
+  if (std::chrono::steady_clock::now() >= timeoutTime) {
+    throw TimeoutError("timeout");
+  }
+}
 
 /* sign */
 
