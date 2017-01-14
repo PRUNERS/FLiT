@@ -12,7 +12,7 @@ CPPFLAGS += -std=c++11
 CPPFLAGS += -Wno-shift-count-overflow
 CPPFLAGS += -Wall
 CPPFLAGS += -Wextra
-CPPFLAGS += -Werror
+#CPPFLAGS += -Werror
 #CPPFLAGS += -MMD
 CPPFLAGS += -I../gdb/inst
 CPPFLAGS += -I.
