@@ -40,6 +40,8 @@ CC_REQUIRED += -Wno-shift-count-overflow
 #CC_REQUIRED += -lm
 CC_REQUIRED += -lpthread
 CC_REQUIRED += -pthread
+CC_REQUIRED += -lm
+CC_REQUIRED += -lstdc++
 CC_REQUIRED += -I../gdb/inst
 CC_REQUIRED += -I.
 

@@ -169,7 +169,6 @@ lines
 #include <string>
 #include <thread>
 
-#include <cstdio>
 #include <cstdlib>
 #include <csignal>
 #include <csetjmp>
@@ -316,7 +315,7 @@ void sigfpe(int i)
 {
   Q_UNUSED(i);
   fpecount++;
-  printf("\n* * * FLOATING-POINT ERROR * * *\n");
+  info_stream << endl << "* * * FLOATING-POINT ERROR * * *\n";
   (void)fflush(stdout);
   if (sigsave) {
     (void)signal(SIGFPE, sigsave);
@@ -329,6 +328,7 @@ void sigfpe(int i)
 template <typename F>
 QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<F>& ti)
 {
+  Q_UNUSED(ti);
   int timeoutMillis = 1000;
 
   /* First two assignments use integer right-hand sides. */
@@ -367,7 +367,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     /*=============================================*/
     Milestone = 7;
     /*=============================================*/
-    printf("Program is now RUNNING tests on small integers:\n");
+    info_stream << id << ": Program is now RUNNING tests on small integers:\n";
 
     tstCond (Failure, (zero + zero == zero) && (one - one == zero)
          && (one > zero) && (one + one == two),
@@ -375,7 +375,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Z = - zero;
     if (Z != 0.0) {
       ErrCnt[Failure] = ErrCnt[Failure] + 1;
-      printf("Comparison alleges that -0.0 is Non-zero!\n");
+      info_stream << id << ": Comparison alleges that -0.0 is Non-zero!\n";
       U1 = 0.001;
       radix = 1;
       tstPtUf();
@@ -406,10 +406,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
          && ( twoForty / five - four * three * four == zero),
         "5 != 4+1, 240/3 != 80, 240/4 != 60, or 240/5 != 48");
     if (ErrCnt[Failure] == 0) {
-      printf("-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n");
-      printf("\n");
+      info_stream << id << "-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n";
+      info_stream << id << "\n";
       }
-    printf("Searching for radix and Precision.\n");
+    info_stream << id << "Searching for radix and Precision.\n";
     W = one;
     setTimeout(timeoutMillis); // 2 seconds
     do  {
@@ -430,7 +430,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       radix = radix - W;
       } while ( radix == zero);
     if (radix < two) radix = one;
-    printf("radix = %f .\n", radix);
+    info_stream << id << "radix = " << radix << " .\n";
     if (radix != 1) {
       W = one;
       setTimeout(timeoutMillis); // 2 seconds
@@ -445,8 +445,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
                                       ...*/
     U1 = one / W;
     U2 = radix * U1;
-    printf("Closest relative separation found is U1 = %.7e .\n\n", U1);
-    printf("Recalculating radix and precision\n ");
+    info_stream << id << "Closest relative separation found is U1 = " << U1 << " .\n\n";
+    info_stream << id << "Recalculating radix and precision\n ";
 
     /*save old values*/
     E0 = radix;
@@ -491,13 +491,13 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       X = half + Y;
       } while ( ! ((U1 <= X) || (X <= zero)));
     /*... now U1 == 1 ulp of 1 - ... */
-    if (U1 == E1) printf("confirms closest relative separation U1 .\n");
-    else printf("gets better closest relative separation U1 = %.7e .\n", U1);
+    if (U1 == E1) info_stream << id << "confirms closest relative separation U1 .\n";
+    else info_stream << id << "gets better closest relative separation U1 = " << U1 << " .\n";
     W = one / U1;
     F9 = (half - U1) + half;
     radix = std::floor(0.01 + U2 / U1);
-    if (radix == E0) printf("radix confirmed.\n");
-    else printf("MYSTERY: recalculated radix = %.7e .\n", radix);
+    if (radix == E0) info_stream << id << "radix confirmed.\n";
+    else info_stream << id << "MYSTERY: recalculated radix = " << radix << " .\n";
     tstCond (Defect, radix <= eight + eight,
          "radix is too big: roundoff problems");
     tstCond (Flaw, (radix == two) || (radix == 10)
@@ -531,13 +531,13 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (std::abs(Precision - Y) * twoForty < half) Precision = Y;
       }
     if ((Precision != std::floor(Precision)) || (radix == one)) {
-      printf("Precision cannot be characterized by an Integer number\n");
-      printf("of significant digits but, by itself, this is a minor flaw.\n");
+      info_stream << id << "Precision cannot be characterized by an Integer number\n";
+      info_stream << id << "of significant digits but, by itself, this is a minor flaw.\n";
       }
     if (radix == one)
-      printf("logarithmic encoding has precision characterized solely by U1.\n");
-    else printf("The number of significant digits of the radix is %f .\n",
-        Precision);
+      info_stream << id << "logarithmic encoding has precision characterized solely by U1.\n";
+    else
+      info_stream << id << "The number of significant digits of the radix is " << Precision << " .\n";
     tstCond (Serious, U2 * nine * nine * twoForty < one,
          "Precision worse than 5 decimal figures  ");
     /*=============================================*/
@@ -572,26 +572,26 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       } while ( ! ((X1 <= X) || (X <= zero)));
     if ((X1 != Y1) || (X1 != Z1)) {
       badCond(Serious, "Disagreements among the values X1, Y1, Z1,\n");
-      printf("respectively  %.7e,  %.7e,  %.7e,\n", X1, Y1, Z1);
-      printf("are symptoms of inconsistencies introduced\n");
-      printf("by extra-precise evaluation of arithmetic subexpressions.\n");
+      info_stream << id << "respectively  " << X1 << ",  " << Y1 << ",  " << Z1 << ",\n";
+      info_stream << id << "are symptoms of inconsistencies introduced\n";
+      info_stream << id << "by extra-precise evaluation of arithmetic subexpressions.\n";
       notify("Possibly some part of this");
-      if ((X1 == U1) || (Y1 == U1) || (Z1 == U1))  printf(
-        "That feature is not tested further by this program.\n") ;
+      if ((X1 == U1) || (Y1 == U1) || (Z1 == U1))
+        info_stream << id << "That feature is not tested further by this program.\n";
       }
     else  {
       if ((Z1 != U1) || (Z2 != U2)) {
         if ((Z1 >= U1) || (Z2 >= U2)) {
           badCond(Failure, "");
           notify("Precision");
-          printf("\tU1 = %.7e, Z1 - U1 = %.7e\n",U1,Z1-U1);
-          printf("\tU2 = %.7e, Z2 - U2 = %.7e\n",U2,Z2-U2);
+          info_stream << id << "\tU1 = " << U1 << ", Z1 - U1 = " << Z1 - U1 << endl;
+          info_stream << id << "\tU2 = " << U2 << ", Z2 - U2 = " << Z2 - U2 << endl;
           }
         else {
           if ((Z1 <= zero) || (Z2 <= zero)) {
-            printf("Because of unusual radix = %f", radix);
-            printf(", or exact rational arithmetic a result\n");
-            printf("Z1 = %.7e, or Z2 = %.7e ", Z1, Z2);
+            info_stream << id << "Because of unusual radix = " << radix;
+            info_stream << ", or exact rational arithmetic a result\n";
+            info_stream << id << "Z1 = " << Z1 << ", or Z2 = " << Z2 << " ";
             notify("of an\nextra-precision");
             }
           if (Z1 != Z2 || Z1 > zero) {
@@ -599,13 +599,11 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
             Y = Z2 / U2;
             if (Y > X) X = Y;
             Q = - std::log(X);
-            printf("Some subexpressions appear to be calculated extra\n");
-            printf("precisely with about %g extra B-digits, i.e.\n",
-              (Q / std::log(radix)));
-            printf("roughly %g extra significant decimals.\n",
-              Q / std::log(10.));
+            info_stream << id << "Some subexpressions appear to be calculated extra\n";
+            info_stream << id << "precisely with about " << (Q / std::log(radix)) << "%g extra B-digits, i.e.\n";
+            info_stream << id << "roughly " << Q / std::log(10.) << " extra significant decimals.\n";
             }
-          printf("That feature is not tested further by this program.\n");
+          info_stream << id << "That feature is not tested further by this program.\n";
           }
         }
       }
@@ -621,10 +619,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       X = T - Z;
       tstCond (Failure, X == U2,
         "Subtraction is not normalized X=Y,X+Z != Y+Z!");
-      if (X == U2) printf(
-        "Subtraction appears to be normalized, as it should be.");
+      if (X == U2)
+        info_stream << id << "Subtraction appears to be normalized, as it should be.";
       }
-    printf("\nChecking for guard digit in *, /, and -.\n");
+    info_stream << endl << id << "Checking for guard digit in *, /, and -.\n";
     Y = F9 * one;
     Z = one * F9;
     X = F9 - half;
@@ -703,17 +701,17 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       }
     if (F9 != one && F9 - one >= zero) {
       badCond(Serious, "comparison alleges  (1-U1) < 1  although\n");
-      printf("  subtraction yields  (1-U1) - 1 = 0 , thereby vitiating\n");
-      printf("  such precautions against division by zero as\n");
-      printf("  ...  if (X == 1.0) {.....} else {.../(X-1.0)...}\n");
+      info_stream << id << "  subtraction yields  (1-U1) - 1 = 0 , thereby vitiating\n";
+      info_stream << id << "  such precautions against division by zero as\n";
+      info_stream << id << "  ...  if (X == 1.0) {.....} else {.../(X-1.0)...}\n";
       }
-    if (GMult == Yes && GDiv == Yes && GAddSub == Yes) printf(
-      "     *, /, and - appear to have guard digits, as they should.\n");
+    if (GMult == Yes && GDiv == Yes && GAddSub == Yes)
+      info_stream << id << "     *, /, and - appear to have guard digits, as they should.\n";
     /*=============================================*/
     Milestone = 40;
     /*=============================================*/
     pause();
-    printf("Checking rounding on multiply, divide and add/subtract.\n");
+    info_stream << id << "Checking rounding on multiply, divide and add/subtract.\n";
     RMult = Other;
     RDiv = Other;
     RAddSub = Other;
@@ -776,18 +774,18 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if ((X == zero) && (Y == zero) && (Z == zero) && (T == zero)
         && ( StickyBit == zero) && (Y1 == half)) {
         RMult = Rounded;
-        printf("Multiplication appears to round correctly.\n");
+        info_stream << id << "Multiplication appears to round correctly.\n";
         }
       else  if ((X + U2 == zero) && (Y < zero) && (Z + U2 == zero)
           && (T < zero) && (StickyBit + U2 == zero)
           && (Y1 < half)) {
           RMult = Chopped;
-          printf("Multiplication appears to chop.\n");
+          info_stream << id << "Multiplication appears to chop.\n";
           }
-        else printf("* is neither chopped nor correctly rounded.\n");
+        else info_stream << id << "* is neither chopped nor correctly rounded.\n";
       if ((RMult == Rounded) && (GMult == No)) notify("Multiplication");
       }
-    else printf("* is neither chopped nor correctly rounded.\n");
+    else info_stream << id << "* is neither chopped nor correctly rounded.\n";
     /*=============================================*/
     Milestone = 45;
     /*=============================================*/
@@ -821,16 +819,16 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         && (Y2 == zero) && (Y2 == zero)
         && (Y1 - half == F9 - half )) {
         RDiv = Rounded;
-        printf("Division appears to round correctly.\n");
+        info_stream << id << "Division appears to round correctly.\n";
         if (GDiv == No) notify("Division");
         }
       else if ((X < zero) && (Y < zero) && (Z < zero) && (T < zero)
         && (Y2 < zero) && (Y1 - half < F9 - half)) {
         RDiv = Chopped;
-        printf("Division appears to chop.\n");
+        info_stream << id << "Division appears to chop.\n";
         }
       }
-    if (RDiv == Other) printf("/ is neither chopped nor correctly rounded.\n");
+    if (RDiv == Other) info_stream << id << "/ is neither chopped nor correctly rounded.\n";
     bInverse = one / radix;
     tstCond (Failure, (bInverse * radix - half == half),
          "radix * ( 1 / radix ) differs from 1");
@@ -847,7 +845,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Y = Y - one;
     if ((X == zero) && (Y == zero)) {
       RAddSub = Chopped;
-      printf("Add/Subtract appears to be chopped.\n");
+      info_stream << id << "Add/Subtract appears to be chopped.\n";
       }
     if (GAddSub == Yes) {
       X = (half + U2) * U2;
@@ -865,14 +863,14 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         Y = one - Y;
         if ((X == zero) && (Y == zero)) {
           RAddSub = Rounded;
-          printf("Addition/Subtraction appears to round correctly.\n");
+          info_stream << id << "Addition/Subtraction appears to round correctly.\n";
           if (GAddSub == No) notify("Add/Subtract");
           }
-        else printf("Addition/Subtraction neither rounds nor chops.\n");
+        else info_stream << id << "Addition/Subtraction neither rounds nor chops.\n";
         }
-      else printf("Addition/Subtraction neither rounds nor chops.\n");
+      else info_stream << id << "Addition/Subtraction neither rounds nor chops.\n";
       }
-    else printf("Addition/Subtraction neither rounds nor chops.\n");
+    else info_stream << id << "Addition/Subtraction neither rounds nor chops.\n";
     S = one;
     X = one + half * (one + half);
     Y = (one + U2) * half;
@@ -887,7 +885,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     if ((GMult == Yes) && (GDiv == Yes) && (GAddSub == Yes)
       && (RMult == Rounded) && (RDiv == Rounded)
       && (RAddSub == Rounded) && (std::floor(radixD2) == radixD2)) {
-      printf("Checking for sticky bit.\n");
+      info_stream << id << "Checking for sticky bit.\n";
       X = (half + U1) * U2;
       Y = half * U2;
       Z = one + Y;
@@ -923,17 +921,17 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
           }
         }
       }
-    if (StickyBit == one) printf("Sticky bit apparently used correctly.\n");
-    else printf("Sticky bit used incorrectly or not at all.\n");
+    if (StickyBit == one) info_stream << id << "Sticky bit apparently used correctly.\n";
+    else info_stream << id << "Sticky bit used incorrectly or not at all.\n";
     tstCond (Flaw, !(GMult == No || GDiv == No || GAddSub == No ||
         RMult == Other || RDiv == Other || RAddSub == Other),
       "lack(s) of guard digits or failure(s) to correctly round or chop\n(noted above) count as one flaw in the final tally below");
     /*=============================================*/
     Milestone = 60;
     /*=============================================*/
-    printf("\n");
-    printf("Does Multiplication commute?  ");
-    printf("Testing on %d random pairs.\n", noTrials);
+    info_stream << id << "\n";
+    info_stream << id << "Does Multiplication commute?  ";
+    info_stream << "Testing on " << noTrials << " random pairs.\n";
     Random9 = std::sqrt(3.0);
     Random1 = Third;
     I = 1;
@@ -957,11 +955,11 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       }
     if (! ((I == noTrials) || (Z9 == zero)))
       badCond(Defect, "X * Y == Y * X trial fails.\n");
-    else printf("     No failures found in %d integer pairs.\n", noTrials);
+    else info_stream << id << "     No failures found in " << noTrials << " integer pairs.\n";
     /*=============================================*/
     Milestone = 70;
     /*=============================================*/
-    printf("\nRunning test of square root(x).\n");
+    info_stream << endl << id << "Running test of square root(x).\n";
     tstCond (Failure, (zero == std::sqrt(zero))
          && (- zero == std::sqrt(- zero))
          && (one == std::sqrt(one)), "Square root of 0.0, -0.0 or 1.0 wrong");
@@ -978,7 +976,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     OneUlp = U1 * U1;
     sqXMinX (Serious);
     if (J != zero) pause();
-    printf("Testing if sqrt(X * X) == X for %d Integers X.\n", noTrials);
+    info_stream << id << "Testing if sqrt(X * X) == X for " << noTrials << " Integers X.\n";
     J = zero;
     X = two;
     Y = radix;
@@ -998,7 +996,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (J > zero) break;
       I = I + 1;
       }
-    printf("Test for sqrt monotonicity.\n");
+    info_stream << id << "Test for sqrt monotonicity.\n";
     I = - 1;
     X = bMinusU2;
     Y = radix;
@@ -1031,10 +1029,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
           }
         }
       }
-    if (Monot) printf("sqrt has passed a test for Monotonicity.\n");
+    if (Monot) info_stream << id << "sqrt has passed a test for Monotonicity.\n";
     else {
       badCond(Defect, "");
-      printf("sqrt(X) is non-monotonic for X near %.7e .\n", Y);
+      info_stream << id << "sqrt(X) is non-monotonic for X near " << Y << " .\n";
       }
     /*=============================================*/
     Milestone = 80;
@@ -1075,7 +1073,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Anomaly = False;
     RSqrt = Other; /* ~dgh */
     if (radix != one) {
-      printf("Testing whether sqrt is rounded or chopped.\n");
+      info_stream << id << "Testing whether sqrt is rounded or chopped.\n";
       D = std::floor(half + pow(radix, one + Precision - std::floor(Precision)));
     /* ... == radix^(1 + fract) if (Precision == Integer + fract. */
       X = D / radix;
@@ -1164,29 +1162,29 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       if ((I == 0) || Anomaly) {
         badCond(Failure, "Anomalous arithmetic with Integer < ");
-        printf("radix^Precision = %.7e\n", W);
-        printf(" fails test whether sqrt rounds or chops.\n");
+        info_stream << id << "radix^Precision = " << W << "\n";
+        info_stream << id << " fails test whether sqrt rounds or chops.\n";
         SqRWrng = True;
         }
       }
     if (! Anomaly) {
       if (! ((MinSqEr < zero) || (MaxSqEr > zero))) {
         RSqrt = Rounded;
-        printf("Square root appears to be correctly rounded.\n");
+        info_stream << id << "Square root appears to be correctly rounded.\n";
         }
       else  {
         if ((MaxSqEr + U2 > U2 - half) || (MinSqEr > half)
           || (MinSqEr + radix < half)) SqRWrng = True;
         else {
           RSqrt = Chopped;
-          printf("Square root appears to be chopped.\n");
+          info_stream << id << "Square root appears to be chopped.\n";
           }
         }
       }
     if (SqRWrng) {
-      printf("Square root is neither chopped nor correctly rounded.\n");
-      printf("Observed errors run from %.7e ", MinSqEr - half);
-      printf("to %.7e ulps.\n", half + MaxSqEr);
+      info_stream << id << "Square root is neither chopped nor correctly rounded.\n";
+      info_stream << id << "Observed errors run from " << MinSqEr - half << " ";
+      info_stream << id << "to " << half + MaxSqEr << " ulps.\n";
       tstCond (Serious, MaxSqEr - MinSqEr < radix * radix,
         "sqrt gets too many last digits wrong");
       }
@@ -1194,7 +1192,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Milestone = 90;
     /*=============================================*/
     pause();
-    printf("Testing powers Z^i for small Integers Z and i.\n");
+    info_stream << id << "Testing powers Z^i for small Integers Z and i.\n";
     N = 0;
     /* ... test powers of zero. */
     I = 0;
@@ -1252,18 +1250,18 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         } while ( three * std::floor(Z / three) == Z );
       } while ( Z < eight * three );
     if (N > 0) {
-      printf("Errors like this may invalidate financial calculations\n");
-      printf("\tinvolving interest rates.\n");
+      info_stream << id << "Errors like this may invalidate financial calculations\n";
+      info_stream << id << "\tinvolving interest rates.\n";
       }
     printIfNPositive();
     N += N1;
-    if (N == 0) printf("... no discrepancis found.\n");
+    if (N == 0) info_stream << id << "... no discrepancis found.\n";
     if (N > 0) pause();
-    else printf("\n");
+    else info_stream << id << "\n";
     /*=============================================*/
     Milestone = 110;
     /*=============================================*/
-    printf("Seeking Underflow thresholds UfThold and E0.\n");
+    info_stream << id << "Seeking Underflow thresholds UfThold and E0.\n";
     D = U1;
     if (Precision != std::floor(Precision)) {
       D = bInverse;
@@ -1348,24 +1346,24 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       }
     /* Comment line 4530 .. 4560 */
     if (PseudoZero != zero) {
-      printf("\n");
+      info_stream << id << "\n";
       Z = PseudoZero;
     /* ... Test PseudoZero for "phoney- zero" violates */
     /* ... PseudoZero < Underflow or PseudoZero < PseudoZero + PseudoZero
          ... */
       if (PseudoZero <= zero) {
         badCond(Failure, "Positive expressions can underflow to an\n");
-        printf("allegedly negative value\n");
-        printf("PseudoZero that prints out as: %g .\n", PseudoZero);
+        info_stream << id << "allegedly negative value\n";
+        info_stream << id << "PseudoZero that prints out as: " << PseudoZero << " .\n";
         X = - PseudoZero;
         if (X <= zero) {
-          printf("But -PseudoZero, which should be\n");
-          printf("positive, isn't; it prints out as  %g .\n", X);
+          info_stream << id << "But -PseudoZero, which should be\n";
+          info_stream << id << "positive, isn't; it prints out as  " << X << " .\n";
           }
         }
       else {
         badCond(Flaw, "Underflow can stick at an allegedly positive\n");
-        printf("value PseudoZero that prints out as %g .\n", PseudoZero);
+        info_stream << id << "value PseudoZero that prints out as " << PseudoZero << " .\n";
         }
       tstPtUf();
       }
@@ -1379,17 +1377,17 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     if (! ((E1 == zero) || (E1 == E0))) {
       badCond(Defect, "");
       if (E1 < E0) {
-        printf("Products underflow at a higher");
-        printf(" threshold than differences.\n");
+        info_stream << id << "Products underflow at a higher";
+        info_stream << " threshold than differences.\n";
         if (PseudoZero == zero)
         E0 = E1;
         }
       else {
-        printf("Difference underflows at a higher");
-        printf(" threshold than products.\n");
+        info_stream << id << "Difference underflows at a higher";
+        info_stream << " threshold than products.\n";
         }
       }
-    printf("Smallest strictly positive number found is E0 = %g .\n", E0);
+    info_stream << id << "Smallest strictly positive number found is E0 = " << E0 << " .\n";
     Z = E0;
     tstPtUf();
     Underflow = E0;
@@ -1404,18 +1402,18 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if ((CInvrse * Q) != ((CInvrse * Y) * S)) {
         UfThold = Y;
         badCond(Failure, "Either accuracy deteriorates as numbers\n");
-        printf("approach a threshold = %.17e\n", UfThold);;
-        printf(" coming down from %.17e\n", C);
-        printf(" or else multiplication gets too many last digits wrong.\n");
+        info_stream << id << "approach a threshold = " << UfThold << "\n";
+        info_stream << id << " coming down from " << C << "\n";
+        info_stream << id << " or else multiplication gets too many last digits wrong.\n";
         }
       pause();
       break;
 
       case  2:
       badCond(Failure, "Underflow confuses Comparison, which alleges that\n");
-      printf("Q == Y while denying that |Q - Y| == 0; these values\n");
-      printf("print out as Q = %.17e, Y = %.17e .\n", Q, Y2);
-      printf ("|Q - Y| = %.17e .\n" , std::abs(Q - Y2));
+      info_stream << id << "Q == Y while denying that |Q - Y| == 0; these values\n";
+      info_stream << id << "print out as Q = " << Q << ", Y = " << Y2 << " .\n";
+      info_stream << id << "|Q - Y| = " << std::abs(Q - Y2) << " .\n";
       UfThold = Q;
       break;
 
@@ -1427,8 +1425,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if ((Q == UfThold) && (E1 == E0)
         && (std::abs( UfThold - E1 / E9) <= E1)) {
         UfNGrad = False;
-        printf("Underflow is gradual; it incurs Absolute Error =\n");
-        printf("(roundoff in UfThold) < E0.\n");
+        info_stream << id << "Underflow is gradual; it incurs Absolute Error =\n";
+        info_stream << id << "(roundoff in UfThold) < E0.\n";
         Y = E0 * CInvrse;
         Y = Y * (oneAndHalf + U2);
         X = CInvrse * (one + U2);
@@ -1437,10 +1435,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       }
     if (UfNGrad) {
-      printf("\n");
+      info_stream << "\n";
       sigsave = sigfpe;
       if (setjmp(ovfl_buf)) {
-        printf("Underflow / UfThold failed!\n");
+        info_stream << id << "Underflow / UfThold failed!\n";
         R = H + H;
         }
       else R = std::sqrt(Underflow / UfThold);
@@ -1455,25 +1453,23 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       if (! ((X == Z) || (X - Z != zero))) {
         badCond(Flaw, "");
-        printf("X = %.17e\n\tis not equal to Z = %.17e .\n", X, Z);
+        info_stream << id << "X = " << X << "\n\tis not equal to Z = " << Z << " .\n";
         Z9 = X - Z;
-        printf("yet X - Z yields %.17e .\n", Z9);
-        printf("    Should this NOT signal Underflow, ");
-        printf("this is a SERIOUS DEFECT\nthat causes ");
-        printf("confusion when innocent statements like\n");;
-        printf("    if (X == Z)  ...  else");
-        printf("  ... (f(X) - f(Z)) / (X - Z) ...\n");
-        printf("encounter Division by zero although actually\n");
+        info_stream << id << "yet X - Z yields " << Z9 << " .\n";
+        info_stream << id << "    Should this NOT signal Underflow, ";
+        info_stream << "this is a SERIOUS DEFECT\n";
+        info_stream << id << "that causes confusion when innocent statements like\n";;
+        info_stream << id << "    if (X == Z)  ...  else  ... (f(X) - f(Z)) / (X - Z) ...\n";
+        info_stream << id << "encounter Division by zero although actually\n";
         sigsave = sigfpe;
-        if (setjmp(ovfl_buf)) printf("X / Z fails!\n");
-        else printf("X / Z = 1 + %g .\n", (X / Z - half) - half);
+        if (setjmp(ovfl_buf)) info_stream << id << "X / Z fails!\n";
+        else info_stream << id << "X / Z = 1 + " << (X / Z - half) - half << " .\n";
         sigsave = 0;
         }
       }
-    printf("The Underflow threshold is %.17e, %s\n", UfThold,
-         " below which");
-    printf("calculation may suffer larger Relative error than ");
-    printf("merely roundoff.\n");
+    info_stream << id << "The Underflow threshold is " << UfThold << ", below which\n";
+    info_stream << id << "calculation may suffer larger Relative error than ";
+    info_stream << "merely roundoff.\n";
     Y2 = U1 * U1;
     Y = Y2 * Y2;
     Y2 = Y * U1;
@@ -1486,32 +1482,33 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         badCond(Serious, "");
         I = 4;
         }
-      printf("Range is too narrow; U1^%d Underflows.\n", I);
+      info_stream << id << "Range is too narrow; U1^" << I << " Underflows.\n";
       }
     /*=============================================*/
     Milestone = 130;
     /*=============================================*/
     Y = - std::floor(half - twoForty * std::log(UfThold) / std::log(HInvrse)) / twoForty;
     Y2 = Y + Y;
-    printf("Since underflow occurs below the threshold\n");
-    printf("UfThold = (%.17e) ^ (%.17e)\nonly underflow ", HInvrse, Y);
-    printf("should afflict the expression\n\t(%.17e) ^ (%.17e);\n", HInvrse, Y);
+    info_stream << id << "Since underflow occurs below the threshold\n";
+    info_stream << id << "UfThold = (" << HInvrse << ") ^ (" << Y << ")\n";
+    info_stream << id << " only underflow should afflict the expression\n";
+    info_stream << id << "\t(" << HInvrse << ") ^ (" << Y << ");\n";
     V9 = pow(HInvrse, Y2);
-    printf("actually calculating yields: %.17e .\n", V9);
+    info_stream << id << "actually calculating yields: " << V9 << " .\n";
     if (! ((V9 >= zero) && (V9 <= (radix + radix + E9) * UfThold))) {
       badCond(Serious, "this is not between 0 and underflow\n");
-      printf("   threshold = %.17e .\n", UfThold);
+      info_stream << id << "   threshold = " << UfThold << " .\n";
       }
     else if (! (V9 > UfThold * (one + E9)))
-      printf("This computed value is O.K.\n");
+      info_stream << id << "This computed value is O.K.\n";
     else {
       badCond(Defect, "this is not between 0 and underflow\n");
-      printf("   threshold = %.17e .\n", UfThold);
+      info_stream << id << "   threshold = " << UfThold << " .\n";
       }
     /*=============================================*/
     Milestone = 140;
     /*=============================================*/
-    printf("\n");
+    info_stream << id << "\n";
     /* ...calculate Exp2 == exp(2) == 7.389056099... */
     X = zero;
     I = 2;
@@ -1533,8 +1530,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Exp2 = X * X;
     X = F9;
     Y = X - U1;
-    printf("Testing X^((X + 1) / (X - 1)) vs. exp(2) = %.17e as X -> 1.\n",
-      Exp2);
+    info_stream << id << "Testing X^((X + 1) / (X - 1)) vs. exp(2) = " << Exp2 << " as X -> 1.\n";
     for(I = 1;;) {
       Z = X - bInverse;
       Z = (X + one) / (Z - (one - bInverse));
@@ -1543,11 +1539,11 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         N = 1;
          V9 = (X - bInverse) - (one - bInverse);
         badCond(Defect, "Calculated");
-        printf(" %.17e for\n", pow(X,Z));
-        printf("\t(1 + (%.17e) ^ (%.17e);\n", V9, Z);
-        printf("\tdiffers from correct value by %.17e .\n", Q);
-        printf("\tThis much error may spoil financial\n");
-        printf("\tcalculations involving tiny interest rates.\n");
+        info_stream << id << " " << pow(X, Z) << " for\n";
+        info_stream << id << "\t(1 + (" << V9 << ") ^ (" << Z << ");\n";
+        info_stream << id << "\tdiffers from correct value by " << Q << " .\n";
+        info_stream << id << "\tThis much error may spoil financial\n";
+        info_stream << id << "\tcalculations involving tiny interest rates.\n";
         break;
         }
       else {
@@ -1559,7 +1555,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         else  {
           if (X > one) {
             if (N == 0)
-               printf("Accuracy seems adequate.\n");
+               info_stream << id << "Accuracy seems adequate.\n";
             break;
             }
           else {
@@ -1574,7 +1570,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     /*=============================================*/
     Milestone = 150;
     /*=============================================*/
-    printf("Testing powers Z^Q at four nearly extreme values.\n");
+    info_stream << id << "Testing powers Z^Q at four nearly extreme values.\n";
     N = 0;
     Z = a1;
     Q = std::floor(half - std::log(C) / std::log(a1));
@@ -1593,15 +1589,15 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       else Z = aInverse;
       } while ( ! (Break));
     printIfNPositive();
-    if (N == 0) printf(" ... no discrepancies found.\n");
-    printf("\n");
+    if (N == 0) info_stream << id << " ... no discrepancies found.\n";
+    info_stream << id << "\n";
 
     /*=============================================*/
     Milestone = 160;
     /*=============================================*/
     pause();
-    printf("Searching for Overflow threshold:\n");
-    printf("This may generate an error.\n");
+    info_stream << id << "Searching for Overflow threshold:\n";
+    info_stream << id << "This may generate an error.\n";
     Y = - CInvrse;
     V9 = HInvrse * Y;
     sigsave = sigfpe;
@@ -1617,18 +1613,19 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   overflow:
     sigsave = 0;
     Z = V9;
-    printf("Can `Z = -Y' overflow?\n");
-    printf("Trying it on Y = %.17e .\n", Y);
+    info_stream << id << "Can `Z = -Y' overflow?\n";
+    info_stream << id << "Trying it on Y = " << Y << " .\n";
     V9 = - Y;
     V0 = V9;
-    if (V - Y == V + V0) printf("Seems O.K.\n");
+    if (V - Y == V + V0) info_stream << id << "Seems O.K.\n";
     else {
-      printf("finds a ");
+      info_stream << id << "finds a ";
       badCond(Flaw, "-(-Y) differs from Y.\n");
       }
     if (Z != Y) {
       badCond(Serious, "");
-      printf("overflow past %.17e\n\tshrinks to %.17e .\n", Y, Z);
+      info_stream << id << "overflow past " << Y << "\n";
+      info_stream << id << "\tshrinks to " << Z << " .\n";
       }
     if (I) {
       Y = V * (HInvrse * U2 - HInvrse);
@@ -1641,27 +1638,27 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       V = Y * (HInvrse * U2 - HInvrse);
       V = V + ((one - HInvrse) * U2) * Y;
       }
-    printf("Overflow threshold is V  = %.17e .\n", V);
-    if (I) printf("Overflow saturates at V0 = %.17e .\n", V0);
-    else printf("There is no saturation value because the system traps on overflow.\n");
+    info_stream << id << "Overflow threshold is V  = " << V << " .\n";
+    if (I) info_stream << id << "Overflow saturates at V0 = " << V0 << " .\n";
+    else info_stream << id << "There is no saturation value because the system traps on overflow.\n";
     V9 = V * one;
-    printf("No Overflow should be signaled for V * 1 = %.17e\n", V9);
+    info_stream << id << "No Overflow should be signaled for V * 1 = " << V9 << "\n";
     V9 = V / one;
-    printf("                           nor for V / 1 = %.17e .\n", V9);
-    printf("Any overflow signal separating this * from the one\n");
-    printf("above is a DEFECT.\n");
+    info_stream << id << "                           nor for V / 1 = " << V9 << " .\n";
+    info_stream << id << "Any overflow signal separating this * from the one\n";
+    info_stream << id << "above is a DEFECT.\n";
     /*=============================================*/
     Milestone = 170;
     /*=============================================*/
     if (!(-V < V && -V0 < V0 && -UfThold < V && UfThold < V)) {
       badCond(Failure, "Comparisons involving ");
-      printf("+-%g, +-%g\nand +-%g are confused by Overflow.",
-        V, V0, UfThold);
+      info_stream << id << "+-" << V << ", +-" << V0 << "\n";
+      info_stream << id << "and +-" << UfThold << " are confused by Overflow.";
       }
     /*=============================================*/
     Milestone = 175;
     /*=============================================*/
-    printf("\n");
+    info_stream << "\n";
     for(indx = 1; indx <= 3; ++indx) {
       switch (indx)  {
         case 1: Z = UfThold; break;
@@ -1675,8 +1672,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
            || Y > (one + radix * E9) * Z) { /* dgh: + E9 --> * E9 */
           if (V9 > U1) badCond(Serious, "");
           else badCond(Defect, "");
-          printf("Comparison alleges that what prints as Z = %.17e\n", Z);
-          printf(" is too far from sqrt(Z) ^ 2 = %.17e .\n", Y);
+          info_stream << id << "Comparison alleges that what prints as Z = " << Z << "\n";
+          info_stream << id << " is too far from sqrt(Z) ^ 2 = " << Y << " .\n";
           }
         }
       }
@@ -1693,8 +1690,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         Y = V9;
         if (X < W) badCond(Serious, "");
         else badCond(Defect, "");
-        printf("Comparison alleges that Z = %17e\n", Z);
-        printf(" is too far from sqrt(Z) ^ 2 (%.17e) .\n", Y);
+        info_stream << id << "Comparison alleges that Z = " << Z << "\n";
+        info_stream << id << " is too far from sqrt(Z) ^ 2 (" << Y << ") .\n";
         }
       }
     /*=============================================*/
@@ -1707,8 +1704,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (X * Y < U1 || X > Y/U1) badCond(Defect, "Badly");
       else badCond(Flaw, "");
 
-      printf(" unbalanced range; UfThold * V = %.17e\n\t%s\n",
-        X, "is too far from 1.\n");
+      info_stream << id << " unbalanced range; UfThold * V = " << X << "\n";
+      info_stream << id << "\tis too far from 1.\n\n";
       }
     /*=============================================*/
     Milestone = 200;
@@ -1724,14 +1721,14 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       Y = X;
       sigsave = sigfpe;
       if (setjmp(ovfl_buf))
-        printf("  X / X  traps when X = %g\n", X);
+        info_stream << id << "  X / X  traps when X = " << X << "\n";
       else {
         V9 = (Y / X - half) - half;
         if (V9 == zero) continue;
         if (V9 == - U1 && indx < 5) badCond(Flaw, "");
         else badCond(Serious, "");
-        printf("  X / X differs from 1 when X = %.17e\n", X);
-        printf("  instead, X / X - 1/2 - 1/2 = %.17e .\n", V9);
+        info_stream << id << "  X / X differs from 1 when X = " << X << "\n";
+        info_stream << id << "  instead, X / X - 1/2 - 1/2 = " << V9 << " .\n";
         }
       sigsave = 0;
       }
@@ -1739,21 +1736,21 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Milestone = 210;
     /*=============================================*/
     MyZero = zero;
-    printf("\n");
-    printf("What message and/or values does Division by zero produce?\n") ;
+    info_stream << id << "\n";
+    info_stream << id << "What message and/or values does Division by zero produce?\n";
     sigsave = sigfpe;
-    printf("    Trying to compute 1 / 0 produces ...");
-    if (!setjmp(ovfl_buf)) printf("  %.7e .\n", one / MyZero);
+    info_stream << id << "    Trying to compute 1 / 0 produces ...";
+    if (!setjmp(ovfl_buf)) info_stream << id << "  " << one / MyZero << " .\n";
     sigsave = 0;
     sigsave = sigfpe;
-    printf("\n    Trying to compute 0 / 0 produces ...");
-    if (!setjmp(ovfl_buf)) printf("  %.7e .\n", zero / MyZero);
+    info_stream << id << "\n    Trying to compute 0 / 0 produces ...";
+    if (!setjmp(ovfl_buf)) info_stream << id << "  " << zero / MyZero << " .\n";
     sigsave = 0;
     /*=============================================*/
     Milestone = 220;
     /*=============================================*/
     pause();
-    printf("\n");
+    info_stream << id << "\n";
     {
       static const char *msg[] = {
         "FAILUREs  encountered =",
@@ -1762,60 +1759,58 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         "FLAWs  discovered =" };
       int i;
       for(i = 0; i < 4; i++) if (ErrCnt[i])
-        printf("The number of  %-29s %d.\n",
-          msg[i], ErrCnt[i]);
+        info_stream << id << "The number of  " << msg[i] << " " << ErrCnt[i] << ".\n";
       }
-    printf("\n");
+    info_stream << id << "\n";
     if ((ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect]
         + ErrCnt[Flaw]) > 0) {
       if ((ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[
         Defect] == 0) && (ErrCnt[Flaw] > 0)) {
-        printf("The arithmetic diagnosed seems ");
-        printf("Satisfactory though flawed.\n");
+        info_stream << id << "The arithmetic diagnosed seems ";
+        info_stream << "Satisfactory though flawed.\n";
         }
       if ((ErrCnt[Failure] + ErrCnt[Serious] == 0)
         && ( ErrCnt[Defect] > 0)) {
-        printf("The arithmetic diagnosed may be Acceptable\n");
-        printf("despite inconvenient Defects.\n");
+        info_stream << id << "The arithmetic diagnosed may be Acceptable\n";
+        info_stream << id << "despite inconvenient Defects.\n";
         }
       if ((ErrCnt[Failure] + ErrCnt[Serious]) > 0) {
-        printf("The arithmetic diagnosed has ");
-        printf("unacceptable Serious Defects.\n");
+        info_stream << id << "The arithmetic diagnosed has ";
+        info_stream << "unacceptable Serious Defects.\n";
         }
       if (ErrCnt[Failure] > 0) {
-        printf("Potentially fatal FAILURE may have spoiled this");
-        printf(" program's subsequent diagnoses.\n");
+        info_stream << id << "Potentially fatal FAILURE may have spoiled this";
+        info_stream << " program's subsequent diagnoses.\n";
         }
       }
     else {
-      printf("No failures, defects nor flaws have been discovered.\n");
+      info_stream << id << "No failures, defects nor flaws have been discovered.\n";
       if (! ((RMult == Rounded) && (RDiv == Rounded)
         && (RAddSub == Rounded) && (RSqrt == Rounded)))
-        printf("The arithmetic diagnosed seems Satisfactory.\n");
+        info_stream << id << "The arithmetic diagnosed seems Satisfactory.\n";
       else {
         if (StickyBit >= one &&
           (radix - two) * (radix - nine - one) == zero) {
-          printf("Rounding appears to conform to ");
-          printf("the proposed IEEE standard P");
+          info_stream << id << "Rounding appears to conform to ";
+          info_stream << "the proposed IEEE standard P";
           if ((radix == two) &&
              ((Precision - four * three * two) *
               ( Precision - twentySeven -
                twentySeven + one) == zero))
-            printf("754");
-          else printf("854");
-          if (IEEE) printf(".\n");
+            info_stream << "754";
+          else info_stream << "854";
+          if (IEEE) info_stream << ".\n";
           else {
-            printf(",\nexcept for possibly Double Rounding");
-            printf(" during Gradual Underflow.\n");
+            info_stream << id << ",\nexcept for possibly Double Rounding";
+            info_stream << id << " during Gradual Underflow.\n";
             }
           }
-        printf("The arithmetic diagnosed appears to be Excellent!\n");
+        info_stream << id << "The arithmetic diagnosed appears to be Excellent!\n";
         }
       }
     if (fpecount)
-      printf("\nA total of %d floating point exceptions were registered.\n",
-        fpecount);
-    printf("END OF TEST.\n");
+      info_stream << id << "\nA total of " << fpecount << " floating point exceptions were registered.\n";
+    info_stream << id << "END OF TEST.\n";
   }
   catch (const TimeoutError &e) {
     Q_UNUSED(e);
@@ -1853,8 +1848,8 @@ F Paranoia<F>::sign (F X)
 template <typename F>
 void Paranoia<F>::pause(void)
 {
-  printf("\nDiagnosis resumes after milestone Number %d", Milestone);
-  printf("          Page: %d\n\n", PageNo);
+  info_stream << id << "\nDiagnosis resumes after milestone Number " << Milestone;
+  info_stream << id << "          Page: " << PageNo  << "\n\n";
   ++Milestone;
   ++PageNo;
   }
@@ -1863,7 +1858,7 @@ void Paranoia<F>::pause(void)
 
 template <typename F>
 void Paranoia<F>::tstCond (int K, int Valid, const char *T)
-{ if (! Valid) { badCond(K,T); printf(".\n"); } }
+{ if (! Valid) { badCond(K,T); info_stream << id << ".\n"; } }
 
 template <typename F>
 void Paranoia<F>::badCond(int K, const char *T)
@@ -1871,7 +1866,7 @@ void Paranoia<F>::badCond(int K, const char *T)
   static const char *msg[] = { "FAILURE", "SERIOUS DEFECT", "DEFECT", "FLAW" };
 
   ErrCnt [K] = ErrCnt [K] + 1;
-  printf("%s:  %s", msg[K], T);
+  info_stream << id << msg[K] << ":  " << T;
   }
 
 /* random */
@@ -1910,8 +1905,8 @@ void Paranoia<F>::sqXMinX (int ErrKind)
     if (SqEr > MaxSqEr) MaxSqEr = SqEr;
     J = J + 1.0;
     badCond(ErrKind, "\n");
-    printf("sqrt( %.17e) - %.17e  = %.17e\n", X * X, X, OneUlp * SqEr);
-    printf("\tinstead of correct value 0 .\n");
+    info_stream << id << "sqrt( " << X * X << ") - " << X << "  = " << OneUlp * SqEr << "\n";
+    info_stream << id << "\tinstead of correct value 0 .\n";
     }
   }
 
@@ -1957,13 +1952,12 @@ void Paranoia<F>::isYEqX(void)
   if (Y != X) {
     if (N <= 0) {
       if (Z == zero && Q <= zero)
-        printf("WARNING:  computing\n");
+        info_stream << id << "WARNING:  computing\n";
       else badCond(Defect, "computing\n");
-      printf("\t(%.17e) ^ (%.17e)\n", Z, Q);
-      printf("\tyielded %.17e;\n", Y);
-      printf("\twhich compared unequal to correct %.17e ;\n",
-        X);
-      printf("\t\tthey differ by %.17e .\n", Y - X);
+      info_stream << id << "\t(" << Z << ") ^ (" << Q << ")\n";
+      info_stream << id << "\tyielded " << Y << ";\n";
+      info_stream << id << "\twhich compared unequal to correct " << X << " ;\n";
+      info_stream << id << "\t\tthey differ by " << Y - X << " .\n";
       }
     N = N + 1; /* ... count discrepancies. */
     }
@@ -1988,7 +1982,7 @@ void Paranoia<F>::sr3980(void)
 template <typename F>
 void Paranoia<F>::printIfNPositive(void)
 {
-  if (N > 0) printf("Similar discrepancies have occurred %d times.\n", N);
+  if (N > 0) info_stream << id << "Similar discrepancies have occurred " << N << " times.\n";
   }
 
 /* tstPtUf */
@@ -1998,28 +1992,27 @@ void Paranoia<F>::tstPtUf(void)
 {
   N = 0;
   if (Z != zero) {
-    printf("Since comparison denies Z = 0, evaluating ");
-    printf("(Z + Z) / Z should be safe.\n");
+    info_stream << id << "Since comparison denies Z = 0, evaluating ";
+    info_stream << "(Z + Z) / Z should be safe.\n";
     sigsave = sigfpe;
     if (setjmp(ovfl_buf)) goto very_serious;
     Q9 = (Z + Z) / Z;
-    printf("What the machine gets for (Z + Z) / Z is  %.17e .\n",
-      Q9);
+    info_stream << id << "What the machine gets for (Z + Z) / Z is  " << Q9 << " .\n";
     if (std::abs(Q9 - two) < radix * U2) {
-      printf("This is O.K., provided Over/Underflow");
-      printf(" has NOT just been signaled.\n");
+      info_stream << id << "This is O.K., provided Over/Underflow";
+      info_stream << " has NOT just been signaled.\n";
       }
     else {
       if ((Q9 < one) || (Q9 > two)) {
 very_serious:
         N = 1;
         ErrCnt [Serious] = ErrCnt [Serious] + 1;
-        printf("This is a VERY SERIOUS DEFECT!\n");
+        info_stream << id << "This is a VERY SERIOUS DEFECT!\n";
         }
       else {
         N = 1;
         ErrCnt [Defect] = ErrCnt [Defect] + 1;
-        printf("This is a DEFECT!\n");
+        info_stream << id << "This is a DEFECT!\n";
         }
       }
     sigsave = 0;
@@ -2034,18 +2027,17 @@ very_serious:
     else {
       N = 1;
       badCond(Defect, "What prints as Z = ");
-      printf("%.17e\n\tcompares different from  ", Z);
-      if (Z != Random1) printf("Z * 1 = %.17e ", Random1);
+      info_stream << id << Z << "\n\tcompares different from  ";
+      if (Z != Random1) info_stream << id << "Z * 1 = " << Random1 << " ";
       if (! ((Z == Random2)
         || (Random2 == Random1)))
-        printf("1 * Z == %g\n", Random2);
-      if (! (Z == V9)) printf("Z / 1 = %.17e\n", V9);
+        info_stream << "1 * Z == " << Random2 << "\n";
+      if (! (Z == V9)) info_stream << id << "Z / 1 = " << V9 << "\n";
       if (Random2 != Random1) {
         ErrCnt [Defect] = ErrCnt [Defect] + 1;
         badCond(Defect, "Multiplication does not commute!\n");
-        printf("\tComparison alleges that 1 * Z = %.17e\n",
-          Random2);
-        printf("\tdiffers from Z * 1 = %.17e\n", Random1);
+        info_stream << id << "\tComparison alleges that 1 * Z = " << Random2 << "\n";
+        info_stream << id << "\tdiffers from Z * 1 = " << Random1 << "\n";
         }
       pause();
       }
@@ -2055,8 +2047,8 @@ very_serious:
 template <typename F>
 void Paranoia<F>::notify(const char *s)
 {
-  printf("%s test appears to be inconsistent...\n", s);
-  printf("   PLEASE NOTIFY KARPINKSI!\n");
+  info_stream << id << s << " test appears to be inconsistent...\n";
+  info_stream << id << "   PLEASE NOTIFY KARPINKSI!\n";
   }
 
 
@@ -2064,7 +2056,7 @@ void Paranoia<F>::notify(const char *s)
 
 template <typename F>
 void Paranoia<F>::msglist(const char **s)
-{ while(*s) printf("%s\n", *s++); }
+{ while(*s) info_stream << id << *s++ << endl; }
 
 /* instructions */
 
