@@ -164,13 +164,13 @@ def write_table_to_latex(outfile, col_names, row_names, table, classes=None):
         col_names = [str(x) for x in col_names]
     else:
         col_names = [fill_empty(x[0]) for x in col_names]
-    col_names = [x.strip() for x in col_names]
+    col_names = [x.strip().replace('_', '\\_') for x in col_names]
 
     if len(row_names[0]) > 1:
         row_names = [str(x) for x in row_names]
     else:
         row_names = [fill_empty(x[0]) for x in row_names]
-    row_names = [x.strip() for x in row_names]
+    row_names = [x.strip().replace('_', '\\_') for x in row_names]
 
     if classes is not None:
         classes = tuple(tuple(fill_empty(y) for y in x.split(', '))
@@ -236,6 +236,7 @@ def write_class_table_to_latex(outfile, row_names, classes):
     row_strings = []
     for i in range(len(row_names)):
         row_strings.append('{0} & {1}'.format(row_names[i], ', '.join(classes[i])))
+        row_strings[-1] = row_strings[-1].replace('_', '\\_')
     outfile.write('  ' + ' \\\\ \\hline\n  '.join(row_strings))
     outfile.write('\n\\end{tabular}\n')
 
