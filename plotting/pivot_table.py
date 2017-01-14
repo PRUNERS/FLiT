@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 'Generates statistics from a given test results csv file'
 
 import csv
@@ -33,6 +33,11 @@ def parse_args(arguments):
                             (i.e.  pre-filter).  For example, --fix
                             precision=d,switches=,compiler=g++
                             ''')
+    parser.add_argument(
+        '-F', '--format', choices=['csv', 'latex'], default='csv',
+        help='''
+            The output file format.  Default is csv.
+            ''')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-o', '--output', default='output.csv',
                        help='Output file for generated table counts')
@@ -262,7 +267,10 @@ def main(arguments):
         outfile = open(args.output, 'w')
 
     try:
-        write_table_to_csv(outfile, col_names, row_names, table)
+        if args.format == 'csv':
+            write_table_to_csv(outfile, col_names, row_names, table)
+        else:
+            write_table_to_latex(outfile, col_names, row_names, table)
     except:
         if not args.stdout:
             outfile.close()
