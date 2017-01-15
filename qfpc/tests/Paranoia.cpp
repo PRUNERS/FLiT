@@ -196,17 +196,14 @@ typedef char Message;
 using QFPHelpers::info_stream;
 using std::endl;
 
-/// A custom exception to throw from Paranoia<F>::checkTimeout()
-class TimeoutError : public std::exception {
-public:
-  TimeoutError(std::string msg) : message("Timeout Error: " + msg) {}
-  virtual ~TimeoutError() {}
-  virtual const char* what() const noexcept {
-    return message.c_str();
-  }
-private:
-  const std::string message;
-};
+/// Custom exceptions to throw for the Paranoia test
+class ParanoiaError : public std::exception {};
+class TimeoutError  : public ParanoiaError {};
+class FailureError  : public ParanoiaError {};
+class SeriousError  : public ParanoiaError {};
+class DefectError   : public ParanoiaError {};
+class FlawError     : public ParanoiaError {};
+class OverflowError : public ParanoiaError {};
 
 template <typename F>
 class Paranoia : public QFPTest::TestBase<F> {
@@ -330,6 +327,16 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
 {
   Q_UNUSED(ti);
   int timeoutMillis = 1000;
+  enum class ExitStatus {
+    SuccessStatus = 0,
+    FailureStatus = 1,
+    SeriousStatus = 2,
+    DefectStatus = 3,
+    FlawStatus = 4,
+    TimeoutStatus = 5,
+    OverflowStatus = 6,
+  };
+  auto status = ExitStatus::SuccessStatus;
 
   /* First two assignments use integer right-hand sides. */
   zero = 0;
@@ -379,6 +386,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       U1 = 0.001;
       radix = 1;
       tstPtUf();
+      throw FailureError();
       }
     tstCond (Failure, (three == two + one) && (four == three + one)
          && (four + two * (- two) == zero)
@@ -1440,6 +1448,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (setjmp(ovfl_buf)) {
         info_stream << id << "Underflow / UfThold failed!\n";
         R = H + H;
+        throw OverflowError();
         }
       else R = std::sqrt(Underflow / UfThold);
       sigsave = 0;
@@ -1462,7 +1471,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         info_stream << id << "    if (X == Z)  ...  else  ... (f(X) - f(Z)) / (X - Z) ...\n";
         info_stream << id << "encounter Division by zero although actually\n";
         sigsave = sigfpe;
-        if (setjmp(ovfl_buf)) info_stream << id << "X / Z fails!\n";
+        if (setjmp(ovfl_buf)) {
+          info_stream << id << "X / Z fails!\n";
+          throw OverflowError();
+        }
         else info_stream << id << "X / Z = 1 + " << (X / Z - half) - half << " .\n";
         sigsave = 0;
         }
@@ -1601,7 +1613,11 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Y = - CInvrse;
     V9 = HInvrse * Y;
     sigsave = sigfpe;
-    if (setjmp(ovfl_buf)) { I = 0; V9 = Y; goto overflow; }
+    if (setjmp(ovfl_buf)) {
+      I = 0;
+      V9 = Y;
+      goto overflow;
+    }
     setTimeout(timeoutMillis); // 2 seconds
     do {
       checkTimeout();
@@ -1720,8 +1736,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       Y = X;
       sigsave = sigfpe;
-      if (setjmp(ovfl_buf))
+      if (setjmp(ovfl_buf)) {
         info_stream << id << "  X / X  traps when X = " << X << "\n";
+        throw OverflowError();
+      }
       else {
         V9 = (Y / X - half) - half;
         if (V9 == zero) continue;
@@ -1740,11 +1758,19 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     info_stream << id << "What message and/or values does Division by zero produce?\n";
     sigsave = sigfpe;
     info_stream << id << "    Trying to compute 1 / 0 produces ...";
-    if (!setjmp(ovfl_buf)) info_stream << id << "  " << one / MyZero << " .\n";
+    if (!setjmp(ovfl_buf)) {
+      info_stream << id << "  " << one / MyZero << " .\n";
+    } else {
+      throw OverflowError();
+    }
     sigsave = 0;
     sigsave = sigfpe;
     info_stream << id << "\n    Trying to compute 0 / 0 produces ...";
-    if (!setjmp(ovfl_buf)) info_stream << id << "  " << zero / MyZero << " .\n";
+    if (!setjmp(ovfl_buf)) {
+      info_stream << id << "  " << zero / MyZero << " .\n";
+    } else {
+      throw OverflowError();
+    }
     sigsave = 0;
     /*=============================================*/
     Milestone = 220;
@@ -1814,9 +1840,36 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   }
   catch (const TimeoutError &e) {
     Q_UNUSED(e);
-    info_stream << id << ": timeout occurred" << endl;
+    info_stream << id << ": timeout error occurred" << endl;
+    status = ExitStatus::TimeoutStatus;
   }
-  return { Milestone, fpecount + ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect] + ErrCnt[Flaw] };
+  catch (const FailureError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": failure error occurred" << endl;
+    status = ExitStatus::FailureStatus;
+  }
+  catch (const SeriousError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": serious error occurred" << endl;
+    status = ExitStatus::SeriousStatus;
+  }
+  catch (const DefectError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": defect error occurred" << endl;
+    status = ExitStatus::DefectStatus;
+  }
+  catch (const FlawError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": flaw error occurred" << endl;
+    status = ExitStatus::FlawStatus;
+  }
+  catch (const OverflowError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": overflow error occurred" << endl;
+    status = ExitStatus::OverflowStatus;
+  }
+
+  return { Milestone, static_cast<long double>(status) };
 }
 
 /* setTimeout */
@@ -1833,7 +1886,7 @@ void Paranoia<F>::setTimeout(long millis) {
 template <typename F>
 void Paranoia<F>::checkTimeout() {
   if (std::chrono::steady_clock::now() >= timeoutTime) {
-    throw TimeoutError("timeout");
+    throw TimeoutError();
   }
 }
 
@@ -1867,7 +1920,25 @@ void Paranoia<F>::badCond(int K, const char *T)
 
   ErrCnt [K] = ErrCnt [K] + 1;
   info_stream << id << msg[K] << ":  " << T;
+
+  switch (K) {
+    case Failure:
+      throw FailureError();
+      break;
+    case Serious:
+      throw SeriousError();
+      break;
+    case Defect:
+      throw DefectError();
+      break;
+    case Flaw:
+      throw FlawError();
+      break;
+    default:
+      throw ParanoiaError();
+      break;
   }
+}
 
 /* random */
 /*  random computes
