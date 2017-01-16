@@ -28,7 +28,7 @@ protected:
     Q_UNUSED(ti);
     CHullEdges.clear();
     PointList.clear();
-    ReadInputs(fopen("S3FP/examples/tests-div-detection/simple_convex_hull/random_input", "r"));
+    ReadInputs(fopen("data/random_input", "r"));
     SimpleComputeConvexhull<T>();
     return {(long double) getEdgeCount(), 0.0};
   }

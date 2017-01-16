@@ -19,13 +19,14 @@ HAS_CUDA      := $(shell command -v nvcc 2> /dev/null)
 
 #the list of compilers to iterate over
 #compiler specific flags may be set here
-GCC := g++
+#GCC := g++
 #CLANG := $(if $(shell which clang++-3.6), clang++-3.6, clang++)
-CLANG := clang-3.8
+CLANG := clang++
 #PG := pgCC  #doesn't fully support c++11 (even 15.7!) so not in list
-INTEL := icpc
+#INTEL := icpc
 
 #COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
+#COMPILERS := CLANG INTEL GCC
 COMPILERS := CLANG
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
@@ -49,20 +50,23 @@ CC_REQUIRED += -IS3FP/examples/include
 CC_REQUIRED += -DWFT=float -DSCH_LIB
 CC_REQUIRED += -lquadmath
 
+CC_REQUIRED += -I/uufs/chpc.utah.edu/common/home/u0422778/software/gcc-5.3.0/libquadmath
+CC_REQUIRED += --gcc-toolchain=/uufs/chpc.utah.edu/sys/installdir/gcc/5.4.0 
+
 #CC_REQUIRED +=  -mlong-double-80
 
 
 #Eigen includes
 
-CC_REQUIRED += -isystem eigen/build/unsupported/test
-CC_REQUIRED += -isystem eigen/unsupported/test
-CC_REQUIRED += -isystem eigen
-CC_REQUIRED += -isystem eigen/build
-CC_REQUIRED += -isystem eigen/unsupported/test/../../test
-CC_REQUIRED += -isystem eigen/unsupported/test/../../unsupported
-CC_REQUIRED += -isystem eigen/unsupported/test/../../Eigen
-CC_REQUIRED += -isystem eigen/build/unsupported/test/../../test
-CC_REQUIRED += -isystem eigen/unsupported/test/./mpreal
+# CC_REQUIRED += -isystem eigen/build/unsupported/test
+# CC_REQUIRED += -isystem eigen/unsupported/test
+# CC_REQUIRED += -isystem eigen
+# CC_REQUIRED += -isystem eigen/build
+# CC_REQUIRED += -isystem eigen/unsupported/test/../../test
+# CC_REQUIRED += -isystem eigen/unsupported/test/../../unsupported
+# CC_REQUIRED += -isystem eigen/unsupported/test/../../Eigen
+# CC_REQUIRED += -isystem eigen/build/unsupported/test/../../test
+# CC_REQUIRED += -isystem eigen/unsupported/test/./mpreal
 
 #FP FLAGS
 include ../Makefile.switches #SWITCHES
@@ -82,7 +86,7 @@ CUSOURCE    += $(TESTS)
 CUSOURCE    += $(wildcard *.cpp)
 CUOBJ	      += $(CUSOURCE:%.cpp=%.o)
 
-SOURCE	    += eigen/EigenTests.cpp
+#SOURCE	    += eigen/EigenTests.cpp
 
 hostname    := $(shell hostname)
 
