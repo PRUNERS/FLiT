@@ -39,7 +39,6 @@ def run_query(handle, query, *args, **kwargs):
 
 def query_results_to_file(filename, query):
     'Writes results from a PyGresQL query object to a csv file.'
-    print(query[0])
     with open(filename, 'w') as outfile:
         writer = csv.DictWriter(outfile, sorted(query[0].keys()))
         writer.writeheader()
