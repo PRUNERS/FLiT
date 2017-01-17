@@ -38,9 +38,9 @@ def run_query(handle, query, *args, **kwargs):
 def query_results_to_file(filename, query):
     'Writes results from a PyGresQL query object to a csv file.'
     with open(filename, 'w') as outfile:
-        writer = csv.DictWriter(outfile, query.listfields())
+        writer = csv.DictWriter(outfile, query[0].keys())
         writer.writeheader()
-        writer.writerows(query.dictresult())
+        writer.writerows(query)
 
 def main(arguments):
     'Main entry point'
@@ -56,7 +56,7 @@ def main(arguments):
     runs = args.runs
     if len(runs) == 0:
         query_runs = run_query(db, 'select index from runs;')
-        idx = query_runs.dictresult()[-1]['index']
+        idx = query_runs[-1]['index']
         runs.append(idx)
 
     for run in runs:
