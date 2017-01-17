@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 'Extracts test run data into csv files'
 
 import argparse
@@ -10,6 +10,7 @@ try:
     using_pg = True
 except ImportError:
     import psycopg2
+    import psycopg2.extras
     using_pg = False
 
 def connect_to_database():
