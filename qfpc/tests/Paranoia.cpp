@@ -414,10 +414,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
          && ( twoForty / five - four * three * four == zero),
         "5 != 4+1, 240/3 != 80, 240/4 != 60, or 240/5 != 48");
     if (ErrCnt[Failure] == 0) {
-      info_stream << id << "-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n";
+      info_stream << id << ": -1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n";
       info_stream << id << "\n";
       }
-    info_stream << id << "Searching for radix and Precision.\n";
+    info_stream << id << ": Searching for radix and Precision.\n";
     W = one;
     setTimeout(timeoutMillis); // 2 seconds
     do  {
@@ -438,7 +438,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       radix = radix - W;
       } while ( radix == zero);
     if (radix < two) radix = one;
-    info_stream << id << "radix = " << radix << " .\n";
+    info_stream << id << ": radix = " << radix << " .\n";
     if (radix != 1) {
       W = one;
       setTimeout(timeoutMillis); // 2 seconds
@@ -453,8 +453,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
                                       ...*/
     U1 = one / W;
     U2 = radix * U1;
-    info_stream << id << "Closest relative separation found is U1 = " << U1 << " .\n\n";
-    info_stream << id << "Recalculating radix and precision\n ";
+    info_stream << id << ": Closest relative separation found is U1 = " << U1 << " .\n\n";
+    info_stream << id << ": Recalculating radix and precision\n ";
 
     /*save old values*/
     E0 = radix;
@@ -539,13 +539,13 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (std::abs(Precision - Y) * twoForty < half) Precision = Y;
       }
     if ((Precision != std::floor(Precision)) || (radix == one)) {
-      info_stream << id << "Precision cannot be characterized by an Integer number\n";
-      info_stream << id << "of significant digits but, by itself, this is a minor flaw.\n";
+      info_stream << id << ": Precision cannot be characterized by an Integer number\n";
+      info_stream << id << ": of significant digits but, by itself, this is a minor flaw.\n";
       }
     if (radix == one)
-      info_stream << id << "logarithmic encoding has precision characterized solely by U1.\n";
+      info_stream << id << ": logarithmic encoding has precision characterized solely by U1.\n";
     else
-      info_stream << id << "The number of significant digits of the radix is " << Precision << " .\n";
+      info_stream << id << ": The number of significant digits of the radix is " << Precision << " .\n";
     tstCond (Serious, U2 * nine * nine * twoForty < one,
          "Precision worse than 5 decimal figures  ");
     /*=============================================*/
