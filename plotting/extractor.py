@@ -9,19 +9,16 @@ import sys
 
 try:
     import pg
-    using_pg = True
+    USING_PG = True
 except ImportError:
     import psycopg2
     import psycopg2.extras
-    using_pg = False
+    USING_PG = False
 
-def connect_to_database():
+def connect_to_database(dbname='qfp', host='localhost', user='qfp',
+                        passwd='qfp123'):
     'Returns a database handle for the framework being used'
-    dbname = 'qfp'
-    host = 'localhost'
-    user = 'qfp'
-    passwd = 'qfp123'
-    if using_pg:
+    if USING_PG:
         return pg.DB(dbname=dbname, host=host, user=user, passwd=passwd)
     else:
         conn_string = "dbname='{dbname}' user='{user}' host='{host}' password='{passwd}'" \
@@ -31,7 +28,7 @@ def connect_to_database():
 
 def run_query(handle, query, *args, **kwargs):
     'Runs the query and returns the result as a list of dictionaries'
-    if using_pg:
+    if USING_PG:
         return handle.query(query, *args, **kwargs).dictresults()
     else:
         handle.execute(query, *args, **kwargs)
