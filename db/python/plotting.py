@@ -37,7 +37,7 @@ def plot(x_ticks, y_ticks, z_data, file_name, title):
     fig, ax = plt.subplots()
     fig.suptitle(title, fontsize=8)
     X = np.array(unp)
-    ax.imshow(X, cmap=cm.jet, interpolation='nearest')
+    ax.imshow(X, cmap=cm.hot, interpolation='nearest')
 
     numrows, numcols = X.shape
     numrows /= 2
