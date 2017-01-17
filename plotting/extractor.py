@@ -21,7 +21,8 @@ def connect_to_database():
     if using_pg:
         return pg.DB(dbname=dbname, host=host, user=user, passwd=passwd)
     else:
-        conn_string = ''
+        conn_string = "dbname='{dbname}' user='{user}' host='{host}' password='{passwd}'" \
+                .format(dbname=dbname, host=host, user=user, passwd=passwd)
         conn = psycopg2.connect(conn_string)
         return conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
