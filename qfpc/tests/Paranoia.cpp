@@ -430,6 +430,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     /*.. now W is just big enough that |((W+1)-W)-1| >= 1 ...*/
     Precision = zero;
     Y = one;
+    info_stream << id << ": Between the two potential infinite loops.\n";
+    info_stream << id << ": Value of W: " << W << endl;
     setTimeout(timeoutMillis); // 2 seconds
     do  {
       checkTimeout();
@@ -1461,7 +1463,6 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         X = Z * (one + H * H * (one + H));
         }
       if (! ((X == Z) || (X - Z != zero))) {
-        badCond(Flaw, "");
         info_stream << id << "X = " << X << "\n\tis not equal to Z = " << Z << " .\n";
         Z9 = X - Z;
         info_stream << id << "yet X - Z yields " << Z9 << " .\n";
@@ -1473,10 +1474,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         sigsave = sigfpe;
         if (setjmp(ovfl_buf)) {
           info_stream << id << "X / Z fails!\n";
-          throw OverflowError();
         }
         else info_stream << id << "X / Z = 1 + " << (X / Z - half) - half << " .\n";
         sigsave = 0;
+        badCond(Flaw, "");
         }
       }
     info_stream << id << "The Underflow threshold is " << UfThold << ", below which\n";
