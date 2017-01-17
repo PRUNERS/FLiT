@@ -52,6 +52,8 @@ def main(arguments):
         ''')
     parser.add_argument('runs', metavar='N', type=int, nargs='*',
                         help='A run to extract to csv.  Saved as run-N.csv')
+    parser.add_argument('-l', '--list',
+                        help='List the avilable runs for download')
     args = parser.parse_args(args=arguments)
 
     db = connect_to_database()
@@ -60,6 +62,9 @@ def main(arguments):
         query_runs = run_query(db, 'select index from runs;')
         idx = query_runs[-1]['index']
         runs.append(idx)
+        if args.list:
+            print('\n'.join([x['index'] for x in query_runs]))
+            return 0
 
     for run in runs:
         filename = 'run-{0:02}.csv'.format(run)
@@ -70,6 +75,7 @@ def main(arguments):
         sys.stdout.write(' done\n')
         sys.stdout.flush()
         #print(query_tests)
+    return 0
 
 if __name__ == '__main__':
     main(sys.argv[1:])
