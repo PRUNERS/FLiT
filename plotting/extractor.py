@@ -52,7 +52,7 @@ def main(arguments):
         ''')
     parser.add_argument('runs', metavar='N', type=int, nargs='*',
                         help='A run to extract to csv.  Saved as run-N.csv')
-    parser.add_argument('-l', '--list',
+    parser.add_argument('-l', '--list', action='store_true',
                         help='List the avilable runs for download')
     args = parser.parse_args(args=arguments)
 
