@@ -63,7 +63,7 @@ def main(arguments):
         idx = query_runs[-1]['index']
         runs.append(idx)
         if args.list:
-            print('\n'.join([x['index'] for x in query_runs]))
+            print('\n'.join([str(x['index']) for x in query_runs]))
             return 0
 
     for run in runs:
