@@ -196,17 +196,14 @@ typedef char Message;
 using QFPHelpers::info_stream;
 using std::endl;
 
-/// A custom exception to throw from Paranoia<F>::checkTimeout()
-class TimeoutError : public std::exception {
-public:
-  TimeoutError(std::string msg) : message("Timeout Error: " + msg) {}
-  virtual ~TimeoutError() {}
-  virtual const char* what() const noexcept {
-    return message.c_str();
-  }
-private:
-  const std::string message;
-};
+/// Custom exceptions to throw for the Paranoia test
+class ParanoiaError : public std::exception {};
+class TimeoutError  : public ParanoiaError {};
+class FailureError  : public ParanoiaError {};
+class SeriousError  : public ParanoiaError {};
+class DefectError   : public ParanoiaError {};
+class FlawError     : public ParanoiaError {};
+class OverflowError : public ParanoiaError {};
 
 template <typename F>
 class Paranoia : public QFPTest::TestBase<F> {
@@ -330,6 +327,16 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
 {
   Q_UNUSED(ti);
   int timeoutMillis = 1000;
+  enum class ExitStatus {
+    SuccessStatus = 0,
+    FailureStatus = 1,
+    SeriousStatus = 2,
+    DefectStatus = 3,
+    FlawStatus = 4,
+    TimeoutStatus = 5,
+    OverflowStatus = 6,
+  };
+  auto status = ExitStatus::SuccessStatus;
 
   /* First two assignments use integer right-hand sides. */
   zero = 0;
@@ -379,6 +386,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       U1 = 0.001;
       radix = 1;
       tstPtUf();
+      throw FailureError();
       }
     tstCond (Failure, (three == two + one) && (four == three + one)
          && (four + two * (- two) == zero)
@@ -406,10 +414,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
          && ( twoForty / five - four * three * four == zero),
         "5 != 4+1, 240/3 != 80, 240/4 != 60, or 240/5 != 48");
     if (ErrCnt[Failure] == 0) {
-      info_stream << id << "-1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n";
+      info_stream << id << ": -1, 0, 1/2, 1, 2, 3, 4, 5, 9, 27, 32 & 240 are O.K.\n";
       info_stream << id << "\n";
       }
-    info_stream << id << "Searching for radix and Precision.\n";
+    info_stream << id << ": Searching for radix and Precision.\n";
     W = one;
     setTimeout(timeoutMillis); // 2 seconds
     do  {
@@ -422,6 +430,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     /*.. now W is just big enough that |((W+1)-W)-1| >= 1 ...*/
     Precision = zero;
     Y = one;
+    info_stream << id << ": Between the two potential infinite loops.\n";
+    info_stream << id << ": Value of W: " << W << endl;
     setTimeout(timeoutMillis); // 2 seconds
     do  {
       checkTimeout();
@@ -430,7 +440,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       radix = radix - W;
       } while ( radix == zero);
     if (radix < two) radix = one;
-    info_stream << id << "radix = " << radix << " .\n";
+    info_stream << id << ": radix = " << radix << " .\n";
     if (radix != 1) {
       W = one;
       setTimeout(timeoutMillis); // 2 seconds
@@ -445,8 +455,8 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
                                       ...*/
     U1 = one / W;
     U2 = radix * U1;
-    info_stream << id << "Closest relative separation found is U1 = " << U1 << " .\n\n";
-    info_stream << id << "Recalculating radix and precision\n ";
+    info_stream << id << ": Closest relative separation found is U1 = " << U1 << " .\n\n";
+    info_stream << id << ": Recalculating radix and precision\n ";
 
     /*save old values*/
     E0 = radix;
@@ -531,13 +541,13 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (std::abs(Precision - Y) * twoForty < half) Precision = Y;
       }
     if ((Precision != std::floor(Precision)) || (radix == one)) {
-      info_stream << id << "Precision cannot be characterized by an Integer number\n";
-      info_stream << id << "of significant digits but, by itself, this is a minor flaw.\n";
+      info_stream << id << ": Precision cannot be characterized by an Integer number\n";
+      info_stream << id << ": of significant digits but, by itself, this is a minor flaw.\n";
       }
     if (radix == one)
-      info_stream << id << "logarithmic encoding has precision characterized solely by U1.\n";
+      info_stream << id << ": logarithmic encoding has precision characterized solely by U1.\n";
     else
-      info_stream << id << "The number of significant digits of the radix is " << Precision << " .\n";
+      info_stream << id << ": The number of significant digits of the radix is " << Precision << " .\n";
     tstCond (Serious, U2 * nine * nine * twoForty < one,
          "Precision worse than 5 decimal figures  ");
     /*=============================================*/
@@ -1440,6 +1450,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
       if (setjmp(ovfl_buf)) {
         info_stream << id << "Underflow / UfThold failed!\n";
         R = H + H;
+        throw OverflowError();
         }
       else R = std::sqrt(Underflow / UfThold);
       sigsave = 0;
@@ -1452,7 +1463,6 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         X = Z * (one + H * H * (one + H));
         }
       if (! ((X == Z) || (X - Z != zero))) {
-        badCond(Flaw, "");
         info_stream << id << "X = " << X << "\n\tis not equal to Z = " << Z << " .\n";
         Z9 = X - Z;
         info_stream << id << "yet X - Z yields " << Z9 << " .\n";
@@ -1462,9 +1472,12 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         info_stream << id << "    if (X == Z)  ...  else  ... (f(X) - f(Z)) / (X - Z) ...\n";
         info_stream << id << "encounter Division by zero although actually\n";
         sigsave = sigfpe;
-        if (setjmp(ovfl_buf)) info_stream << id << "X / Z fails!\n";
+        if (setjmp(ovfl_buf)) {
+          info_stream << id << "X / Z fails!\n";
+        }
         else info_stream << id << "X / Z = 1 + " << (X / Z - half) - half << " .\n";
         sigsave = 0;
+        badCond(Flaw, "");
         }
       }
     info_stream << id << "The Underflow threshold is " << UfThold << ", below which\n";
@@ -1601,7 +1614,11 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     Y = - CInvrse;
     V9 = HInvrse * Y;
     sigsave = sigfpe;
-    if (setjmp(ovfl_buf)) { I = 0; V9 = Y; goto overflow; }
+    if (setjmp(ovfl_buf)) {
+      I = 0;
+      V9 = Y;
+      goto overflow;
+    }
     setTimeout(timeoutMillis); // 2 seconds
     do {
       checkTimeout();
@@ -1720,8 +1737,10 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
         }
       Y = X;
       sigsave = sigfpe;
-      if (setjmp(ovfl_buf))
+      if (setjmp(ovfl_buf)) {
         info_stream << id << "  X / X  traps when X = " << X << "\n";
+        throw OverflowError();
+      }
       else {
         V9 = (Y / X - half) - half;
         if (V9 == zero) continue;
@@ -1740,11 +1759,19 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     info_stream << id << "What message and/or values does Division by zero produce?\n";
     sigsave = sigfpe;
     info_stream << id << "    Trying to compute 1 / 0 produces ...";
-    if (!setjmp(ovfl_buf)) info_stream << id << "  " << one / MyZero << " .\n";
+    if (!setjmp(ovfl_buf)) {
+      info_stream << id << "  " << one / MyZero << " .\n";
+    } else {
+      throw OverflowError();
+    }
     sigsave = 0;
     sigsave = sigfpe;
     info_stream << id << "\n    Trying to compute 0 / 0 produces ...";
-    if (!setjmp(ovfl_buf)) info_stream << id << "  " << zero / MyZero << " .\n";
+    if (!setjmp(ovfl_buf)) {
+      info_stream << id << "  " << zero / MyZero << " .\n";
+    } else {
+      throw OverflowError();
+    }
     sigsave = 0;
     /*=============================================*/
     Milestone = 220;
@@ -1814,9 +1841,36 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
   }
   catch (const TimeoutError &e) {
     Q_UNUSED(e);
-    info_stream << id << ": timeout occurred" << endl;
+    info_stream << id << ": timeout error occurred" << endl;
+    status = ExitStatus::TimeoutStatus;
   }
-  return { Milestone, fpecount + ErrCnt[Failure] + ErrCnt[Serious] + ErrCnt[Defect] + ErrCnt[Flaw] };
+  catch (const FailureError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": failure error occurred" << endl;
+    status = ExitStatus::FailureStatus;
+  }
+  catch (const SeriousError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": serious error occurred" << endl;
+    status = ExitStatus::SeriousStatus;
+  }
+  catch (const DefectError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": defect error occurred" << endl;
+    status = ExitStatus::DefectStatus;
+  }
+  catch (const FlawError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": flaw error occurred" << endl;
+    status = ExitStatus::FlawStatus;
+  }
+  catch (const OverflowError &e) {
+    Q_UNUSED(e);
+    info_stream << id << ": overflow error occurred" << endl;
+    status = ExitStatus::OverflowStatus;
+  }
+
+  return { Milestone, static_cast<long double>(status) };
 }
 
 /* setTimeout */
@@ -1833,7 +1887,7 @@ void Paranoia<F>::setTimeout(long millis) {
 template <typename F>
 void Paranoia<F>::checkTimeout() {
   if (std::chrono::steady_clock::now() >= timeoutTime) {
-    throw TimeoutError("timeout");
+    throw TimeoutError();
   }
 }
 
@@ -1867,7 +1921,25 @@ void Paranoia<F>::badCond(int K, const char *T)
 
   ErrCnt [K] = ErrCnt [K] + 1;
   info_stream << id << msg[K] << ":  " << T;
+
+  switch (K) {
+    case Failure:
+      throw FailureError();
+      break;
+    case Serious:
+      throw SeriousError();
+      break;
+    case Defect:
+      throw DefectError();
+      break;
+    case Flaw:
+      throw FlawError();
+      break;
+    default:
+      throw ParanoiaError();
+      break;
   }
+}
 
 /* random */
 /*  random computes

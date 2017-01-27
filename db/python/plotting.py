@@ -20,6 +20,7 @@ def plot(x_ticks, y_ticks, z_data, file_name, title, labsize):
     fig, ax = plt.subplots()
     #fig.suptitle(title, fontsize=8)
     X = np.array(z_data)
+
     ax.imshow(X, cmap=cm.hot, interpolation='nearest')
 
     numrows, numcols = X.shape
