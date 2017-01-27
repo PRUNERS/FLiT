@@ -1,52 +1,75 @@
 ##Compiler setting targets
 # taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
-SSE := -mfpmath=sse -mtune=native
-UNSOPTS := -funsafe-math-optimizations
-AVX := -mavx
-O0 := -O0
-O3 := -O3
-O2 := -O2
-O1 := -O1
-OPCODES := O0 O1 O2 O3
-FPCONT := -ffp-contract=on #enables contractions like FMA
-MCONSTS := -fmerge-all-constants #results in non-comforming behavior, according to gcc
-FSTORE := -ffloat-store #disables intermediate precision on some machiens (x87, 68000)
-FASTM := -ffast-math
-FASTEXPREC := -fexcess-precision=fast #more intermediate
-STDEXPREC := -fexcess-precision=standard
-ASSOCMATH := -fassociative-math #allows reassociation of fp ops
-RECIPMATH := -freciprocal-math #uses mult by recip rather than divide
-FINMATH := -ffinite-math-only
-NOTRAP := -fno-trapping-math #allow comp to optimize assuming no user-vis traps
-ROUNDINGMATH := -frounding-math #disable transformations and optimizations in fp, such as constant folding at compile time
-SIGNALNAN := -fsignaling-nans #disables some optimiztions, opposite of default
-SINGLEPRECCONST := -fsingle-precision-constant
-LIMITEDRANGE := -fcx-limited-range #no range reduct needed for cmplx div, opposite of default
-FORTRULES := -fcx-fortran-rules #opposite of default, in context of range reduc
-
+# among other places
 #more comp settings, taken from here:
 #https://software.intel.com/sites/default/files/article/326703/fp-control-2012-08.pdf
-#trying to use gcc style, as many are understood across compilers
-#these tests will just not compile and run if the compiler rejects them
-FLUSHDEN := -ftz #flush denormal
-NOFLUSHDEN := -no-ftz
-PRECDIV := -prec-div #improves division precision
-NOPRECDIV := -no-prec-div
-ENAFMA := -fma #fused multiply-add
-DISFMA := -no-fma
-FPTRAP := -fp-trap=common
-ROUNDUSR := -fp-port #round fp results to user precision
-COMPTRANS := -mp1 #'more consistent compares & transcendentals'
-FPMODPRE := -fp-model=precise
-FPMODSRC := -fp-model=source
-FPMODDBL := -fp-model=double
-FPMODEXT := -fp-model=extended
-FPMODEXC := -fp-model=except
-FPMODSTR := -fp-model=strict
-FPMODFST1 := -fp-model fast=1
-FPMODFST2 := -fp-model fast=2
-DEFFLAGS :=
-FMAGCC := -mavx2 -mfma
-FMAICC := -march=core-avx2
+#see psql: qfp: switch_desc for description of flags
+#also, psql: qfp: 
 
-SWITCHES :=  SSE UNSOPTS AVX FPCONT MCONSTS FSTORE FASTM FASTEXPREC STDEXPREC ASSOCMATH RECIPMATH FINMATH NOTRAP ROUNDINGMATH SIGNALNAN SINGLEPRECCONST LIMITEDRANGE FORTRULES FLUSHDEN NOFLUSHDEN PRECDIV NOPRECDIV ENAFMA DISFMA FPTRAP ROUNDUSR COMPTRANS FPMODPRE FPMODSRC FPMODDBL FPMODEXT FPMODEXC FPMODSTR FPMODFST1 FPMODFST2 DEFFLAGS FMAGCC FMACLG FMAICC
+#individual flags
+## optls
+
+O0 	        := -O0
+O3 	        := -O3
+O2 	        := -O2
+O1 	        := -O1
+
+#switches
+
+ASSOCMATH       := -fassociative-math
+AVX 	        := -mavx
+COMPTRANS 	:= -mp1
+DEFFLAGS 	:=
+DISFMA 		:= -no-fma
+ENAFMA 		:= -fma
+FASTEXPREC      := -fexcess-precision=fast
+FASTM 	        := -ffast-math
+FINMATH         := -ffinite-math-only
+FLUSHDEN 	:= -ftz
+FMAGCC 		:= -mavx2 -mfma
+FMAICC 		:= -march=core-avx2
+FORTRULES 	:= -fcx-fortran-rules
+FPCONT 	        := -ffp-contract=on
+FPMODDBL 	:= -fp-model=double
+FPMODEXC 	:= -fp-model=except
+FPMODEXT 	:= -fp-model=extended
+FPMODFST1 	:= -fp-model fast=1
+FPMODFST2  	:= -fp-model fast=2
+FPMODPRE 	:= -fp-model=precise
+FPMODSRC 	:= -fp-model=source
+FPMODSTR 	:= -fp-model=strict
+FPTRAP 		:= -fp-trap=common
+FSTORE 	        := -ffloat-store
+LIMITEDRANGE 	:= -fcx-limited-rangej
+MCONSTS	        := -fmerge-all-constants
+NOFLUSHDEN 	:= -no-ftz
+NOPRECDIV 	:= -no-prec-div
+NOTRAP 	        := -fno-trapping-math
+PRECDIV 	:= -prec-div
+RECIPMATH       := -freciprocal-math 
+ROUNDINGMATH    := -frounding-math
+ROUNDUSR 	:= -fp-port
+SIGNALNAN       := -fsignaling-nans
+SINGLEPRECCONST := -fsingle-precision-constant
+SSE 	        := -mfpmath=sse -mtune=native
+STDEXPREC       := -fexcess-precision=standard
+UNSOPTS         := -funsafe-math-optimizations
+USEFASTM 	:= --use_fast_math
+
+# Collections 
+
+OPCODES := O0 O1 O2 O3
+
+SWITCH_GCC :=  ASSOCMATH AVX DEFFLAGS FASTEXPREC FINMATH FMAGCC FORTRULES \
+	   FPCONT FSTORE LIMITEDRANGE MCONSTS NOTRAP RECIPMATH ROUNDINGMATH \
+	   SIGNALNAN SSE UNSOPTS
+
+SWITCH_CLANG := ASSOCMATH AVX DEFFLAGS FASTEXPREC FINMATH FMAGCC FMAICC FPCONT \
+	     FSTORE MCONSTS NOTRAP RECIPMATH ROUNDINGMATH SIGNALNAN \
+	     SINGLEPRECCONST SSE STDEXPREC UNSOPTS
+
+SWITCH_INTEL :=  AVX COMPTRANS DEFFLAGS DISFMA ENAFMA FLUSHDEN FMAGCC FMAICC \
+	     FPMODDBL FPMODEXT FPMODFST1 FPMODFST2 FPMODPRE FPMODSRC FPMODSTR \
+	     FSTORE LIMITEDRANGE MCONSTS NOFLUSHDEN NOPRECDIV PRECDIV \
+	     ROUNDINGMATH ROUNDUSR SINGLEPRECCONST SSE USEFASTM
+
