@@ -83,7 +83,7 @@ stdo = check_output(['ssh', db_host[0] + '@' + db_host[1],
                      prepDBHost.COLL_DIR + "','" +
                      notes + "')"
                      ])
-
+print(stdo)
 #done!
 
 print('data collection is complete, results stored in DB @ ' + db_host[1])
