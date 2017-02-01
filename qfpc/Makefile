@@ -42,7 +42,9 @@ CC_REQUIRED 	+= -lquadmath
 
 #on systems with non-standard gcc installations (such as module), clang may
 #be unable to determine the correct gcc toolchain
-CLANG_CC_REQUIRED	:= --gcc-toolchain=/usr/local/gcc-5.4 #$(dir $(shell which g++))..
+GCC_TOOLCHAIN	:= $(dir $(shell which g++))..
+CLANG_CC_REQUIRED	:= --gcc-toolchain=$(GCC_TOOLCHAIN)
+CLANG_CC_REQUIRED	+= -I$(GCC_TOOLCHAIN)/lib/gcc/x86_64-unknown-linux-gnu/*/include
 
 $(info CLANG_CC_REQUIRED = $(CLANG_CC_REQUIRED))
 
