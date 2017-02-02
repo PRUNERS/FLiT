@@ -23,30 +23,30 @@ GCC 		:= g++
 
 COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 
-$(info COMPILERS=$(COMPILERS))
+#$(info COMPILERS=$(COMPILERS))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
 VERBOSE ?=
 
 CC_REQUIRED  	:= -std=c++14
-CC_REQUIRED 	+= -Wno-shift-count-overflow
-CC_REQUIRED 	+= -lm
-CC_REQUIRED 	+= -lstdc++
 CC_REQUIRED 	+= -I.
+
+LD_REQUIRED 	:= -lm
+LD_REQUIRED 	+= -lstdc++
+
 
 #for S3FP related test
 CC_REQUIRED 	+= -IS3FP/examples/include
 CC_REQUIRED 	+= -DWFT=float -DSCH_LIB
-CC_REQUIRED 	+= -lquadmath
+#CC_REQUIRED 	+= -lquadmath
 
 #on systems with non-standard gcc installations (such as module), clang may
 #be unable to determine the correct gcc toolchain
 GCC_TOOLCHAIN	:= $(dir $(shell which g++))..
-CLANG_CC_REQUIRED	:= --gcc-toolchain=$(GCC_TOOLCHAIN)
-CLANG_CC_REQUIRED	+= -I$(GCC_TOOLCHAIN)/lib/gcc/x86_64-unknown-linux-gnu/*/include
+CLANG_REQUIRED	:= --gcc-toolchain=$(GCC_TOOLCHAIN)
 
-$(info CLANG_CC_REQUIRED = $(CLANG_CC_REQUIRED))
+#$(info CLANG_REQUIRED = $(CLANG_REQUIRED))
 
 #FP FLAGS
 include ../Makefile.switches
@@ -55,7 +55,7 @@ TESTS       := $(wildcard tests/*.cpp)
 SOURCE      := $(wildcard *.cpp)
 SOURCE      += $(TESTS)
 
-$(info SOURCE = $(SOURCE))
+#$(info SOURCE = $(SOURCE))
 hostname    := $(shell hostname)
 
 ifdef HAS_CUDA
@@ -69,7 +69,7 @@ endif
 
 ifndef CUDA_ONLY
 TARGETS  	:= $(foreach c, $(COMPILERS), \
-		$(foreach s, $(SWITCHES), \
+		$(foreach s, $(SWITCHES_$(strip $c)), \
 		$(foreach o, $(OPCODES), \
 		$c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE))))
 endif
@@ -84,6 +84,7 @@ all : $(TARGETS) $(CUTARGETS) cleanResults archive
 
 # $1 is switches, $2 is compiler, $3 is optimization level
 define RULE
+#run test and collect results
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)_$(strip $3)
 	-./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
@@ -92,19 +93,22 @@ $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_
 	-sed -i 's/COMPILER/$($(strip $2))/g' $$@
 	-sed -i 's/FILENAME/$2_$(hostname)_$(strip $1)_$(strip $3)/g' $$@
 
+#link
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
-	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) $$^ -o $$@
-	-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
+	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED)\
+	 $(CC_REQUIRED) $(LD_REQUIRED) $$^ -o $$@
+	#-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
 
+#compile
 %_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o : %.cpp
 	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) \
-	$($(strip $2)_CC_REQUIRED) $$< -o $$@
+	$($(strip $2)_REQUIRED) $$< -o $$@
 endef
 
-$(info opcodes = $(OPCODES))
-$(info SWITCHES_CLANG = $(SWITCHES_CLANG))
-$(info SWITCHES_GCC = $(SWITCHES_GCC))
-$(info SWITCHES_INTEL = $(SWITCHES_INTEL))
+# $(info opcodes = $(OPCODES))
+# $(info SWITCHES_CLANG = $(SWITCHES_CLANG))
+# $(info SWITCHES_GCC = $(SWITCHES_GCC))
+# $(info SWITCHES_INTEL = $(SWITCHES_INTEL))
 
 $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES_$(strip $c)), \
 	$(foreach o, $(OPCODES), \
@@ -139,7 +143,7 @@ cleanResults : $(TARGETS) $(CUTARGETS)
 archive : cleanResults
 	mkdir -p ../results
 	mv *$(hostname)* ../results
-	#-tar -zcf ../results/$(hostname).tgz *$(hostname)*
+	tar -zcf ../results/$(hostname)_$(shell date +%m%d%y).tgz *$(hostname)*
 	#rm -f *$(hostname)*
 
 .PHONY : clean
