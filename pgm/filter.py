@@ -74,7 +74,7 @@ class Run(object):
             writer = csv.writer(optout, lineterminator='\n')
             for name in self.distinct_vals.keys():
                 writer.writerow(['num', name])
-                i = 1
+                i = 0
                 for val in self.distinct_vals[name]:
                     writer.writerow([i, val])
                     i += 1
