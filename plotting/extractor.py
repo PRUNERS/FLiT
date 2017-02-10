@@ -15,7 +15,7 @@ except ImportError:
     import psycopg2.extras
     USING_PG = False
 
-def connect_to_database(dbname='qfp', host='localhost', user='qfp',
+def connect_to_database(dbname='flit', host='localhost', user='qfp',
                         passwd='qfp123'):
     'Returns a database handle for the framework being used'
     if USING_PG:

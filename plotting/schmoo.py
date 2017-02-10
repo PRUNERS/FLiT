@@ -5,8 +5,54 @@ from __future__ import print_function
 import argparse
 import sys
 
-import plotting as pl
 import extractor
+
+import numpy as np
+
+# note: the /etc/matplotlibrc (on Ubuntu 16)  file has to be configured to use
+# the 'Agg' backend (see the file for details).  This is so it will work
+# in the PostgreSql environment
+
+def format_coord(x, y):
+    col = int(x + 0.5)
+    row = int(y + 0.5)
+    if col >= 0 and col < numcols and row >= 0 and row < numrows:
+        z = X[row, col]
+        return 'x=%1.4f, y=%1.4f, z=%1.4f' % (x, y, z)
+    else:
+        return 'x=%1.4f, y=%1.4f' % (x, y)
+
+
+def plot(x_ticks, y_ticks, z_data, file_name, title, labsize):
+    print('Saving figure to', file_name)
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    fig, ax = plt.subplots()
+    #fig.suptitle(title, fontsize=8)
+    X = np.array(z_data)
+
+    ax.imshow(X, cmap=cm.hot, interpolation='nearest')
+
+    numrows, numcols = X.shape
+    ax.format_coord = format_coord
+
+    plt.xticks(np.arange(len(x_ticks)), tuple(x_ticks), rotation='vertical')
+
+    plt.yticks(np.arange(len(y_ticks)), tuple(y_ticks), rotation='horizontal')
+
+    ax.tick_params(axis='both', which='major', labelsize=labsize)
+    ax.tick_params(axis='both', which='minor', labelsize=labsize)
+    # ax.set_xticklabels(xticklabels, fontsize=6)
+    # ax.set_xticklabels(xticklabels, fontsize=6)
+    # ax.set_yticklabels(yticklabels, fontsize=6)
+    #plt.xticks(np.arange(6), ('a', 'b', 'c', 'd', 'e', 'f'))
+
+    plt.tight_layout()
+
+    plt.savefig(file_name)
+    #plt.show()
+
+    #pl.plot(x_ticks, y_ticks, z_data, fname)
 
 def main(arguments):
     'Main entry point'
@@ -81,7 +127,6 @@ def main(arguments):
     for x in x_axis:
         x_ticks.append(x['switches'])
     scores = []
-    print('tests:', tests)
     for t in tests:
         y_ticks.append(t['name'])
         y_count += 1
@@ -93,7 +138,7 @@ def main(arguments):
                  " and optl = '-O0'" +
                  " order by compiler, optl, switches")
         scores.append(extractor.run_query(db, quers))
-        x_axis = extractor.run_query(db, quer)
+        x_axis = extractor.run_query(db, quers)
         quers = ("select distinct score0, switches, " +
                  "compiler, optl from " +
                  " tests where run = " + str(args.run) +
@@ -128,25 +173,22 @@ def main(arguments):
             eq_classes.append(eq)
         for x in x_axis:
             quer = ("select distinct score0, optl from tests where name = '" +
-                    t['name'] + "' and precision = '" + x['precision'] +
+                    t['name'] + "' and precision = '" + args.precision +
                     "' and switches = '" + x['switches'] +
                     "' and compiler = '" + x['compiler'] +
                     "' and run = " + str(args.run) + " order by optl")
             score = extractor.run_query(db, quer)
-            assert len(score) == 4, score
+            #assert len(score) == 4, score
             x_count += 1
             test_scores = []
-            try:
-                for de in zip(score, eq_classes):
-                    test_scores.append(de[1][de[0]['score0']])
-            except KeyError:
-                return ("key error fetching color: " + quer + " " + quers + "**" +
-                        str(eq_classes))
+            for de in zip(score, eq_classes):
+                test_scores.append(de[1][de[0]['score0']])
             line_classes.append(test_scores)
         z_data.append(line_classes)
 
-    pl.plot(x_ticks, y_ticks, z_data, args.output,
-            args.compiler + ' @ precision: ' + args.precision)
+    plot(x_ticks, y_ticks, z_data, args.output,
+            args.compiler + ' @ precision: ' + args.precision,
+            labsize=4)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
