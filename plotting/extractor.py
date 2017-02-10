@@ -56,7 +56,7 @@ def main(arguments):
     db = connect_to_database()
     runs = args.runs
     if len(runs) == 0:
-        query_runs = run_query(db, 'select index from runs;')
+        query_runs = run_query(db, 'select index from runs order by index asc;')
         idx = query_runs[-1]['index']
         runs.append(idx)
         if args.list:
