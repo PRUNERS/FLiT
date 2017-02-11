@@ -4,6 +4,6 @@
 DB_HOST = ('sawaya', 'bihexal.cs.utah.edu')
 
 #the format of RUN_HOSTS tuples: (user, fqdn, procs, [CUDA only: (True | False)])
-RUN_HOSTS = (('u0422778', 'kp328', 56, False),('u0422778', 'kp298', 1, True))
+RUN_HOSTS = (('u0422778', 'kp334', 56, False),('u0422778', 'kp297', 1, True))
 
  

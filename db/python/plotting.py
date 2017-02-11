@@ -14,44 +14,31 @@ def format_coord(x, y):
         return 'x=%1.4f, y=%1.4f' % (x, y)
 
 
-def unpack(z):
-    retval = []
-    for row in z:
-        row1 = []
-        row2 = []
-        for e in row:
-            row1.append(e[0])
-            row1.append(e[1])
-            row2.append(e[2])
-            row2.append(e[3])
-        retval.append(row1)
-        retval.append(row2)
-    return retval
-
-def plot(x_ticks, y_ticks, z_data, file_name, title):
+def plot(x_ticks, y_ticks, z_data, file_name, title, labsize):
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
-
-    unp = unpack(z_data)
-    
     fig, ax = plt.subplots()
     fig.suptitle(title, fontsize=8)
     X = np.array(unp)
     ax.imshow(X, cmap=cm.hot, interpolation='nearest')
 
     numrows, numcols = X.shape
-    numrows /= 2
-    numcols /=2
-
     ax.format_coord = format_coord
 
     plt.xticks(np.arange(len(x_ticks)), tuple(x_ticks), rotation='vertical')
 
     plt.yticks(np.arange(len(y_ticks)), tuple(y_ticks), rotation='horizontal')
 
-    ax.tick_params(axis='both', which='major', labelsize=7)
-    ax.tick_params(axis='both', which='minor', labelsize=7)
+    ax.tick_params(axis='both', which='major', labelsize=labsize)
+    ax.tick_params(axis='both', which='minor', labelsize=labsize)
+    # ax.set_xticklabels(xticklabels, fontsize=6)
+    # ax.set_xticklabels(xticklabels, fontsize=6)
+    # ax.set_yticklabels(yticklabels, fontsize=6)
+    #plt.xticks(np.arange(6), ('a', 'b', 'c', 'd', 'e', 'f'))
 
     plt.tight_layout()
 
     plt.savefig(file_name)
+    #plt.show()
+
+    #pl.plot(x_ticks, y_ticks, z_data, fname)
