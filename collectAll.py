@@ -46,7 +46,6 @@ print(check_output(['scp', DBINIT, db_host[0] + '@' + db_host[1] + ':~/']))
 print(check_output(['ssh', db_host[0] + '@' + db_host[1],
                     './' + DBINIT]))
 
-#Now it's time to do the 
 for h in run_hosts:
     print('collecting data from ' + h[1])
     stdo = check_output([

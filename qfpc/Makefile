@@ -1,119 +1,90 @@
 # a makefile for a variety of compilers and compiler flags
 
 #CUDA
-NVCC := /usr/local/cuda-7.5/bin/nvcc
-NVCC_VER := nvcc-7.5
-NVCC_REQUIRED += --std=c++11
-NVCC_REQUIRED += -O0
-NVCC_REQUIRED += -ccbin=g++
-DEVCAP ?= -arch=compute_37 -code=sm_37
-NVCC_REQUIRED += $(DEVCAP)
+NVCC 		:= /usr/local/cuda-7.5/bin/nvcc
+NVCC_VER 	:= nvcc-7.5
+NVCC_REQUIRED 	+= --std=c++11
+NVCC_REQUIRED 	+= -O0
+NVCC_REQUIRED 	+= -ccbin=g++
+DEVCAP 		?= -arch=compute_37 -code=sm_37
+NVCC_REQUIRED 	+= $(DEVCAP)
 
-NVCC_CFLAGS += -I .
-NVCC_CFLAGS += -x cu
-NVCC_CFLAGS += -dc
-NVCC_CFLAGS += -D__CUDA__
-NVCC_CFLAGS += -I/usr/local/cuda-7.5/samples/common/inc
+NVCC_CFLAGS 	+= -I .
+NVCC_CFLAGS 	+= -x cu
+NVCC_CFLAGS 	+= -dc
+NVCC_CFLAGS 	+= -D__CUDA__
+NVCC_CFLAGS 	+= -I/usr/local/cuda-7.5/samples/common/inc
 
-HAS_CUDA      := $(shell command -v nvcc 2> /dev/null)
+HAS_CUDA      	:= $(shell command -v nvcc 2> /dev/null)
 
-#the list of compilers to iterate over
-#compiler specific flags may be set here
-#GCC := g++
-#CLANG := $(if $(shell which clang++-3.6), clang++-3.6, clang++)
-CLANG := clang++
-#PG := pgCC  #doesn't fully support c++11 (even 15.7!) so not in list
-#INTEL := icpc
+CLANG 		:= clang++
+INTEL 		:= icpc
+GCC 		:= g++
 
-#COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
-#COMPILERS := CLANG INTEL GCC
-COMPILERS := CLANG
+COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
+
+#$(info COMPILERS=$(COMPILERS))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
 VERBOSE ?=
 
-#CC_GEN_OPTS ?= -O0 -ggdb
-CC_REQUIRED  = -std=c++14
-CC_REQUIRED += -Wno-shift-count-overflow
-#CC_REQUIRED += -lstdc++
-#CC_REQUIRED += -lc++
-#CC_REQUIRED += -lm
-CC_REQUIRED += -lpthread
-CC_REQUIRED += -pthread
-CC_REQUIRED += -lm
-CC_REQUIRED += -lstdc++
-CC_REQUIRED += -I../gdb/inst
-CC_REQUIRED += -I.
+CC_REQUIRED  	:= -std=c++14
+CC_REQUIRED 	+= -I.
 
-CC_REQUIRED += -IS3FP/examples/include
-CC_REQUIRED += -DWFT=float -DSCH_LIB
-CC_REQUIRED += -lquadmath
-
-CC_REQUIRED += -I/uufs/chpc.utah.edu/common/home/u0422778/software/gcc-5.3.0/libquadmath
-CC_REQUIRED += --gcc-toolchain=/uufs/chpc.utah.edu/sys/installdir/gcc/5.4.0 
-
-#CC_REQUIRED +=  -mlong-double-80
+LD_REQUIRED 	:= -lm
+LD_REQUIRED 	+= -lstdc++
 
 
-#Eigen includes
+#for S3FP related test
+CC_REQUIRED 	+= -IS3FP/examples/include
+CC_REQUIRED 	+= -DWFT=float -DSCH_LIB
+#CC_REQUIRED 	+= -lquadmath
 
-# CC_REQUIRED += -isystem eigen/build/unsupported/test
-# CC_REQUIRED += -isystem eigen/unsupported/test
-# CC_REQUIRED += -isystem eigen
-# CC_REQUIRED += -isystem eigen/build
-# CC_REQUIRED += -isystem eigen/unsupported/test/../../test
-# CC_REQUIRED += -isystem eigen/unsupported/test/../../unsupported
-# CC_REQUIRED += -isystem eigen/unsupported/test/../../Eigen
-# CC_REQUIRED += -isystem eigen/build/unsupported/test/../../test
-# CC_REQUIRED += -isystem eigen/unsupported/test/./mpreal
+#on systems with non-standard gcc installations (such as module), clang may
+#be unable to determine the correct gcc toolchain
+GCC_TOOLCHAIN	:= $(dir $(shell which g++))..
+CLANG_REQUIRED	:= --gcc-toolchain=$(GCC_TOOLCHAIN)
+
+#$(info CLANG_REQUIRED = $(CLANG_REQUIRED))
 
 #FP FLAGS
-include ../Makefile.switches #SWITCHES
-FPFLAGS := $(foreach o, $(OPCODES), $(foreach s, $(SWITCHES), $(s)$(o)))
-
-include ../Makefile.switches.cuda #CUSWITCHES
+include ../Makefile.switches
 
 TESTS       := $(wildcard tests/*.cpp)
 SOURCE      := $(wildcard *.cpp)
 SOURCE      += $(TESTS)
 
-# CUSOURCE    += $(wildcard tests/*.cu)
-# CUSOURCE    += $(wildcard *.cu)
-
-# CUOBJ       := $(CUSOURCE:%.cu=%.o)
-CUSOURCE    += $(TESTS)
-CUSOURCE    += $(wildcard *.cpp)
-CUOBJ	      += $(CUSOURCE:%.cpp=%.o)
-
-#SOURCE	    += eigen/EigenTests.cpp
-
+#$(info SOURCE = $(SOURCE))
 hostname    := $(shell hostname)
 
-
-
 ifdef HAS_CUDA
+CUSOURCE    += $(TESTS)
+CUSOURCE    += $(wildcard *.cpp)
+CUOBJ	    += $(CUSOURCE:%.cpp=%.o)
+include ../Makefile.switches.cuda 
 CUTARGETS := $(foreach s, $(CUSWITCHES), \
 		$(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
 endif
 
 ifndef CUDA_ONLY
-TARGETS     := $(foreach c, $(COMPILERS), \
-	$(foreach s, $(SWITCHES), \
-	$(foreach o, $(OPCODES), \
-	$c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE))))
+TARGETS  	:= $(foreach c, $(COMPILERS), \
+		$(foreach s, $(SWITCHES_$(strip $c)), \
+		$(foreach o, $(OPCODES), \
+		$c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE))))
 endif
 
 VERBOSE_OUTPUT := $(TARGETS:%=%_out_$(VERBOSE))
 
 .PHONY : all
 all : $(TARGETS) $(CUTARGETS) cleanResults archive
-#all : $(CUTARGETS) cleanResults archive
 
 # very cool: recyclable target definitions! adapted from
 # http://make.mad-scientist.net/the-eval-function/
 
+# $1 is switches, $2 is compiler, $3 is optimization level
 define RULE
+#run test and collect results
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)_$(strip $3)
 	-./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
@@ -122,15 +93,25 @@ $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_
 	-sed -i 's/COMPILER/$($(strip $2))/g' $$@
 	-sed -i 's/FILENAME/$2_$(hostname)_$(strip $1)_$(strip $3)/g' $$@
 
+#link
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
-	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) $$^ -o $$@
-	-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
+	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED)\
+	 $(CC_REQUIRED) $(LD_REQUIRED) $$^ -o $$@
+	#-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
 
+#compile
 %_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o : %.cpp
-	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) $$< -o $$@
+	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) \
+	$($(strip $2)_REQUIRED) $$< -o $$@
 endef
 
-$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES), $(foreach o, $(OPCODES),\
+# $(info opcodes = $(OPCODES))
+# $(info SWITCHES_CLANG = $(SWITCHES_CLANG))
+# $(info SWITCHES_GCC = $(SWITCHES_GCC))
+# $(info SWITCHES_INTEL = $(SWITCHES_INTEL))
+
+$(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES_$(strip $c)), \
+	$(foreach o, $(OPCODES), \
 	$(eval $(call RULE, $s, $c, $o)))))
 
 define CURULE
@@ -162,7 +143,7 @@ cleanResults : $(TARGETS) $(CUTARGETS)
 archive : cleanResults
 	mkdir -p ../results
 	mv *$(hostname)* ../results
-	#-tar -zcf ../results/$(hostname).tgz *$(hostname)*
+	tar -zcf ../results/$(hostname)_$(shell date +%m%d%y).tgz *$(hostname)*
 	#rm -f *$(hostname)*
 
 .PHONY : clean
