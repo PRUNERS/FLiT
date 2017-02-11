@@ -18,8 +18,9 @@ def plot(x_ticks, y_ticks, z_data, file_name, title, labsize):
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
     fig, ax = plt.subplots()
-    fig.suptitle(title, fontsize=8)
-    X = np.array(unp)
+    #fig.suptitle(title, fontsize=8)
+    X = np.array(z_data)
+
     ax.imshow(X, cmap=cm.hot, interpolation='nearest')
 
     numrows, numcols = X.shape
