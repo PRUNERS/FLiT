@@ -49,7 +49,7 @@ def plot(x_ticks, y_ticks, z_data, file_name, title, labsize):
 
     plt.tight_layout()
 
-    plt.savefig(file_name)
+    plt.savefig(file_name, dpi=300)
     #plt.show()
 
     #pl.plot(x_ticks, y_ticks, z_data, fname)
@@ -83,12 +83,12 @@ def main(arguments):
     #parser.add_argument('-l', '--list', action='store_true',
     #                    help='List the avilable runs for download')
     args = parser.parse_args(args=arguments)
-    
+
     hosts = args.host.split(',')
     precisions = args.precision.split(',')
     compilers = args.compiler.split(',')
     optimization_levels = args.optl.split(',')
-    
+
     def print_list(name, values):
         print(name + ':')
         if len(values) > 0:
@@ -98,7 +98,7 @@ def main(arguments):
     print_list('precisions', precisions)
     print_list('compilers', compilers)
     print_list('optimization levels', optimization_levels)
-    
+
     def gen_query_sub(field_name, values):
         '''
         Creates a portion of a query for one of the many values to be matched
@@ -106,7 +106,7 @@ def main(arguments):
         sub = ''
         if len(values) > 0:
             sub = ' and (' + field_name + " = '"
-            sub += "' or compiler = '".join(values)
+            sub += ("' or " + field_name + " = '").join(values)
             sub += "')"
         return sub
 
@@ -114,21 +114,24 @@ def main(arguments):
     prec_str = gen_query_sub('precision', precisions)
     comp_str = gen_query_sub('compiler', compilers)
     optl_str = gen_query_sub('optl', optimization_levels)
-    
-        
+
+    print(host_str)
+    print(prec_str)
+    print(comp_str)
+    print(optl_str)
+    print()
+    #return
+
 
     db = extractor.connect_to_database()
-    
-    # TODO: make args.precision be a list of precisions
-    # TODO: make args.compiler be a list of compilers
-    # TODO: get --list command to work with run, precision, or compiler
+
     prec_str = " and precision = '{0}'".format(args.precision)
     comp_str = " and compiler = '{0}'".format(args.compiler)
 
     quer = ("select" +
             " distinct name from tests as t1" +
             " where exists" +
-            "  (select 1 from tests" + 
+            "  (select 1 from tests" +
             "   where t1.name = name" +
             "    and t1.precision = precision" +
             "    and t1.score0 != score0" +
@@ -143,6 +146,8 @@ def main(arguments):
             " order by name")
     tests = extractor.run_query(db, quer)
     test_str = gen_query_sub('name', [x['name'] for x in tests])
+    print('\n  or '.join(test_str.split(' or ')))
+    print()
 
     quer = ("select" +
             " distinct" +
@@ -178,6 +183,9 @@ def main(arguments):
             " order by compiler, optl, switches")
     x_axis = extractor.run_query(db, quer)
     xa_count = len(x_axis)
+    print('x_axis:')
+    print('  ' + '\n  '.join([str(x) for x in x_axis]))
+    print()
 
     quer = ("select" +
             " distinct" +
@@ -191,6 +199,9 @@ def main(arguments):
             " order by name")
     y_axis = extractor.run_query(db, quer)
     ya_count = len(y_axis)
+    print('y_axis:')
+    print('  ' + '\n  '.join([str(x) for x in y_axis]))
+    print()
 
     x_ticks = []
     y_ticks = []
@@ -237,6 +248,9 @@ def main(arguments):
                  " order by compiler, optl, switches")
         scores = extractor.run_query(db, quers)
         scores = [x['score0'] for x in scores]
+        print('scores for: ', t)
+        print('  ' + '\n  '.join(sorted(set(scores))))
+        print()
         eq_classes = {}
         line_classes = []
         eq_classes = OrderedDict(zip(scores, scores))
@@ -255,10 +269,15 @@ def main(arguments):
                     "  and switches = '{0}'".format(x['switches']) +
                     "  and optl = '{0}'".format(x['optl']) +
                     "  and run = {0}".format(args.run) +
-                    "  and host = '{0}'".format(x['host']))
+                    "  and host = '{0}'".format(x['host']) +
+                    "  and compiler = '{0}'".format(x['compiler']))
             score = extractor.run_query(db, quer)
             x_count += 1
-            line_classes.append(eq_classes[score[0]['score0']])
+            try:
+                line_classes.append(eq_classes[score[0]['score0']])
+            except KeyError:
+                print('Score for', t['name'], 'and', x)
+                raise
         z_data.append(line_classes)
 
     plot(x_ticks, y_ticks, z_data, args.output,
@@ -267,3 +286,4 @@ def main(arguments):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
+
