@@ -1,0 +1,41 @@
+#!/bin/bash
+
+module load cuda/7.5
+
+CLANG_ARCH := llvm_kp307_build.tgz
+FLIT_DIR   := qfp
+BRANCH     := unified_script
+REPO	   := git://https://github.com/Geof23/QFP.git
+
+#SBATCH --time=1:00:00 
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH -o ${HOME}/flit-%j.out-%N 
+#SBATCH -e ${HOME}/flit-%j.err-%N 
+#SBATCH --account=kingspeak-gpu
+#SBATCH --partition=kingspeak-gpu
+#SBATCH --gres=gpu:titanx:1
+
+#setup working directory
+
+WORKDIR := /tmp/${USER}
+
+if [ ! -d ${WORKDIR}  ]; then
+    mkdir -p ${WORKDIR}
+    cd ${WORKDIR}
+    git clone ${REPO}
+fi
+
+cd ${WORKDIR}
+cd ${FLIT_DIR}
+git checkout ${BRANCH}
+git pull
+cd ..
+
+cd ${FLIT_DIR}
+
+scripts/hostCollect.sh
+
+cd ../results
+
+scp *.tgz ${DB_HOST}
