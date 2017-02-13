@@ -22,11 +22,10 @@ if [ -e ${FDIR} ]; then
 fi
 
 cd ${WORKDIR}
-git clone https://github.com/Geof23/qfp.git
+git clone -b ${BRANCH}  --recursive https://github.com/Geof23/qfp.git
 
 cd ${FDIR}
 git checkout ${BRANCH}
-git pull
 cd ..
 
 cp ${HOME}/${CLANG_ARCH} .
