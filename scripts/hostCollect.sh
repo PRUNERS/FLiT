@@ -47,6 +47,6 @@ fi
 cd results
 
 #zip up all outputs
-tar zcf $(hostname)_$(shell date +%m%d%y)_flit.tgz *
+tar zcf $(hostname)_$(date +%m%d%y)_flit.tgz *
 
 exit $?
