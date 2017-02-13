@@ -40,7 +40,7 @@ FPMODSRC 	:= -fp-model=source
 FPMODSTR 	:= -fp-model=strict
 FPTRAP 		:= -fp-trap=common
 FSTORE 	        := -ffloat-store
-LIMITEDRANGE 	:= -fcx-limited-rangej
+LIMITEDRANGE 	:= -fcx-limited-range
 MCONSTS	        := -fmerge-all-constants
 NOFLUSHDEN 	:= -no-ftz
 NOPRECDIV 	:= -no-prec-div
