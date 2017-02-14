@@ -137,13 +137,13 @@ $(foreach s, $(CUSWITCHES), $(eval $(call CURULE, $s)))
 cleanResults : $(TARGETS) $(CUTARGETS)
 	$(info doing clean)
 	sed -i 's/FPTests:://' *out_$(VERBOSE)
-	-find . -size 0 -exec rm {} \;
+	#-find . -size 0 -exec rm {} \;
 
 .PHONY : archive
 archive : cleanResults
 	mkdir -p ../results
 	mv *$(hostname)* ../results
-	tar -zcf ../results/$(hostname)_$(shell date +%m%d%y).tgz *$(hostname)*
+	tar -zcf ../results/$(hostname)_$(shell date +%m%d%y).tgz ../results/*
 	#rm -f *$(hostname)*
 
 .PHONY : clean
