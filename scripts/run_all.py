@@ -69,7 +69,7 @@ os.environ['SSHPASS'] = db_pw
 print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
                     db_host[0] + '@' + db_host[1] + ':~/']))
 print(check_output(['sshpass', '-e', 'ssh',
-                    db_host[0] + '@' + db_host[1], './' + DBINIT]))
+                    db_host[0] + '@' + db_host[1], ' ./' + DBINIT]))
 
 #get run# from db
 print(check_output(['sshpass', '-e', 'ssh', 
@@ -83,7 +83,7 @@ run_num = int(check_output(['sshpass', '-e', 'ssh',
 #launch workers
 pwds = []
 print('please enter your credentials (pwds) for RUN_HOSTS, ' +
-      '[or empty for passphraseless ssh key auth]')
+      '[or empty for passphraseless ssh key auth]. No creds will be stored')
 for host in run_hosts:
     pwds.append(getpass.getpass('Enter pwd for ' + host[1] + ':'))
 
@@ -108,5 +108,16 @@ runOnAll(cmd, pwds)
 
 #import to database -- need to unzip and then run importqfpresults2
 
+cmd = (
+    'cd ~/flit_data && ' +
+    'for f in *.tgz; do tar xf $f; done && ' +
+    'psql flit -c "select importqfpresults2(\'$(pwd)\',' + str(run_num) + ')"' +
+    ' && psql flit -c "select importopcoderesults(\'$(pwd)\',' + str(run_num) +
+    ')" && echo $? && echo "db importation complete"'
+)
+
+os.environ['SSHPASS'] = db_pw
+print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
+                    ' ' + cmd ]))
 
 #display report / exit message
