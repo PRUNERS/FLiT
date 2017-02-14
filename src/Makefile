@@ -37,7 +37,7 @@ LD_REQUIRED 	+= -lstdc++
 
 
 #for S3FP related test
-CC_REQUIRED 	+= -IS3FP/examples/include
+CC_REQUIRED 	+= -IS3FP/
 CC_REQUIRED 	+= -DWFT=float -DSCH_LIB
 #CC_REQUIRED 	+= -lquadmath
 
@@ -97,7 +97,7 @@ $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
 	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED)\
 	 $(CC_REQUIRED) $(LD_REQUIRED) $$^ -o $$@
-	#-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
+	-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
 
 #compile
 %_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o : %.cpp
