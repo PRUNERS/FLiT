@@ -2,7 +2,7 @@
 #include "QFPHelpers.hpp"
 
 #define WFT float
-#include "S3FP/examples/tests-div-detection/simple_convex_hull/simple_convex_hull.cpp"
+#include "S3FP/simple_convex_hull.cpp"
 
 #include <cmath>
 #include <cstdio>
