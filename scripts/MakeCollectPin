@@ -1,7 +1,7 @@
 #this will (normally) be called in the context of 'results' (-C results)
 #otherwise, PINPATH should be set
 
-PINPATH ?= ../pin
+PINPATH ?= ../pin/pin
 
 OUTDIR := opcounts
 
@@ -10,7 +10,7 @@ SOURCE += $(wildcard *_O1)
 SOURCE += $(wildcard *_O2)
 SOURCE += $(wildcard *_O3)
 
-TESTS := $(shell egrep -h  'REGISTER_TYPE(.*)' tests/* | sed 's/.*(\(.*\))/\1/g')
+TESTS := $(shell egrep -h  'REGISTER_TYPE(.*)' ../src/tests/* | sed 's/.*(\(.*\))/\1/g')
 
 PRECISIONS := f d e
 
