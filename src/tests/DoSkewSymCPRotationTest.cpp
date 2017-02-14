@@ -52,7 +52,6 @@ protected:
 
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
-    //    auto& crit = getWatchData<T>();
     QFPHelpers::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
     long double LIScore = 0.0;
