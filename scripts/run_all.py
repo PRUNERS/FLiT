@@ -121,3 +121,12 @@ print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
                     ' ' + cmd ]))
 
 #display report / exit message
+cmd = (
+    'mkdir -p ~/flit_data/reports && ' +
+    'cd ~/flit_data/reports && ' +
+    'touch f_all.pdf d_all.pdf e_all.pdf && ' +
+    'psql flit -c "select createschmoo(' + str(run_num) + 
+)
+
+print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
+                    ' ' + 
