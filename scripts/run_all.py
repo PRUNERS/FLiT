@@ -23,6 +23,7 @@ home_dir = path.dirname(path.realpath(__file__))
 notes = ''
 DBINIT = 'prepDBHost.py'
 BRANCH = 'unified_script'
+db_host = hostfile.DB_HOST
 
 def usage():
     print('usage: ' + sys.argv[0] + ' "notes"')
@@ -36,6 +37,8 @@ def runOnAll(cmdStrs, pwds):
         os.environ['CUDA_ONLY'] = host[0][4]
         os.environ['DO_PIN'] = host[0][5]
         os.environ['CORES'] = host[0][2]
+        os.environ['DB_HOST'] = db_host[1]
+        os.environ['DB_USER'] = db_host[0]
         procs.append(Popen('sshpass -e ssh ' + host[0][0] +
                            '@' + host[0][1] + ' ' + host[2],
                            shell=True, stdout = PIPE))
@@ -58,8 +61,6 @@ else:
     exit(1)
 
 run_hosts = hostfile.RUN_HOSTS
-db_host = hostfile.DB_HOST
-DBINIT = 'prepDBHost.py'
 
 #setup db
 print('preparing workspace on DB server, ' + db_host[1] + '...')
