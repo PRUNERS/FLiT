@@ -143,7 +143,7 @@ cleanResults : $(TARGETS) $(CUTARGETS)
 archive : cleanResults
 	mkdir -p ../results
 	mv *$(hostname)* ../results
-	tar -zcf ../results/$(hostname)_$(shell date +%m%d%y).tgz ../results/*
+#	tar -zcf ../results/$(hostname)_$(shell date +%m%d%y).tgz ../results/*
 	#rm -f *$(hostname)*
 
 .PHONY : clean
