@@ -25,8 +25,7 @@ if [ ${DO_PIN} == True ]; then
     fi
     mkdir pin
     cd pin
-    wget http://software.intel.com/sites/landingpage/pintool/downloads/\
-	 pin-3.0-76991-gcc-linux.tar.gz
+    wget http://software.intel.com/sites/landingpage/pintool/downloads/pin-3.0-76991-gcc-linux.tar.gz
     tar xf pin*
     rm *.gz
     mv pin* pin
@@ -48,7 +47,7 @@ cd results
 
 #zip up all outputs
 
-ZIPFILE=$(hostname)_$(date +%m%d%y)_flit.tgz
+ZIPFILE=$(hostname)_$(date +%m%d%y%H%M%S)_flit.tgz
 tar zcf ${ZIPFILE} *
 scp ${ZIPFILE} ${DB_USER}@${DB_HOST}:~/flit_data
 
