@@ -17,7 +17,7 @@ make -j ${CORES}
 cd ..
 
 #do PIN
-if [ ${DO_PIN} == True ]; then
+if [ ! -z ${DO_PIN} ]; then
     
     #setup PIN tool
     if [ -e pin ]; then
