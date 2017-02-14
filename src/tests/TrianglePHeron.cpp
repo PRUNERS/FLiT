@@ -80,7 +80,6 @@ protected:
     T c = maxval * std::sqrt(2);
     const T delta = maxval / (T)ti.iters;
 
-    // auto& crit = getWatchData<T>();
 
     // 1/2 b*h = A
     // all perturbations will have the same base and height (plus some FP noise)

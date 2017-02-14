@@ -86,7 +86,6 @@ protected:
     auto iters = ti.iters;
     auto dim = getInputsPerRun();
     auto ulp_inc = ti.ulp_inc;
-    auto& watchPoint = QFPTest::getWatchData<T>();
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0.0);
     // we use a double literal above as a workaround for Intel 15-16 compiler
@@ -106,7 +105,7 @@ protected:
         p = std::nextafter(p, std::numeric_limits<T>::max());
         // Added this for force watchpoint hits every cycle (well, two).  We
         // shouldn't really be hitting float min
-        watchPoint = FLT_MIN;
+        auto watchPoint = FLT_MIN;
         watchPoint = a ^ b;
 
         // DELME debug

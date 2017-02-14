@@ -51,7 +51,6 @@ protected:
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     using QFPHelpers::operator<<;
 
-    //auto& crit = getWatchData<T>();
     long double score = 0.0;
 
     //matrix = {a, b, c};

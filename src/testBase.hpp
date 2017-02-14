@@ -184,15 +184,6 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
 #endif // __CUDA__
 }
 
-template<typename T>
-void pushWatchData();
-
-template<typename T>
-void popWatchData();
-
-template<typename T>
-volatile T& getWatchData();
-
 template <typename T>
 class TestBase {
 public:

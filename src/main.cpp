@@ -92,9 +92,9 @@ int main(int argc, char* argv[]) {
   CUHelpers::initDeviceData();
 #endif
 
-  if(NO_WATCHS != "true"){
-    QFPTest::setWatching();
-  }
+  // if(NO_WATCHS != "true"){
+  //   QFPTest::setWatching();
+  // }
 
   QFPTest::ResultType scores;
   if(doOne) {
