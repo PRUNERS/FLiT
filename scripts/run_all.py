@@ -40,9 +40,8 @@ def runOnAll(cmdStrs, pwds):
         new_env['CORES'] = host[0][2]
         new_env['DB_HOST'] = db_host[1]
         new_env['DB_USER'] = db_host[0]
-        if db_host[0][3] is None: new_env['SET_REPO'] = True
-        procs.append(Popen('sshpass -e ssh ' + host[0][0] +
-                           '@' + host[0][1] + ' ' + host[2],
+        procs.append(Popen('sshpass -e ' + 
+                           host[2].format(host[0][0], host[0][1]),
                            shell=True, stdout=PIPE, env=new_env))
     for p in procs:
         p.wait()
@@ -95,16 +94,17 @@ os.environ['REPO'] = 'https://github.com/geof23/qfp'
 os.environ['BRANCH'] = BRANCH
 os.environ['FLIT_DIR'] = 'qfp'
 for host in run_hosts:
-    # if hosts[3] is None:
-        cmd = ('export TMPD=mktemp -d && ' +
+    if hosts[3] is None:
+        cmd = ('ssh {0}@{1} "export TMPD=$(mktemp -d) && ' +
                'cd ${TMPD} && ' +
                'git clone -b ${BRANCH} --recursive ${REPO} && '
-               'cd ${FLIT_DIR} && ')
-        if hosts[3] is None:
-            cmd += 'scripts/hostCollect.sh'
-        else:
-            cmd += 'sbatch scripts/' + hosts[3]
-        cmds.append(cmd)
+               'cd ${FLIT_DIR} && scripts/hostCollect.sh"')
+    else:
+        cmd += (
+            'scp ' + home_dir + '/{2} {0}@{1}:/tmp && ' +
+            'ssh {0}@{1} "sbatch /tmp/' + hosts[3] +'"'
+            )
+    cmds.append(cmd)
 runOnAll(cmds, pwds)
 
 #import to database -- need to unzip and then run importqfpresults2
