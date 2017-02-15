@@ -1,16 +1,11 @@
 #!/bin/bash -x
 
-#$1 is # of procs; $2 is cuda only; $3 is (PIN) collect opcode stats
+set -e
 
 mkdir -p results
 
 #do the full test suite
 cd src
-
-# if [ $2 == True ]; then
-# then
-#     export CUDA_ONLY=True
-# fi
 
 make -j ${CORES}
 
