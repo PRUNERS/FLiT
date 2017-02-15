@@ -33,15 +33,17 @@ def usage():
 def runOnAll(cmdStrs, pwds):
     procs = []
     for host in zip(run_hosts, pwds, cmdStrs):
-        os.environ['SSHPASS'] = host[1]
-        os.environ['CUDA_ONLY'] = host[0][4]
-        os.environ['DO_PIN'] = host[0][5]
-        os.environ['CORES'] = host[0][2]
-        os.environ['DB_HOST'] = db_host[1]
-        os.environ['DB_USER'] = db_host[0]
+        new_env = os.environ.copy()
+        new_env['SSHPASS'] = host[1]
+        new_env['CUDA_ONLY'] = host[0][4]
+        new_env['DO_PIN'] = host[0][5]
+        new_env['CORES'] = host[0][2]
+        new_env['DB_HOST'] = db_host[1]
+        new_env['DB_USER'] = db_host[0]
+        if db_host[0][3] is None: new_env['SET_REPO'] = True
         procs.append(Popen('sshpass -e ssh ' + host[0][0] +
                            '@' + host[0][1] + ' ' + host[2],
-                           shell=True, stdout = PIPE))
+                           shell=True, stdout=PIPE, env=new_env))
     for p in procs:
         p.wait()
         print(p.stdout.read())
@@ -65,20 +67,21 @@ run_hosts = hostfile.RUN_HOSTS
 #setup db
 print('preparing workspace on DB server, ' + db_host[1] + '...')
 db_pw = getpass.getpass('Enter password for ' + db_host[1])
-os.environ['SSHPASS'] = db_pw
+new_env = os.environ.copy()
+new_env['SSHPASS'] = db_pw
 print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
-                    db_host[0] + '@' + db_host[1] + ':~/']))
+                    db_host[0] + '@' + db_host[1] + ':~/'], env=new_env))
 print(check_output(['sshpass', '-e', 'ssh',
-                    db_host[0] + '@' + db_host[1], ' ./' + DBINIT]))
+                    db_host[0] + '@' + db_host[1], ' ./' + DBINIT], env=new_env))
 
 #get run# from db
 print(check_output(['sshpass', '-e', 'ssh', 
               db_host[0] + '@' + db_host[1] +
               ' psql qfp -c "insert into runs (rdate, notes) ' +
-              'values (\'$(date)\', \'' + notes + '\')"']))
+              'values (\'$(date)\', \'' + notes + '\')"'], env=new_env))
 run_num = int(check_output(['sshpass', '-e', 'ssh', 
               db_host[0] + '@' + db_host[1] +
-              ' psql qfp -c "select max(index) from runs"']))
+              ' psql qfp -c "select max(index) from runs"'], env=new_env))
 
 #launch workers
 pwds = []
@@ -87,46 +90,60 @@ print('please enter your credentials (pwds) for RUN_HOSTS, ' +
 for host in run_hosts:
     pwds.append(getpass.getpass('Enter pwd for ' + host[1] + ':'))
 
-#setup run hosts with repo
-runOnAll(['if [[ -e /tmp ]]; then cd /tmp; fi && ' +
-         'if [[ -e remote_qfp ]]; then ' +
-         'rm -fr remote_qfp; ' +
-         'fi && ' +
-         'mkdir remote_qfp && cd remote_qfp && ' +
-         'git clone https://github.com/geof23/qfp && ' +
-         'cd qfp && ' +
-         'git checkout ' + BRANCH + ' && ' +
-         'git pull'] * len(run_hosts), pwds)
-
 cmds = []
+os.environ['REPO'] = 'https://github.com/geof23/qfp'
+os.environ['BRANCH'] = BRANCH
+os.environ['FLIT_DIR'] = 'qfp'
 for host in run_hosts:
-    if hosts[3] is None:
-        cmds.append('cd remote_qfp && scripts/hostCollect.py')
-    else:
-        cmds.append('sbatch scripts/' + hosts[3])
-runOnAll(cmd, pwds)
+    # if hosts[3] is None:
+        cmd = ('export TMPD=mktemp -d && ' +
+               'cd ${TMPD} && ' +
+               'git clone -b ${BRANCH} --recursive ${REPO} && '
+               'cd ${FLIT_DIR} && ')
+        if hosts[3] is None:
+            cmd += 'scripts/hostCollect.sh'
+        else:
+            cmd += 'sbatch scripts/' + hosts[3]
+        cmds.append(cmd)
+runOnAll(cmds, pwds)
 
 #import to database -- need to unzip and then run importqfpresults2
+new_env = os.environ.copy()
+new_env['SSHPASS'] = db_pw
 
 cmd = (
     'cd ~/flit_data && ' +
     'for f in *.tgz; do tar xf $f; done && ' +
-    'psql flit -c "select importqfpresults2(\'$(pwd)\',' + str(run_num) + ')"' +
-    ' && psql flit -c "select importopcoderesults(\'$(pwd)\',' + str(run_num) +
-    ')" && echo $? && echo "db importation complete"'
-)
+    'psql flit -c "select importqfpresults2(\'$(pwd)\',' + str(run_num) + ')" '
+    )
+if any(zip*(run_hosts)[5]): #any opcode collections
+    cmd += (
+        '&& rm *O0 *O1 *O2 *O3 *out_ ' + 
+        '&& psql flit -c "select importopcoderesults(\'$(pwd)\',' + str(run_num) +
+        ')" && echo $? && echo "db importation complete"'
+        )
 
-os.environ['SSHPASS'] = db_pw
 print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
-                    ' ' + cmd ]))
+                    ' ' + cmd ], env=new_env))
 
 #display report / exit message
 cmd = (
     'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
     'touch f_all.pdf d_all.pdf e_all.pdf && ' +
-    'psql flit -c "select createschmoo(' + str(run_num) + 
+    'psql flit -c "select createschmoo(' + str(run_num) + ',' +
+    '\'{\"f\"}\',\'{\"icpc\", \"g++\", \"clang++\"}\',' + 
+    '\'{\"O1\", \"O2\", \"O3\"}\',' +
+    '\'\',3,\'$(pwd)/f_all.pdf\')" && ' +
+    'psql flit -c "select createschmoo(' + str(run_num) + ',' +
+    '\'{\"d\"}\',\'{\"icpc\", \"g++\", \"clang++\"}\',' + 
+    '\'{\"O1\", \"O2\", \"O3\"}\',' +
+    '\'\',3,\'$(pwd)/d_all.pdf\')" && ' +
+    'psql flit -c "select createschmoo(' + str(run_num) + ',' +
+    '\'{\"e\"}\',\'{\"icpc\", \"g++\", \"clang++\"}\',' + 
+    '\'{\"O1\", \"O2\", \"O3\"}\',' +
+    '\'\',3,\'$(pwd)/e_all.pdf\')"'
 )
 
 print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
-                    ' ' + 
+                    ' ' + cmd], env=new_env))
