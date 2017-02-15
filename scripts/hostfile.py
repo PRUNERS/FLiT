@@ -10,12 +10,14 @@ DB_HOST = ('sawaya', 'bihexal.cs.utah.edu')
 #   [CUDA only: (True | False (default))],
 #   [Collect opcodes: (True | False (default))
 
-RUN_HOSTS = (('u0422778', 'kingspeak.chpc.utah.edu', 56, 'kingspeak_cpu_collect',
-              False, True),
-             ('u0422778', 'kingspeak.chpc.utah.edu', 1, 'kingspeak_gpu_collect',
-              True, False),
-             ('sawaya', 'ms0345.utah.cloudlab.us', 8, None,
-              False, False))
+RUN_HOSTS = (
+    ('u0422778', 'kingspeak.chpc.utah.edu', 56, 'kingspeak_cpu_collect', 
+     False, True),
+    ('u0422778', 'kingspeak.chpc.utah.edu', 1, 'kingspeak_gpu_collect',
+     True, False),
+    # ('sawaya', 'ms0402.utah.cloudlab.us', 8, None,
+    #  False, False)
+             )
 
  
 #these tuples are so formated: (COMPILER [CLANG, GCC, INTEL, NVCC], 5.4)
