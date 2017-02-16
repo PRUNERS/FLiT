@@ -69,18 +69,18 @@ db_pw = getpass.getpass('Enter password for ' + db_host[1])
 new_env = os.environ.copy()
 new_env['SSHPASS'] = db_pw
 print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
-                    db_host[0] + '@' + db_host[1] + ':~/'], env=new_env))
-print(check_output(['sshpass', '-e', 'ssh',
-                    db_host[0] + '@' + db_host[1], ' ./' + DBINIT], env=new_env))
+                    db_host[0] + '@' + db_host[1] + ':~/', '&&',
+                    'ssh', db_host[0] + '@' + db_host[1], ' ./' + DBINIT], 
+                   env=new_env))
 
 #get run# from db
 print(check_output(['sshpass', '-e', 'ssh', 
               db_host[0] + '@' + db_host[1] +
-              ' psql qfp -c "insert into runs (rdate, notes) ' +
+              ' psql flit -t -c "insert into runs (rdate, notes) ' +
               'values (\'$(date)\', \'' + notes + '\')"'], env=new_env))
 run_num = int(check_output(['sshpass', '-e', 'ssh', 
               db_host[0] + '@' + db_host[1] +
-              ' psql qfp -c "select max(index) from runs"'], env=new_env))
+              ' psql flit -t -c "select max(index) from runs"'], env=new_env))
 
 #launch workers
 pwds = []
@@ -92,7 +92,7 @@ for host in run_hosts:
 cmds = []
 os.environ['REPO'] = 'https://github.com/geof23/qfp'
 os.environ['BRANCH'] = BRANCH
-os.environ['FLIT_DIR'] = 'qfp'
+os.environ['FLIT_DIR'] = 'QFP'
 for host in run_hosts:
     if hosts[3] is None:
         cmd = ('ssh {0}@{1} "export TMPD=$(mktemp -d) && ' +
@@ -122,7 +122,6 @@ if any(zip*(run_hosts)[5]): #any opcode collections
         '&& psql flit -c "select importopcoderesults(\'$(pwd)\',' + str(run_num) +
         ')" && echo $? && echo "db importation complete"'
         )
-
 print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
                     ' ' + cmd ], env=new_env))
 
@@ -144,6 +143,5 @@ cmd = (
     '\'{\"O1\", \"O2\", \"O3\"}\',' +
     '\'\',3,\'$(pwd)/e_all.pdf\')"'
 )
-
 print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1] +
                     ' ' + cmd], env=new_env))

@@ -4,8 +4,8 @@
 #TMPD FLIT_DIR BRANCH REPO
 
 #SBATCH --time=1:00:00 
-#SBATCH -o slurm-%j.out
-#SBATCH -e slurm-%j.err
+#SBATCH -o slurm-flit-cpu-%j.out
+#SBATCH -e slurm-flit-cpu-%j.err
 #SBATCH -n 28
 #SBATCH -N 1
 #SBATCH --account ganesh-kp
