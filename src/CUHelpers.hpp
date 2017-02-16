@@ -86,10 +86,10 @@ csin<double>(double val){ return sin(val); }
 void
 initDeviceData();
 
-HOST_DEVICE
+DEVICE
 const float* getRandSeqCU();
 
-HOST_DEVICE
+DEVICE
 const uint_fast32_t* get16ShuffledCU(); //an array with 0-15 shuffled
 
 template <typename T>
@@ -146,7 +146,7 @@ public:
     return data.size();
   }
 
-  HOST_DEVICE  
+  DEVICE  
   static
   VectorCU<T>
   getRandomVector(vsize_t dim){
@@ -161,7 +161,7 @@ public:
 
   //predoncition: this only works with vectors of
   //predetermined size, now 16
-  HOST_DEVICE
+  DEVICE
   VectorCU<T>
   genOrthoVector() const {
     VectorCU<T> retVal(data.size());

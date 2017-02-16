@@ -1925,19 +1925,14 @@ void Paranoia<F>::badCond(int K, const char *T)
   switch (K) {
     case Failure:
       throw FailureError();
-      break;
     case Serious:
       throw SeriousError();
-      break;
     case Defect:
       throw DefectError();
-      break;
     case Flaw:
       throw FlawError();
-      break;
     default:
       throw ParanoiaError();
-      break;
   }
 }
 

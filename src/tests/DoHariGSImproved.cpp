@@ -84,7 +84,9 @@ namespace {
   template <typename T> T getSmallValue();
   template<> inline float getSmallValue() { return pow(10, -4); }
   template<> inline double getSmallValue() { return pow(10, -8); }
+#ifndef __CUDA__
   template<> inline long double getSmallValue() { return pow(10, -10); }
+#endif
 }
 
 template <typename T>
