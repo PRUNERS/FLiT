@@ -16,7 +16,11 @@ using namespace std;
 #endif 
 
 #ifndef OFT 
+#ifdef __CUDA__
+#define OFT double
+#else
 #define OFT __float128 
+#endif
 #endif 
 
 

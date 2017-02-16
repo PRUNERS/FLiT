@@ -4,7 +4,7 @@
 NVCC 		:= /usr/local/cuda-7.5/bin/nvcc
 NVCC_VER 	:= nvcc-7.5
 NVCC_REQUIRED 	+= --std=c++11
-NVCC_REQUIRED 	+= -O0
+#NVCC_REQUIRED 	+= -O0
 NVCC_REQUIRED 	+= -ccbin=g++
 DEVCAP 		?= -arch=compute_37 -code=sm_37
 NVCC_REQUIRED 	+= $(DEVCAP)
@@ -21,7 +21,10 @@ CLANG 		:= clang++
 INTEL 		:= icpc
 GCC 		:= g++
 
+
+ifndef CUDA_ONLY
 COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
+endif
 
 #$(info COMPILERS=$(COMPILERS))
 
@@ -29,16 +32,20 @@ COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 #  i.e. different results can produce identical scores
 VERBOSE ?=
 
-CC_REQUIRED  	:= -std=c++14
+#for S3FP related test
+S3_REQUIRED 	:= -IS3FP/
+S3_REQUIRED 	+= -DWFT=float -DSCH_LIB
+
+CC_REQUIRED	+= $(S3_REQUIRED)
+NVCC_REQUIRED	+= $(S3_REQUIRED)
+
+CC_REQUIRED  	+= -std=c++14
 CC_REQUIRED 	+= -I.
 
 LD_REQUIRED 	:= -lm
 LD_REQUIRED 	+= -lstdc++
 
 
-#for S3FP related test
-CC_REQUIRED 	+= -IS3FP/
-CC_REQUIRED 	+= -DWFT=float -DSCH_LIB
 #CC_REQUIRED 	+= -lquadmath
 
 #on systems with non-standard gcc installations (such as module), clang may
@@ -67,12 +74,10 @@ CUTARGETS := $(foreach s, $(CUSWITCHES), \
 		$(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
 endif
 
-ifndef CUDA_ONLY
 TARGETS  	:= $(foreach c, $(COMPILERS), \
 		$(foreach s, $(SWITCHES_$(strip $c)), \
 		$(foreach o, $(OPCODES), \
 		$c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE))))
-endif
 
 VERBOSE_OUTPUT := $(TARGETS:%=%_out_$(VERBOSE))
 
@@ -115,18 +120,22 @@ $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES_$(strip $c)), \
 	$(eval $(call RULE, $s, $c, $o)))))
 
 define CURULE
+#$1 is switches
+#run test
 $(NVCC_VER)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $(NVCC_VER)_$(hostname)_$(strip $1)
-	-./$$< $(VERBOSE) > $$@
+	./$$< $(VERBOSE) > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
 	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
 	-sed -i 's/OPTL//g' $$@
 	-sed -i 's/COMPILER/$(NVCC_VER)/g' $$@
 	-sed -i 's/FILENAME/$(NVCC_VER)_$(hostname)_$(strip $1)/g' $$@
 
+#link test
 $(NVCC_VER)_$(hostname)_$(strip $1) : $(CUOBJ:%.o=%_$(NVCC_VER)_$(hostname)_$(strip $1).o)
-	-$(NVCC) $($(strip $1)) $(NVCC_REQUIRED) $$^ -o $$@
-	-rm $(CUOBJ:.o=_$(strip $(NVCC_VER))_$(hostname)_$(strip $1).o)
+	$(NVCC) $($(strip $1)) $(NVCC_REQUIRED) $$^ -o $$@
+	rm $(CUOBJ:.o=_$(strip $(NVCC_VER))_$(hostname)_$(strip $1).o)
 
+#compile test
 %_$(strip $(NVCC_VER))_$(hostname)_$(strip $1).o : %.cpp
 	-$(NVCC) -c $($(strip $1)) $(NVCC_CFLAGS) $(NVCC_REQUIRED) $$< -o $$@
 endef
@@ -151,5 +160,5 @@ clean :
 	rm -f $(TARGETS)
 	rm -f $(CUTARGETS)
 	rm -f $(VERBOSE_OUTPUT)
-	rm -f *.o
-	rm -f *.d
+	rm -f *.o tests/*.o 
+	rm -f *.d tests/*.d

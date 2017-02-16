@@ -13,7 +13,7 @@ class Shewchuk {
 public:
   Shewchuk() : m_count(0), m_cachedSum(0), m_isCachedSumValid(true) {}
 
-  void count() { return m_count; }
+  size_t count() { return m_count; }
 
   void add(const T next) {
     m_isCachedSumValid = false; // invalidate the cache

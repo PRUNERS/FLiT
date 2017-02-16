@@ -18,10 +18,10 @@ DEVICE
 uint_fast32_t* cuda_16_shuffle;
 #endif
 
-HOST_DEVICE
+DEVICE
 const float* getRandSeqCU(){return cuda_float_rands;}
 
-HOST_DEVICE
+DEVICE
 const uint_fast32_t* get16ShuffledCU(){return cuda_16_shuffle;}
 
 GLOBAL
