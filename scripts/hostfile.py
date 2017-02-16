@@ -13,9 +13,9 @@ DB_HOST = ('sawaya', 'bihexal.cs.utah.edu')
 RUN_HOSTS = (
     ('u0422778', 'kingspeak.chpc.utah.edu', 56, 'kingspeak_cpu_collect', 
      False, True),
-    ('u0422778', 'kingspeak.chpc.utah.edu', 1, 'kingspeak_gpu_collect',
+    ('u0422778', 'kingspeak.chpc.utah.edu', 12, 'kingspeak_gpu_collect',
      True, False),
-    # ('sawaya', 'ms0402.utah.cloudlab.us', 8, None,
+    ('sawaya', 'ms0737.utah.cloudlab.us', 8, None,
     #  False, False)
              )
 
