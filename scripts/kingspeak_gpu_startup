@@ -1,12 +1,13 @@
 #!/bin/bash
 #required:
-#BRANCH REPO FLIT_DIR CORES DO_PIN(set or not) DB_USER _DB_HOST
+#BRANCH REPO FLIT_DIR CORES DB_USER DB_HOST
+#[maybe] CUDA_ONLY and DO_PIN
 
 #SBATCH --time=1:00:00 
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH -o ${HOME}/flit-%j.out-%N 
-#SBATCH -e ${HOME}/flit-%j.err-%N 
+#SBATCH --ntasks=6
+#SBATCH -o slurm-flit-gpu-%j.out 
+#SBATCH -e slurm-flit-gpu-%j.err 
 #SBATCH --account=kingspeak-gpu
 #SBATCH --partition=kingspeak-gpu
 #SBATCH --gres=gpu:titanx:1
