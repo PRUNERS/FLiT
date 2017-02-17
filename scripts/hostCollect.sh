@@ -19,6 +19,10 @@ mkdir -p results
 #do the full test suite
 cd src
 
+if [ "$CUDA_ONLY" = "False" ]; then
+    unset CUDA_ONLY
+fi
+
 make -j ${CORES}
 
 cd ..
