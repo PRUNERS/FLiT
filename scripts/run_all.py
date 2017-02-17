@@ -73,7 +73,9 @@ def runOnAll(cmdStrs, pwds):
         rem_env['CORES'] = str(host[0][2])
         rem_env['DB_HOST'] = str(db_host[1])
         rem_env['DB_USER'] = str(db_host[0])
-        cmdStr = 'sshpass -e ' + host[2].format(host[0][0], host[0][1], host[0][3], makeEnvStr(rem_env))
+        cmdStr = ('sshpass -e ' +
+                  host[2].format(host[0][0], host[0][1],
+                                 host[0][3], makeEnvStr(rem_env)))
         print('executing: ' + cmdStr)
         procs.append([Popen(cmdStr,
                            shell=True, stdout=PIPE, stderr=STDOUT,
@@ -82,7 +84,7 @@ def runOnAll(cmdStrs, pwds):
     for p in procs:
         p[0].wait()
         outs = p[0].stdout.read().decode("utf-8")
-        #print(outs)
+        print(outs)
         if p[1] is not None:
             jn = getJobNum(outs)
             if jn is not None:
@@ -103,25 +105,27 @@ db_pw = getpass.getpass('Enter password for ' + db_host[1]+ ': ')
 new_env = os.environ.copy()
 new_env['SSHPASS'] = db_pw
 print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
-                    db_host[0] + '@' + db_host[1] + ':~/'], env=new_env))
+                    db_host[0] + '@' + db_host[1] + ':~/'],
+                   env=new_env).decode("utf-8"))
 print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1],
-                    ' ./' + DBINIT], env=new_env))
+                    ' ./' + DBINIT], env=new_env).decode("utf-8"))
 
 #get run# from db
 print(check_output(['sshpass', '-e', 'ssh', 
                     db_host[0] + '@' + db_host[1],
               'psql flit -t -c "insert into runs (rdate, notes) ' +
               'values (\'' + str(datetime.now()) + '\', \'' + notes + '\')"'],
-                   env=new_env))
+                   env=new_env).decode("utf-8"))
 run_num = int(check_output(['sshpass', '-e', 'ssh', 
                             db_host[0] + '@' + db_host[1],
                             'psql flit -t -c "select max(index) from runs"'],
-                           env=new_env))
+                           env=new_env).decode("utf-8"))
 
 #launch workers
 pwds = []
 print('please enter your credentials (pwds) for RUN_HOSTS, ' +
       '[or empty for passphraseless ssh key auth]. No creds will be stored')
+print(run_hosts)
 for host in run_hosts:
     pwds.append(getpass.getpass('Enter pwd for ' + host[1] + ': '))
 
@@ -130,7 +134,6 @@ cmds = []
 #send run host scripts, if used
 for host in run_hosts:
     if host[3] is not None: #0-user 1-host 2-script 3-enviro
-        print('in copy loop, host[3] is: ' + str(host[3]))
         cmd = ('scp ' + home_dir + '/{2} {0}@{1}:')
     else:
         cmd = ('ssh {0}@{1} exit') #dummy -- this is a hack
@@ -155,35 +158,50 @@ new_env['SSHPASS'] = db_pw
 
 cmd = (
     'cd ~/flit_data && ' +
-    'for f in *.tgz; do tar xf $f; done && ' +
-    'psql flit -c "select importqfpresults2(\'\$(pwd)\',' + str(run_num) + ')" '
+    'for f in *.tgz; do tar xf \$f; done && ' +
+    'psql flit -c \\"select importqfpresults2(\'\$(pwd)\',' +
+    str(run_num) + ')\\" '
     )
 if any(list(zip(*run_hosts))[5]): #any opcode collections
     cmd += (
         '&& rm *O0 *O1 *O2 *O3 *out_ ' + 
-        '&& psql flit -c "select importopcoderesults(\'\$(pwd)\',' + str(run_num) +
-        ')" && echo \$? && echo "db importation complete"'
+        '&& psql flit -c \\"select importopcoderesults(\'\$(pwd)\',' +
+        str(run_num) +
+        ')\\" && echo \$? && echo \\"db importation complete\\"'
         )
-print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1],
-                    '"' + cmd + '"' ], env=new_env))
+print(check_output('sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
+                    ' "' + cmd + '"', env=new_env,
+                   shell=True).decode("utf-8"))
 
 #display report / exit message
 cmd = (
-    'mkdir -p ~/flit_data/reports && ' +
+     'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
     'touch f_all.pdf d_all.pdf e_all.pdf && ' +
-    'psql flit -c \"select createschmoo(' + str(run_num) + ',' +
+    'chmod 777 * && ' +
+    'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
+    '\'{\\"f\\"}\',\'{\\"nvcc-7.5\\"}\',' + 
+    '\'{\\"\\"}\',' +
+    '\'\',5,\'\$(pwd)/f_nvcc.pdf\')\\" && ' +
+    'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
+    '\'{\\"d\\"}\',\'{\\"nvcc-7.5\\"}\',' + 
+    '\'{\\"\\"}\',' +
+    '\'\',5,\'\$(pwd)/f_nvcc.pdf\')\\" && ' +
+    'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"f\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
     '\'{\\"O1\\", \\"O2\\", \\"O3\\"}\',' +
-    '\'\',3,\'$(pwd)/f_all.pdf\')\" && ' +
-    'psql flit -c \"select createschmoo(' + str(run_num) + ',' +
+    '\'\',3,\'\$(pwd)/f_all.pdf\')\\" && ' +
+    'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"d\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
     '\'{\\"O1\\", \\"O2\\", \\"O3\\"}\',' +
-    '\'\',3,\'$(pwd)/d_all.pdf\')\" && ' +
-    'psql flit -c \"select createschmoo(' + str(run_num) + ',' +
+    '\'\',3,\'\$(pwd)/d_all.pdf\')\\" && ' +
+    'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"e\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
     '\'{\\"O1\\", \\"O2\\", \\"O3\\"}\',' +
-    '\'\',3,\'\$(pwd)/e_all.pdf\')\"'
+    '\'\',3,\'\$(pwd)/e_all.pdf\')\\"'
 )
-print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1],
-                    '"' + cmd + '"'], env=new_env))
+print(check_output(['sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
+                    ' "' + cmd + '"'], env=new_env,
+                   shell=True).decode("utf-8"))
+
+print('Finished FLiT Run.')

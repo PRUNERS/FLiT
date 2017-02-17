@@ -13,10 +13,10 @@ DB_HOST = ('sawaya', 'bihexal.cs.utah.edu')
 RUN_HOSTS = (
     ('u0422778', 'kingspeak.chpc.utah.edu', 56, 'kingspeak_cpu_startup', 
      False, False),
-    # ('u0422778', 'kingspeak.chpc.utah.edu', 12, 'kingspeak_gpu_startup',
-    #  True, False),
-    # ('sawaya', 'ms0737.utah.cloudlab.us', 8, None,
-    #  False, False)
+    ('u0422778', 'kingspeak.chpc.utah.edu', 12, 'kingspeak_gpu_startup',
+     True, False),
+    ('sawaya', 'ms0103.utah.cloudlab.us', 8, None,
+     False, False),
              )
 
  
