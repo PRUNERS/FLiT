@@ -12,7 +12,7 @@ echo DB_HOST: ${DB_HOST}
 echo FLIT_DIR: ${FLIT_DIR}
 echo BRANCH: ${BRANCH}
 echo repo: ${REPO}
-S
+
 
 mkdir -p results
 
