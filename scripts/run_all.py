@@ -14,6 +14,8 @@ from subprocess import Popen, PIPE, check_output, STDOUT
 import getpass
 import sys
 from datetime import datetime
+import re
+import time
 
 #local
 import hostfile
@@ -42,6 +44,24 @@ def makeEnvStr(env):
         retVal += 'export ' + k + '=' + v + '; '
     return retVal
 
+def getJobNum(substr):
+    m = re.match(r".*Submitted batch job ([0-9]+)",
+                 substr, re.DOTALL)
+    try:
+        return m.group(1)
+    except AttributeError:
+        return None
+
+def slurmWait(user, host, pw, jobn):
+    envir = os.environ.copy()
+    envir['SSHPASS'] = pw
+    while user in check_output(['sshpass', '-e', 'ssh', 
+                                user + '@' + host,
+                                'squeue -j ' + jobn],
+                               env=envir).decode("utf-8"):
+        print('.')
+        time.sleep(10)
+
 def runOnAll(cmdStrs, pwds):
     procs = []
     for host in zip(run_hosts, pwds, cmdStrs):
@@ -55,13 +75,18 @@ def runOnAll(cmdStrs, pwds):
         rem_env['DB_USER'] = str(db_host[0])
         cmdStr = 'sshpass -e ' + host[2].format(host[0][0], host[0][1], host[0][3], makeEnvStr(rem_env))
         print('executing: ' + cmdStr)
-        procs.append(Popen(cmdStr,
+        procs.append([Popen(cmdStr,
                            shell=True, stdout=PIPE, stderr=STDOUT,
-                           env=local_env))
+                            env=local_env),
+                      host[0][3], host[0][0], host[0][1], host[1]])
     for p in procs:
-        p.wait()
-        print(p.stdout.read())
-        
+        p[0].wait()
+        outs = p[0].stdout.read().decode("utf-8")
+        #print(outs)
+        if p[1] is not None:
+            jn = getJobNum(outs)
+            if jn is not None:
+                slurmWait(p[2], p[3], p[4], jn)
 #check hostfile.py
 
 print('we\'re here')
