@@ -5,6 +5,15 @@
 
 set -e
 
+echo cores: ${CORES}
+echo DO_PIN: ${DO_PIN}
+echo DB_USER: ${DB_USER}
+echo DB_HOST: ${DB_HOST}
+echo FLIT_DIR: ${FLIT_DIR}
+echo BRANCH: ${BRANCH}
+echo repo: ${REPO}
+S
+
 mkdir -p results
 
 #do the full test suite
