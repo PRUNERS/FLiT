@@ -22,7 +22,7 @@ INTEL 		:= icpc
 GCC 		:= g++
 
 
-ifeq($CUDA_ONLY, "False")
+ifndef CUDA_ONLY
 COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 endif
 

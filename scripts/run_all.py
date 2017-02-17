@@ -89,8 +89,6 @@ def runOnAll(cmdStrs, pwds):
                 slurmWait(p[2], p[3], p[4], jn)
 #check hostfile.py
 
-print('we\'re here')
-
 if len(sys.argv) == 2:
     notes = sys.argv[1]
 
