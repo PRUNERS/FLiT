@@ -3,7 +3,7 @@
 #the following vars should be selectively defined prior to execution
 #CORES DO_PIN(or not) DB_USER DB_HOST
 
-set -e
+#set -e
 
 echo cores: ${CORES}
 echo DO_PIN: ${DO_PIN}
