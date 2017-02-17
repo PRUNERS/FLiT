@@ -28,6 +28,8 @@ db_host = hostfile.DB_HOST
 run_hosts = hostfile.RUN_HOSTS
 REPO = 'https://github.com/geof23/qfp'
 FLIT_DIR = 'qfp'
+REM_ENV = {'FLIT_DIR': FLIT_DIR, 'BRANCH': BRANCH,
+           'REPO': REPO}
 
 def usage():
     print('usage: ' + sys.argv[0] + ' "notes"')
@@ -39,22 +41,21 @@ def makeEnvStr(env):
     for k,v in env.items():
         retVal += 'export ' + k + '=' + v + '; '
     return retVal
-    
+
 def runOnAll(cmdStrs, pwds):
     procs = []
     for host in zip(run_hosts, pwds, cmdStrs):
         local_env = os.environ.copy()
         local_env['SSHPASS'] = str(host[1])
-        rem_env = {}
+        rem_env = REM_ENV.copy()
         rem_env['CUDA_ONLY'] = str(host[0][4])
         rem_env['DO_PIN'] = str(host[0][5])
         rem_env['CORES'] = str(host[0][2])
         rem_env['DB_HOST'] = str(db_host[1])
         rem_env['DB_USER'] = str(db_host[0])
-        cmdStr = host[2].format(host[0][0], host[0][1], host[0][3], makeEnvStr(rem_env))
+        cmdStr = 'sshpass -e ' + host[2].format(host[0][0], host[0][1], host[0][3], makeEnvStr(rem_env))
         print('executing: ' + cmdStr)
-        procs.append(Popen('sshpass -e ' + 
-                           cmdStr,
+        procs.append(Popen(cmdStr,
                            shell=True, stdout=PIPE, stderr=STDOUT,
                            env=local_env))
     for p in procs:

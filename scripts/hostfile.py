@@ -11,12 +11,12 @@ DB_HOST = ('sawaya', 'bihexal.cs.utah.edu')
 #   [Collect opcodes: (True | False (default))
 
 RUN_HOSTS = (
-    ('u0422778', 'kingspeak1.chpc.utah.edu', 56, 'kingspeak_cpu_collect', 
+    ('u0422778', 'kingspeak.chpc.utah.edu', 56, 'kingspeak_cpu_startup', 
      False, True),
-    ('u0422778', 'kingspeak1.chpc.utah.edu', 12, 'kingspeak_gpu_collect',
+    ('u0422778', 'kingspeak.chpc.utah.edu', 12, 'kingspeak_gpu_startup',
      True, False),
-    ('sawaya', 'ms0737.utah.cloudlab.us', 8, None,
-     False, False)
+    # ('sawaya', 'ms0737.utah.cloudlab.us', 8, None,
+    #  False, False)
              )
 
  
