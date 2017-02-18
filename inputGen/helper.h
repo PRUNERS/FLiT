@@ -82,7 +82,7 @@ T generateRandomFloat(RandomFloatType fType = RandomFloatType::Any,
   T val;
   do {
     val = generateFloatBits<T>(rType);
-  } while (isnan(val));
+  } while (std::isnan(val));
 
   // Convert the values based on the desired qualities
   if (fType == RandomFloatType::Positive) {

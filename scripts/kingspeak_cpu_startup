@@ -1,0 +1,37 @@
+#!/bin/bash -x
+
+#This script relies on the following env vars:
+#TMPD FLIT_DIR BRANCH REPO
+
+#SBATCH --time=1:00:00 
+#SBATCH -o slurm-flit-cpu-%j.out
+#SBATCH -e slurm-flit-cpu-%j.err
+#SBATCH -n 28
+#SBATCH -N 1
+#SBATCH --account ganesh-kp
+#SBATCH --partition soc-kp
+
+module load gcc/5.4.0
+module load git/2.10.0
+module unload xalt
+module load binutils/2.26.51
+module load intel
+
+CLANG_ARCH=llvm_kp307_build.tgz
+#setup working directory
+
+export TMPD=$(mktemp -d)
+cd ${TMPD}
+git clone -b ${BRANCH} --recursive ${REPO}
+
+cp ${HOME}/${CLANG_ARCH} .
+
+export PATH=${TMPD}/bin:${PATH}
+export LD_LIBRARY_PATH=${TMPD}/lib:${LD_LIBRARY_PATH}
+
+tar xf ${CLANG_ARCH}
+
+cd ${FLIT_DIR}
+
+scripts/hostCollect.sh
+
