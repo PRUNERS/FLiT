@@ -6,12 +6,17 @@ from collections import namedtuple
 
 Variable = namedtuple('Variable', 'name, type')
 class Variable(object):
+   'Represents a variable with a certain type'
+
    def __init__(self, name, vartype):
+      'initialize this'
       self.name = name
       self.type = vartype
    def __str__(self):
+      'return this object as a string'
       return self.name
    def __repr__(self):
+      'return this object as a string, but retaining the type'
       return 'Variable({0}, {1})'.format(self.name.__repr__(), self.type.__repr__())
 
 class Environment(dict):
