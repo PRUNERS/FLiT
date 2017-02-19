@@ -16,8 +16,6 @@ CPPFLAGS += -Wextra
 #CPPFLAGS += -MMD
 CPPFLAGS += -I../gdb/inst
 CPPFLAGS += -I.
-CPPFLAGS += -isystem eigen
-CPPFLAGS += -isystem eigen/Eigen
 
 LINKFLAGS += -lm
 LINKFLAGS += -lpthread
@@ -29,7 +27,6 @@ DEPFLAGS += -MD -MF $*.d
 TESTS    := $(wildcard tests/*.cpp)
 SOURCE   := $(wildcard *.cpp)
 SOURCE   += $(TESTS)
-SOURCE   += eigen/EigenTests.cpp
 
 
 OBJ      := $(SOURCE:.cpp=.o)

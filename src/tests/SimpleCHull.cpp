@@ -1,6 +1,7 @@
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
+#define SCH_LIB
 #define WFT float
 #include "S3FP/simple_convex_hull.cpp"
 
