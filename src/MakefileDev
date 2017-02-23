@@ -4,7 +4,7 @@ FFLAGS ?=
 TARGET ?= runTests
 
 CPPFLAGS ?= -Wuninitialized -g #-fsanitize=thread
-CPPFLAGS += -IS3FP/examples/include
+CPPFLAGS += -IS3FP/
 CPPFLAGS += -DWFT=float -DSCH_LIB
 
 CPPFLAGS += $(FFLAGS)
@@ -14,20 +14,15 @@ CPPFLAGS += -Wall
 CPPFLAGS += -Wextra
 #CPPFLAGS += -Werror
 #CPPFLAGS += -MMD
-CPPFLAGS += -I../gdb/inst
 CPPFLAGS += -I.
 
 LINKFLAGS += -lm
-LINKFLAGS += -lpthread
-LINKFLAGS += -pthread
-LINKFLAGS += -lquadmath #for S3FP
 
 DEPFLAGS += -MD -MF $*.d
 
 TESTS    := $(wildcard tests/*.cpp)
 SOURCE   := $(wildcard *.cpp)
 SOURCE   += $(TESTS)
-
 
 OBJ      := $(SOURCE:.cpp=.o)
 DEPS     := $(SOURCE:.cpp=.d)

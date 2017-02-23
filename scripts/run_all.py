@@ -32,6 +32,7 @@ REPO = 'https://github.com/geof23/qfp'
 FLIT_DIR = 'qfp'
 REM_ENV = {'FLIT_DIR': FLIT_DIR, 'BRANCH': BRANCH,
            'REPO': REPO}
+pwds = {}
 
 def usage():
     print('usage: ' + sys.argv[0] + ' "notes"')
@@ -62,11 +63,13 @@ def slurmWait(user, host, pw, jobn):
         print('.')
         time.sleep(10)
 
-def runOnAll(cmdStrs, pwds):
+def runOnAll(cmdStrs):
     procs = []
-    for host in zip(run_hosts, pwds, cmdStrs):
+    results = []
+    for host in zip(run_hosts, cmdStrs):
+        pkey = host[0][0]+'@'+host[0][1]
         local_env = os.environ.copy()
-        local_env['SSHPASS'] = str(host[1])
+        local_env['SSHPASS'] = pwds[pkey]
         rem_env = REM_ENV.copy()
         rem_env['CUDA_ONLY'] = str(host[0][4])
         rem_env['DO_PIN'] = str(host[0][5])
@@ -74,22 +77,36 @@ def runOnAll(cmdStrs, pwds):
         rem_env['DB_HOST'] = str(db_host[1])
         rem_env['DB_USER'] = str(db_host[0])
         cmdStr = ('sshpass -e ' +
-                  host[2].format(host[0][0], host[0][1],
-                                 host[0][3], makeEnvStr(rem_env)))
+                  host[1].format(host[0][0], host[0][1],
+                                 host[0][3],
+                                 makeEnvStr(rem_env)))
         print('executing: ' + cmdStr)
         procs.append([Popen(cmdStr,
                            shell=True, stdout=PIPE, stderr=STDOUT,
                             env=local_env),
-                      host[0][3], host[0][0], host[0][1], host[1]])
+                      host[0][3], host[0][0], host[0][1], pwds[pkey]])
     for p in procs:
         p[0].wait()
         outs = p[0].stdout.read().decode("utf-8")
+        results.append(outs.strip())
         print(outs)
-        if p[1] is not None:
+        if p[1] is not None: #if it's slurm
             jn = getJobNum(outs)
             if jn is not None:
                 slurmWait(p[2], p[3], p[4], jn)
-#check hostfile.py
+    return results
+
+def getPasswords():
+    print('please enter your credentials (pwds) for remote hosts, ' +
+          '[or empty for passphraseless ssh key auth]. No creds will be stored')
+    print(db_host)
+    print(run_hosts)
+    for host in ((db_host,) + run_hosts):
+        key = host[0] + '@' + host[1]
+        if key not in pwds:
+            pwds[key] = getpass.getpass(
+                'Enter password for ' + host[0] + '@' + host[1] + ': '
+            )
 
 if len(sys.argv) == 2:
     notes = sys.argv[1]
@@ -99,11 +116,14 @@ else:
     exit(1)
 
 
-#setup db
+#get passwords
+getPasswords()
+
+#setup db -- we're doing this first because it's cheap and if it fails,
+#the rest of the work will go to waste
 print('preparing workspace on DB server, ' + db_host[1] + '...')
-db_pw = getpass.getpass('Enter password for ' + db_host[1]+ ': ')
 new_env = os.environ.copy()
-new_env['SSHPASS'] = db_pw
+new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
                     db_host[0] + '@' + db_host[1] + ':~/'],
                    env=new_env).decode("utf-8"))
@@ -121,40 +141,39 @@ run_num = int(check_output(['sshpass', '-e', 'ssh',
                             'psql flit -t -c "select max(index) from runs"'],
                            env=new_env).decode("utf-8"))
 
-#launch workers
-pwds = []
-print('please enter your credentials (pwds) for RUN_HOSTS, ' +
-      '[or empty for passphraseless ssh key auth]. No creds will be stored')
-print(run_hosts)
-for host in run_hosts:
-    pwds.append(getpass.getpass('Enter pwd for ' + host[1] + ': '))
+#create worker package (use to be git checkout)
+print('creating worker package . . .')
+olddir = os.getcwd()
+os.chdir(home_dir + '/..')
+print(check_output(['tar', 'zcf', 'flit.tgz', 'scripts', 'src', 'Makefile.switches', 'Makefile.switches.cuda']))
+os.chdir(olddir)
+print('done.')
 
 
-cmds = []
-#send run host scripts, if used
-for host in run_hosts:
-    if host[3] is not None: #0-user 1-host 2-script 3-enviro
-        cmd = ('scp ' + home_dir + '/{2} {0}@{1}:')
-    else:
-        cmd = ('ssh {0}@{1} exit') #dummy -- this is a hack
-    cmds.append(cmd)
-runOnAll(cmds, pwds)
 
 cmds = []
-for host in run_hosts:
-    if host[3] is None: #0-user 1-host 2-script 3-enviro
-        cmd = ('ssh {0}@{1} "{3} export TMPD=\$(mktemp -d) && ' +
-                'cd \${{TMPD}} && ' +
-                'git clone -b ' + BRANCH + ' --recursive ' + REPO + ' && '
-                'cd ' + FLIT_DIR + ' && scripts/hostCollect.sh"')
-    else:
-        cmd = ('ssh {0}@{1} "{3} sbatch ' + host[3] +'"')
-    cmds.append(cmd)
-runOnAll(cmds, pwds)
+#transfer package to workers (or portal, if slurm script provided)
+package_dirs = runOnAll(['ssh {0}@{1} "echo \$(mktemp -d -p ~/)"'] * len(run_hosts))
+runOnAll(['scp ' + home_dir + '/../flit.tgz {0}@{1}:' + d for d in package_dirs])
 
+cmds = []
+for host in zip(run_hosts, package_dirs):
+    if host[0][3] is None: #0-user 1-host 2-script 3-enviro
+        cmd = ('ssh {0}@{1} "{3} cd ' + host[1] + ' && ' +
+               'tar xf flit.tgz && scripts/hostCollect.sh && ' +
+               'cd && rm -fr ' + host[1] + '"')
+    else:
+        cmd = ('ssh {0}@{1} "cd ' + host[1] + ' && ' +
+               'tar xf flit.tgz scripts/' + host[0][3] + ' && ' +
+               'cd .. && ' +
+               'export PDIR=' + host[1] + ' {3} sbatch ' +
+               host[1] + '/scripts/' + host[0][3] + '"')
+    cmds.append(cmd)
+runOnAll(cmds)
+ 
 #import to database -- need to unzip and then run importqfpresults2
 new_env = os.environ.copy()
-new_env['SSHPASS'] = db_pw
+new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 
 cmd = (
     'cd ~/flit_data && ' +
@@ -171,37 +190,46 @@ if any(list(zip(*run_hosts))[5]): #any opcode collections
         )
 print(check_output('sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
                     ' "' + cmd + '"', env=new_env,
-                   shell=True).decode("utf-8"))
+                  shell=True).decode("utf-8"))
 
 #display report / exit message
+
+#run_num = 160
+
+plot_dir = os.environ['HOME'] + '/flit_data/reports'
+
 cmd = (
-     'mkdir -p ~/flit_data/reports && ' +
+     'set -x && mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
-    'touch f_all.pdf d_all.pdf e_all.pdf && ' +
+    'touch f_all.pdf d_all.pdf e_all.pdf f_nvcc.pdf d_nvcc.pdf && ' +
     'chmod 777 * && ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"f\\"}\',\'{\\"nvcc-7.5\\"}\',' + 
     '\'{\\"\\"}\',' +
-    '\'\',5,\'\$(pwd)/f_nvcc.pdf\')\\" && ' +
+    '\'\',5,\'' + plot_dir + '/f_nvcc.pdf\')\\" & ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"d\\"}\',\'{\\"nvcc-7.5\\"}\',' + 
     '\'{\\"\\"}\',' +
-    '\'\',5,\'\$(pwd)/f_nvcc.pdf\')\\" && ' +
+    '\'\',5,\'' + plot_dir + '/d_nvcc.pdf\')\\" & ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"f\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
-    '\'{\\"O1\\", \\"O2\\", \\"O3\\"}\',' +
-    '\'\',3,\'\$(pwd)/f_all.pdf\')\\" && ' +
+    '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
+    '\'\',3,\'' + plot_dir + '/f_all.pdf\')\\" & ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"d\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
-    '\'{\\"O1\\", \\"O2\\", \\"O3\\"}\',' +
-    '\'\',3,\'\$(pwd)/d_all.pdf\')\\" && ' +
+    '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
+    '\'\',3,\'' + plot_dir + '/d_all.pdf\')\\" & ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
     '\'{\\"e\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
-    '\'{\\"O1\\", \\"O2\\", \\"O3\\"}\',' +
-    '\'\',3,\'\$(pwd)/e_all.pdf\')\\"'
+    '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
+    '\'\',3,\'' + plot_dir + '/e_all.pdf\')\\" & wait'
 )
+
+#print('cmd line: ' + cmd)
+
 print(check_output(['sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
                     ' "' + cmd + '"'], env=new_env,
                    shell=True).decode("utf-8"))
 
-print('Finished FLiT Run.')
+print('Finished FLiT Run.  You may review the reports at: ' +
+      db_host[0] + '@' + db_host[1] + ':' + plot_dir)

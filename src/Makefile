@@ -4,7 +4,7 @@
 NVCC 		:= /usr/local/cuda-7.5/bin/nvcc
 NVCC_VER 	:= nvcc-7.5
 NVCC_REQUIRED 	+= --std=c++11
-#NVCC_REQUIRED 	+= -O0
+NVCC_REQUIRED 	+= -O0
 NVCC_REQUIRED 	+= -ccbin=g++
 DEVCAP 		?= -arch=compute_37 -code=sm_37
 NVCC_REQUIRED 	+= $(DEVCAP)

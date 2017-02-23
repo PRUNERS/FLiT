@@ -12,6 +12,8 @@
 #SBATCH --partition=kingspeak-gpu
 #SBATCH --gres=gpu:titanx:1
 
+set -e
+
 module load cuda/7.5
 module load gcc/4.9.2
 
@@ -19,9 +21,13 @@ module load gcc/4.9.2
 
 export TMPD=$(mktemp -d)
 cd ${TMPD}
-
-git clone -b ${BRANCH} --recursive ${REPO}
-
+mkdir ${FLIT_DIR}
 cd ${FLIT_DIR}
+cp ${PDIR}/flit.tgz .
+tar xf flit.tgz
 
 scripts/hostCollect.sh
+
+cd /tmp
+rm -fr ${TMPD}
+rm -fr ${PDIR}
