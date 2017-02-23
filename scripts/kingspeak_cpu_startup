@@ -4,12 +4,14 @@
 #TMPD FLIT_DIR BRANCH REPO
 
 #SBATCH --time=1:00:00 
-#SBATCH -o slurm-flit-cpu-%j.out
-#SBATCH -e slurm-flit-cpu-%j.err
+#SBATCH -o /uufs/chpc.utah.edu/common/home/u0422778/slurm-flit-cpu-%j.out
+#SBATCH -e /uufs/chpc.utah.edu/common/home/u0422778/slurm-flit-cpu-%j.err
 #SBATCH -n 28
 #SBATCH -N 1
 #SBATCH --account ganesh-kp
 #SBATCH --partition soc-kp
+
+set -e
 
 module load gcc/5.4.0
 module load git/2.10.0
@@ -22,7 +24,11 @@ CLANG_ARCH=llvm_kp307_build.tgz
 
 export TMPD=$(mktemp -d)
 cd ${TMPD}
-git clone -b ${BRANCH} --recursive ${REPO}
+mkdir ${FLIT_DIR}
+cd ${FLIT_DIR}
+cp ${PDIR}/flit.tgz .
+tar xf flit.tgz
+cd ..
 
 cp ${HOME}/${CLANG_ARCH} .
 
@@ -35,3 +41,6 @@ cd ${FLIT_DIR}
 
 scripts/hostCollect.sh
 
+cd /tmp
+rm -fr ${TMPD}
+rm -fr ${PDIR}
