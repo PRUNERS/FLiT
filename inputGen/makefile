@@ -7,12 +7,12 @@ INTERNAL_OPT_FLAGS  = $(OPT_FLAGS) -fPIC -g
 CXX                 = g++
 COMMON_FLAGS       += -std=c++14
 COMMON_FLAGS       += -g
-COMMON_FLAGS       += -Werror
+#COMMON_FLAGS       += -Werror
 COMMON_FLAGS       += -Wall
 COMMON_FLAGS       += -Wextra
 COMMON_FLAGS       += -Wstrict-aliasing=0
-COMMON_FLAGS       += -I../qfpc
-COMMON_FLAGS       += -I../qfpc/tests
+COMMON_FLAGS       += -I../src
+COMMON_FLAGS       += -I../src/tests
 UNOPT_FLAGS         = -O0
 LINK_FLAGS          = -ldl -rdynamic
 DEP_FLAGS           = -MD -MF $*.d
@@ -21,7 +21,7 @@ OBJ_DIR             = .obj
 SOURCE              = $(wildcard *.cpp)
 OPT_SOURCE          = testbed.cpp
 UNOPT_SOURCE        = $(filter-out $(OPT_SOURCE),$(SOURCE))
-TEST_SOURCE         = $(wildcard ../qfpc/tests/*.cpp)
+TEST_SOURCE         = $(wildcard ../src/tests/*.cpp)
 TEST_LINKS          = $(notdir $(TEST_SOURCE))
 TEST_LINKS         := $(addprefix $(OBJ_DIR)/,$(filter-out EigenTests.cpp,$(TEST_LINKS)))
 OPT_SOURCE         += $(TEST_LINKS)
@@ -63,7 +63,7 @@ $(OPT_LIB): $(OPT_OBJ) makefile
 $(TARGET): $(UNOPT_OBJ) makefile
 	$(CXX) -o $(TARGET) $(UNOPT_OBJ) $(LINK_FLAGS)
 
-$(OBJ_DIR)/%.cpp: ../qfpc/tests/%.cpp
+$(OBJ_DIR)/%.cpp: ../src/tests/%.cpp
 	@mkdir -p $(OBJ_DIR)
 	ln -sf ../$< $@
 
