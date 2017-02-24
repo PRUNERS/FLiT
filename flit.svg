@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg id="svg3680" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" height="226.1" viewBox="0 0 195.33215 226.10322" width="195.33" version="1.1" xmlns:cc="http://creativecommons.org/ns#" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/">
+ <title id="title4208">FLiT Logo</title>
+ <metadata id="metadata3686">
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title>FLiT Logo</dc:title>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs id="defs3684">
+  <linearGradient id="linearGradient4492">
+   <stop id="stop4494" stop-color="#69a051" offset="0"/>
+   <stop id="stop4496" stop-color="#69a051" stop-opacity="0" offset="1"/>
+  </linearGradient>
+  <linearGradient id="linearGradient4498" y2="100.43" xlink:href="#linearGradient4492" gradientUnits="userSpaceOnUse" x2="206.21" y1="73.868" x1="135.74"/>
+  <linearGradient id="linearGradient4502" y2="100.43" xlink:href="#linearGradient4492" gradientUnits="userSpaceOnUse" x2="206.21" gradientTransform="matrix(.98623 .16540 -.16540 .98623 18.19 -17.383)" y1="73.868" x1="135.74"/>
+ </defs>
+ <g id="g4455" transform="translate(-20.624 -14.64)" stroke="#000">
+  <g fill-rule="evenodd" stroke-width="1px">
+   <path id="path4500" d="m214.79 31.761-99.088 48.873 21.234 43.597c39.712-40.994 46.83-33.77 77.853-92.47z" fill="url(#linearGradient4502)"/>
+   <path id="path4524" d="m65.239 36.763c-4.0593 4.4203-0.57453 13.559-3.9896 17.557 3.039 3.2633-1.8623 5.6257 6.1205 7.0351 3.215-2.4253 17.421 16.739 17.421 16.739l0.48438 5.2142 34.406-35.976c-5.8-7.257-13.36-18.326-23.529-20.421-10.593-2.181-23.597 1.887-30.912 9.852zm123.62 177.16c3.2011 8.3204 8.6398 23.167 4.9832 26.276-3.5308-0.88052-18.016-12.028-23.961-20.767-6.2158-9.1373-7.8017-19.973-10.995-31.277-0.26856-1.0831-0.24556-2.1663-1.0221-3.2494l9.3829-5.6109c0.53296 1.4788 1.2748 1.9131 1.9998 2.4322 9.4717 9.1067 15.1 20.467 19.612 32.196zm-104.01-135.91 32.35-33.552c35.747 40.809 45.418 95.921 50.121 134.8 0.13167 1.0887 2.2028 2.838 2.2028 2.838s-7.3049 4.9869-10.498 6.3706c-0.28644-0.3957-0.51634-2.3519-0.80683-2.7435-27.19-36.66-70.982-54.39-73.37-107.71z" fill="#ebebeb"/>
+   <path id="path4461" d="m202.02 15.948-89.639 64.589 28.153 39.484c32.39-46.996 40.61-41.049 61.49-104.07z" fill="url(#linearGradient4498)"/>
+   <path id="path4467" d="m20.977 94.476 41.099-40.994 6.3479 7.2943z" fill="#ca2d2c"/>
+  </g>
+  <path id="ellipse4471" d="m74.547 37.617a6.7754 7.9436 76.051 0 0 -2.3516 0.27344 6.7754 7.9436 76.051 0 0 -6.0762 8.4902 6.7754 7.9436 76.051 0 0 9.3418 4.6602 6.7754 7.9436 76.051 0 0 6.0762 -8.4902 6.7754 7.9436 76.051 0 0 -6.9902 -4.9336zm0.35352 3.8887a2.8389 4.5027 76.051 0 1 3.2988 1.875 2.8389 4.5027 76.051 0 1 -3.6855 3.8398 2.8389 4.5027 76.051 0 1 -5.0547 -1.6699 2.8389 4.5027 76.051 0 1 3.6855 -3.8398 2.8389 4.5027 76.051 0 1 1.7559 -0.20508z" stroke-width="1.4" fill="#69a051"/>
+ </g>
+</svg>
