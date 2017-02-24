@@ -1,6 +1,6 @@
 # FLiT #
 
-[![FLiT Bird](/flit.png =200x)](https://github.com/PRUNERS/FLiT "FLiT")
+[![FLiT Bird](/flit.png)](https://github.com/PRUNERS/FLiT "FLiT")
 
 Floating-point Litmus Tests is a test infrastructure for detecting varibility
 in floating-point code caused by variations in compiler code generation,
