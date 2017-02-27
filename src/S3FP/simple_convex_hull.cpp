@@ -16,7 +16,7 @@ using namespace std;
 #endif 
 
 #ifndef OFT 
-#ifdef __CUDA__
+#if defined(__CUDA__) || defined(__aarch64__)
 #define OFT double
 #else
 #define OFT __float128 
