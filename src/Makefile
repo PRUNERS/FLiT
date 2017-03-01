@@ -4,7 +4,7 @@
 NVCC 		:= /usr/local/cuda-7.5/bin/nvcc
 NVCC_VER 	:= nvcc-7.5
 NVCC_REQUIRED 	+= --std=c++11
-NVCC_REQUIRED 	+= -O0
+#NVCC_REQUIRED 	+= -O0
 NVCC_REQUIRED 	+= -ccbin=g++
 DEVCAP 		?= -arch=compute_37 -code=sm_37
 NVCC_REQUIRED 	+= $(DEVCAP)
@@ -14,6 +14,7 @@ NVCC_CFLAGS 	+= -x cu
 NVCC_CFLAGS 	+= -dc
 NVCC_CFLAGS 	+= -D__CUDA__
 NVCC_CFLAGS 	+= -I/usr/local/cuda-7.5/samples/common/inc
+NVCC_FLAGS	+= $(DEVCAP)
 
 HAS_CUDA      	:= $(shell command -v nvcc 2> /dev/null)
 
