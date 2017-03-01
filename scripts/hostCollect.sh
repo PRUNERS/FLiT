@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 #the following vars should be selectively defined prior to execution
-#CORES DO_PIN(or not) DB_USER DB_HOST
+#CORES DO_PIN(or not) DB_USER DB_HOST DB_PASSWD
 
 #set -e
 
@@ -10,6 +10,7 @@ echo DO_PIN: ${DO_PIN}
 echo DB_USER: ${DB_USER}
 echo DB_HOST: ${DB_HOST}
 echo FLIT_DIR: ${FLIT_DIR}
+echo SLURMED: ${SLURMED}
 
 mkdir -p results
 
