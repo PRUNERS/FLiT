@@ -1,8 +1,8 @@
 # a makefile for a variety of compilers and compiler flags
 
 #CUDA
-NVCC 		:= /usr/local/cuda-7.5/bin/nvcc
-NVCC_VER 	:= nvcc-7.5
+NVCC 		:= $(shell which nvcc) #/usr/local/cuda-7.5/bin/nvcc
+NVCC_VER 	:= nvcc
 NVCC_REQUIRED 	+= --std=c++11
 #NVCC_REQUIRED 	+= -O0
 NVCC_REQUIRED 	+= -ccbin=g++
@@ -13,11 +13,13 @@ NVCC_CFLAGS 	+= -I .
 NVCC_CFLAGS 	+= -x cu
 NVCC_CFLAGS 	+= -dc
 NVCC_CFLAGS 	+= -D__CUDA__
-NVCC_CFLAGS 	+= -I/usr/local/cuda-7.5/samples/common/inc
+NVCC_CFLAGS 	+= -I/usr/local/cuda/samples/common/inc
+NVCC_LINK 	:= -L/usr/local/cuda/lib64
 NVCC_FLAGS	+= $(DEVCAP)
 
 HAS_CUDA      	:= $(shell command -v nvcc 2> /dev/null)
-
+$(info HAS_CUDA = $(HAS_CUDA))
+$(info PATH = $(PATH))
 CLANG 		:= clang++
 INTEL 		:= icpc
 GCC 		:= g++
@@ -133,7 +135,7 @@ $(NVCC_VER)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $(NVCC_VER)_$(hostname)_$(s
 
 #link test
 $(NVCC_VER)_$(hostname)_$(strip $1) : $(CUOBJ:%.o=%_$(NVCC_VER)_$(hostname)_$(strip $1).o)
-	$(NVCC) $($(strip $1)) $(NVCC_REQUIRED) $$^ -o $$@
+	$(NVCC) $($(strip $1)) $(NVCC_REQUIRED) $(NVCC_LINK) $$^ -o $$@
 	rm $(CUOBJ:.o=_$(strip $(NVCC_VER))_$(hostname)_$(strip $1).o)
 
 #compile test

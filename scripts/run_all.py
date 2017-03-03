@@ -77,11 +77,11 @@ def runOnAll(cmdStrs):
         rem_env['DB_HOST'] = str(db_host[1])
         rem_env['DB_USER'] = str(db_host[0])
         rem_env['SLURMED'] = str(host[0][3])
-        cmdStr = ('sshpass -e ' +
-                  host[1].format(host[0][0], host[0][1],
-                                 host[0][3],
-                                 makeEnvStr(rem_env)))
-        if cmdStr is not None:
+        if host[1] is not None:
+            cmdStr = ('sshpass -e ' +
+                      host[1].format(host[0][0], host[0][1],
+                                     host[0][3],
+                                     makeEnvStr(rem_env)))
             print('executing: ' + cmdStr)
             procs.append([Popen(cmdStr,
                                 shell=True, stdout=PIPE, stderr=STDOUT,
@@ -124,8 +124,18 @@ getPasswords()
 #setup db -- we're doing this first because it's cheap and if it fails,
 #the rest of the work will go to waste
 print('preparing workspace on DB server, ' + db_host[1] + '...')
+os.chdir(home_dir + '/../db/python')
+print(check_output('tar zcf ' + home_dir + '/dbPy.tgz *',
+                   shell=True).
+      decode("utf-8"))
+os.chdir(home_dir)
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
+print(check_output('sshpass scp ' + home_dir + '/dbPy.tgz ' +
+                   db_host[0] + '@' + db_host[1] + ':', shell=True,
+                   env=new_env).
+      decode("utf-8"))
+os.remove('dbPy.tgz')
 print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
                     db_host[0] + '@' + db_host[1] + ':~/'],
                    env=new_env).decode("utf-8"))
@@ -147,7 +157,7 @@ run_num = int(check_output(['sshpass', '-e', 'ssh',
 print('creating worker package . . .')
 olddir = os.getcwd()
 os.chdir(home_dir + '/..')
-print(check_output(['tar', 'zcf', 'flit.tgz', 'scripts', 'src', 'Makefile.switches', 'Makefile.switches.cuda']))
+print(check_output(['tar', 'zcf', 'flit.tgz', 'scripts', 'src', 'Makefile.switches', 'Makefile.switches.cuda']).decode("utf-8"))
 os.chdir(olddir)
 print('done.')
 
@@ -166,10 +176,11 @@ cleancs = []
 for host in zip(run_hosts, package_dirs):
     if host[0][3] is None: #0-user 1-host 2-script 3-enviro
         cmd = ('ssh {0}@{1} "{3} cd ' + host[1] + ' && ' +
-               'tar xf flit.tgz && scripts/hostCollect.sh && ' +
-               'cd && rm -fr ' + host[1] + '"')
+               'tar xf flit.tgz && scripts/hostCollect.sh"'
+               )
         copyc = ('scp  {0}@{1}:/' + host[1] + '/results/"*.tgz" .')
-        cleanc = ('ssh {0}@{1} "rm -fr ' + host[1] + '"')
+        cleanc = None #DELME
+        #cleanc = ('ssh {0}@{1} "rm -fr ' + host[1] + '"')
     else:
         cmd = ('ssh {0}@{1} "cd ' + host[1] + ' && ' +
                'tar xf flit.tgz scripts/' + host[0][3] + ' && ' +
@@ -185,14 +196,18 @@ runOnAll(cmds)
 runOnAll(copycs)
 runOnAll(cleancs)
 
-#copy the result files that we copied to here (the launch host)
-print(check_output(['sshpass', '-e', 'scp', '"*.tgz"', db_host[0] + '@' +
-                    db_host[1] + '/flit_data']))
-
-#import to database -- need to unzip and then run importqfpresults2
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 
+#copy the result files that we copied to here (the launch host)
+print(check_output('sshpass -e scp ' + home_dir +
+                    '/*.tgz ' + db_host[0] + '@' +
+                    db_host[1] + ':flit_data',
+                   shell=True,env=new_env).decode("utf-8"))
+
+print(check_output('rm *.tgz', shell=True).decode("utf-8"))
+
+#import to database -- need to unzip and then run importqfpresults2
 cmd = (
     'cd ~/flit_data && ' +
     'for f in *.tgz; do tar xf \$f; done && ' +
@@ -217,16 +232,17 @@ print(check_output('sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
 plot_dir = os.environ['HOME'] + '/flit_data/reports'
 
 cmd = (
-     'set -x && mkdir -p ~/flit_data/reports && ' +
+    'set -x && ' +
+    'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
     'touch f_all.pdf d_all.pdf e_all.pdf f_nvcc.pdf d_nvcc.pdf && ' +
     'chmod 777 * && ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-    '\'{\\"f\\"}\',\'{\\"nvcc-7.5\\"}\',' + 
+    '\'{\\"f\\"}\',\'{\\"nvcc\\"}\',' + 
     '\'{\\"\\"}\',' +
     '\'\',5,\'' + plot_dir + '/f_nvcc.pdf\')\\" & ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-    '\'{\\"d\\"}\',\'{\\"nvcc-7.5\\"}\',' + 
+    '\'{\\"d\\"}\',\'{\\"nvcc\\"}\',' + 
     '\'{\\"\\"}\',' +
     '\'\',5,\'' + plot_dir + '/d_nvcc.pdf\')\\" & ' +
     'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
