@@ -30,7 +30,14 @@ if  ! exists createdb || ! exists psql; then
     fi
 fi
 
+# Check if user exists
+# from http://stackoverflow.com/questions/8546759/how-to-check-if-a-postgres-user-exists
+if psql -t -c '\du' | cut -d \| -f 1 | grep -qw `whoami`; then
+    echo "User `whoami` already exists"
+else
+    echo "Creating user `whoami`"
+    sudo -u postgres createuser --superuser `whoami`
+fi
 
 createdb flit "The database for collecting all FLiT results"
 psql flit < "$SCRIPT_DIR/tables.sql"
-

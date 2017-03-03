@@ -1,29 +1,16 @@
-#this python file contains the DB_HOST and RUN_HOSTS objects,
-#along with COMPILERS
+#this is where the user configures her database and
+#worker hosts.
+#db_host: (user, fqdn)
+#run_host: (user, fqdn, processes, SlurmScript, CUDA only, get opcode count)
 
-#DB_HOST: (user, fqdn)
+import os
+import multiprocessing
 
-DB_HOST = ('sawaya', 'bihexal.cs.utah.edu')
+user = os.environ['USER']
+cores = multiprocessing.cpu_count()
 
+DB_HOST = (user, 'localhost')
+RUN_HOSTS = ((user, 'localhost', cores, None, False, False),)
 
-#the format of RUN_HOSTS tuples: (user, fqdn, procs, host_script,
-#   [CUDA only: (True | False (default))],
-#   [Collect opcodes: (True | False (default))
-
-RUN_HOSTS = (
-    ('u0422778', 'kingspeak2.chpc.utah.edu', 56, 'kingspeak_cpu_startup', 
-     False, False),
-    ('u0422778', 'kingspeak2.chpc.utah.edu', 12, 'kingspeak_gpu_startup',
-     True, False),
-    ('sawaya', 'ms0131.utah.cloudlab.us', 8, None,
-     False, False),
-             )
-
- 
-#these tuples are so formated: (COMPILER [CLANG, GCC, INTEL, NVCC], 5.4)
-
-# COMPILERS = (('CLANG', '3.9'),
-#              ('GCC', '5.4'),
-#              ('INTEL', '16.0.3'),
-#              ('NVCC', '7.5'))
-
+#another possibility:
+#RUN_HOSTS = ((user, 'localhost', cores, kingspeak_gpu_startup, True, False),)
