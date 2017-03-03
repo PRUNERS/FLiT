@@ -11,6 +11,7 @@ echo DB_USER: ${DB_USER}
 echo DB_HOST: ${DB_HOST}
 echo FLIT_DIR: ${FLIT_DIR}
 echo SLURMED: ${SLURMED}
+echo CUDA_ONLY: ${CUDA_ONLY}
 
 mkdir -p results
 
@@ -55,10 +56,11 @@ fi
 cd results
 
 #zip up all outputs
+ZIPFILE=$(hostname)_$(date +%m%d%y%H%M%S)_flit.tgz
+tar zcf ${ZIPFILE} *
+
 if [ "${SLURMED}" != "None" ];
 then
-    ZIPFILE=$(hostname)_$(date +%m%d%y%H%M%S)_flit.tgz
-    tar zcf ${ZIPFILE} *
     scp ${ZIPFILE} ${DB_USER}@${DB_HOST}:~/flit_data
 fi
 
