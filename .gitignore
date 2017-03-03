@@ -2,8 +2,8 @@
 # Custom
 #
 
-# Generated executable
-qfpc/runTests
+#host configuration file
+scripts/hostfile.py
 
 # Vim
 .*.swp
