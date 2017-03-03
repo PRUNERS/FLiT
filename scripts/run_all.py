@@ -76,15 +76,17 @@ def runOnAll(cmdStrs):
         rem_env['CORES'] = str(host[0][2])
         rem_env['DB_HOST'] = str(db_host[1])
         rem_env['DB_USER'] = str(db_host[0])
+        rem_env['SLURMED'] = str(host[0][3])
         cmdStr = ('sshpass -e ' +
                   host[1].format(host[0][0], host[0][1],
                                  host[0][3],
                                  makeEnvStr(rem_env)))
-        print('executing: ' + cmdStr)
-        procs.append([Popen(cmdStr,
-                           shell=True, stdout=PIPE, stderr=STDOUT,
-                            env=local_env),
-                      host[0][3], host[0][0], host[0][1], pwds[pkey]])
+        if cmdStr is not None:
+            print('executing: ' + cmdStr)
+            procs.append([Popen(cmdStr,
+                                shell=True, stdout=PIPE, stderr=STDOUT,
+                                env=local_env),
+                          host[0][3], host[0][0], host[0][1], pwds[pkey]])
     for p in procs:
         p[0].wait()
         outs = p[0].stdout.read().decode("utf-8")
@@ -156,21 +158,37 @@ cmds = []
 package_dirs = runOnAll(['ssh {0}@{1} "echo \$(mktemp -d -p ~/)"'] * len(run_hosts))
 runOnAll(['scp ' + home_dir + '/../flit.tgz {0}@{1}:' + d for d in package_dirs])
 
+#this does all the work of running and collecting
+
 cmds = []
+copycs = []
+cleancs = []
 for host in zip(run_hosts, package_dirs):
     if host[0][3] is None: #0-user 1-host 2-script 3-enviro
         cmd = ('ssh {0}@{1} "{3} cd ' + host[1] + ' && ' +
                'tar xf flit.tgz && scripts/hostCollect.sh && ' +
                'cd && rm -fr ' + host[1] + '"')
+        copyc = ('scp  {0}@{1}:/' + host[1] + '/results/"*.tgz" .')
+        cleanc = ('ssh {0}@{1} "rm -fr ' + host[1] + '"')
     else:
         cmd = ('ssh {0}@{1} "cd ' + host[1] + ' && ' +
                'tar xf flit.tgz scripts/' + host[0][3] + ' && ' +
                'cd .. && ' +
                'export PDIR=' + host[1] + ' {3} sbatch ' +
                host[1] + '/scripts/' + host[0][3] + '"')
+        copyc = None
+        cleanc = None
     cmds.append(cmd)
+    copycs.append(copyc)
+    cleancs.append(cleanc)
 runOnAll(cmds)
- 
+runOnAll(copycs)
+runOnAll(cleancs)
+
+#copy the result files that we copied to here (the launch host)
+print(check_output(['sshpass', '-e', 'scp', '"*.tgz"', db_host[0] + '@' +
+                    db_host[1] + '/flit_data']))
+
 #import to database -- need to unzip and then run importqfpresults2
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]

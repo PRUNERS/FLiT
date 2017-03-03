@@ -13,5 +13,4 @@ DB_HOST = (user, 'localhost')
 RUN_HOSTS = ((user, 'localhost', cores, None, False, False),)
 
 #another possibility:
-
 #RUN_HOSTS = ((user, 'localhost', cores, kingspeak_gpu_startup, True, False),)
