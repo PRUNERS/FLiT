@@ -14,6 +14,7 @@ NVCC_CFLAGS 	+= -x cu
 NVCC_CFLAGS 	+= -dc
 NVCC_CFLAGS 	+= -D__CUDA__
 NVCC_CFLAGS 	+= -I/usr/local/cuda-7.5/samples/common/inc
+NVCC_FLAGS	+= $(DEVCAP)
 
 HAS_CUDA      	:= $(shell command -v nvcc 2> /dev/null)
 
