@@ -104,5 +104,4 @@ def random_expression(env, length, vars_only=False):
       leaf.value = rander()
 
    # Generate the string
-   var = rand_var()
    return expr
