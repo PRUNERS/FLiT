@@ -61,7 +61,7 @@ protected:
     }
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
-    return {dist, A.LInfDistance(orig)};
+    return {std::pair<long double, long double>(dist, A.LInfDistance(orig)), 0};
   }
 
 protected:

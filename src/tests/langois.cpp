@@ -109,7 +109,7 @@ protected:
     for(stype i = 1; i < size; ++i){
       s[i] = std::fma(x[i], y[i], s[i-1]);
     }
-    return {s[size-1], (T)0.0};
+    return {std::pair<long double, long double>(s[size-1], (T)0.0), 0};
   }
 
 protected:
@@ -152,7 +152,7 @@ protected:
       ThreeFMA(x[i], y[i], s[i-1], s[i], a, B);
       c[i] = c[i-1] + (a + B);
     }
-    return {s[size-1] + c[size-1], (T)0.0};
+    return {std::pair<long double, long double>(s[size-1] + c[size-1], (T)0.0), 0};
   }
 
 protected:
@@ -196,7 +196,7 @@ protected:
       TwoSum(p, s[i-1], s[i], si);
       c[i] = c[i-1] + (pi + si);
     }
-    return {s[size-1] + c[size-1], (T)0.0};
+    return {std::pair<long double, long double>(s[size-1] + c[size-1], (T)0.0), 0};
   }
 
 protected:

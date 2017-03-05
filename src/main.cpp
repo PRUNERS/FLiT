@@ -3,6 +3,8 @@
 
 #include <cstring>
 #include <typeinfo>
+#include <chrono>
+#include <type_traits>
 
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
@@ -17,38 +19,54 @@ using namespace CUHelpers;
 using namespace QFPHelpers;
 using namespace QFPTest;
 
-void
-loadStringFromEnv(std::string &dest, const std::string &var,
+//this sets the test parameters
+namespace {
+
+bool
+loadBoolFromEnv(const std::string &var){
+  return std::getenv(var.c_str()) != nullptr;
+}
+
+const std::string
+loadStringFromEnv(const std::string &var,
                   const std::string &defVal) {
   if(std::getenv(var.c_str()) == nullptr) {
-    dest = defVal;
+    return defVal;
   } else {
-    dest = std::getenv(var.c_str());
+    return std::getenv(var.c_str());
   }
 }
 
-void
-loadIntFromEnv(int &dest, const std::string &var, int defVal){
+int
+loadIntFromEnv(const std::string &var, int defVal){
   const char* res = std::getenv(var.c_str());
   if(res == nullptr || std::strlen(res) == 0) {
-    dest = defVal;
+    return defVal;
   } else {
-    dest = std::atoi(res);
+    return std::atoi(res);
   }
 }
+
+std::string const TEST = loadStringFromEnv("TEST", "all");
+std::string const PRECISION = loadStringFromEnv("PRECISION", "all");
+bool const doOne = TEST != "all";
+bool const GetTime = loadBoolFromEnv("DO_TIMINGS");
+int const TimingLoops = loadIntFromEnv("TIMING_LOOPS", 10);
+
 
 void
 outputResults(const QFPTest::ResultType& scores){
   for(const auto& i: scores){
     std::cout
       << "HOST,SWITCHES,OPTL,COMPILER,"
-      << i.first.second << ",us,"
-      << i.second.first << ","
-      << as_int(i.second.first) << ","
-      << i.second.second << ","
-      << as_int(i.second.second) << ","
-      << i.first.first << ","
-      << "FILENAME"
+      << i.first.second << ",us," //sort
+      << i.second.first.first << "," //score0d
+      << as_int(i.second.first.first) << "," //score0
+      << i.second.first.second << "," //score1d
+      << as_int(i.second.first.second) << "," //score1
+      << i.first.first << "," //name
+      << i.second.second << "," //nanoseconds
+      << "FILENAME" //filename
       << std::endl;
   }
 }
@@ -56,29 +74,20 @@ outputResults(const QFPTest::ResultType& scores){
 template <typename F>
 void runTestWithDefaultInput(QFPTest::TestFactory* factory,
                              QFPTest::ResultType& totScores) {
+  using namespace std::chrono;
+    
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
-
-  auto scores = test->run(ip);
+  auto scores = test->run(ip, GetTime, TimingLoops);
   totScores.insert(scores.begin(), scores.end());
   info_stream.flushout();
 }
 
+} //namespace
+
 int main(int argc, char* argv[]) {
 
-  std::string NO_WATCHS;
-  loadStringFromEnv(NO_WATCHS, "NO_WATCH", "true");
-  std::string sfx;
-  if(NO_WATCHS != "true")
-    sfx = argv[0][std::strlen(argv[0]) - 1]; //to diff btw inf1 & inf2
-  else
-    sfx = "";
   if(argc > 1 && std::string(argv[1]) == std::string("verbose")) info_stream.show();
-  std::string TEST;
-  loadStringFromEnv(TEST, std::string("TEST") + sfx, "all");
-  std::string PRECISION;
-  loadStringFromEnv(PRECISION, std::string("PRECISION") + sfx, "all");
-  bool doOne = TEST != "all";
   if((TEST == "all") != (PRECISION == "all")){ //all or one
     std::cerr << argv[0] << " must be run with one or all tests selected."
               << std::endl;
@@ -120,6 +129,5 @@ int main(int argc, char* argv[]) {
 #endif
 
   outputResults(scores);
+  return 0;
 }
-
-

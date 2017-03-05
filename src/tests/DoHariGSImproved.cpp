@@ -73,7 +73,7 @@ protected:
       QFPHelpers::info_stream << id << ":   r3: " << r3 << std::endl;
       QFPHelpers::info_stream << id << ": w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
     }
-    return {score, 0.0};
+    return {std::pair<long double, long double>(score, 0.0l), 0l};
   }
 
 protected:

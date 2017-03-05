@@ -146,7 +146,7 @@ protected:
         << std::endl;
       cdim++;
     }
-    return {score, 0.0};
+    return {std::pair<long double, long double>(score, 0.0), 0};
   }
 
 private:

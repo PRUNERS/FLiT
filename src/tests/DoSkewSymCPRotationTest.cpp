@@ -90,7 +90,7 @@ protected:
       QFPHelpers::info_stream << "L1Distance: " << L1Score << std::endl;
       QFPHelpers::info_stream << "LIDistance: " << LIScore << std::endl;
     }
-    return {L1Score, LIScore};
+    return {std::pair<long double, long double>(L1Score, LIScore), 0};
   }
 
 private:

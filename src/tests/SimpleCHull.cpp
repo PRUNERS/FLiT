@@ -1,7 +1,7 @@
 #include "testBase.hpp"
 #include "QFPHelpers.hpp"
 
-#define SCH_LIB
+//#define SCH_LIB
 #define WFT float
 #include "S3FP/simple_convex_hull.cpp"
 
@@ -31,7 +31,8 @@ protected:
     PointList.clear();
     ReadInputs(fopen("data/random_input", "r"));
     SimpleComputeConvexhull<T>();
-    return {(long double) getEdgeCount(), 0.0};
+    return {std::pair<long double, long double>((long double)
+						getEdgeCount(), 0.0), 0};
   }
 
 protected:

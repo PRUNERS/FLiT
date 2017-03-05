@@ -50,7 +50,9 @@ protected:
     QFPHelpers::info_stream << "Resulting vector: " << A << std::endl;
     QFPHelpers::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(expected, QFPHelpers::info_stream);
-    return {A.L1Distance(expected), A.LInfDistance(expected)};
+    return {std::pair<long double, long double>(A.L1Distance(expected),
+						A.LInfDistance(expected)),
+	0};
   }
 
 protected:
