@@ -65,7 +65,7 @@ protected:
     QFPHelpers::info_stream << id << ": undist  = "
                 << undistributed << std::endl;
 
-    return {distributed, undistributed};
+    return {std::pair<long double, long double>(distributed, undistributed), 0};
   }
 
 protected:

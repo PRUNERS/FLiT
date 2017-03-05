@@ -36,7 +36,7 @@ protected:
     QFPHelpers::info_stream << id << ": kahan sum    = " << kahan.sum() << std::endl;
     QFPHelpers::info_stream << id << ": shewchuk sum = " << kahan.sum() << std::endl;
     QFPHelpers::info_stream << id << ": Epsilon      = " << std::numeric_limits<T>::epsilon() << std::endl;
-    return {kahan.sum(), naive};
+    return {std::pair<long double, long double>(kahan.sum(), naive), 0};
   }
 
 protected:

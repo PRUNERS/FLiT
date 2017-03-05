@@ -49,7 +49,7 @@ protected:
     dstr = res.str();
     T backAgain;
     std::istringstream(dstr) >> backAgain;
-    return{std::fabs((long double)ti.vals[0] - backAgain), 0.0};
+    return{std::pair<long double, long double>(std::fabs((long double)ti.vals[0] - backAgain), 0.0), 0};
   }
 
   using QFPTest::TestBase<T>::id;
@@ -87,7 +87,7 @@ protected:
   QFPTest::KernelFunction<T>* getKernel() {return NULL; }
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
-    return {ti.vals[0] - ti.vals[0] / 2, 0.0};
+    return {std::pair<long double, long double>(ti.vals[0] - ti.vals[0] / 2, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -134,7 +134,7 @@ protected:
 			    rand.begin() + size));
     Vector<T> B(std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size));
-    return {A ^ B, 0.0};
+    return {std::pair<long double, long double>(A ^ B, 0.0), 0};
     
   }
   using QFPTest::TestBase<T>::id;
@@ -184,7 +184,7 @@ protected:
     for(uint32_t i = sublen; i < vals.size(); ++i){
       sum += vals[i];
     }
-    return {(long double) sum, 0.0};
+    return {std::pair<long double, long double>((long double) sum, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -246,7 +246,7 @@ protected:
   virtual
     QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] + ti.vals[2];
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -289,7 +289,7 @@ protected:
     auto man_bits = nls.digits;
     auto big = std::pow(2, (T)man_bits - 1);
     auto res = (ti.vals[0] + big) - big;
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -329,7 +329,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] / ti.vals[1];
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -365,7 +365,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = (T)0.0 - ti.vals[0];
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -402,7 +402,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] - (T)0.0;
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -439,7 +439,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = (T)0.0 / ti.vals[0];
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -476,7 +476,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)1.0;
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -513,7 +513,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)-1.0;
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -553,7 +553,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = -(ti.vals[0] / ti.vals[1]);
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -632,7 +632,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = -(ti.vals[0] - ti.vals[1]);
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -670,7 +670,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] - ti.vals[0];
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -711,7 +711,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = -(ti.vals[0] + ti.vals[1]);
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -753,7 +753,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] / ti.vals[2]);
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -795,7 +795,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] * ti.vals[2]);
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -837,7 +837,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + (ti.vals[1] + ti.vals[2]);
-    return {res, 0.0};
+    return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -879,7 +879,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] == ti.vals[2];
-    return {res?1.0:0.0, 0.0};
+    return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -921,7 +921,7 @@ protected:
   virtual
   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] != ti.vals[2];
-    return {res?1.0:0.0, 0.0};
+    return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
 };

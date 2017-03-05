@@ -16,6 +16,11 @@ CPPFLAGS += -Wextra
 #CPPFLAGS += -MMD
 CPPFLAGS += -I.
 
+#for S3FP related test
+S3_REQUIRED 	:= -IS3FP/
+S3_REQUIRED 	+= -DWFT=float -DSCH_LIB
+
+CPPFLAGS += $(S3_REQUIRED)
 LINKFLAGS += -lm
 
 DEPFLAGS += -MD -MF $*.d

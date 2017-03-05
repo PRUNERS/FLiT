@@ -95,7 +95,7 @@ protected:
       auto crit = getArea(a,b,c);
       score += std::abs(crit - checkVal);
     }
-    return {score, 0.0};
+    return {std::pair<long double, long double>(score, 0.0), 0};
   }
 
 protected:

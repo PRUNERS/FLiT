@@ -30,7 +30,7 @@ protected:
     const T score2 = score - 1.0;
     QFPHelpers::info_stream << id << ": score  = " << score  << std::endl;
     QFPHelpers::info_stream << id << ": score2 = " << score2 << std::endl;
-    return {score, score2};
+    return {std::pair<long double, long double>(score, score2), 0};
   }
 
 protected:

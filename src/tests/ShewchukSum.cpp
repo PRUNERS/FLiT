@@ -40,7 +40,7 @@ protected:
     QFPHelpers::info_stream << id << ": naive sum    = " << naive << std::endl;
     QFPHelpers::info_stream << id << ": shewchuk sum = " << sum << std::endl;
     QFPHelpers::info_stream << id << ": shewchuk partials = " << chuk.partials().size() << std::endl;
-    return {sum, chuk.sum2()};
+    return {std::pair<long double, long double>(sum, chuk.sum2()), 0};
   }
 
 protected:

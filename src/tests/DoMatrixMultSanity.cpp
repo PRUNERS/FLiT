@@ -52,7 +52,7 @@ protected:
     bool eq = (c == b);
     QFPHelpers::info_stream << id << ": Product is: " << c << std::endl;
     QFPHelpers::info_stream << id << ": A * b == b? " << eq << std::endl;
-    return {c.L1Distance(b), c.LInfDistance(b)};
+    return {std::pair<long double, long double>(c.L1Distance(b), c.LInfDistance(b)), 0};
   }
 
 protected:

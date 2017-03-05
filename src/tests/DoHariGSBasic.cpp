@@ -86,7 +86,7 @@ protected:
                               << QFPHelpers::as_int(score) << std::endl;
       QFPHelpers::info_stream << id << ": score (dec):  " << score << std::endl;
     }
-    return {score, 0.0};
+    return {std::pair<long double, long double>(score, 0.0), 0};
   }
 
 protected:

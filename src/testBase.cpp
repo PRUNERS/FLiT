@@ -28,7 +28,7 @@ operator<<(std::ostream& os, const ResultType& res){
   // std::tie(prec, s1, s2) = r.second;
   for(auto r  : res){
     os << r.first.first << ":" << r.first.second << ","
-       << r.second.first << "," << r.second.second << std::endl;
+       << r.second.first.first << "," << r.second.first.second << r.second.second << std::endl;
   }
   return os;
 }

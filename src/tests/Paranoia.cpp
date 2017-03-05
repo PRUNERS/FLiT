@@ -1870,7 +1870,9 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
     status = ExitStatus::OverflowStatus;
   }
 
-  return { Milestone, static_cast<long double>(status) };
+  return {std::pair<long double, long double>(Milestone,
+					      static_cast<long double>(status)),
+      0};
 }
 
 /* setTimeout */
