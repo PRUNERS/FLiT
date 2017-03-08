@@ -172,7 +172,8 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
  #endif // __CPUKERNEL__
   std::vector<ResultType::mapped_type> results;
   for (size_t i = 0; i < runCount; i++) {
-    results.emplace_back(cuResults[i].s1, cuResults[i].s2, 0);
+    results.emplace_back(std::pair<long double, long double>
+			 (cuResults[i].s1, cuResults[i].s2), 0);
   }
   return results;
 #else  // not __CUDA__
@@ -245,38 +246,42 @@ public:
 	}else{
 	  scoreList.push_back(run_impl(runInput));
 	}
+      }
     } else {
-	if(GetTime){
-	  ResultType::mapped_type scores;
-	  int_fast64_t nsecs = 0;	  
-	  for(int r = 0; r < TimingLoops; ++r){
-	    auto s = high_resolution_clock::now();
-	    scoreList = runKernel(kernel, ti, stride);
-	    auto e = high_resolution_clock::now();
-	    nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
-	    assert(nsecs > 0);
-	  }
-	  auto avg = nsecs / TimingLoops;
-	  auto avgPerKernel = avg / scoreList.size();
-	  for(auto& s : scoreList) s.second = avgPerKernel;
+      if(GetTime){
+	ResultType::mapped_type scores;
+	int_fast64_t nsecs = 0;	  
+	for(int r = 0; r < TimingLoops; ++r){
+	  auto s = high_resolution_clock::now();
+	  scoreList = runKernel(kernel, ti, stride);
+	  auto e = high_resolution_clock::now();
+	  nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
+	  assert(nsecs > 0);
+	}
+	auto avg = nsecs / TimingLoops;
+	auto avgPerKernel = avg / scoreList.size();
+	for(auto& s : scoreList) s.second = avgPerKernel;
+      }else{
+	scoreList = runKernel(kernel, ti, stride);
+      }
     }
 #else  // not __CUDA__
     for (auto runInput : inputSequence) {
-	if(GetTime){
-	  ResultType::mapped_type scores;
-	  int_fast64_t nsecs = 0;	  
-	  for(int r = 0; r < TimingLoops; ++r){
-	    auto s = high_resolution_clock::now();
-	    scores = run_impl(runInput);
-	    auto e = high_resolution_clock::now();
-	    nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
-	    assert(nsecs > 0);
-	  }
-	  scores.second = nsecs / TimingLoops;
-	  scoreList.push_back(scores);
-	}else{
-	  scoreList.push_back(run_impl(runInput));
+      if(GetTime){
+	ResultType::mapped_type scores;
+	int_fast64_t nsecs = 0;	  
+	for(int r = 0; r < TimingLoops; ++r){
+	  auto s = high_resolution_clock::now();
+	  scores = run_impl(runInput);
+	  auto e = high_resolution_clock::now();
+	  nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
+	  assert(nsecs > 0);
 	}
+	scores.second = nsecs / TimingLoops;
+	scoreList.push_back(scores);
+      }else{
+	scoreList.push_back(run_impl(runInput));
+      }
     }
 #endif // __CUDA__
 
@@ -348,7 +353,9 @@ public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
   virtual TestInput<T> getDefaultInput() { return {}; }
   virtual size_t getInputsPerRun() { return 0; }
-  virtual ResultType run(const TestInput<T>&) { return {}; }
+  virtual ResultType run(const TestInput<T>&,
+			 const bool,
+			 const bool) { return {}; }
 protected:
   virtual KernelFunction<T>* getKernel() { return nullptr; }
   virtual ResultType::mapped_type run_impl(const TestInput<T>&) { return {}; }
