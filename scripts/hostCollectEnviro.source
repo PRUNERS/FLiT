@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export cores=24
+export CORES=24
 export DO_PIN=False
 export DB_USER=sawaya
 export DB_HOST=localhost
