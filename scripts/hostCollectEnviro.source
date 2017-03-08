@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+export cores=24
+export DO_PIN=False
+export DB_USER=sawaya
+export DB_HOST=localhost
+export FLIT_DIR=qfp
+export SLURMED=None
+export CUDA_ONLY=False
