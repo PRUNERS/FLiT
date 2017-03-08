@@ -110,7 +110,8 @@ CREATE FUNCTION createschmoo(run integer, prec text[], compilers text[], optls t
     AS $$
 from plpy import spiexceptions
 from sys import path
-path.append('/home/sawaya/temp/qfp/db/python')
+from os import environ
+path.append('/tmp/flitDbDir')
 import plotting as pl
 
 host_str = ''
