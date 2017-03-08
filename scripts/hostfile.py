@@ -10,7 +10,7 @@ user = os.environ['USER']
 cores = multiprocessing.cpu_count()
 
 DB_HOST = (user, 'localhost')
-RUN_HOSTS = ((user, 'localhost', cores, None, True, False),)
+RUN_HOSTS = ((user, 'localhost', cores, None, False, False),)
 
 #another possibility:
 #RUN_HOSTS = ((user, 'localhost', cores, kingspeak_gpu_startup, True, False),)

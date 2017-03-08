@@ -5,7 +5,7 @@
 
 #set -e
 
-echo cores: ${cores}
+echo CORES: ${CORES}
 echo DO_PIN: ${DO_PIN}
 echo DB_USER: ${DB_USER}
 echo DB_HOST: ${DB_HOST}
@@ -22,7 +22,7 @@ if [ "$CUDA_ONLY" = "False" ]; then
     unset CUDA_ONLY
 fi
 
-make -j ${cores} > ../results/makeOut
+make -j ${CORES} > ../results/makeOut
 
 cd ..
 
