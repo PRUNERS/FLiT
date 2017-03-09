@@ -23,6 +23,9 @@ if  ! exists createdb || ! exists psql; then
 	sudo pacman -S postgresql postgresql-lib-python3
     elif exists yum; then
 	sudo yum install postgresql-server #name-for-plpython3
+    elif exists brew; then
+	brew install postgresql --with-python3
+	brew services start postgresql
     else
 	echo "Unable to find a suitable package manager."
 	echo "Please install Postgres and plpython3"
