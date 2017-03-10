@@ -5,7 +5,7 @@
 
 #SBATCH --time=1:00:00 
 #SBATCH --nodes=1
-#SBATCH --ntasks=6
+#SBATCH --ntasks=3
 #SBATCH -o slurm-flit-gpu-%j.out 
 #SBATCH -e slurm-flit-gpu-%j.err 
 #SBATCH --account=kingspeak-gpu
@@ -14,8 +14,8 @@
 
 set -e
 
-module load cuda/7.5
-module load gcc/4.9.2
+module load cuda
+module load gcc
 
 #setup working directory
 

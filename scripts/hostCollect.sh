@@ -22,7 +22,7 @@ if [ "$CUDA_ONLY" = "False" ]; then
     unset CUDA_ONLY
 fi
 
-make -j ${CORES} > ../results/makeOut
+make -j ${CORES} &> ../results/makeOut
 
 cd ..
 
@@ -49,7 +49,7 @@ if [ "${DO_PIN}" = "True" ]; then
 
     #run pin tests
     cd ../results
-    make -j ${CORES} -f ../scripts/MakeCollectPin >> makeOut
+    make -j ${CORES} -f ../scripts/MakeCollectPin &>> makeOut
     cd ..
 fi
 
