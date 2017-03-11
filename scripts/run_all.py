@@ -32,6 +32,10 @@ REPO = 'https://github.com/geof23/qfp'
 FLIT_DIR = 'qfp'
 REM_ENV = {'FLIT_DIR': FLIT_DIR, 'BRANCH': BRANCH,
            'REPO': REPO}
+SSHS = 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
+SSHL = ['ssh', '-o UserKnownHostsFile=/dev/null', '-o StrictHostKeyChecking=no', '-q']
+SCPS = 'scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
+SCPL = ['scp', '-o UserKnownHostsFile=/dev/null', '-o StrictHostKeyChecking=no', '-q']
 pwds = {}
 
 def usage():
@@ -57,7 +61,7 @@ def slurmWait(user, host, pw, jobn):
     envir = os.environ.copy()
     envir['SSHPASS'] = pw
     try:
-        while user in check_output(['sshpass', '-e', 'ssh', 
+        while user in check_output(['sshpass', '-e', *SSHL, 
                                     user + '@' + host,
                                     'squeue -j ' + jobn],
                                    env=envir).decode("utf-8"):
@@ -124,8 +128,8 @@ else:
 #get passwords
 getPasswords()
 
-# #setup db -- we're doing this first because it's cheap and if it fails,
-# #the rest of the work will go to waste
+#setup db -- we're doing this first because it's cheap and if it fails,
+#the rest of the work will go to waste
 print('preparing workspace on DB server, ' + db_host[1] + '...')
 os.chdir(home_dir + '/../db/python')
 print(check_output('tar zcf ' + home_dir + '/dbPy.tgz *',
@@ -134,24 +138,24 @@ print(check_output('tar zcf ' + home_dir + '/dbPy.tgz *',
 os.chdir(home_dir) 
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
-print(check_output('sshpass scp ' + home_dir + '/dbPy.tgz ' +
+print(check_output('sshpass ' + SCPS + home_dir + '/dbPy.tgz ' +
                    db_host[0] + '@' + db_host[1] + ':', shell=True,
                    env=new_env).
       decode("utf-8"))
 os.remove('dbPy.tgz')
-print(check_output(['sshpass', '-e', 'scp', home_dir + '/' + DBINIT,
+print(check_output(['sshpass', '-e', *SCPL, home_dir + '/' + DBINIT,
                     db_host[0] + '@' + db_host[1] + ':~/'],
                    env=new_env).decode("utf-8"))
-print(check_output(['sshpass', '-e', 'ssh', db_host[0] + '@' + db_host[1],
+print(check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
                     ' ./' + DBINIT], env=new_env).decode("utf-8"))
 
 #get run# from db
-print(check_output(['sshpass', '-e', 'ssh', 
+print(check_output(['sshpass', '-e', *SSHL, 
                     db_host[0] + '@' + db_host[1],
               'psql flit -t -c "insert into runs (rdate, notes) ' +
               'values (\'' + str(datetime.now()) + '\', \'' + notes + '\')"'],
                    env=new_env).decode("utf-8"))
-run_num = int(check_output(['sshpass', '-e', 'ssh', 
+run_num = int(check_output(['sshpass', '-e', *SSHL, 
                             db_host[0] + '@' + db_host[1],
                             'psql flit -t -c "select max(index) from runs"'],
                            env=new_env).decode("utf-8"))
@@ -168,11 +172,12 @@ print('done.')
 
 cmds = []
 #transfer package to workers (or portal, if slurm script provided)
-package_dirs = runOnAll(['ssh {0}@{1} "echo \$(mktemp -d -p ~/)"'] *
+package_dirs = runOnAll([SSHS + ' {0}@{1} "echo \$(mktemp -d -p ~/)"'] *
                         len(run_hosts))
-runOnAll(['scp ' + home_dir + '/../flit.tgz {0}@{1}:' + d for d in package_dirs])
+print(*package_dirs, sep=',')
+runOnAll([SCPS + home_dir + '/../flit.tgz {0}@{1}:' + d for d in package_dirs])
 for i, d in enumerate(package_dirs):
-    assert len(d) > 0, "got zero length directory from mktemp %r" % worker
+    assert len(d) > 0, "got zero length directory from mktemp %r" % run_hosts[i][1]
 
 #this does all the work of running and collecting
 
@@ -181,14 +186,14 @@ copycs = []
 cleancs = []
 for host in zip(run_hosts, package_dirs):
     if host[0][3] is None: #0-user 1-host 2-script 3-enviro
-        cmd = ('ssh {0}@{1} "{3} cd ' + host[1] + ' && ' +
+        cmd = (SSHS + ' {0}@{1} "{3} cd ' + host[1] + ' && ' +
                'tar xf flit.tgz && scripts/hostCollect.sh"'
                )
-        copyc = ('scp  {0}@{1}:/' + host[1] + '/results/"*.tgz" .')
+        copyc = (SCPS + '{0}@{1}:/' + host[1] + '/results/"*.tgz" .')
         cleanc = None #DELME
         #cleanc = ('ssh {0}@{1} "rm -fr ' + host[1] + '"')
     else:
-        cmd = ('ssh {0}@{1} "cd ' + host[1] + ' && ' +
+        cmd = (SSHS + ' {0}@{1} "cd ' + host[1] + ' && ' +
                'tar xf flit.tgz scripts/' + host[0][3] + ' && ' +
                'cd .. && ' +
                'export PDIR=' + host[1] + ' {3} sbatch ' +
@@ -201,12 +206,12 @@ for host in zip(run_hosts, package_dirs):
 runOnAll(cmds)
 runOnAll(copycs)
 runOnAll(cleancs)
-
+ 
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 
 # #copy the result files that we copied to here (the launch host)
-print(check_output('sshpass -e scp ' + home_dir +
+print(check_output('sshpass -e ' + SCPS + home_dir +
                     '/*.tgz ' + db_host[0] + '@' +
                     db_host[1] + ':flit_data',
                    shell=True,env=new_env).decode("utf-8"))
@@ -227,16 +232,18 @@ if any(list(zip(*run_hosts))[5]): #any opcode collections
         str(run_num) +
         ')\\" && echo \$? && echo \\"db importation complete\\"'
         )
-print(check_output('sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
+print(check_output('sshpass -e ' + SSHS + db_host[0] + '@' + db_host[1] +
                     ' "' + cmd + '"', env=new_env,
                   shell=True).decode("utf-8"))
 
-# #display report / exit message
+#display report / exit message
 
 
-#run_num = 223
+run_num = 231
 
-plot_dir = '~/flit_data/reports'
+plot_dir = (check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
+                          'echo $HOME'], env=new_env).decode("utf-8").strip() +
+            '/flit_data/reports')
 
 #get list of hosts -- are often different than the interactive node used
 #to submit the work
@@ -244,7 +251,7 @@ plot_dir = '~/flit_data/reports'
 
 cmd = ('psql flit -t -c \\"select distinct host from tests where run = ' +
        str(run_num) + '\\"')
-rhosts = [s.strip() for s in check_output('sshpass -e ssh ' + db_host[0] +
+rhosts = [s.strip() for s in check_output('sshpass -e ' + SSHS + db_host[0] +
                                           '@' + db_host[1] +
                                           ' "' + cmd + '"',
                                           env=new_env,
@@ -253,50 +260,57 @@ rhosts = [s.strip() for s in check_output('sshpass -e ssh ' + db_host[0] +
 # print('rhosts is: ')
 # print(*rhosts, sep=',')
 
-cmd = (
+pcmd = (
     'set -x && ' +
     'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
-    'chmod 777 * && '
+    'chmod 777 ~/flit_data/reports '
 )
 
+gcmd = ''
+
 for h in rhosts:
-    if not len(h) > 0:
-        continue
-    cmd += (
-        'touch ' + plot_dir + '/f_nvcc_' + h + '.pdf && ' +
+    pcmd += (
+        ' && touch f_nvcc_' + h + '.pdf ' +
+        '&& touch d_nvcc_' + h + '.pdf ' +
+        '&& touch f_all_' + h + '.pdf ' +
+        '&& touch d_all_' + h + '.pdf ' +
+        '&& touch e_all_' + h + '.pdf '
+    )
+    gcmd += (
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
         '\'{\\"f\\"}\',\'{\\"nvcc\\"}\',' + 
         '\'{\\"\\"}\',' +
         '\'' + h + '\',5,\'' + plot_dir + '/f_nvcc_' + h + '.pdf\')\\" & ' +
-        'touch ' + plot_dir + '/d_nvcc_' + h + '.pdf && ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
         '\'{\\"d\\"}\',\'{\\"nvcc\\"}\',' + 
         '\'{\\"\\"}\',' +
         '\'' + h + '\',5,\'' + plot_dir + '/d_nvcc_' + h + '.pdf\')\\" & ' +
-        'touch ' + plot_dir + '/f_all_' + h + '.pdf && ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
         '\'{\\"f\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/f_all_' + h + '.pdf\')\\" & ' +
-        'touch ' + plot_dir + '/d_all_' + h + '.pdf && ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
         '\'{\\"d\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/d_all_' + h + '.pdf\')\\" & ' +
-        'touch ' + plot_dir + '/e_all_' + h + '.pdf && ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
         '\'{\\"e\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/e_all_' + h + '.pdf\')\\" & ' 
     )
+pcmd += '&& chmod 777 * '
 
-cmd += ' wait'
+gcmd += ' wait'
 
 #print('cmd line: ' + cmd)
 
-print(check_output('sshpass -e ssh ' + db_host[0] + '@' + db_host[1] +
-                    ' "' + cmd + '"', env=new_env,
+print(check_output('sshpass -e ' + SSHS + db_host[0] + '@' + db_host[1] +
+                    ' "' + pcmd + '"', env=new_env,
+                   shell=True).decode("utf-8"))
+
+print(check_output('sshpass -e ' + SSHS + db_host[0] + '@' + db_host[1] +
+                    ' "' + gcmd + '"', env=new_env,
                    shell=True).decode("utf-8"))
 
 print('Finished FLiT Run.  You may review the reports at: ' +
