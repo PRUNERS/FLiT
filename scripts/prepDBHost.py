@@ -40,6 +40,7 @@ if __name__ == '__main__':
                        '/dbPy.tgz', shell=True).decode("utf-8"))
     os.remove(os.environ['HOME'] + '/dbPy.tgz')
     print('set up ' + COLL_DIR)
+    print(check_output('./setup_db_host.sh').decode("utf-8"))
     print('and installed dbPy code in ' + DB_DIR)
     exit(0)
     
