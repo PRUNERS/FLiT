@@ -24,11 +24,10 @@ home_dir = os.path.dirname(os.path.realpath(__file__))
 
 #vars
 notes = ''
+DB_HOST_AUX = '/tmp/flitDbDir'
 DBINIT = 'prepDBHost.py'
-BRANCH = 'unified_script'
 db_host = hostfile.DB_HOST
 run_hosts = hostfile.RUN_HOSTS
-REPO = 'https://github.com/geof23/qfp'
 FLIT_DIR = 'qfp'
 REM_ENV = {'FLIT_DIR': FLIT_DIR, 'BRANCH': BRANCH,
            'REPO': REPO}
@@ -147,7 +146,7 @@ print(check_output(['sshpass', '-e', *SCPL, home_dir + '/' + DBINIT,
                     db_host[0] + '@' + db_host[1] + ':~/'],
                    env=new_env).decode("utf-8"))
 print(check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
-                    ' ./' + DBINIT], env=new_env).decode("utf-8"))
+                    ' ./' + DBINIT, DB_HOST_AUX], env=new_env).decode("utf-8"))
 
 #get run# from db
 print(check_output(['sshpass', '-e', *SSHL, 
@@ -267,7 +266,7 @@ pcmd = (
     'chmod 777 ~/flit_data/reports '
 )
 
-gcmd = ''
+gcmd = 'export MATPLOTLIBRC=' + DB_HOST_AUX + ' && '
 
 for h in rhosts:
     pcmd += (

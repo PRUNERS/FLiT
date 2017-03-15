@@ -12,7 +12,6 @@ python3_has ()
 
 SCRIPT_DIR="$(dirname $0)"
 
-
 # Check for psql install
 if  ! exists createdb || ! exists psql; then
     # Install if not present
