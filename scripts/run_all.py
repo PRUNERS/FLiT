@@ -29,8 +29,7 @@ DBINIT = 'prepDBHost.py'
 db_host = hostfile.DB_HOST
 run_hosts = hostfile.RUN_HOSTS
 FLIT_DIR = 'qfp'
-REM_ENV = {'FLIT_DIR': FLIT_DIR, 'BRANCH': BRANCH,
-           'REPO': REPO}
+REM_ENV = {'FLIT_DIR': FLIT_DIR}
 SSHS = 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
 SSHL = ['ssh', '-o UserKnownHostsFile=/dev/null', '-o StrictHostKeyChecking=no', '-q']
 SCPS = 'scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
@@ -130,7 +129,7 @@ getPasswords()
 #setup db -- we're doing this first because it's cheap and if it fails,
 #the rest of the work will go to waste
 print('preparing workspace on DB server, ' + db_host[1] + '...')
-os.chdir(home_dir + '/../db/python')
+os.chdir(home_dir + '/../db')
 print(check_output('tar zcf ' + home_dir + '/dbPy.tgz *',
                    shell=True).
       decode("utf-8"))
@@ -148,7 +147,7 @@ print(check_output(['sshpass', '-e', *SCPL, home_dir + '/' + DBINIT,
 print(check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
                     ' ./' + DBINIT, DB_HOST_AUX], env=new_env).decode("utf-8"))
 
-#get run# from db
+# #get run# from db
 print(check_output(['sshpass', '-e', *SSHL, 
                     db_host[0] + '@' + db_host[1],
               'psql flit -t -c "insert into runs (rdate, notes) ' +
@@ -238,7 +237,7 @@ print(check_output('sshpass -e ' + SSHS + db_host[0] + '@' + db_host[1] +
 #display report / exit message
 
 
-#run_num = 231
+run_num = 1
 
 plot_dir = (check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
                           'echo $HOME'], env=new_env).decode("utf-8").strip() +
@@ -266,7 +265,11 @@ pcmd = (
     'chmod 777 ~/flit_data/reports '
 )
 
-gcmd = 'export MATPLOTLIBRC=' + DB_HOST_AUX + ' && '
+gcmd = ('set -x && '
+        # 'unset MATPLOTLIBRC && '
+        # 'export MATPLOTLIBRC=' + DB_HOST_AUX + ' && ' +
+        # 'echo \$MATPLOTLIBRC && '
+)
 
 for h in rhosts:
     pcmd += (
