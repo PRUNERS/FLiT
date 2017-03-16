@@ -108,7 +108,7 @@ wait
 #add our config to postgres for matplotlib
 PGDIR=$(psql flit -t -c 'select getpwd()')
 if [ ! -e ${PGDIR}/matplotlibrc ]; then
-    sudo cp ${SCRIPT_DIR}/matplotlibrc ${PGDIR}/matplotlibrc
+    sudo -u postgres cp ${SCRIPT_DIR}/matplotlibrc ${PGDIR}/matplotlibrc
 else
     if ! egrep '^backend[[:space:]]*:[[:space:]]*Agg$' ${PGDIR}/matplotlibrc; then
 	echo "FLiT reporting will fail without the setting 'backend : Agg' in ${PGDIR}/matplotlibrc.  Please set before using FLiT"
