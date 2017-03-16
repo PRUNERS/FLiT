@@ -29,3 +29,6 @@ do
     echo ${PREFIX}$ifile >> $FILE
     cat $ifile >> $FILE
 done
+
+chmod 775 $FILE
+
