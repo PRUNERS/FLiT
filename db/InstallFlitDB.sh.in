@@ -1,0 +1,20 @@
+#This file was auto-generated
+
+#This is the FLiT DB installer
+
+for x in $(seq 0 $((${#TAGS[@]}-2)));
+do
+    begin=$(grep --line-number ^${PREFIX}${TAGS[$x]}$ $0 | cut -d ':' -f 1)
+    end=$(grep --line-number ^${PREFIX}${TAGS[$(($x + 1))]}$ $0 | cut -d ':' -f 1)
+    sed -n $((begin + 1)),$((end - 1))p $0 > ${TAGS[$x]#${PREFIX}}
+done
+
+tail -n +$((end + 1)) $0 > ${TAGS[$((${#TAGS[@]}-1))]#${PREFIX}}
+
+EXE=${TAGS[0]#${PREFIX}}
+
+chmod 775 $EXE
+
+./$EXE
+
+exit
