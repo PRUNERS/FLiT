@@ -15,6 +15,8 @@ env:
     - export LD_LIBRARY_PATH=$HOME/usr/lib:$LD_LIBRARY_PATH
 
 install:
+  - pwd
+  - ls
   - cd $HOME/build
   # Install LLVM/Clang 3.9
   - wget http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz -O $LLVM_ARCHIVE_PATH
