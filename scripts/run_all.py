@@ -208,7 +208,7 @@ runOnAll(cleancs)
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 
-# #copy the result files that we copied to here (the launch host)
+# # #copy the result files that we copied to here (the launch host)
 print(check_output('sshpass -e ' + SCPS + home_dir +
                     '/*.tgz ' + db_host[0] + '@' +
                     db_host[1] + ':flit_data',

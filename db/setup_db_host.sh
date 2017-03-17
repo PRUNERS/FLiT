@@ -120,3 +120,4 @@ fi
 sudo addgroup flit
 sudo usermod -aG flit sawaya
 sudo usermod -aG flit postgres
+sudo service postgresql restart

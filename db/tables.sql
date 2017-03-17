@@ -7,7 +7,7 @@
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
-SET client_encoding = 'UTF8';
+SET client_encoding = 'SQL_ASCII';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
@@ -17,18 +17,25 @@ SET row_security = off;
 -- Name: flit; Type: DATABASE; Schema: -; Owner: -
 --
 
-CREATE DATABASE flit WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'en_US.UTF-8' LC_CTYPE = 'en_US.UTF-8';
+CREATE DATABASE flit WITH TEMPLATE = template0 ENCODING = 'SQL_ASCII' LC_COLLATE = 'C' LC_CTYPE = 'C';
 
 
 \connect flit
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
-SET client_encoding = 'UTF8';
+SET client_encoding = 'SQL_ASCII';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: flit; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON DATABASE flit IS 'The database for collecting all FLiT results';
+
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
@@ -111,7 +118,7 @@ CREATE FUNCTION createschmoo(run integer, prec text[], compilers text[], optls t
 from plpy import spiexceptions
 from sys import path
 from os import environ
-path.append('/tmp/flitDbDir/python )*#)*')
+path.append('/tmp/flitDbDir/python')
 import plotting as pl
 
 host_str = ''
@@ -398,6 +405,19 @@ with open(tex_path, 'w+') as tp:
                 break
     tp.write('\\end{tabular}\n')
 return count
+$$;
+
+
+--
+-- Name: getcurrentuser(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION getcurrentuser() RETURNS text
+    LANGUAGE plpython3u
+    AS $$
+from subprocess import check_output
+return check_output('/usr/bin/whoami').decode("utf-8")
+
 $$;
 
 
