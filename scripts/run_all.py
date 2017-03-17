@@ -237,7 +237,7 @@ print(check_output('sshpass -e ' + SSHS + db_host[0] + '@' + db_host[1] +
 #display report / exit message
 
 
-run_num = 1
+#run_num = 1
 
 plot_dir = (check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
                           'echo $HOME'], env=new_env).decode("utf-8").strip() +
