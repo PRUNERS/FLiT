@@ -15,8 +15,7 @@ env:
     - export LD_LIBRARY_PATH=$HOME/usr/lib:$LD_LIBRARY_PATH
 
 install:
-  - pwd
-  - ls
+  #starts in $HOME/build/PRUNERS/FLiT
   - cd $HOME/build
   # Install LLVM/Clang 3.9
   - wget http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz -O $LLVM_ARCHIVE_PATH
@@ -24,8 +23,7 @@ install:
   - tar xf $LLVM_ARCHIVE_PATH -C $HOME/usr --strip-components 1
   
 # script:
-  - pwd
-  - cd $HOME/PRUNERS/FLiT/src
+  - cd $HOME/build/PRUNERS/FLiT/src
   - make -j 4
 
 notifications:
