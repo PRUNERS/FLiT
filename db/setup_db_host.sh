@@ -115,4 +115,8 @@ else
     fi
 fi
        
+#now we need to add the user and postres to the flit group
 
+sudo addgroup flit
+sudo usermod -aG flit sawaya
+sudo usermod -aG flit postgres
