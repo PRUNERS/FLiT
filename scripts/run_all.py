@@ -209,12 +209,15 @@ new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 
 # # #copy the result files that we copied to here (the launch host)
-print(check_output('sshpass -e ' + SCPS + home_dir +
-                    '/*.tgz ' + db_host[0] + '@' +
-                    db_host[1] + ':flit_data',
-                   shell=True,env=new_env).decode("utf-8"))
+try:
+    print(check_output('sshpass -e ' + SCPS + home_dir +
+                       '/*.tgz ' + db_host[0] + '@' +
+                       db_host[1] + ':flit_data',
+                       shell=True,env=new_env).decode("utf-8"))
+    print(check_output('rm *.tgz', shell=True).decode("utf-8"))
+except subprocess.CalledProcessError:
+    pass
 
-print(check_output('rm *.tgz', shell=True).decode("utf-8"))
 
 #import to database -- need to unzip and then run importqfpresults2
 cmd = (
