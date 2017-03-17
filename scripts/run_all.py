@@ -215,7 +215,7 @@ try:
                        db_host[1] + ':flit_data',
                        shell=True,env=new_env).decode("utf-8"))
     print(check_output('rm *.tgz', shell=True).decode("utf-8"))
-except subprocess.CalledProcessError:
+except CalledProcessError:
     pass
 
 
