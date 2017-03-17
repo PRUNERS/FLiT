@@ -29,6 +29,10 @@ ifndef CUDA_ONLY
 COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 endif
 
+ifdef CLANG_ONLY
+COMPILERS = CLANG
+endif
+
 #$(info COMPILERS=$(COMPILERS))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
