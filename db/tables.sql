@@ -85,7 +85,7 @@ if rn == -1:
     r = ("SELECT MAX(index)as index from runs;")
     res = plpy.execute(r)
     rn = res[0]["index"]
-
+    
 s = ("update tests set compiler = 'icpc' where compiler ~ " +
      "'.*icpc.*' and run = " + str(rn))
 res = plpy.execute(s)
@@ -111,7 +111,7 @@ CREATE FUNCTION createschmoo(run integer, prec text[], compilers text[], optls t
 from plpy import spiexceptions
 from sys import path
 from os import environ
-path.append('/tmp/flitDbDir')
+path.append('/tmp/flitDbDir/python )*#)*')
 import plotting as pl
 
 host_str = ''
@@ -138,7 +138,7 @@ if len(compilers) > 0:
    for c in compilers:
       comp_str += c + "' or compiler = '"
    comp_str = comp_str[:-16] + ")"
-
+   
 quer = ("select distinct name from tests as t1 where exists " +
         "(select 1 from tests where t1.name = name and t1.precision " +
         "= precision and t1.score0 != score0 and t1.run = run " +
@@ -158,7 +158,7 @@ querx = ("select distinct switches, compiler, optl, precision, host " +
         "from tests where " +
         "run = " + str(run) +
         host_str + prec_str + comp_str + optl_str + tests_str +
-        " UNION " +
+        " UNION " + 
         "select distinct switches, compiler, optl, precision, host " +
         "from tests where " +
         "run = " + str(run) +
@@ -191,12 +191,12 @@ for t in y_axis:
    quers = ("select distinct score0, switches, compiler, " +
             "optl, host from tests where run = " + str(run) + " and name = '" +
             t['name'] + "'" + prec_str + comp_str + " and optl = '-O0'" +
-            host_str +
+            host_str + 
             " and switches = '' UNION select distinct score0, switches, " +
             "compiler, optl, host from " +
             " tests where run = " + str(run) +
             " and name = '" + t['name'] + "'" + prec_str + comp_str +
-            optl_str + host_str +
+            optl_str + host_str + 
             " order by compiler, optl, switches")
    scores = plpy.execute(quers)
    eq_classes = {}
@@ -267,6 +267,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 #import plotting as pl
+
+plt.autoscale(enable=True, axis='both', tight=False)
 
 host_str = ''
 if len(host) > 0:
@@ -391,11 +393,26 @@ with open(tex_path, 'w+') as tp:
         for s in switches:
             if s == sw['name']:
                 tp.write('\t' + sw['name'] + ' & ' + sw['descr'].strip() +
-        '\\\\ \n')
+		'\\\\ \n')
                 count += 1
                 break
     tp.write('\\end{tabular}\n')
 return count
+$$;
+
+
+--
+-- Name: getpwd(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION getpwd() RETURNS text
+    LANGUAGE plpython3u
+    AS $$
+
+import os
+
+return os.getcwd()
+
 $$;
 
 
@@ -431,7 +448,7 @@ for f in glob.iglob(path + '/*'):
           "name = '" + name + "' and " +
           "host = '" + host + "' and " +
           "precision = '" + precision + "' and " +
-      "optl = '" + optl + "' and " +
+	  "optl = '" + optl + "' and " +
           "compiler = '" + compiler + "' and " +
           "switches = (select switches from switch_conv where abbrev = '" + flags + "') and " +
           "run = " + str(run))
@@ -440,9 +457,9 @@ for f in glob.iglob(path + '/*'):
         dup = res.nrows() > 1
         skq = ("insert into skipped_pin (name, host, precision, optl, " +
                "compiler, switches, run, dup)" +
-               " select '" + name + "','" + host + "','" + precision + "','" +
-           optl + "','" + compiler + "',switch_conv.switches," + str(run) +
-           "," + str(dup) + " from switch_conv where abbrev = '" + flags + "'")
+               " select '" + name + "','" + host + "','" + precision + "','" + 
+	       optl + "','" + compiler + "',switch_conv.switches," + str(run) +
+	       "," + str(dup) + " from switch_conv where abbrev = '" + flags + "'")
         plpy.execute(skq)
         skipped = skipped + 1
         continue
@@ -488,7 +505,7 @@ CREATE FUNCTION importqfpresults(path text) RETURNS integer
                 "score0d, score0, score1d, score1, name, file) " +
                 "FROM '" +
                 path +
-                "' (DELIMITER ',')")
+                "' (DELIMITER ',')")   
    plpy.execute(s)
    s = ("UPDATE tests SET run = " + str(run) + " WHERE run IS NULL;")
    res = plpy.execute(s)
@@ -547,7 +564,7 @@ for f in glob.iglob(path + '/*_out_'):
                 plpy.execute(quer)
             except (spiexceptions.InvalidTextRepresentation,
                     spiexceptions.UndefinedColumn,
-            spiexceptions.NumericValueOutOfRange):
+		    spiexceptions.NumericValueOutOfRange):
                 quer = ("insert into tests "
                         "(host, switches, optl, compiler, precision, sort, "
                         "score0d, score0, score1d, score1, name, nanosec, file, run) "
@@ -850,3 +867,4 @@ ALTER TABLE ONLY tests
 --
 -- PostgreSQL database dump complete
 --
+

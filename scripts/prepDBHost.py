@@ -4,8 +4,10 @@
 #push the output files to so that the import processes may
 #be executed upon them
 
+from sys import argv
+
 COLL_DIR = 'flit_data'
-DB_DIR = '/tmp/flitDbDir'
+DB_DIR = argv[1]
 
 if __name__ == '__main__':
 
@@ -38,6 +40,5 @@ if __name__ == '__main__':
                        '/dbPy.tgz', shell=True).decode("utf-8"))
     os.remove(os.environ['HOME'] + '/dbPy.tgz')
     print('set up ' + COLL_DIR)
-    print('and installed dbPy code in ' + DB_DIR)
     exit(0)
     

@@ -24,14 +24,12 @@ home_dir = os.path.dirname(os.path.realpath(__file__))
 
 #vars
 notes = ''
+DB_HOST_AUX = '/tmp/flitDbDir'
 DBINIT = 'prepDBHost.py'
-BRANCH = 'unified_script'
 db_host = hostfile.DB_HOST
 run_hosts = hostfile.RUN_HOSTS
-REPO = 'https://github.com/geof23/qfp'
 FLIT_DIR = 'qfp'
-REM_ENV = {'FLIT_DIR': FLIT_DIR, 'BRANCH': BRANCH,
-           'REPO': REPO}
+REM_ENV = {'FLIT_DIR': FLIT_DIR}
 SSHS = 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
 SSHL = ['ssh', '-o UserKnownHostsFile=/dev/null', '-o StrictHostKeyChecking=no', '-q']
 SCPS = 'scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
@@ -131,7 +129,7 @@ getPasswords()
 #setup db -- we're doing this first because it's cheap and if it fails,
 #the rest of the work will go to waste
 print('preparing workspace on DB server, ' + db_host[1] + '...')
-os.chdir(home_dir + '/../db/python')
+os.chdir(home_dir + '/../db')
 print(check_output('tar zcf ' + home_dir + '/dbPy.tgz *',
                    shell=True).
       decode("utf-8"))
@@ -147,9 +145,9 @@ print(check_output(['sshpass', '-e', *SCPL, home_dir + '/' + DBINIT,
                     db_host[0] + '@' + db_host[1] + ':~/'],
                    env=new_env).decode("utf-8"))
 print(check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
-                    ' ./' + DBINIT], env=new_env).decode("utf-8"))
+                    ' ./' + DBINIT, DB_HOST_AUX], env=new_env).decode("utf-8"))
 
-#get run# from db
+# #get run# from db
 print(check_output(['sshpass', '-e', *SSHL, 
                     db_host[0] + '@' + db_host[1],
               'psql flit -t -c "insert into runs (rdate, notes) ' +
@@ -239,7 +237,7 @@ print(check_output('sshpass -e ' + SSHS + db_host[0] + '@' + db_host[1] +
 #display report / exit message
 
 
-#run_num = 231
+run_num = 1
 
 plot_dir = (check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
                           'echo $HOME'], env=new_env).decode("utf-8").strip() +
@@ -264,10 +262,15 @@ pcmd = (
     'set -x && ' +
     'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
-    'chmod 777 ~/flit_data/reports '
+    'chmod 775 ~/flit_data/reports && ' +
+    'chown ' + db_host[0] + ':flit ~/flit_data/reports '
 )
 
-gcmd = ''
+gcmd = ('set -x && '
+        # 'unset MATPLOTLIBRC && '
+        # 'export MATPLOTLIBRC=' + DB_HOST_AUX + ' && ' +
+        # 'echo \$MATPLOTLIBRC && '
+)
 
 for h in rhosts:
     pcmd += (
@@ -299,7 +302,7 @@ for h in rhosts:
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/e_all_' + h + '.pdf\')\\" & ' 
     )
-pcmd += '&& chmod 777 * '
+pcmd += '&& chmod 774 * && chown ' + db_host[0] + ':flit * '
 
 gcmd += ' wait'
 
