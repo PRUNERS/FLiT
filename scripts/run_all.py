@@ -263,7 +263,7 @@ pcmd = (
     'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
     'chmod 775 ~/flit_data/reports && ' +
-    'chown ' + db_host[0] + ':flit '
+    'chown ' + db_host[0] + ':flit ~/flit_data/reports '
 )
 
 gcmd = ('set -x && '
@@ -302,7 +302,7 @@ for h in rhosts:
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/e_all_' + h + '.pdf\')\\" & ' 
     )
-pcmd += '&& chmod 774 * && chown ' + db_host[0] + ':flit '
+pcmd += '&& chmod 774 * && chown ' + db_host[0] + ':flit * '
 
 gcmd += ' wait'
 
