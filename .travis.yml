@@ -22,6 +22,7 @@ install:
   - tar xf $LLVM_ARCHIVE_PATH -C $HOME/usr --strip-components 1
   
 # script:
+  - pwd
   - cd $HOME/PRUNERS/FLiT/src
   - make -j 4
 
