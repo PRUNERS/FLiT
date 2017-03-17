@@ -1,11 +1,11 @@
 sudo: required
 language: cpp
 dist: trusty
-addons:
-  apt:
-    packages:
-    - gcc-5
-    - g++-5
+# addons:
+#   apt:
+#     packages:
+#     - gcc-5
+#     - g++-5
 
 env:
   global:
