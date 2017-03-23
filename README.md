@@ -315,7 +315,7 @@ After a successful run, there will be __.pdf__ files on the database host
 that allow you to visualize the divergencies in the tests.  They will
 be located in _flit_data_/reports.
 
-![Sample plot][/documentation/d_all_bihexal.pdf]
+![Sample plot](/documentation/d_all_bihexal.pdf)
 
 
 
