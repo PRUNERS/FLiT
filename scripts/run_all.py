@@ -59,7 +59,7 @@ def slurmWait(user, host, pw, jobn):
     envir = os.environ.copy()
     envir['SSHPASS'] = pw
     try:
-        while user in check_output(['sshpass', '-e', *SSHL, 
+        while user in check_output(['sshpass', '-e', *SSHL,
                                     user + '@' + host,
                                     'squeue -j ' + jobn],
                                    env=envir).decode("utf-8"):
@@ -133,7 +133,7 @@ os.chdir(home_dir + '/../db')
 print(check_output('tar zcf ' + home_dir + '/dbPy.tgz *',
                    shell=True).
       decode("utf-8"))
-os.chdir(home_dir) 
+os.chdir(home_dir)
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 print(check_output('sshpass ' + SCPS + home_dir + '/dbPy.tgz ' +
@@ -148,12 +148,12 @@ print(check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
                     ' ./' + DBINIT, DB_HOST_AUX], env=new_env).decode("utf-8"))
 
 # #get run# from db
-print(check_output(['sshpass', '-e', *SSHL, 
+print(check_output(['sshpass', '-e', *SSHL,
                     db_host[0] + '@' + db_host[1],
               'psql flit -t -c "insert into runs (rdate, notes) ' +
               'values (\'' + str(datetime.now()) + '\', \'' + notes + '\')"'],
                    env=new_env).decode("utf-8"))
-run_num = int(check_output(['sshpass', '-e', *SSHL, 
+run_num = int(check_output(['sshpass', '-e', *SSHL,
                             db_host[0] + '@' + db_host[1],
                             'psql flit -t -c "select max(index) from runs"'],
                            env=new_env).decode("utf-8"))
@@ -204,7 +204,7 @@ for host in zip(run_hosts, package_dirs):
 runOnAll(cmds)
 runOnAll(copycs)
 runOnAll(cleancs)
- 
+
 new_env = os.environ.copy()
 new_env['SSHPASS'] = pwds[db_host[0] + '@' + db_host[1]]
 
@@ -228,7 +228,7 @@ cmd = (
     )
 if any(list(zip(*run_hosts))[5]): #any opcode collections
     cmd += (
-        '&& rm *O0 *O1 *O2 *O3 *out_ ' + 
+        '&& rm *O0 *O1 *O2 *O3 *out_ ' +
         '&& psql flit -c \\"select importopcoderesults(\'\$(pwd)\',' +
         str(run_num) +
         ')\\" && echo \$? && echo \\"db importation complete\\"'
@@ -257,7 +257,7 @@ rhosts = [s.strip() for s in check_output('sshpass -e ' + SSHS + db_host[0] +
                                           ' "' + cmd + '"',
                                           env=new_env,
                                           shell=True).
-          decode("utf-8").split('\n') if len(s) > 0] 
+          decode("utf-8").split('\n') if len(s) > 0]
 # print('rhosts is: ')
 # print(*rhosts, sep=',')
 
@@ -265,8 +265,7 @@ pcmd = (
     'set -x && ' +
     'mkdir -p ~/flit_data/reports && ' +
     'cd ~/flit_data/reports && ' +
-    'chmod 775 ~/flit_data/reports && ' +
-    'chown ' + db_host[0] + ':flit ~/flit_data/reports '
+    'chmod 777 ~/flit_data/reports '
 )
 
 gcmd = ('set -x && '
@@ -285,27 +284,27 @@ for h in rhosts:
     )
     gcmd += (
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-        '\'{\\"f\\"}\',\'{\\"nvcc\\"}\',' + 
+        '\'{\\"f\\"}\',\'{\\"nvcc\\"}\',' +
         '\'{\\"\\"}\',' +
         '\'' + h + '\',5,\'' + plot_dir + '/f_nvcc_' + h + '.pdf\')\\" & ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-        '\'{\\"d\\"}\',\'{\\"nvcc\\"}\',' + 
+        '\'{\\"d\\"}\',\'{\\"nvcc\\"}\',' +
         '\'{\\"\\"}\',' +
         '\'' + h + '\',5,\'' + plot_dir + '/d_nvcc_' + h + '.pdf\')\\" & ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-        '\'{\\"f\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
+        '\'{\\"f\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' +
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/f_all_' + h + '.pdf\')\\" & ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-        '\'{\\"d\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
+        '\'{\\"d\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' +
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
         '\'' + h + '\',3,\'' + plot_dir + '/d_all_' + h + '.pdf\')\\" & ' +
         'psql flit -c \\"select createschmoo(' + str(run_num) + ',' +
-        '\'{\\"e\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' + 
+        '\'{\\"e\\"}\',\'{\\"icpc\\", \\"g++\\", \\"clang++\\"}\',' +
         '\'{\\"-O1\\", \\"-O2\\", \\"-O3\\"}\',' +
-        '\'' + h + '\',3,\'' + plot_dir + '/e_all_' + h + '.pdf\')\\" & ' 
+        '\'' + h + '\',3,\'' + plot_dir + '/e_all_' + h + '.pdf\')\\" & '
     )
-pcmd += '&& chmod 774 * && chown ' + db_host[0] + ':flit * '
+pcmd += '&& chmod 777 * '
 
 gcmd += ' wait'
 
