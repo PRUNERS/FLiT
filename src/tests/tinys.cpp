@@ -1,6 +1,6 @@
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
-#include "testBase.hpp"
+#include "TestBase.hpp"
 
 #include <string>
 #include <sstream>

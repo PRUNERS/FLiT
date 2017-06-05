@@ -1,6 +1,6 @@
 #include "groundtruth.h"
 
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 
 // Only store these locally because we want multiple compiled copies

@@ -1,7 +1,7 @@
 #include <cmath>
 #include <typeinfo>
 
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
 

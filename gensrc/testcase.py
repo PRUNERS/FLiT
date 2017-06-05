@@ -11,7 +11,7 @@ import os
 # - cu_vars_initialize: initialize scope variables for the test in CUDA using tiList[idx].vals
 # - func_body: test body that is shared between cuda and non-cuda.  Populate score1 and score2
 template_string = '''
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
 

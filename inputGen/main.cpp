@@ -1,6 +1,6 @@
 #include "helper.h"
 #include "groundtruth.h"
-#include "testBase.hpp"
+#include "TestBase.hpp"
 //#include "testbed.h"
 
 #include <cmath>
