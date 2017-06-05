@@ -1,6 +1,6 @@
 #include "Shewchuk.h"
 
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
 

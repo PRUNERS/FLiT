@@ -160,7 +160,7 @@ lines
 
 */
 
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
 
@@ -210,9 +210,8 @@ class Paranoia : public QFPTest::TestBase<F> {
 public:
   Paranoia(std::string id) : QFPTest::TestBase<F>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<F> getDefaultInput()
-  { QFPTest::TestInput<F> ti; ti.vals = { 1.0 }; return ti; }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual QFPTest::TestInput<F> getDefaultInput() { return {}; }
 
 protected:
   virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<F>& ti);

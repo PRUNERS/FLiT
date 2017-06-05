@@ -1,6 +1,6 @@
 #include "QFPHelpers.hpp"
 #include "CUHelpers.hpp"
-#include "testBase.hpp"
+#include "TestBase.hpp"
 
 #include <string>
 #include <sstream>
@@ -30,16 +30,17 @@ public:
   FtoDecToF(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
   QFPTest::TestInput<T> ti;
-    ti.vals = {std::nextafter((T)0.0, (T)1.0)};
+    ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
     uint16_t ddigs = nlim.digits * std::log10(2) + 1;
@@ -77,17 +78,19 @@ public:
   subnormal(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
-    ti.vals = {std::nextafter((T)0.0, (T)1.0)};
+    ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
-    return {std::pair<long double, long double>(ti.vals[0] - ti.vals[0] / 2, 0.0), 0};
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
+    return {
+      std::pair<long double, long double>(ti.vals[0] - ti.vals[0] / 2, 0.0), 0
+    };
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -113,18 +116,14 @@ class dotProd: public QFPTest::TestBase<T> {
 public:
   dotProd(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
-    ti.vals = {0.0}; //dummy val -- we load the vectors in
-    //run_impl
-    return ti;
-  }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     Q_UNUSED(ti);
     auto size = 16;
 
@@ -135,7 +134,6 @@ protected:
     Vector<T> B(std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size));
     return {std::pair<long double, long double>(A ^ B, 0.0), 0};
-    
   }
   using QFPTest::TestBase<T>::id;
 };
@@ -160,17 +158,14 @@ class simpleReduction: public QFPTest::TestBase<T> {
 public:
   simpleReduction(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
-    ti.vals = {0.0}; //dummy
-    return ti;
-  }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     Q_UNUSED(ti);
     auto vals = getRandSeq<T>();
     auto sublen = vals.size() / 4 - 1;
@@ -224,7 +219,7 @@ public:
 
     //for the ldexp function we're using, it takes an unbiased exponent and
     //there is no implied 1 MSB for the mantissa / significand
-    T zero = (T)0.0;
+    T zero = 0.0;
     auto L1m = as_int(zero);
     auto L2m = as_int(zero);
     auto sm = as_int(zero);
@@ -240,11 +235,12 @@ public:
     };
     return ti;
   }
+
 protected:
-  virtual
-    QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-    QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] + ti.vals[2];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -277,14 +273,14 @@ public:
   virtual size_t getInputsPerRun() { return 1; }
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)1.0};
+    ti.vals = {T(1.0)};
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
     auto big = std::pow(2, (T)man_bits - 1);
@@ -315,19 +311,20 @@ public:
   divc(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
     };
     return ti;
   }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] / ti.vals[1];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -354,17 +351,18 @@ public:
   zeroMinusX(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)getRandSeq<T>()[0]};
+    ti.vals = { getRandSeq<T>()[0] };
     return ti;
   }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
-    auto res = (T)0.0 - ti.vals[0];
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
+    auto res = T(0.0) - ti.vals[0];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
   using QFPTest::TestBase<T>::id;
@@ -393,14 +391,15 @@ public:
   virtual size_t getInputsPerRun() { return 1; }
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)getRandSeq<T>()[0]};
+    ti.vals = { getRandSeq<T>()[0] };
     return ti;
   }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] - (T)0.0;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -430,14 +429,14 @@ public:
   virtual size_t getInputsPerRun() { return 1; }
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)getRandSeq<T>()[0]};
+    ti.vals = { getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = (T)0.0 / ti.vals[0];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -467,14 +466,14 @@ public:
   virtual size_t getInputsPerRun() { return 1; }
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)getRandSeq<T>()[0]};
+    ti.vals = { getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)1.0;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -504,14 +503,14 @@ public:
   virtual size_t getInputsPerRun() { return 1; }
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)getRandSeq<T>()[0]};
+    ti.vals = { getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)-1.0;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -542,16 +541,16 @@ public:
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = -(ti.vals[0] / ti.vals[1]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -581,14 +580,14 @@ REGISTER_TYPE(negAdivB)
 //   virtual size_t getInputsPerRun() { return 1; }
 //   virtual QFPTest::TestInput<T> getDefaultInput(){
 //     QFPTest::TestInput<T> ti;
-//     ti.vals = {(T)getRandSeq<T>()[0]};
+//     ti.vals = { getRandSeq<T>()[0] };
 //     return ti;
 //   }
 // protected:
-//   virtual
-//   QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-//   virtual
-//   QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+//   virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+// 
+//   virtual QFPTest::ResultType::mapped_type
+//   run_impl(const QFPTest::TestInput<T>& ti) {
 //     //yes, this is ugly.  ti.vals s/b vector of floats
 //     auto res = (T)((std::result_of<::get_next_type(T)>::type)ti.vals[0]);
 //     return {res, 0.0};
@@ -618,19 +617,19 @@ public:
   negAminB(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = -(ti.vals[0] - ti.vals[1]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -659,16 +658,17 @@ public:
   xMinusX(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
-    ti.vals = {(T)getRandSeq<T>()[0]};
+    ti.vals = { getRandSeq<T>()[0] };
     return ti;
   }
+
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] - ti.vals[0];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -697,19 +697,19 @@ public:
   negAplusB(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = -(ti.vals[0] + ti.vals[1]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -738,20 +738,20 @@ public:
   aXbDivC(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1],
-      (T)getRandSeq<T>()[2]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
+      getRandSeq<T>()[2],
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] / ti.vals[2]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -783,17 +783,17 @@ public:
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1],
-      (T)getRandSeq<T>()[2]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
+      getRandSeq<T>()[2],
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] * ti.vals[2]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -822,20 +822,20 @@ public:
   aPbPc(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
+  virtual QFPTest::TestInput<T> getDefaultInput() {
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)getRandSeq<T>()[1],
-      (T)getRandSeq<T>()[2]
+      getRandSeq<T>()[0],
+      getRandSeq<T>()[1],
+      getRandSeq<T>()[2],
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + (ti.vals[1] + ti.vals[2]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
@@ -867,17 +867,17 @@ public:
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)get_tiny1<T>(),
-      (T)get_tiny2<T>()
+      getRandSeq<T>()[0],
+      get_tiny1<T>(),
+      get_tiny2<T>(),
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] == ti.vals[2];
     return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
   }
@@ -909,17 +909,17 @@ public:
   virtual QFPTest::TestInput<T> getDefaultInput(){
     QFPTest::TestInput<T> ti;
     ti.vals = {
-      (T)getRandSeq<T>()[0],
-      (T)get_tiny1<T>(),
-      (T)get_tiny2<T>()
+      getRandSeq<T>()[0],
+      get_tiny1<T>(),
+      get_tiny2<T>(),
     };
     return ti;
   }
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] != ti.vals[2];
     return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
   }

@@ -1,5 +1,5 @@
 // the header for QFP helpers.  These classes, such as matrix and
-// vector, utilize the testBase watch data items for monitoring by
+// vector, utilize the TestBase watch data items for monitoring by
 // differential debugging.
 
 #ifndef QFPHELPERS

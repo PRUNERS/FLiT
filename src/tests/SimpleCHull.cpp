@@ -1,4 +1,4 @@
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 
 //#define SCH_LIB
@@ -15,15 +15,13 @@ template <typename T>
 class SimpleCHull: public QFPTest::TestBase<T> {
 public:
   SimpleCHull(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
-  QFPTest::TestInput<T> getDefaultInput(){return QFPTest::TestInput<T>();}
-  QFPTest::ResultType run(const QFPTest::TestInput<T>& ti) {
-    QFPTest::ResultType results;
-    std::vector<QFPTest::ResultType::mapped_type> scoreList;
-    results.insert({{id, typeid(T).name()}, run_impl(ti)});
-    return results;
-  }
-  size_t getInputsPerRun(){ return 1;}
+
+  virtual size_t getInputsPerRun(){ return 0; }
+  virtual QFPTest::TestInput<T> getDefaultInput(){ return {}; }
+
 protected:
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
   virtual QFPTest::ResultType::mapped_type
   run_impl(const QFPTest::TestInput<T>& ti) {
     Q_UNUSED(ti);

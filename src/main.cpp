@@ -6,7 +6,7 @@
 #include <chrono>
 #include <type_traits>
 
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 
 #ifdef __CUDA__
