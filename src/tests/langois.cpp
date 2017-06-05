@@ -84,18 +84,14 @@ class langDotFMA: public QFPTest::TestBase<T> {
 public:
   langDotFMA(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
-    ti.vals = {(T)0.0}; //dummy
-    return ti;
-  }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     Q_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -124,18 +120,14 @@ class langCompDotFMA: public QFPTest::TestBase<T> {
 public:
   langCompDotFMA(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
-    ti.vals = {(T)0.0}; //dummy
-    return ti;
-  }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     Q_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -167,18 +159,14 @@ class langCompDot: public QFPTest::TestBase<T> {
 public:
   langCompDot(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
-    ti.vals = {(T)0.0}; //dummy
-    return ti;
-  }
+  virtual size_t getInputsPerRun() { return 0; }
+  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual
-  QFPTest::KernelFunction<T>* getKernel() {return NULL; }
-  virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+
+  virtual QFPTest::ResultType::mapped_type
+  run_impl(const QFPTest::TestInput<T>& ti) {
     Q_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;

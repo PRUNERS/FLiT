@@ -26,7 +26,7 @@ T getArea(const T a,
 template <typename T>
 GLOBAL
 void
-TrianglePHKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+TrianglePHKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results) {
   using namespace CUHelpers;
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
