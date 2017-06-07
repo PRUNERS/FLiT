@@ -282,7 +282,7 @@ The Makefile system will use any _clang++_, _g++_ and _icpc_ compiler
 that it finds on your __$PATH__.  It will also try to run __CUDA__ tests
 if _nvcc_ is found on your __$PATH__.
 
-You may add more flags by modifying the _FLiT/Makefile.switches_ file.
+You may add more flags by modifying the _FLiT/src/include.mk/switches.mk_ file.
 
 To do this, you must make two changes:
 

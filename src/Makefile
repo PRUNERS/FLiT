@@ -63,7 +63,7 @@ CLANG_REQUIRED	:= --gcc-toolchain=$(GCC_TOOLCHAIN)
 #$(info CLANG_REQUIRED = $(CLANG_REQUIRED))
 
 #FP FLAGS
-include ../Makefile.switches
+include include.mk/switches.mk
 
 TESTS       := $(wildcard tests/*.cpp)
 SOURCE      := $(wildcard *.cpp)
@@ -76,7 +76,7 @@ ifdef HAS_CUDA
 CUSOURCE    += $(TESTS)
 CUSOURCE    += $(wildcard *.cpp)
 CUOBJ	    += $(CUSOURCE:%.cpp=%.o)
-include ../Makefile.switches.cuda 
+include include.mk/switches-cuda.mk
 CUTARGETS := $(foreach s, $(CUSWITCHES), \
 		$(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
 endif
