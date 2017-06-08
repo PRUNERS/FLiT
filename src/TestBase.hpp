@@ -211,7 +211,9 @@ public:
   virtual ResultType run(const TestInput<T>& ti,
                          const bool GetTime,
                          const bool TimingLoops) {
-    using namespace std::chrono;
+    using std::chrono::high_resolution_clock;
+    using std::chrono::duration;
+    using std::chrono::duration_cast;
     ResultType results;
     TestInput<T> emptyInput {
       ti.iters, ti.highestDim, ti.ulp_inc, ti.min, ti.max, {}

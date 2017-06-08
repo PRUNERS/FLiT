@@ -13,28 +13,20 @@
 #include "QFPHelpers.hpp"
 #include "TestBase.hpp"
 
-#ifdef __CUDA__
-//#include <cuda.h>
-#include "CUHelpers.hpp"
-using namespace CUHelpers;
-#endif
-
-
-using namespace QFPHelpers;
-using namespace QFPTest;
-
 void outputResults(const QFPTest::ResultType& scores){
+  using QFPHelpers::operator<<;
+  using QFPHelpers::as_int;
   for(const auto& i: scores){
     std::cout
       << "HOST,SWITCHES,OPTL,COMPILER,"
-      << i.first.second << ",us," //sort
-      << i.second.first.first << "," //score0d
-      << as_int(i.second.first.first) << "," //score0
-      << i.second.first.second << "," //score1d
+      << i.first.second << ",us,"             //sort
+      << i.second.first.first << ","          //score0d
+      << as_int(i.second.first.first) << ","  //score0
+      << i.second.first.second << ","         //score1d
       << as_int(i.second.first.second) << "," //score1
-      << i.first.first << "," //name
-      << i.second.second << "," //nanoseconds
-      << "FILENAME" //filename
+      << i.first.first << ","                 //name
+      << i.second.second << ","               //nanoseconds
+      << "FILENAME"                           //filename
       << std::endl;
   }
 }
@@ -68,7 +60,7 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
-  auto allowedTests = getKeys(getTests());
+  auto allowedTests = getKeys(QFPTest::getTests());
   allowedTests.emplace_back("all");
   for (int i = 1; i < argCount; i++) {
     std::string current(argList[i]);
@@ -108,7 +100,7 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
   }
 
   if (options.tests.size() == 0 || isIn(options.tests, std::string("all"))) {
-    options.tests = getKeys(getTests());
+    options.tests = getKeys(QFPTest::getTests());
   }
 
   return options;

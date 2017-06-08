@@ -17,12 +17,7 @@
 #ifdef __CUDA__
 //#include <cuda.h>
 #include "CUHelpers.hpp"
-using namespace CUHelpers;
 #endif
-
-// TODO: remove the using namespace
-using namespace QFPHelpers;
-using namespace QFPTest;
 
 void outputResults(const QFPTest::ResultType& scores);
 
@@ -31,13 +26,11 @@ void runTestWithDefaultInput(QFPTest::TestFactory* factory,
                              QFPTest::ResultType& totScores,
                              bool shouldTime = true,
                              int timingLoops = 1) {
-  using namespace std::chrono;
-
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
   auto scores = test->run(ip, shouldTime, timingLoops);
   totScores.insert(scores.begin(), scores.end());
-  info_stream.flushout();
+  QFPHelpers::info_stream.flushout();
 }
 
 /** Command-line options */
@@ -106,25 +99,25 @@ inline int runFlitTests(int argc, char* argv[]) {
   }
 
   if (options.listTests) {
-    for (auto& test : getKeys(getTests())) {
+    for (auto& test : getKeys(QFPTest::getTests())) {
       std::cout << test << std::endl;
     }
     return 0;
   }
 
   if (options.verbose) {
-    info_stream.show();
+    QFPHelpers::info_stream.show();
   }
 
   std::cout.precision(1000); //set cout to print many decimal places
-  info_stream.precision(1000);
+  QFPHelpers::info_stream.precision(1000);
 
 #ifdef __CUDA__
   CUHelpers::initDeviceData();
 #endif
 
   QFPTest::ResultType scores;
-  auto testMap = getTests();
+  auto testMap = QFPTest::getTests();
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
     if (options.precision == "all" || options.precision == "float") {
