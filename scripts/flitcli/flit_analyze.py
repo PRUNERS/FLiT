@@ -3,6 +3,8 @@
 import argparse
 import sys
 
+import flitconfig as conf
+
 brief_description = 'Runs analysis on a previous flit run'
 
 def main(arguments, prog=sys.argv[0]):
