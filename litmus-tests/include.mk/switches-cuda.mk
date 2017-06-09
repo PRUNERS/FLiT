@@ -4,14 +4,22 @@
 # --ftz=true --prec-div=false --prec-sqrt=false
 # --fmad=true.
 
-FASTMC := --use_fast_math
-FMADFC  := --fmad=false
-FMADTC  := --fmad=true
-FTZFC   := --ftz=false
-FTZTC   := --ftz=true
-PRECDFC := --prec-div=false
-PRECDTC := --prec-div=true
-PRECSFC := --prec-sqrt=false
-PRECSTC := --prec-sqrt=true
+FASTMC     := --use_fast_math
+FMADFC     := --fmad=false
+FMADTC     := --fmad=true
+FTZFC      := --ftz=false
+FTZTC      := --ftz=true
+PRECDFC    := --prec-div=false
+PRECDTC    := --prec-div=true
+PRECSFC    := --prec-sqrt=false
+PRECSTC    := --prec-sqrt=true
 
-CUSWITCHES := FASTMC FTZTC FTZFC PRECDTC PRECDFC PRECSTC PRECSFC FMADTC FMADFC
+CUSWITCHES += FASTMC
+CUSWITCHES += FTZTC
+CUSWITCHES += FTZFC
+CUSWITCHES += PRECDTC
+CUSWITCHES += PRECDFC
+CUSWITCHES += PRECSTC
+CUSWITCHES += PRECSFC
+CUSWITCHES += FMADTC
+CUSWITCHES += FMADFC
