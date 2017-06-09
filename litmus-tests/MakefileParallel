@@ -1,90 +1,90 @@
 # a makefile for a variety of compilers and compiler flags
 
 #CUDA
-NVCC 		:= $(shell which nvcc) #/usr/local/cuda-7.5/bin/nvcc
-NVCC_VER 	:= nvcc
-NVCC_REQUIRED 	+= --std=c++11
-#NVCC_REQUIRED 	+= -O0
-NVCC_REQUIRED 	+= -ccbin=g++
-DEVCAP 		?= -arch=compute_37 -code=sm_37
-NVCC_REQUIRED 	+= $(DEVCAP)
+NVCC           := $(shell which nvcc) #/usr/local/cuda-7.5/bin/nvcc
+NVCC_VER       := nvcc
+NVCC_REQUIRED  += --std=c++11
+#NVCC_REQUIRED  += -O0
+NVCC_REQUIRED  += -ccbin=g++
+DEVCAP         ?= -arch=compute_37 -code=sm_37
+NVCC_REQUIRED  += $(DEVCAP)
 
-NVCC_CFLAGS 	+= -I .
-NVCC_CFLAGS 	+= -x cu
-NVCC_CFLAGS 	+= -dc
-NVCC_CFLAGS 	+= -D__CUDA__
-NVCC_CFLAGS 	+= -I/usr/local/cuda/samples/common/inc
-NVCC_LINK 	:= -L/usr/local/cuda/lib64
-NVCC_FLAGS	+= $(DEVCAP)
+NVCC_CFLAGS    += -I .
+NVCC_CFLAGS    += -x cu
+NVCC_CFLAGS    += -dc
+NVCC_CFLAGS    += -D__CUDA__
+NVCC_CFLAGS    += -I/usr/local/cuda/samples/common/inc
+NVCC_LINK      += -L/usr/local/cuda/lib64
+NVCC_FLAGS     += $(DEVCAP)
 
-HAS_CUDA      	:= $(shell command -v nvcc 2> /dev/null)
+HAS_CUDA       := $(shell command -v nvcc 2> /dev/null)
 $(info HAS_CUDA = $(HAS_CUDA))
 $(info PATH = $(PATH))
-CLANG 		:= clang++
-INTEL 		:= icpc
-GCC 		:= g++
+CLANG := clang++
+INTEL := icpc
+GCC := g++
 
 
 ifndef CUDA_ONLY
-COMPILERS := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
+COMPILERS      := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
 endif
 
 ifdef CLANG_ONLY
-COMPILERS = CLANG
+COMPILERS       = CLANG
 endif
 
 #$(info COMPILERS=$(COMPILERS))
 
 #gives highly detailed output (general scores aren't perfect indexes of results --
 #  i.e. different results can produce identical scores
-VERBOSE ?=
+VERBOSE        ?=
 
-#for S3FP related test
-S3_REQUIRED 	:= -IS3FP/
-S3_REQUIRED 	+= -DWFT=float -DSCH_LIB
+FLITLIBDIR     := ../lib
 
-CC_REQUIRED	+= $(S3_REQUIRED)
-NVCC_REQUIRED	+= $(S3_REQUIRED)
+CC_REQUIRED    += -std=c++14
+CC_REQUIRED    += -I.
+CC_REQUIRED    += -I../src
 
-CC_REQUIRED  	+= -std=c++14
-CC_REQUIRED 	+= -I.
+LD_REQUIRED    += -lm
+LD_REQUIRED    += -lstdc++
+LD_REQUIRED    += -L$(FLITLIBDIR) -lflit
+LD_REQUIRED    += -Wl,-rpath=$(realpath $(FLITLIBDIR))
 
-LD_REQUIRED 	:= -lm
-LD_REQUIRED 	+= -lstdc++
-
-
-#CC_REQUIRED 	+= -lquadmath
+#CC_REQUIRED   += -lquadmath
 
 #on systems with non-standard gcc installations (such as module), clang may
 #be unable to determine the correct gcc toolchain
-GCC_TOOLCHAIN	:= $(dir $(shell which g++))..
-CLANG_REQUIRED	:= --gcc-toolchain=$(GCC_TOOLCHAIN)
+GCC_TOOLCHAIN  := $(dir $(shell which g++))..
+CLANG_REQUIRED := --gcc-toolchain=$(GCC_TOOLCHAIN)
 
 #$(info CLANG_REQUIRED = $(CLANG_REQUIRED))
 
 #FP FLAGS
 include include.mk/switches.mk
 
-TESTS       := $(wildcard tests/*.cpp)
-SOURCE      := $(wildcard *.cpp)
-SOURCE      += $(TESTS)
+TESTS          := $(wildcard tests/*.cpp)
+SOURCE         := $(wildcard *.cpp)
+SOURCE         += $(TESTS)
 
 #$(info SOURCE = $(SOURCE))
-hostname    := $(shell hostname)
+hostname       := $(shell hostname)
 
 ifdef HAS_CUDA
-CUSOURCE    += $(TESTS)
-CUSOURCE    += $(wildcard *.cpp)
-CUOBJ	    += $(CUSOURCE:%.cpp=%.o)
+CUSOURCE       += $(TESTS)
+CUSOURCE       += $(wildcard *.cpp)
+CUOBJ          += $(CUSOURCE:%.cpp=%.o)
 include include.mk/switches-cuda.mk
-CUTARGETS := $(foreach s, $(CUSWITCHES), \
-		$(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
+CUTARGETS      := $(foreach s, $(CUSWITCHES), \
+                    $(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
 endif
 
-TARGETS  	:= $(foreach c, $(COMPILERS), \
-		$(foreach s, $(SWITCHES_$(strip $c)), \
-		$(foreach o, $(OPCODES), \
-		$c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE))))
+TARGETS        := $(foreach c, $(COMPILERS), \
+                    $(foreach s, $(SWITCHES_$(strip $c)), \
+                      $(foreach o, $(OPCODES), \
+                        $c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE) \
+                       ) \
+                     ) \
+                   )
 
 VERBOSE_OUTPUT := $(TARGETS:%=%_out_$(VERBOSE))
 
@@ -108,7 +108,7 @@ $(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_
 #link
 $(strip $2)_$(hostname)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
 	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED)\
-	 $(CC_REQUIRED) $(LD_REQUIRED) $$^ -o $$@
+	 $(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
 	-rm $(SOURCE:.cpp=_$(strip $2)_$(hostname)_$(strip $1)_$(strip $3).o)
 
 #compile
@@ -169,3 +169,5 @@ clean :
 	rm -f $(VERBOSE_OUTPUT)
 	rm -f *.o tests/*.o 
 	rm -f *.d tests/*.d
+
+-include custom.mk

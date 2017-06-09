@@ -3,7 +3,7 @@
 
 //#define SCH_LIB
 #define WFT float
-#include "S3FP/simple_convex_hull.cpp"
+#include "simple_convex_hull.h"
 
 #include <cmath>
 #include <cstdio>
