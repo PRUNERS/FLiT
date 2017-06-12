@@ -42,25 +42,26 @@ def main(arguments, prog=sys.argv[0]):
         )
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
-    # TODO: add argument to overwrite files
-    #parser.add_argument('--overwrite', action='store_true',
-    #                    help='Overwrite init files if they are already there')
+    parser.add_argument('--overwrite', action='store_true',
+                        help='Overwrite init files if they are already there')
     args = parser.parse_args(arguments)
 
     os.makedirs(args.directory, exist_ok=True)
     os.chdir(args.directory)
 
     # write flit-config.toml
+    print('Creating flit-config.toml')
     process_in_file(
         os.path.join(conf.config_dir, 'flit-default.toml.in'),
         'flit-config.toml',
         {
             'flit_path': os.path.join(conf.script_dir, 'flit.py').__repr__(),
             'config_dir': conf.config_dir.__repr__(),
-        })
+        },
+        overwrite=args.overwrite)
 
     projconf = toml.load('flit-config.toml')
-    print(projconf)
+    print('Creating Makefile')
     process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),
         'Makefile',
@@ -69,7 +70,8 @@ def main(arguments, prog=sys.argv[0]):
             'flit_include_dir': conf.include_dir,
             'flit_lib_dir': conf.lib_dir,
             'flit_script': os.path.join(conf.script_dir, 'flit.py'),
-        })
+        },
+        overwrite=args.overwrite)
 
     # Copy the remaining files over
     to_copy = {
@@ -79,7 +81,7 @@ def main(arguments, prog=sys.argv[0]):
         }
 
     for dest, src in to_copy.items():
-        if os.path.exists(dest):
+        if not args.overwrite and os.path.exists(dest):
             print('Warning: {0} already exists, not overwriting'.format(dest))
             continue
         print('Creating {0}'.format(dest))
