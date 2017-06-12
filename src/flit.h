@@ -4,13 +4,6 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
-#include <algorithm>
-#include <chrono>
-#include <cstring>
-#include <sstream>
-#include <type_traits>
-#include <typeinfo>
-
 #include "QFPHelpers.hpp"
 #include "TestBase.hpp"
 
@@ -18,6 +11,13 @@
 //#include <cuda.h>
 #include "CUHelpers.hpp"
 #endif
+
+#include <algorithm>
+#include <chrono>
+#include <cstring>
+#include <sstream>
+#include <type_traits>
+#include <typeinfo>
 
 void outputResults(const QFPTest::ResultType& scores);
 

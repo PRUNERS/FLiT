@@ -477,45 +477,6 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
   getTests()[name] = factory;
 }
 
-}
-
-
-/** A convenience macro for running Eigen tests
- *
- * @internal The run() method is overridden so that the methods
- *   getDefaultInput(), getInputsPerRun() and run_impl() are not necessary, so
- *   the minimum implementation is present here.
- */
-#define EIGEN_CLASS_DEF(klass, file)                     \
-  template <typename T>                                  \
-  class klass : public QFPTest::TestBase<T> {            \
-  public:                                                \
-    klass(std::string id)                                \
-      : QFPTest::TestBase<T>(std::move(id)) {}           \
-    virtual QFPTest::ResultType                          \
-    run(const QFPTest::TestInput<T>& ti) {               \
-      Q_UNUSED(ti);                                      \
-      if(sizeof(T) != 4) return {};                      \
-      auto fileS = std::string(#file);                   \
-      g_test_stack[fileS];                               \
-      eigenResults[fileS];                               \
-      test_##file();                                     \
-      g_test_stack[fileS].clear();                       \
-      auto res = eigenResults[fileS];                    \
-      eigenResults[fileS].clear();                       \
-      return res;                                        \
-    }                                                    \
-    virtual QFPTest::TestInput<T> getDefaultInput() {    \
-      QFPTest::TestInput<T> ti;                          \
-      return ti;                                         \
-    }                                                    \
-    virtual size_t getInputsPerRun() { return 0; }       \
-  protected:                                             \
-    virtual QFPTest::KernelFunction<T>*                  \
-    getKernel() {return nullptr; }                       \
-    virtual QFPTest::ResultType::mapped_type             \
-    run_impl(const QFPTest::TestInput<T>&) { return {}; }\
-  };                                                     \
-
+} // end namespace QFPTest
 
 #endif // TEST_BASE_HPP
