@@ -14,6 +14,7 @@ all = [
     'include_dir',
     'config_dir',
     'data_dir',
+    'litmus_test_dir',
     ]
 
 # flit scripts
@@ -33,4 +34,7 @@ config_dir = os.path.join(script_dir, 'config')
 
 # default data files such as Makefiles
 data_dir = os.path.join(script_dir, 'data')
+
+# directory containing litmus tests
+litmus_test_dir = os.path.realpath(os.path.join(script_dir, '../../litmus-tests/tests'))
 

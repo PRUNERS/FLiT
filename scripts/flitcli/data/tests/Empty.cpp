@@ -1,5 +1,6 @@
 #include "flit.h"
 
+/** An example test class to show how to make FLiT tests */
 template <typename T>
 class Empty : public QFPTest::TestBase<T> {
 public:

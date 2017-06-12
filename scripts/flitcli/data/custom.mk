@@ -1,6 +1,10 @@
 # This file is included at the end of the copied Makefile.  If you have some
 # things you want to change about the Makefile, it is best to do it here.
 
+# additional source files to compile other than what is in '.' and 'tests/'
+# since those directories are added by a wildcard.
+SOURCE         +=
+
 # required compiler flags
 # for example, include directories
 #   CC_REQUIRED += -I<path>

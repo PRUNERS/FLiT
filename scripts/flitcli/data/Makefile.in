@@ -4,7 +4,6 @@ CC             := {compiler}
 FFLAGS         ?=
 TARGET         ?= runTests
 
-# TODO: replace these paths from flitconfig.py
 FLIT_INC_DIR   := {flit_include_dir}
 FLIT_LIB_DIR   := {flit_lib_dir}
 FLIT_SCRIPT    := {flit_script}
@@ -54,5 +53,8 @@ clean :
 veryclean : distclean
 distclean : clean
 	rm -f $(TARGET)
+
+Makefile: flit-config.toml
+	$(FLIT_SCRIPT) update
 
 -include custom.mk
