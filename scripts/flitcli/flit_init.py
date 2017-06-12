@@ -4,22 +4,42 @@ import argparse
 import os
 import shutil
 import sys
+import toml
 
 import flitconfig as conf
 
 brief_description = 'Initializes a flit test directory for use'
 
+def process_in_file(infile, dest, vals, overwrite=False):
+    '''
+    Process a file such as 'Makefile.in' where there are variables to
+    replace.
+
+    @param infile: input file.  Usually ends in ".in"
+    @param dest: destination file.  If overwrite is False, then destination
+        shouldn't exist, otherwise a warning is printed and nothing is
+        done.
+    @param vals: dictionary of key -> val where we search and replace {key}
+        with val everywhere in the infile.
+    '''
+    if not overwrite and os.path.exists(dest):
+        print('Warning: {0} already exists, not overwriting'.format(dest))
+    else:
+        with open(infile, 'r') as fin:
+            with open(dest, 'w') as fout:
+                fout.write(fin.read().format(**vals))
+
 def main(arguments, prog=sys.argv[0]):
     parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                Initializes a flit test directory for use.  It will initialize
-                the directory by copying the default configuration file into
-                the given directory.  If a configuration file already exists,
-                this command does nothing.  The config file is called
-                flit.conf.
-                ''',
-            )
+        prog=prog,
+        description='''
+            Initializes a flit test directory for use.  It will initialize
+            the directory by copying the default configuration file into
+            the given directory.  If a configuration file already exists,
+            this command does nothing.  The config file is called
+            flit.conf.
+            ''',
+        )
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
     # TODO: add argument to overwrite files
@@ -27,24 +47,44 @@ def main(arguments, prog=sys.argv[0]):
     #                    help='Overwrite init files if they are already there')
     args = parser.parse_args(arguments)
 
-    os.makedirs(args.directory, mode=0o755, exist_ok=True)
+    os.makedirs(args.directory, exist_ok=True)
     os.chdir(args.directory)
 
-    # Copy the data directory contents and the default configuration
-    # TODO: these Makefiles should actually be made with "flit update"
-    to_copy = {x: os.path.join(conf.data_dir, x) for x in os.listdir(conf.data_dir)}
-    # TODO: uncomment when flit-config.toml is actually used
-    #to_copy['flit-config.toml'] = os.path.join(conf.config_dir, 'flit-default.toml')
+    # write flit-config.toml
+    process_in_file(
+        os.path.join(conf.config_dir, 'flit-default.toml.in'),
+        'flit-config.toml',
+        {
+            'flit_path': os.path.join(conf.script_dir, 'flit.py').__repr__(),
+            'config_dir': conf.config_dir.__repr__(),
+        })
+
+    projconf = toml.load('flit-config.toml')
+    print(projconf)
+    process_in_file(
+        os.path.join(conf.data_dir, 'Makefile.in'),
+        'Makefile',
+        {
+            'compiler': os.path.realpath(projconf['hosts'][0]['compilers'][0]['binary']),
+            'flit_include_dir': conf.include_dir,
+            'flit_lib_dir': conf.lib_dir,
+            'flit_script': os.path.join(conf.script_dir, 'flit.py'),
+        })
+
+    # Copy the remaining files over
+    to_copy = {
+        'custom.mk': os.path.join(conf.data_dir, 'custom.mk'),
+        'main.cpp': os.path.join(conf.data_dir, 'main.cpp'),
+        'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
+        }
 
     for dest, src in to_copy.items():
         if os.path.exists(dest):
             print('Warning: {0} already exists, not overwriting'.format(dest))
             continue
         print('Creating {0}'.format(dest))
-        if os.path.isdir(src):
-            shutil.copytree(src, dest)
-        else:
-            shutil.copy(src, dest)
+        os.makedirs(os.path.dirname(os.path.realpath(dest)), exist_ok=True)
+        shutil.copy(src, dest)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

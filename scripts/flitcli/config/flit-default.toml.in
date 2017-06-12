@@ -2,24 +2,25 @@
 
 username = 'mbentley'
 address = 'localhost'
-port = 22
+type = 'postgres'
+port = 5432
 
 [[hosts]]
 
 # TODO: add documentation here for each element.
 
 name = 'thinkpad-laptop'
-port = 22
-address = 'localhost'
-flit_path = 'git/FLiT/scripts/flitcli/flit.py'
-config_dir = 'git/FLiT/litmus-tests'
+flit_path = {flit_path}
+config_dir = {config_dir}
 
   [[hosts.compilers]]
 
   # TODO: figure out how to specify path for each host machine
   # TODO: what if the compilers list is part of the host?
-  name = 'g++-5.4.0'
+
   binary = '/usr/bin/g++'
+  # TODO: this is not yet used...
+  name = 'g++'
   type = 'gcc'
   optimization_levels = [
     '-O0',
