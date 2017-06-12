@@ -47,24 +47,24 @@ def main(arguments, prog=sys.argv[0]):
     args = parser.parse_args(arguments)
 
     os.makedirs(args.directory, exist_ok=True)
-    os.chdir(args.directory)
 
     # write flit-config.toml
-    print('Creating flit-config.toml')
+    flit_config_dest = os.path.join(args.directory, 'flit-config.toml')
+    print('Creating {0}'.format(flit_config_dest))
     process_in_file(
         os.path.join(conf.config_dir, 'flit-default.toml.in'),
-        'flit-config.toml',
+        flit_config_dest,
         {
             'flit_path': os.path.join(conf.script_dir, 'flit.py').__repr__(),
             'config_dir': conf.config_dir.__repr__(),
         },
         overwrite=args.overwrite)
 
-    projconf = toml.load('flit-config.toml')
-    print('Creating Makefile')
+    projconf = toml.load(flit_config_dest)
+    print('Creating {0}'.format(os.path.join(args.directory, 'Makefile')))
     process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),
-        'Makefile',
+        os.path.join(args.directory, 'Makefile'),
         {
             'compiler': os.path.realpath(projconf['hosts'][0]['compilers'][0]['binary']),
             'flit_include_dir': conf.include_dir,
@@ -81,12 +81,13 @@ def main(arguments, prog=sys.argv[0]):
         }
 
     for dest, src in to_copy.items():
-        if not args.overwrite and os.path.exists(dest):
-            print('Warning: {0} already exists, not overwriting'.format(dest))
+        realdest = os.path.join(args.directory, dest)
+        print('Creating {0}'.format(realdest))
+        if not args.overwrite and os.path.exists(realdest):
+            print('Warning: {0} already exists, not overwriting'.format(realdest))
             continue
-        print('Creating {0}'.format(dest))
-        os.makedirs(os.path.dirname(os.path.realpath(dest)), exist_ok=True)
-        shutil.copy(src, dest)
+        os.makedirs(os.path.dirname(os.path.realpath(realdest)), exist_ok=True)
+        shutil.copy(src, realdest)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
