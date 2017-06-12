@@ -4,6 +4,10 @@ CC             := g++
 FFLAGS         ?=
 TARGET         ?= runTests
 
+# TODO: replace these paths from flitconfig.py
+FLIT_INC_DIR   := $(HOME)/git/FLiT/src
+FLIT_LIB_DIR   := $(HOME)/git/FLiT/lib
+
 CC_REQUIRED    += $(FFLAGS)
 CC_REQUIRED    += -Wuninitialized -g
 CC_REQUIRED    += -std=c++11
@@ -12,13 +16,11 @@ CC_REQUIRED    += -Wall
 CC_REQUIRED    += -Wextra
 CC_REQUIRED    += -I.
 CC_REQUIRED    += -DWFT=float -DSCH_LIB
-CC_REQUIRED    += -I../src
-
-FLITLIBDIR     := ../lib
+CC_REQUIRED    += -I$(FLIT_INC_DIR)
 
 LD_REQUIRED    += -lm
-LD_REQUIRED    += -L$(FLITLIBDIR) -lflit
-LD_REQUIRED    += -Wl,-rpath=$(realpath $(FLITLIBDIR))
+LD_REQUIRED    += -L$(FLIT_LIB_DIR) -lflit
+LD_REQUIRED    += -Wl,-rpath=$(realpath $(FLIT_LIB_DIR))
 
 DEPFLAGS       += -MD -MF $*.d
 

@@ -210,7 +210,7 @@ public:
    */
   virtual ResultType run(const TestInput<T>& ti,
                          const bool GetTime,
-                         const bool TimingLoops) {
+                         const size_t TimingLoops) {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
@@ -262,7 +262,7 @@ public:
       if (GetTime) {
         ResultType::mapped_type scores;
         int_fast64_t nsecs = 0;
-        for (int r = 0; r < TimingLoops; ++r){
+        for (size_t r = 0; r < TimingLoops; ++r){
           auto s = high_resolution_clock::now();
           scoreList = runKernel(kernel, ti, stride);
           auto e = high_resolution_clock::now();
@@ -283,7 +283,7 @@ public:
       if (GetTime) {
         ResultType::mapped_type scores;
         int_fast64_t nsecs = 0;
-        for (int r = 0; r < TimingLoops; ++r) {
+        for (size_t r = 0; r < TimingLoops; ++r) {
           auto s = high_resolution_clock::now();
           scores = run_impl(runInput);
           auto e = high_resolution_clock::now();
