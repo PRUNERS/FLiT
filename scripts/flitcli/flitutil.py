@@ -20,9 +20,9 @@ def process_in_file(infile, dest, vals, overwrite=False):
     if not overwrite and os.path.exists(dest):
         print('Warning: {0} already exists, not overwriting'.format(dest),
               file=sys.stderr)
-    else:
-        with open(infile, 'r') as fin:
-            with open(dest, 'w') as fout:
-                fout.write(fin.read().format(**vals))
+        return
+    with open(infile, 'r') as fin:
+        with open(dest, 'w') as fout:
+            fout.write(fin.read().format(**vals))
 
 

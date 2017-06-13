@@ -9,9 +9,9 @@ port = 5432
 
 # TODO: add documentation here for each element.
 
-name = 'thinkpad-laptop'
-flit_path = {flit_path}
-config_dir = {config_dir}
+name = '{hostname}'
+flit_path = '{flit_path}'
+config_dir = '{config_dir}'
 
   [[hosts.compilers]]
 

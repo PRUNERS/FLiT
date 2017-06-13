@@ -3,6 +3,7 @@
 import argparse
 import os
 import shutil
+import socket
 import sys
 import toml
 
@@ -40,8 +41,9 @@ def main(arguments, prog=sys.argv[0]):
         os.path.join(conf.config_dir, 'flit-default.toml.in'),
         flit_config_dest,
         {
-            'flit_path': os.path.join(conf.script_dir, 'flit.py').__repr__(),
-            'config_dir': conf.config_dir.__repr__(),
+            'flit_path': os.path.join(conf.script_dir, 'flit.py'),
+            'config_dir': conf.config_dir,
+            'hostname': socket.gethostname(),
         },
         overwrite=args.overwrite)
 
