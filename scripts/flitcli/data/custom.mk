@@ -5,12 +5,15 @@
 # since those directories are added by a wildcard.
 SOURCE         +=
 
+# for when cuda is compiled, you can specify different source files
+CUSOURCE       +=
+
 # required compiler flags
 # for example, include directories
 #   CC_REQUIRED += -I<path>
 # or defines
 #   CC_REQUIRED += -DDEBUG_ENABLED=1
-CC_REQUIRED    += 
+CC_REQUIRED    +=
 
 # required linker flags
 # for example, link libraries
@@ -19,8 +22,16 @@ CC_REQUIRED    +=
 #   LD_REQUIRED += -Wl,-rpath=<abs-path-to-library-dir>
 LD_REQUIRED    +=
 
+# compiler and linker flags respectively - specifically for a dev build
+DEV_CFLAGS     +=
+DEV_LDFLAGS    +=
+
 # required compiler flags for CUDA
 NVCC_FLAGS     +=
 
 # required link flags for CUDA
 NVCC_LINK      +=
+
+# compiler and linker flags respectively - specifically for a dev cuda build
+DEV_NVCC_CC    +=
+DEV_NVCC_LD    +=
