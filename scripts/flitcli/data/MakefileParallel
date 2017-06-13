@@ -35,13 +35,9 @@ endif
 
 #$(info COMPILERS=$(COMPILERS))
 
-#gives highly detailed output (general scores aren't perfect indexes of results --
-#  i.e. different results can produce identical scores
-VERBOSE        ?=
-
 FLITLIBDIR     := ../lib
 
-CC_REQUIRED    += -std=c++14
+CC_REQUIRED    += -std=c++11
 CC_REQUIRED    += -I.
 CC_REQUIRED    += -I../src
 
@@ -75,18 +71,18 @@ CUSOURCE       += $(wildcard *.cpp)
 CUOBJ          += $(CUSOURCE:%.cpp=%.o)
 include include.mk/switches-cuda.mk
 CUTARGETS      := $(foreach s, $(CUSWITCHES), \
-                    $(NVCC_VER)_$(hostname)_$(strip $(s))_out_$(VERBOSE))
+                    $(NVCC_VER)_$(hostname)_$(strip $(s))_out)
 endif
 
 TARGETS        := $(foreach c, $(COMPILERS), \
                     $(foreach s, $(SWITCHES_$(strip $c)), \
                       $(foreach o, $(OPCODES), \
-                        $c_$(hostname)_$(strip $(s))_$(strip $(o))_out_$(VERBOSE) \
+                        $c_$(hostname)_$(strip $(s))_$(strip $(o))_out \
                        ) \
                      ) \
                    )
 
-VERBOSE_OUTPUT := $(TARGETS:%=%_out_$(VERBOSE))
+VERBOSE_OUTPUT := $(TARGETS:%=%_out)
 
 .PHONY : all
 all : $(TARGETS) $(CUTARGETS) cleanResults archive
@@ -97,8 +93,8 @@ all : $(TARGETS) $(CUTARGETS) cleanResults archive
 # $1 is switches, $2 is compiler, $3 is optimization level
 define RULE
 #run test and collect results
-$(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out_$(VERBOSE) : $2_$(hostname)_$(strip $1)_$(strip $3)
-	-./$$< $(VERBOSE) > $$@
+$(strip $2)_$(hostname)_$(strip $1)_$(strip $3)_out : $2_$(hostname)_$(strip $1)_$(strip $3)
+	-./$$< > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
 	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
 	-sed -i 's/OPTL/$($(strip $3))/g' $$@
@@ -129,8 +125,8 @@ $(foreach c, $(COMPILERS), $(foreach s, $(SWITCHES_$(strip $c)), \
 define CURULE
 #$1 is switches
 #run test
-$(NVCC_VER)_$(hostname)_$(strip $1)_out_$(VERBOSE) : $(NVCC_VER)_$(hostname)_$(strip $1)
-	./$$< $(VERBOSE) > $$@
+$(NVCC_VER)_$(hostname)_$(strip $1)_out : $(NVCC_VER)_$(hostname)_$(strip $1)
+	./$$< > $$@
 	-sed -i 's/HOST/$(hostname)/g' $$@
 	-sed -i 's/SWITCHES/$($(strip $1))/g' $$@
 	-sed -i 's/OPTL//g' $$@
@@ -152,7 +148,7 @@ $(foreach s, $(CUSWITCHES), $(eval $(call CURULE, $s)))
 .PHONY : cleanResults #strip excess info from Intel output (__file__) and remove emtpy outputs
 cleanResults : $(TARGETS) $(CUTARGETS)
 	$(info doing clean)
-	sed -i 's/FPTests:://' *out_$(VERBOSE)
+	sed -i 's/FPTests:://' *_out
 	#-find . -size 0 -exec rm {} \;
 
 .PHONY : archive
