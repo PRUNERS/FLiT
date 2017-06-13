@@ -63,7 +63,8 @@ def main(arguments, prog=sys.argv[0]):
         realdest = os.path.join(args.directory, dest)
         print('Creating {0}'.format(realdest))
         if not args.overwrite and os.path.exists(realdest):
-            print('Warning: {0} already exists, not overwriting'.format(realdest))
+            print('Warning: {0} already exists, not overwriting'.format(realdest),
+                  file=sys.stderr)
             continue
         os.makedirs(os.path.dirname(os.path.realpath(realdest)), exist_ok=True)
         shutil.copy(src, realdest)

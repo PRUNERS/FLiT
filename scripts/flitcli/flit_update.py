@@ -25,11 +25,23 @@ def main(arguments, prog=sys.argv[0]):
                         help='The directory to initialize')
     args = parser.parse_args(arguments)
 
-    projconf = toml.load(os.path.join(args.directory, 'flit-config.toml'))
-    print('Updating {0}'.format(os.path.join(args.directory, 'Makefile')))
+    tomlfile = os.path.join(args.directory, 'flit-config.toml')
+    try:
+        projconf = toml.load(tomlfile)
+    except FileNotFoundError:
+        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
+              file=sys.stderr)
+        return 1
+
+    makefile = os.path.join(args.directory, 'Makefile')
+    if os.path.exists(makefile):
+        print('Updating {0}'.format(makefile))
+    else:
+        print('Creating {0}'.format(makefile))
+
     flitutil.process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),
-        os.path.join(args.directory, 'Makefile'),
+        makefile,
         {
             'compiler': os.path.realpath(projconf['hosts'][0]['compilers'][0]['binary']),
             'flit_include_dir': conf.include_dir,

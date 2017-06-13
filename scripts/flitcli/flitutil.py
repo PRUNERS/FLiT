@@ -3,6 +3,7 @@ Utility functions shared between multiple flit subcommands.
 '''
 
 import os
+import sys
 
 def process_in_file(infile, dest, vals, overwrite=False):
     '''
@@ -17,7 +18,8 @@ def process_in_file(infile, dest, vals, overwrite=False):
         with val everywhere in the infile.
     '''
     if not overwrite and os.path.exists(dest):
-        print('Warning: {0} already exists, not overwriting'.format(dest))
+        print('Warning: {0} already exists, not overwriting'.format(dest),
+              file=sys.stderr)
     else:
         with open(infile, 'r') as fin:
             with open(dest, 'w') as fout:
