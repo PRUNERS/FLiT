@@ -39,11 +39,15 @@ def main(arguments, prog=sys.argv[0]):
     else:
         print('Creating {0}'.format(makefile))
 
+    compiler = projconf['hosts'][0]['compilers'][0]['binary']
+    if '/' in compiler:
+        compiler = os.path.realpath(compiler)
+
     flitutil.process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),
         makefile,
         {
-            'compiler': os.path.realpath(projconf['hosts'][0]['compilers'][0]['binary']),
+            'compiler': compiler,
             'flit_include_dir': conf.include_dir,
             'flit_lib_dir': conf.lib_dir,
             'flit_script': os.path.join(conf.script_dir, 'flit.py'),

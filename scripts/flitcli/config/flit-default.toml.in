@@ -13,14 +13,32 @@ name = '{hostname}'
 flit_path = '{flit_path}'
 config_dir = '{config_dir}'
 
+# The ground truth compilation to use in analysis
+[hosts.ground_truth]
+# compiler needs to match the name field for one of this host's hosts.compilers
+# The optimization level needs to be part of the list of optimization_levels
+# and the switch needs to be a string of compiler flags from the switches list.
+# TODO: make use of hosts.ground_truth
+compiler = 'g++'
+optimization_level = '-O0'
+switch = ''
+
   [[hosts.compilers]]
 
   # TODO: figure out how to specify path for each host machine
   # TODO: what if the compilers list is part of the host?
 
-  binary = '/usr/bin/g++'
+  # binary can be an absolute path, relative path, or binary name (found in
+  # PATH).  If you want to specify a compiler in the same directory as this
+  # config file, prepend with a "./" (e.g. "./my-compiler")
+  binary = 'g++'
   # TODO: this is not yet used...
+  # It is recommended to include version number in the name.  This is how the
+  # compiler will be recognized in the results, and subsequently in the
+  # database and analysis.
   name = 'g++'
+  # TODO: implement these supported types
+  # There are a few supported types: [ gcc, intel, clang, cuda ]
   type = 'gcc'
   optimization_levels = [
     '-O0',
