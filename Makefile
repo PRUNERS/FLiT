@@ -44,6 +44,26 @@ INSTALL_FLIT_CONFIG = $(PREFIX)/share/flit/scripts/flitconfig.py
 .PHONY : all
 all: $(TARGET)
 
+.PHONY: help
+help:
+	@echo "FLiT is an automation and analysis tool for reproducibility of"
+	@echo "floating-point algorithms with respect to compilers, architectures,"
+	@echo "and compiler flags."
+	@echo
+	@echo "The following targets are available:"
+	@echo
+	@echo "  all         Compiles the target $(TARGET)"
+	@echo "  help        Shows this help message and exits"
+	@echo "  install     Installs FLiT.  You may override the PREFIX variable"
+	@echo "              to install to a different directory.  The default"
+	@echo "              PREFIX value is /usr."
+	@echo '                exe: "make install PREFIX=$$HOME/installs/usr"'
+	@echo "  clean       Clean the intermediate build artifacts from building"
+	@echo "              $(TARGET)"
+	@echo "  distclean   Run clean and then also remove $(TARGET)"
+	@echo "  veryclean   An alias for distclean"
+	@echo
+
 $(TARGET): $(OBJ)
 	mkdir -p lib
 	$(CC) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
