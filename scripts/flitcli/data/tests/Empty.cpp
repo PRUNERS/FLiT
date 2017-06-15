@@ -1,6 +1,12 @@
 #include "flit.h"
 
-/** An example test class to show how to make FLiT tests */
+#include <string>
+
+/** An example test class to show how to make FLiT tests
+ *
+ * You will want to rename this file and rename the class.  Then implement
+ * getInputsPerRun(), getDefaultInput() and run_impl().
+ */
 template <typename T>
 class Empty : public QFPTest::TestBase<T> {
 public:
@@ -29,6 +35,7 @@ public:
   }
 
 protected:
+
   /** Call or implement the algorithm here.
    *
    * You need to return two scores, each are of type long double.  Usually the
