@@ -27,7 +27,7 @@ To add an additional subcommand, there are only a few things you need to do.  Fo
    be in the help documentation for that subcommand as the executable that was
    called.  It can be passed directly into the `prog` argument for the
    `argparse.ArgumentParser` class.  The `arguments` arg only contain the
-   arguments and not the program name (similar to `sys.argv[1:]).
+   arguments and not the program name (similar to `sys.argv[1:]`).
 4. Implement command-line parsing of the `-h` and `--help` flags in the
    `arguments` parameter to `main`.  This should show the documentation for
    your subcommand and exit.
