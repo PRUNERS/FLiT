@@ -225,10 +225,10 @@ NVCC_CFLAGS     += -I$(FLIT_INC_DIR)
 NVCC_CFLAGS     += -I$(dir $(NVCC))/../samples/common/inc
 
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
-  NVCC_CFLAGS   += -Llib -lflit
+  NVCC_LINK     += -Llib -lflit
 else
-  NVCC_CFLAGS   += -L$(FLIT_LIB_DIR) -lflit
-  NVCC_CFLAGS   += -Wl,-rpath=$(realpath $(FLIT_LIB_DIR))
+  NVCC_LINK     += -L$(FLIT_LIB_DIR) -lflit
+  NVCC_LINK     += -Xcompiler \"-Wl,-rpath=$(realpath $(FLIT_LIB_DIR))\"
 endif
 
 NVCC_LINK       += --std=c++11
