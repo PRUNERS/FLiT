@@ -61,7 +61,7 @@ RESULTS_DIR     := results
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
-GCC_TOOLCHAIN   := $(dir $(dir $(shell which $(GCC))))
+GCC_TOOLCHAIN   := $(dir $(shell which $(GCC)))/..
 CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
 
 # Compiler setting targets
@@ -392,13 +392,13 @@ $(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)_out : $2_$(HOSTNAME)_$(strip $1)
 #link
 $(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
 	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED)\
-	 $(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
-	-rm $(SOURCE:.cpp=_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
+	   $(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
+	rm -f $(SOURCE:.cpp=_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
 
 #compile
 %_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o : %.cpp
 	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) \
-	$($(strip $2)_REQUIRED) $$< -o $$@
+	   $($(strip $2)_REQUIRED) $$< -o $$@
 endef
 # end of define TARGETS_RULE
 
@@ -432,7 +432,7 @@ NVCC_$(HOSTNAME)_$(strip $1)_out : NVCC_$(HOSTNAME)_$(strip $1)
 #link test
 NVCC_$(HOSTNAME)_$(strip $1) : $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o)
 	$(NVCC) $($(strip $1)) $(NVCC_LINK) $$^ -o $$@
-	rm $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o)
+	rm -f $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o)
 
 #compile test
 %_NVCC_$(HOSTNAME)_$(strip $1).o : %.cpp
