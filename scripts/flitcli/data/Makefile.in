@@ -210,6 +210,7 @@ OBJ              = $(foreach b,$(BIN),$(SOURCE:%.cpp=%_$(strip $(b)).o))
 ##################################################
 NVCC_BIN        := nvcc
 NVCC            := $(shell which $(NVCC_BIN))
+CUDA_DIR        := $(dir $(NVCC))/..
 
 HAS_CUDA        := $(shell command -v $(NVCC_BIN) 2> /dev/null)
 ifdef HAS_CUDA
@@ -222,7 +223,7 @@ NVCC_CFLAGS     += -x cu
 NVCC_CFLAGS     += -dc
 NVCC_CFLAGS     += -D__CUDA__
 NVCC_CFLAGS     += -I$(FLIT_INC_DIR)
-NVCC_CFLAGS     += -I$(dir $(NVCC))/../samples/common/inc
+NVCC_CFLAGS     += -I$(CUDA_DIR)/samples/common/inc
 
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
   NVCC_LINK     += -Llib -lflit
@@ -231,10 +232,11 @@ else
   NVCC_LINK     += -Xcompiler \"-Wl,-rpath=$(realpath $(FLIT_LIB_DIR))\"
 endif
 
+LD_REQUIRED     += -lm
+LD_REQUIRED     += -lstdc++
 NVCC_LINK       += --std=c++11
 NVCC_LINK       += -ccbin=g++
-NVCC_LINK       += $(LD_REQUIRED)
-NVCC_LINK       += -L/usr/local/cuda/lib64
+NVCC_LINK       += -L$(CUDA_DIR)/lib64
 
 DEV_NVCC_CC     +=
 DEV_NVCC_LD     +=
