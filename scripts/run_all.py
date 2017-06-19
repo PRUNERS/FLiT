@@ -162,7 +162,7 @@ run_num = int(check_output(['sshpass', '-e', *SSHL,
 print('creating worker package . . .')
 olddir = os.getcwd()
 os.chdir(home_dir + '/..')
-print(check_output(['tar', 'zcf', 'flit.tgz', 'scripts', 'src', 'Makefile.switches', 'Makefile.switches.cuda']).decode("utf-8"))
+print(check_output(['tar', 'zcf', 'flit.tgz', 'scripts', 'src']).decode("utf-8"))
 os.chdir(olddir)
 print('done.')
 
