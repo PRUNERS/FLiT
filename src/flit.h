@@ -113,7 +113,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   flit::info_stream.precision(1000);
 
 #ifdef __CUDA__
-  CUHelpers::initDeviceData();
+  flit::initDeviceData();
 #endif
 
   flit::ResultType scores;

@@ -368,7 +368,7 @@ public:
   virtual size_t getInputsPerRun() { return 0; }
   virtual ResultType run(const TestInput<T>&,
                          const bool,
-                         const bool) { return {}; }
+                         const size_t) { return {}; }
 protected:
   virtual KernelFunction<T>* getKernel() { return nullptr; }
   virtual ResultType::mapped_type run_impl(const TestInput<T>&) { return {}; }

@@ -2,6 +2,19 @@
 
 #include <string>
 
+template <typename T>
+GLOBAL
+void Empty_kernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results) {
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  auto& ti = tiList[idx];
+  results[idx].s1 = ti.vals[0];
+  results[idx].s2 = 0.0;
+}
+
 /** An example test class to show how to make FLiT tests
  *
  * You will want to rename this file and rename the class.  Then implement
@@ -35,6 +48,19 @@ public:
   }
 
 protected:
+  /** Return a kernel pointer to the CUDA kernel equivalent of run_impl
+   *
+   * The default base implementation of this function is simply to return
+   * null_ptr, which will cause it to call run_impl even when compiled under
+   * CUDA.
+   *
+   * If you do not have or do not want to have a CUDA version of your code,
+   * then you can delete this virtual function and use the base implementation.
+   *
+   * See the documentation above Empty_kernel() for details about what the
+   * kernel is expected to have.
+   */
+  virtual flit::KernelFunction<T>* getKernel() { return Empty_kernel; }
 
   /** Call or implement the algorithm here.
    *

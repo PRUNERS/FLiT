@@ -54,7 +54,6 @@ get_tiny2<long double>(){
 }
 
   //const std::vector<float> float_rands = setRandSequence<float>(RAND_VECT_SIZE);
-const std::vector<uint_fast32_t> shuffled_16  = getShuffleSeq(16);
 
 template<>
 const std::vector<float>&
