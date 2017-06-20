@@ -21,7 +21,7 @@ void printTestVal(const std::string &funcName, float val) {
   FmtRestore restorer(std::cout);
   Q_UNUSED(restorer);
 
-  auto intval = QFPHelpers::as_int(val);
+  auto intval = flit::as_int(val);
   std::cout << funcName << ":     0x"
             << std::hex << std::setw(8) << std::setfill('0') << intval
             << "  "
@@ -33,7 +33,7 @@ void printTestVal(const std::string &funcName, double val) {
   FmtRestore restorer(std::cout);
   Q_UNUSED(restorer);
 
-  auto intval = QFPHelpers::as_int(val);
+  auto intval = flit::as_int(val);
   std::cout << funcName << ":     0x"
             << std::hex << std::setw(16) << std::setfill('0') << intval
             << "  "
@@ -45,7 +45,7 @@ void printTestVal(const std::string &funcName, long double val) {
   FmtRestore restorer(std::cout);
   Q_UNUSED(restorer);
 
-  auto intval = QFPHelpers::as_int(val);
+  auto intval = flit::as_int(val);
   uint64_t lhalf = static_cast<uint64_t>((intval >> 64)) & 0xFFFFL;
   uint64_t rhalf = static_cast<uint64_t>(intval);
 
@@ -64,7 +64,7 @@ namespace {
     return seedGenerator();
   }
 
-}
+} // end of unnamed namespace
 
 uint32_t randGenerator32() {
   static auto seed = generateSeed();

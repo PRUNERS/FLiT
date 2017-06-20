@@ -7,7 +7,7 @@
 #include <iostream>
 #include <mutex>
 
-namespace QFPHelpers {
+namespace flit {
 
 const std::vector<uint_fast32_t>
 getShuffleSeq(uint_fast32_t size){
@@ -98,5 +98,5 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
   return os;
 }
 
-}
+} // end of namespace flit
  

@@ -20,10 +20,11 @@ extern "C" {
 #if defined(__CUDA__) || defined(__aarch64__)
 #define OFT double
 #else
-#define OFT __float128
+#define OFT long double
 #endif
 #endif
 
+#define WFT float
 
 struct Point {
   long id;
@@ -266,9 +267,9 @@ void SimpleComputeConvexhull () { // (FILE *outfile) {
 #ifdef __VERBOSE
   std::vector<Edge>::iterator ei;
   for (ei = CHullEdges.begin() ; ei != CHullEdges.end() ; ei++) {
-    cout << "CHulldge: " << endl;
-    PrintPoint(ei->first); cout << endl;
-    PrintPoint(ei->second); cout << endl;
+    std::cout << "CHulldge: " << std::endl;
+    PrintPoint(ei->first); std::cout << std::endl;
+    PrintPoint(ei->second); std::cout << std::endl;
   }
 #endif
 }

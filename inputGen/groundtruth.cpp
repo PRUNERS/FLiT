@@ -9,10 +9,10 @@ namespace {
   runGroundtruth_impl(std::string testName,
                       std::function<T()> randGen)
   {
-    using QFPTest::TestInput;
-    using QFPHelpers::Vector;
+    using flit::TestInput;
+    using flit::Vector;
 
-    auto test = QFPTest::getTests()[testName]->get<T>();
+    auto test = flit::getTests()[testName]->get<T>();
     TestInput<T> input = test->getDefaultInput();
     input.vals = Vector<T>(test->getInputsPerRun(), randGen).getData();
     auto scores = test->run(input);
@@ -20,7 +20,7 @@ namespace {
     // Return only the first score.  Ignore the key
     return { input.vals, std::get<0>(scores.begin()->second) };
   }
-}
+} // end of unnamed namespace
 
 TruthType<float>
 runGroundtruth(const std::string &testName, std::function<float()> randGen) {

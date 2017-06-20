@@ -19,7 +19,7 @@
 #include <vector>
 #include <cassert>
 
-namespace QFPTest {
+namespace flit {
 
 void setWatching(bool watch = true);
 
@@ -420,10 +420,10 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
 #ifdef __CUDA__
 
 #define REGISTER_TYPE(klass)                                \
-  class klass##Factory : public QFPTest::TestFactory {      \
+  class klass##Factory : public flit::TestFactory {      \
   public:                                                   \
     klass##Factory() {                                      \
-      QFPTest::registerTest(#klass, this);                  \
+      flit::registerTest(#klass, this);                  \
     }                                                       \
   protected:                                                \
     virtual createType create() {                           \
@@ -431,7 +431,7 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
           std::make_shared<klass<float>>(#klass),           \
           std::make_shared<klass<double>>(#klass),          \
           /* empty test for long double */                  \
-          std::make_shared<QFPTest::NullTest<long double>>(#klass) \
+          std::make_shared<flit::NullTest<long double>>(#klass) \
           );                                                \
     }                                                       \
   };                                                        \
@@ -440,10 +440,10 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
 #else // not __CUDA__
 
 #define REGISTER_TYPE(klass)                                \
-  class klass##Factory : public QFPTest::TestFactory {      \
+  class klass##Factory : public flit::TestFactory {      \
   public:                                                   \
     klass##Factory() {                                      \
-      QFPTest::registerTest(#klass, this);                  \
+      flit::registerTest(#klass, this);                  \
     }                                                       \
   protected:                                                \
     virtual createType create() {                           \
@@ -477,6 +477,6 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
   getTests()[name] = factory;
 }
 
-} // end namespace QFPTest
+} // end namespace flit
 
 #endif // TEST_BASE_HPP

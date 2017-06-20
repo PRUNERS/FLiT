@@ -19,18 +19,18 @@
 #include <type_traits>
 #include <typeinfo>
 
-void outputResults(const QFPTest::ResultType& scores);
+void outputResults(const flit::ResultType& scores);
 
 template <typename F>
-void runTestWithDefaultInput(QFPTest::TestFactory* factory,
-                             QFPTest::ResultType& totScores,
+void runTestWithDefaultInput(flit::TestFactory* factory,
+                             flit::ResultType& totScores,
                              bool shouldTime = true,
                              int timingLoops = 1) {
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
   auto scores = test->run(ip, shouldTime, timingLoops);
   totScores.insert(scores.begin(), scores.end());
-  QFPHelpers::info_stream.flushout();
+  flit::info_stream.flushout();
 }
 
 /** Command-line options */
@@ -99,25 +99,25 @@ inline int runFlitTests(int argc, char* argv[]) {
   }
 
   if (options.listTests) {
-    for (auto& test : getKeys(QFPTest::getTests())) {
+    for (auto& test : getKeys(flit::getTests())) {
       std::cout << test << std::endl;
     }
     return 0;
   }
 
   if (options.verbose) {
-    QFPHelpers::info_stream.show();
+    flit::info_stream.show();
   }
 
   std::cout.precision(1000); //set cout to print many decimal places
-  QFPHelpers::info_stream.precision(1000);
+  flit::info_stream.precision(1000);
 
 #ifdef __CUDA__
   CUHelpers::initDeviceData();
 #endif
 
-  QFPTest::ResultType scores;
-  auto testMap = QFPTest::getTests();
+  flit::ResultType scores;
+  auto testMap = flit::getTests();
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
     if (options.precision == "all" || options.precision == "float") {

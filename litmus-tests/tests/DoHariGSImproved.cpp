@@ -4,21 +4,19 @@
 #include <cmath>
 #include <typeinfo>
 
-using namespace CUHelpers;
-
 template <typename T>
 GLOBAL
 void
-DoHGSITestKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+DoHGSITestKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
   const T* vals = tiList[idx].vals;
-  VectorCU<T> a(vals, 3);
-  VectorCU<T> b(vals + 3, 3);
-  VectorCU<T> c(vals + 6, 3);
+  flit::VectorCU<T> a(vals, 3);
+  flit::VectorCU<T> b(vals + 3, 3);
+  flit::VectorCU<T> c(vals + 6, 3);
 
   auto r1 = a.getUnitVector();
   auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -29,30 +27,30 @@ DoHGSITestKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultEleme
   T o13 = r1 ^ r3;
   T o23 = r2 ^ r3;
 
-  double score = abs(o12) + abs(o13) + abs(o23);
+  double score = std::abs(o12) + std::abs(o13) + std::abs(o23);
 
   results[idx].s1 = score;
   results[idx].s2 = 0;
 }
 
 template <typename T>
-class DoHariGSImproved: public QFPTest::TestBase<T> {
+class DoHariGSImproved: public flit::TestBase<T> {
 public:
-  DoHariGSImproved(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  DoHariGSImproved(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 9; }
-  virtual QFPTest::TestInput<T> getDefaultInput();
+  virtual flit::TestInput<T> getDefaultInput();
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return DoHGSITestKernel; }
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::KernelFunction<T>* getKernel() { return DoHGSITestKernel; }
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     long double score = 0.0;
 
     //matrix = {a, b, c};
-    QFPHelpers::Vector<T> a = {ti.vals[0], ti.vals[1], ti.vals[2]};
-    QFPHelpers::Vector<T> b = {ti.vals[3], ti.vals[4], ti.vals[5]};
-    QFPHelpers::Vector<T> c = {ti.vals[6], ti.vals[7], ti.vals[8]};
+    flit::Vector<T> a = {ti.vals[0], ti.vals[1], ti.vals[2]};
+    flit::Vector<T> b = {ti.vals[3], ti.vals[4], ti.vals[5]};
+    flit::Vector<T> c = {ti.vals[6], ti.vals[7], ti.vals[8]};
 
     auto r1 = a.getUnitVector();
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
@@ -62,22 +60,22 @@ protected:
     T o13 = r1 ^ r3;
     T o23 = r2 ^ r3;
     if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
-      QFPHelpers::info_stream << id << ": in: " << id << std::endl;
-      QFPHelpers::info_stream << id << ": applied gram-schmidt to:" << std::endl;
-      QFPHelpers::info_stream << id << ":   a:  " << a << std::endl;
-      QFPHelpers::info_stream << id << ":   b:  " << b << std::endl;
-      QFPHelpers::info_stream << id << ":   c:  " << c << std::endl;
-      QFPHelpers::info_stream << id << ": resulting vectors were:" << std::endl;
-      QFPHelpers::info_stream << id << ":   r1: " << r1 << std::endl;
-      QFPHelpers::info_stream << id << ":   r2: " << r2 << std::endl;
-      QFPHelpers::info_stream << id << ":   r3: " << r3 << std::endl;
-      QFPHelpers::info_stream << id << ": w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
+      flit::info_stream << id << ": in: " << id << std::endl;
+      flit::info_stream << id << ": applied gram-schmidt to:" << std::endl;
+      flit::info_stream << id << ":   a:  " << a << std::endl;
+      flit::info_stream << id << ":   b:  " << b << std::endl;
+      flit::info_stream << id << ":   c:  " << c << std::endl;
+      flit::info_stream << id << ": resulting vectors were:" << std::endl;
+      flit::info_stream << id << ":   r1: " << r1 << std::endl;
+      flit::info_stream << id << ":   r2: " << r2 << std::endl;
+      flit::info_stream << id << ":   r3: " << r3 << std::endl;
+      flit::info_stream << id << ": w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
     }
     return {std::pair<long double, long double>(score, 0.0l), 0l};
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 namespace {
@@ -87,13 +85,13 @@ namespace {
 #ifndef __CUDA__
   template<> inline long double getSmallValue() { return pow(10, -10); }
 #endif
-}
+} // end of unnamed namespace
 
 template <typename T>
-QFPTest::TestInput<T> DoHariGSImproved<T>::getDefaultInput() {
+flit::TestInput<T> DoHariGSImproved<T>::getDefaultInput() {
   T e = getSmallValue<T>();
 
-  QFPTest::TestInput<T> ti;
+  flit::TestInput<T> ti;
 
   // Just one test
   ti.vals = {

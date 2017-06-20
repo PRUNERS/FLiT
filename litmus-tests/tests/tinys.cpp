@@ -8,13 +8,11 @@
 #include <iomanip>
 #include <type_traits>
 
-using namespace QFPHelpers;
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -25,22 +23,22 @@ using namespace QFPHelpers;
 // }
 
 template <typename T>
-class FtoDecToF: public QFPTest::TestBase<T> {
+class FtoDecToF: public flit::TestBase<T> {
 public:
-  FtoDecToF(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  FtoDecToF(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-  QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+  flit::TestInput<T> ti;
     ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
     uint16_t ddigs = nlim.digits * std::log10(2) + 1;
@@ -53,7 +51,7 @@ protected:
     return{std::pair<long double, long double>(std::fabs((long double)ti.vals[0] - backAgain), 0.0), 0};
   }
 
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(FtoDecToF)
@@ -61,8 +59,7 @@ REGISTER_TYPE(FtoDecToF)
 // template <typename T>
 // GLOBAL
 // void
-// subnormalKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// subnormalKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -73,26 +70,26 @@ REGISTER_TYPE(FtoDecToF)
 // }
 
 template <typename T>
-class subnormal: public QFPTest::TestBase<T> {
+class subnormal: public flit::TestBase<T> {
 public:
-  subnormal(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  subnormal(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     return {
       std::pair<long double, long double>(ti.vals[0] - ti.vals[0] / 2, 0.0), 0
     };
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(subnormal)
@@ -100,8 +97,7 @@ REGISTER_TYPE(subnormal)
 // template <typename T>
 // GLOBAL
 // void
-// dotProdKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// dotProdKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -112,38 +108,37 @@ REGISTER_TYPE(subnormal)
 // }
 
 template <typename T>
-class dotProd: public QFPTest::TestBase<T> {
+class dotProd: public flit::TestBase<T> {
 public:
-  dotProd(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  dotProd(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 0; }
-  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+  virtual flit::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     Q_UNUSED(ti);
     auto size = 16;
 
-    auto rand = getRandSeq<T>();
+    auto rand = flit::getRandSeq<T>();
 
-    Vector<T> A(std::vector<T>(rand.begin(),
+    flit::Vector<T> A(std::vector<T>(rand.begin(),
 			    rand.begin() + size));
-    Vector<T> B(std::vector<T>(rand.begin() + size,
+    flit::Vector<T> B(std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size));
     return {std::pair<long double, long double>(A ^ B, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(dotProd)
 
 // template <typename T>
 // GLOBAL
 // void
-// simpleReductionKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// simpleReductionKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -154,20 +149,20 @@ REGISTER_TYPE(dotProd)
 // }
 
 template <typename T>
-class simpleReduction: public QFPTest::TestBase<T> {
+class simpleReduction: public flit::TestBase<T> {
 public:
-  simpleReduction(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  simpleReduction(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 0; }
-  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+  virtual flit::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     Q_UNUSED(ti);
-    auto vals = getRandSeq<T>();
+    auto vals = flit::getRandSeq<T>();
     auto sublen = vals.size() / 4 - 1;
     T sum = 0;
     for(uint32_t i = 0; i < sublen; i += 4){
@@ -181,7 +176,7 @@ protected:
     }
     return {std::pair<long double, long double>((long double) sum, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(simpleReduction)
 
@@ -190,8 +185,7 @@ REGISTER_TYPE(simpleReduction)
 // template <typename T>
 // GLOBAL
 // void
-// addTOLKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// addTOLKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -202,13 +196,13 @@ REGISTER_TYPE(simpleReduction)
 // }
 
 template <typename T>
-class addTOL : public QFPTest::TestBase<T> {
+class addTOL : public flit::TestBase<T> {
 public:
-  addTOL(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  addTOL(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
     std::mt19937 gen(1);
@@ -220,31 +214,31 @@ public:
     //for the ldexp function we're using, it takes an unbiased exponent and
     //there is no implied 1 MSB for the mantissa / significand
     T zero = 0.0;
-    auto L1m = as_int(zero);
-    auto L2m = as_int(zero);
-    auto sm = as_int(zero);
+    auto L1m = flit::as_int(zero);
+    auto L2m = flit::as_int(zero);
+    auto sm = flit::as_int(zero);
     for(int i = 0; i < man_bits; ++i){
       L1m &= (gen() & 1) << i;
       L2m &= (gen() & 1) << i;
       sm  &= (gen() & 1) << i;
     }
     ti.vals = {
-      std::ldexp(as_float(L1m), L1e),
-      std::ldexp(as_float(L2m), L1e - 1),
-      std::ldexp(as_float(sm), L1e - man_bits)
+      std::ldexp(flit::as_float(L1m), L1e),
+      std::ldexp(flit::as_float(L2m), L1e - 1),
+      std::ldexp(flit::as_float(sm), L1e - man_bits)
     };
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] + ti.vals[2];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 //the basic idea of this test is A(I) + B + TOL, where A & B are large,
@@ -254,8 +248,7 @@ REGISTER_TYPE(addTOL)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -266,36 +259,35 @@ REGISTER_TYPE(addTOL)
 // }
 
 template <typename T>
-class addSub: public QFPTest::TestBase<T> {
+class addSub: public flit::TestBase<T> {
 public:
-  addSub(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  addSub(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
     ti.vals = {T(1.0)};
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
     auto big = std::pow(2, (T)man_bits - 1);
     auto res = (ti.vals[0] + big) - big;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(addSub)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -306,36 +298,35 @@ REGISTER_TYPE(addSub)
 // }
 
 template <typename T>
-class divc: public QFPTest::TestBase<T> {
+class divc: public flit::TestBase<T> {
 public:
-  divc(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  divc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
     };
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] / ti.vals[1];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(divc)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -346,34 +337,33 @@ REGISTER_TYPE(divc)
 // }
 
 template <typename T>
-class zeroMinusX: public QFPTest::TestBase<T> {
+class zeroMinusX: public flit::TestBase<T> {
 public:
-  zeroMinusX(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  zeroMinusX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
-    ti.vals = { getRandSeq<T>()[0] };
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
+    ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = T(0.0) - ti.vals[0];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(zeroMinusX)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -384,34 +374,33 @@ REGISTER_TYPE(zeroMinusX)
 // }
 
 template <typename T>
-class xMinusZero: public QFPTest::TestBase<T> {
+class xMinusZero: public flit::TestBase<T> {
 public:
-  xMinusZero(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  xMinusZero(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
-    ti.vals = { getRandSeq<T>()[0] };
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
+    ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] - (T)0.0;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(xMinusZero)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -422,33 +411,32 @@ REGISTER_TYPE(xMinusZero)
 // }
 
 template <typename T>
-class zeroDivX: public QFPTest::TestBase<T> {
+class zeroDivX: public flit::TestBase<T> {
 public:
-  zeroDivX(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  zeroDivX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
-    ti.vals = { getRandSeq<T>()[0] };
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
+    ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = (T)0.0 / ti.vals[0];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(zeroDivX)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -459,33 +447,32 @@ REGISTER_TYPE(zeroDivX)
 // }
 
 template <typename T>
-class xDivOne: public QFPTest::TestBase<T> {
+class xDivOne: public flit::TestBase<T> {
 public:
-  xDivOne(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  xDivOne(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
-    ti.vals = { getRandSeq<T>()[0] };
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
+    ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)1.0;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(xDivOne)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -496,33 +483,32 @@ REGISTER_TYPE(xDivOne)
 // }
 
 template <typename T>
-class xDivNegOne: public QFPTest::TestBase<T> {
+class xDivNegOne: public flit::TestBase<T> {
 public:
-  xDivNegOne(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  xDivNegOne(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
-    ti.vals = { getRandSeq<T>()[0] };
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
+    ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)-1.0;
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(xDivNegOne)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -533,36 +519,35 @@ REGISTER_TYPE(xDivNegOne)
 // }
 
 template <typename T>
-class negAdivB: public QFPTest::TestBase<T> {
+class negAdivB: public flit::TestBase<T> {
 public:
-  negAdivB(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  negAdivB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = -(ti.vals[0] / ti.vals[1]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(negAdivB)
 
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -573,26 +558,26 @@ REGISTER_TYPE(negAdivB)
 // }
 
 // template <typename T>
-// class twiceCast: public QFPTest::TestBase<T> {
+// class twiceCast: public flit::TestBase<T> {
 // public:
-//   twiceCast(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+//   twiceCast(std::string id) : flit::TestBase<T>(std::move(id)){}
 
 //   virtual size_t getInputsPerRun() { return 1; }
-//   virtual QFPTest::TestInput<T> getDefaultInput(){
-//     QFPTest::TestInput<T> ti;
-//     ti.vals = { getRandSeq<T>()[0] };
+//   virtual flit::TestInput<T> getDefaultInput(){
+//     flit::TestInput<T> ti;
+//     ti.vals = { flit::getRandSeq<T>()[0] };
 //     return ti;
 //   }
 // protected:
-//   virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+//   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 // 
-//   virtual QFPTest::ResultType::mapped_type
-//   run_impl(const QFPTest::TestInput<T>& ti) {
+//   virtual flit::ResultType::mapped_type
+//   run_impl(const flit::TestInput<T>& ti) {
 //     //yes, this is ugly.  ti.vals s/b vector of floats
 //     auto res = (T)((std::result_of<::get_next_type(T)>::type)ti.vals[0]);
 //     return {res, 0.0};
 //   }
-//   using QFPTest::TestBase<T>::id;
+//   using flit::TestBase<T>::id;
 // };
 // REGISTER_TYPE(twiceCast)
 
@@ -600,8 +585,7 @@ REGISTER_TYPE(negAdivB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -612,28 +596,28 @@ REGISTER_TYPE(negAdivB)
 // }
 
 template <typename T>
-class negAminB: public QFPTest::TestBase<T> {
+class negAminB: public flit::TestBase<T> {
 public:
-  negAminB(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  negAminB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = -(ti.vals[0] - ti.vals[1]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(negAminB)
 
@@ -641,8 +625,7 @@ REGISTER_TYPE(negAminB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -653,26 +636,26 @@ REGISTER_TYPE(negAminB)
 // }
 
 template <typename T>
-class xMinusX: public QFPTest::TestBase<T> {
+class xMinusX: public flit::TestBase<T> {
 public:
-  xMinusX(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  xMinusX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 1; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
-    ti.vals = { getRandSeq<T>()[0] };
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
+    ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] - ti.vals[0];
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(xMinusX)
 
@@ -680,8 +663,7 @@ REGISTER_TYPE(xMinusX)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -692,28 +674,28 @@ REGISTER_TYPE(xMinusX)
 // }
 
 template <typename T>
-class negAplusB: public QFPTest::TestBase<T> {
+class negAplusB: public flit::TestBase<T> {
 public:
-  negAplusB(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  negAplusB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 2; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = -(ti.vals[0] + ti.vals[1]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(negAplusB)
 
@@ -721,8 +703,7 @@ REGISTER_TYPE(negAplusB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -733,29 +714,29 @@ REGISTER_TYPE(negAplusB)
 // }
 
 template <typename T>
-class aXbDivC: public QFPTest::TestBase<T> {
+class aXbDivC: public flit::TestBase<T> {
 public:
-  aXbDivC(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  aXbDivC(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
-      getRandSeq<T>()[2],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[2],
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] / ti.vals[2]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(aXbDivC)
 
@@ -763,8 +744,7 @@ REGISTER_TYPE(aXbDivC)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -775,29 +755,29 @@ REGISTER_TYPE(aXbDivC)
 // }
 
 template <typename T>
-class aXbXc: public QFPTest::TestBase<T> {
+class aXbXc: public flit::TestBase<T> {
 public:
-  aXbXc(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  aXbXc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
-      getRandSeq<T>()[2],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[2],
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] * ti.vals[2]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(aXbXc)
 
@@ -805,8 +785,7 @@ REGISTER_TYPE(aXbXc)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -817,29 +796,29 @@ REGISTER_TYPE(aXbXc)
 // }
 
 template <typename T>
-class aPbPc: public QFPTest::TestBase<T> {
+class aPbPc: public flit::TestBase<T> {
 public:
-  aPbPc(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  aPbPc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      getRandSeq<T>()[1],
-      getRandSeq<T>()[2],
+      flit::getRandSeq<T>()[0],
+      flit::getRandSeq<T>()[1],
+      flit::getRandSeq<T>()[2],
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] + (ti.vals[1] + ti.vals[2]);
     return {std::pair<long double, long double>(res, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(aPbPc)
 
@@ -847,8 +826,7 @@ REGISTER_TYPE(aPbPc)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -859,29 +837,29 @@ REGISTER_TYPE(aPbPc)
 // }
 
 template <typename T>
-class xPc1EqC2: public QFPTest::TestBase<T> {
+class xPc1EqC2: public flit::TestBase<T> {
 public:
-  xPc1EqC2(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  xPc1EqC2(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      get_tiny1<T>(),
-      get_tiny2<T>(),
+      flit::getRandSeq<T>()[0],
+      flit::get_tiny1<T>(),
+      flit::get_tiny2<T>(),
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] == ti.vals[2];
     return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(xPc1EqC2)
 
@@ -889,8 +867,7 @@ REGISTER_TYPE(xPc1EqC2)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -901,28 +878,28 @@ REGISTER_TYPE(xPc1EqC2)
 // }
 
 template <typename T>
-class xPc1NeqC2: public QFPTest::TestBase<T> {
+class xPc1NeqC2: public flit::TestBase<T> {
 public:
-  xPc1NeqC2(std::string id) : QFPTest::TestBase<T>(std::move(id)){}
+  xPc1NeqC2(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput(){
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput(){
+    flit::TestInput<T> ti;
     ti.vals = {
-      getRandSeq<T>()[0],
-      get_tiny1<T>(),
-      get_tiny2<T>(),
+      flit::getRandSeq<T>()[0],
+      flit::get_tiny1<T>(),
+      flit::get_tiny2<T>(),
     };
     return ti;
   }
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] != ti.vals[2];
     return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
   }
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(xPc1NeqC2)

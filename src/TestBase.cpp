@@ -15,8 +15,8 @@
 // std::stack<float> fStack;
 // std::stack<double> dStack;
 // std::stack<long double> lStack;
-// }
-namespace QFPTest{
+// } // end of unnamed namespace
+namespace flit {
 
   //output operator for ResultType
 std::ostream&
@@ -32,4 +32,4 @@ operator<<(std::ostream& os, const ResultType& res){
   }
   return os;
 }
-}
+} // end of namespace flit

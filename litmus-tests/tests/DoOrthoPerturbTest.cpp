@@ -5,14 +5,10 @@
 #include <typeinfo>
 #include <iomanip>
 
-using namespace CUHelpers;
-
 template <typename T>
 GLOBAL
 void
-DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-  using namespace QFPHelpers;
-
+DoOPTKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -27,8 +23,8 @@ DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* r
   // we use a double literal above as a workaround for Intel 15-16 compiler
   // bug:
   // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-  VectorCU<T> a(ti.vals, ti.length);
-  VectorCU<T> b = a.genOrthoVector();
+  flit::VectorCU<T> a(ti.vals, ti.length);
+  flit::VectorCU<T> b = a.genOrthoVector();
 
   T backup;
 
@@ -36,8 +32,8 @@ DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* r
     T &p = a[r];
     backup = p;
     for(decltype(iters) i = 0; i < iters; ++i){
-      auto tmp = as_int(p);
-      p = as_float(++tmp); //yeah, this isn't perfect
+      auto tmp = flit::as_int(p);
+      p = flit::as_float(++tmp); //yeah, this isn't perfect
       //p = std::nextafter(p, std::numeric_limits<T>::max());
       auto watchPoint = FLT_MIN;
       watchPoint = a ^ b;
@@ -46,10 +42,10 @@ DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* r
       if(isOrth){
         orthoCount[r]++;
         // score should be perturbed amount
-        if(i != 0) score += abs(p - backup);
+        if(i != 0) score += std::abs(p - backup);
       }else{
         // if falsely not detecting ortho, should be the dot prod
-        if(i == 0) score += abs(watchPoint); //a ^ b);  
+        if(i == 0) score += std::abs(watchPoint); //a ^ b);  
       }
     }
     p = backup;
@@ -59,13 +55,13 @@ DoOPTKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* r
 }
 
 template <typename T>
-class DoOrthoPerturbTest : public QFPTest::TestBase<T> {
+class DoOrthoPerturbTest : public flit::TestBase<T> {
 public:
-  DoOrthoPerturbTest(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  DoOrthoPerturbTest(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 16; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.iters = 200;
     ti.ulp_inc = 1;
 
@@ -78,10 +74,10 @@ public:
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return DoOPTKernel; }
+  virtual flit::KernelFunction<T>* getKernel() { return DoOPTKernel; }
   virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
-    using QFPHelpers::operator<<;
+  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+    using flit::operator<<;
 
     auto iters = ti.iters;
     auto dim = getInputsPerRun();
@@ -91,8 +87,8 @@ protected:
     // we use a double literal above as a workaround for Intel 15-16 compiler
     // bug:
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    QFPHelpers::Vector<T> a(ti.vals);
-    QFPHelpers::Vector<T> b = a.genOrthoVector();
+    flit::Vector<T> a(ti.vals);
+    flit::Vector<T> b = a.genOrthoVector();
 
     T backup;
 
@@ -120,27 +116,27 @@ protected:
           // if falsely not detecting ortho, should be the dot prod
           if(i == 0) score += std::abs(watchPoint); //a ^ b);
         }
-        QFPHelpers::info_stream
+        flit::info_stream
           << "i:" << i
-          << ":a[" << r << "] = " << a[r] << ", " << QFPHelpers::as_int(a[r])
-          << " multiplier: " << b[r] << ", " << QFPHelpers::as_int(b[r])
+          << ":a[" << r << "] = " << a[r] << ", " << flit::as_int(a[r])
+          << " multiplier: " << b[r] << ", " << flit::as_int(b[r])
           << " perp: " << isOrth
-          << " dot prod: " << QFPHelpers::as_int(a ^ b)
+          << " dot prod: " << flit::as_int(a ^ b)
           << std::endl;
       }
-      QFPHelpers::info_stream << "next dimension . . . " << std::endl;
+      flit::info_stream << "next dimension . . . " << std::endl;
       p = backup;
     }
-    QFPHelpers::info_stream << "Final report, one iteration set per dimensiion:" << std::endl;
-    QFPHelpers::info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
-    QFPHelpers::info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
-    QFPHelpers::info_stream << '\t' << "dimensions: " << dim << std::endl;
-    QFPHelpers::info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
+    flit::info_stream << "Final report, one iteration set per dimensiion:" << std::endl;
+    flit::info_stream << '\t' << "ulp increment per loop: " << ulp_inc << std::endl;
+    flit::info_stream << '\t' << "iterations per dimension: " << iters << std::endl;
+    flit::info_stream << '\t' << "dimensions: " << dim << std::endl;
+    flit::info_stream << '\t' << "precision (type): " << typeid(T).name() << std::endl;
     int cdim = 0;
     for(auto d: orthoCount){
       int exp = 0;
       std::frexp(a[cdim] * b[cdim], &exp);
-      QFPHelpers::info_stream
+      flit::info_stream
         << "For mod dim " << cdim << ", there were " << d
         << " ortho vectors, product magnitude (biased fp exp): " << exp
         << std::endl;
@@ -150,7 +146,7 @@ protected:
   }
 
 private:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(DoOrthoPerturbTest)

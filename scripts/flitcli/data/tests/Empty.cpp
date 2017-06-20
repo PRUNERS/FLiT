@@ -8,9 +8,9 @@
  * getInputsPerRun(), getDefaultInput() and run_impl().
  */
 template <typename T>
-class Empty : public QFPTest::TestBase<T> {
+class Empty : public flit::TestBase<T> {
 public:
-  Empty(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  Empty(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   /** Specify how many floating-point inputs your algorithm takes.
    * 
@@ -28,8 +28,8 @@ public:
    * If your algorithm takes no inputs, then you can simply return an empty
    * TestInput object.  It is as simple as "return {};".
    */
-  QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.vals = { 1.0 };
     return ti;
   }
@@ -45,12 +45,12 @@ protected:
    * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
    * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
    */
-  virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
     return {std::pair<long double, long double>(ti.vals[0], 0.0), 0};
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(Empty)
