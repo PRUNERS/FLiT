@@ -13,15 +13,15 @@
 #define EXP 2.71828182845904523536028747L
 
 template <typename T>
-class KahanSum : public QFPTest::TestBase<T> {
+class KahanSum : public flit::TestBase<T> {
 public:
-  KahanSum(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  KahanSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 10000; }
-  virtual QFPTest::TestInput<T> getDefaultInput();
+  virtual flit::TestInput<T> getDefaultInput();
 
 protected:
-  virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
     Kahan<T> kahan;
     Shewchuk<T> chuk;
     T naive = 0.0;
@@ -30,17 +30,17 @@ protected:
       kahan.add(val);
       naive += val;
     }
-    QFPHelpers::info_stream << id << ": pi           = " << static_cast<T>(PI) << std::endl;
-    QFPHelpers::info_stream << id << ": exp(1)       = " << static_cast<T>(EXP) << std::endl;
-    QFPHelpers::info_stream << id << ": naive sum    = " << naive << std::endl;
-    QFPHelpers::info_stream << id << ": kahan sum    = " << kahan.sum() << std::endl;
-    QFPHelpers::info_stream << id << ": shewchuk sum = " << kahan.sum() << std::endl;
-    QFPHelpers::info_stream << id << ": Epsilon      = " << std::numeric_limits<T>::epsilon() << std::endl;
+    flit::info_stream << id << ": pi           = " << static_cast<T>(PI) << std::endl;
+    flit::info_stream << id << ": exp(1)       = " << static_cast<T>(EXP) << std::endl;
+    flit::info_stream << id << ": naive sum    = " << naive << std::endl;
+    flit::info_stream << id << ": kahan sum    = " << kahan.sum() << std::endl;
+    flit::info_stream << id << ": shewchuk sum = " << kahan.sum() << std::endl;
+    flit::info_stream << id << ": Epsilon      = " << std::numeric_limits<T>::epsilon() << std::endl;
     return {std::pair<long double, long double>(kahan.sum(), naive), 0};
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 namespace {
@@ -51,11 +51,11 @@ namespace {
 #ifndef __CUDA__
   template<> std::vector<long double> getToRepeat() { return { 1.0e14, PI, EXP, -1.0e14 }; }
 #endif
-}
+} // end of unnamed namespace
 
 template <typename T>
-QFPTest::TestInput<T> KahanSum<T>::getDefaultInput() {
-  QFPTest::TestInput<T> ti;
+flit::TestInput<T> KahanSum<T>::getDefaultInput() {
+  flit::TestInput<T> ti;
   auto dim = getInputsPerRun();
   ti.highestDim = dim;
   ti.vals = std::vector<T>(dim);

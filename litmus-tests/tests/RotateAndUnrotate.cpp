@@ -9,8 +9,7 @@
 template <typename T>
 GLOBAL
 void
-RaUKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-  using namespace CUHelpers;
+RaUKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -18,7 +17,7 @@ RaUKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* resul
 #endif
   auto theta = M_PI;
   auto ti = tiList[idx];
-  auto A = VectorCU<T>(ti.vals, ti.length);
+  auto A = flit::VectorCU<T>(ti.vals, ti.length);
   auto orig = A;
   A = A.rotateAboutZ_3d(theta);
   A = A.rotateAboutZ_3d(-theta);
@@ -27,45 +26,45 @@ RaUKern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* resul
 }
 
 template <typename T>
-class RotateAndUnrotate: public QFPTest::TestBase<T> {
+class RotateAndUnrotate: public flit::TestBase<T> {
 public:
-  RotateAndUnrotate(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  RotateAndUnrotate(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput() {
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {
+    flit::TestInput<T> ti;
     ti.min = -6;
     ti.max = 6;
-    ti.vals = QFPHelpers::Vector<T>::getRandomVector(3).getData();
+    ti.vals = flit::Vector<T>::getRandomVector(3).getData();
     return ti;
   }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return RaUKern; }
+  virtual flit::KernelFunction<T>* getKernel() { return RaUKern; }
   virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
     auto theta = M_PI;
-    auto A = QFPHelpers::Vector<T>(ti.vals);
+    auto A = flit::Vector<T>(ti.vals);
     auto orig = A;
-    QFPHelpers::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
+    flit::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);
-    QFPHelpers::info_stream << "Rotated is: " << A << std::endl;
+    flit::info_stream << "Rotated is: " << A << std::endl;
     A.rotateAboutZ_3d(-theta);
-    QFPHelpers::info_stream << "Unrotated is: " << A << std::endl;
+    flit::info_stream << "Unrotated is: " << A << std::endl;
     bool equal = A == orig;
-    QFPHelpers::info_stream << "Are they equal? " << equal << std::endl;
+    flit::info_stream << "Are they equal? " << equal << std::endl;
     auto dist = A.L1Distance(orig);
     if(!equal){
-      QFPHelpers::info_stream << "error in L1 distance is: " << dist << std::endl;
-      QFPHelpers::info_stream << "difference between: " << (A - orig) << std::endl;
+      flit::info_stream << "error in L1 distance is: " << dist << std::endl;
+      flit::info_stream << "difference between: " << (A - orig) << std::endl;
     }
-    QFPHelpers::info_stream << "in " << id << std::endl;
-    A.dumpDistanceMetrics(orig, QFPHelpers::info_stream);
+    flit::info_stream << "in " << id << std::endl;
+    A.dumpDistanceMetrics(orig, flit::info_stream);
     return {std::pair<long double, long double>(dist, A.LInfDistance(orig)), 0};
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(RotateAndUnrotate)

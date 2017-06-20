@@ -193,7 +193,7 @@ extern "C" typedef void (*SigType)(int);
 typedef int Guard, Rounding, Class;
 typedef char Message;
 
-using QFPHelpers::info_stream;
+using flit::info_stream;
 using std::endl;
 
 /// Custom exceptions to throw for the Paranoia test
@@ -206,15 +206,15 @@ class FlawError     : public ParanoiaError {};
 class OverflowError : public ParanoiaError {};
 
 template <typename F>
-class Paranoia : public QFPTest::TestBase<F> {
+class Paranoia : public flit::TestBase<F> {
 public:
-  Paranoia(std::string id) : QFPTest::TestBase<F>(std::move(id)) {}
+  Paranoia(std::string id) : flit::TestBase<F>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 0; }
-  virtual QFPTest::TestInput<F> getDefaultInput() { return {}; }
+  virtual flit::TestInput<F> getDefaultInput() { return {}; }
 
 protected:
-  virtual QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<F>& ti);
+  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<F>& ti);
 
   void   setTimeout(long millis);  // starts the timer for checkTimeout()
   void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
@@ -239,7 +239,7 @@ protected:
   F      pow(F x_, F y_);
 
 protected:
-  using QFPTest::TestBase<F>::id;
+  using flit::TestBase<F>::id;
 
   std::chrono::steady_clock::time_point startTime;
   std::chrono::steady_clock::time_point timeoutTime;
@@ -304,7 +304,7 @@ namespace {
   int fpecount = 0;
   jmp_buf ovfl_buf;
   SigType sigsave = nullptr;
-}
+} // end of unnamed namespace
 
 /* floating point exception receiver */
 void sigfpe(int i)
@@ -322,7 +322,7 @@ void sigfpe(int i)
 }
 
 template <typename F>
-QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<F>& ti)
+flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
 {
   Q_UNUSED(ti);
   int timeoutMillis = 1000;
@@ -395,7 +395,7 @@ QFPTest::ResultType::mapped_type Paranoia<F>::run_impl(const QFPTest::TestInput<
          && (minusOne + one == zero ) && (one + minusOne == zero)
          && (minusOne + std::abs(one) == zero)
          && (minusOne + minusOne * minusOne == zero),
-         "-1+1 != 0, (-1)+abs(1) != 0, or -1+(-1)*(-1) != 0");
+         "-1+1 != 0, (-1)+std::abs(1) != 0, or -1+(-1)*(-1) != 0");
     tstCond (Failure, half + minusOne + half == zero,
         "1/2 + (-1) + 1/2 != 0");
     /*=============================================*/

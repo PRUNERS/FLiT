@@ -32,7 +32,7 @@ template<> inline
 float generateFloatBits<float>(RandType type) {
   switch (type) {
     case RandType::UniformFP:
-      return QFPHelpers::as_float(randGenerator32());
+      return flit::as_float(randGenerator32());
     case RandType::UniformReals:
       return randRealFloatGenerator();
     default:
@@ -44,7 +44,7 @@ template<> inline
 double generateFloatBits<double>(RandType type) {
   switch (type) {
     case RandType::UniformFP:
-      return QFPHelpers::as_float(randGenerator64());
+      return flit::as_float(randGenerator64());
     case RandType::UniformReals:
       return randRealDoubleGenerator();
     default:
@@ -56,7 +56,7 @@ template<> inline
 long double generateFloatBits<long double>(RandType type) {
   switch (type) {
     case RandType::UniformFP:
-      return QFPHelpers::as_float(randGenerator128());
+      return flit::as_float(randGenerator128());
     case RandType::UniformReals:
       return randRealLongDoubleGenerator();
     default:

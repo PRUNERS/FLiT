@@ -11,8 +11,6 @@ extern "C" {
 
 #include "simple_convex_hull.h"
 
-using namespace std;
-
 #ifndef IFT
 #define IFT float
 #endif
@@ -21,7 +19,7 @@ using namespace std;
 #if defined(__CUDA__) || defined(__aarch64__)
 #define OFT double
 #else
-#define OFT __float128
+#define OFT long double
 #endif
 #endif
 
@@ -33,14 +31,14 @@ int CANO_FORM = 0;
 int SAMPLE_PHASE = 0;
 int VERIFY_METHOD = 0;
 
-vector<Point> PointList;
-vector<Edge> CHullEdges;
+std::vector<Point> PointList;
+std::vector<Edge> CHullEdges;
 
 size_t getEdgeCount() {
   return CHullEdges.size();
 }
 
-vector<PrimitiveCall> Decisions;
+std::vector<PrimitiveCall> Decisions;
 
 /*
   Some variables for deciding the "localness"
@@ -62,12 +60,12 @@ bool IsOnPQ (Point p, Point q, Point r) {
   else return false;
 }
 
-void Canonical_Unordered_Points (vector<Point>& pv, int cano_selection) {
+void Canonical_Unordered_Points (std::vector<Point>& pv, int cano_selection) {
   assert(1 <= cano_selection && cano_selection <= 2);
 
   if (pv.size() == 0 || pv.size() == 1) return;
 
-  vector<Point> temp_pv;
+  std::vector<Point> temp_pv;
   int *new_inds = (int*) malloc(sizeof(int) * pv.size());
 
   for (size_t i = 0 ; i < pv.size() ; i++)
@@ -108,14 +106,14 @@ void Canonical_Unordered_Points (vector<Point>& pv, int cano_selection) {
 }
 
 void PrintPoint(Point p) {
-  cout << "[" << p.id << "](" << (long double) p.x << ", " << (long double) p.y << ")";
+  std::cout << "[" << p.id << "](" << (long double) p.x << ", " << (long double) p.y << ")";
 }
 
-void PrintPV (vector<Point> pv) {
-  vector<Point>::iterator pi = pv.begin();
+void PrintPV (std::vector<Point> pv) {
+  std::vector<Point>::iterator pi = pv.begin();
   for ( ; pi != pv.end() ; pi++) {
     PrintPoint((*pi));
-    cout << endl;
+    std::cout << std::endl;
   }
 }
 
@@ -222,11 +220,11 @@ void GiftWrappingComputeConvexhull (FILE *outfile) {
   }
 
 #ifdef __VERBOSE
-  vector<Edge>::iterator ei;
+  std::vector<Edge>::iterator ei;
   for (ei = CHullEdges.begin() ; ei != CHullEdges.end() ; ei++) {
-    cout << "CHulldge: " << endl;
-    PrintPoint(ei->first); cout << endl;
-    PrintPoint(ei->second); cout << endl;
+    std::cout << "CHulldge: " << std::endl;
+    PrintPoint(ei->first); std::cout << std::endl;
+    PrintPoint(ei->second); std::cout << std::endl;
   }
 #endif
 }
@@ -284,7 +282,7 @@ void VerifyHull(FILE *outfile) {
 }
 
 OFT CheckConsistency () {
-  cout << "Decision size: " << Decisions.size() << endl;
+  std::cout << "Decision size: " << Decisions.size() << std::endl;
   for (size_t i = 0 ; i < Decisions.size() ; i++) {
     PrimitiveCall LTxyz;
     if ( Decisions[i].result ) {
@@ -306,8 +304,8 @@ OFT CheckConsistency () {
 	  LTxyz.idr == Decisions[j].idr &&
 	  Decisions[j].result == false) {
 #ifdef __VERBOSE
-	cout << "Violation of cyclic symmetry: " << endl;
-	cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of cyclic symmetry: " << std::endl;
+	std::cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
       if (LTxyz.idp == Decisions[j].idq &&
@@ -315,8 +313,8 @@ OFT CheckConsistency () {
 	  LTxyz.idr == Decisions[j].idp &&
 	  Decisions[j].result == false) {
 #ifdef __VERBOSE
-	cout << "Violation of cyclic symmetry: " << endl;
-	cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of cyclic symmetry: " << std::endl;
+	std::cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
       if (LTxyz.idp == Decisions[j].idr &&
@@ -324,8 +322,8 @@ OFT CheckConsistency () {
 	  LTxyz.idr == Decisions[j].idq &&
 	  Decisions[j].result == false) {
 #ifdef __VERBOSE
-	cout << "Violation of cyclic symmetry: " << endl;
-	cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of cyclic symmetry: " << std::endl;
+	std::cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
 
@@ -335,8 +333,8 @@ OFT CheckConsistency () {
 	  LTxyz.idr == Decisions[j].idq &&
 	  Decisions[j].result == true) {
 #ifdef __VERBOSE
-	cout << "Violation of antisymmetry: " << endl;
-	cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of antisymmetry: " << std::endl;
+	std::cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
       if (LTxyz.idp == Decisions[j].idr &&
@@ -344,8 +342,8 @@ OFT CheckConsistency () {
 	  LTxyz.idr == Decisions[j].idp &&
 	  Decisions[j].result == true) {
 #ifdef __VERBOSE
-	cout << "Violation of antisymmetry: " << endl;
-	cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of antisymmetry: " << std::endl;
+	std::cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
       if (LTxyz.idp == Decisions[j].idq &&
@@ -353,8 +351,8 @@ OFT CheckConsistency () {
 	  LTxyz.idr == Decisions[j].idr &&
 	  Decisions[j].result == true) {
 #ifdef __VERBOSE
-	cout << "Violation of antisymmetry: " << endl;
-	cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of antisymmetry: " << std::endl;
+	std::cout << LTxyz.idp << " " << LTxyz.idq << " " << LTxyz.idr << " " << LTxyz.result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
 
@@ -365,8 +363,8 @@ OFT CheckConsistency () {
 	  Decisions[i].result == false &&
 	  Decisions[j].result == false) {
 #ifdef __VERBOSE
-	cout << "Violation of nondegeneracy: " << endl;
-	cout << Decisions[i].idp << " " << Decisions[i].idq << " " << Decisions[i].idr << " " << Decisions[i].result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of nondegeneracy: " << std::endl;
+	std::cout << Decisions[i].idp << " " << Decisions[i].idq << " " << Decisions[i].idr << " " << Decisions[i].result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
       if (Decisions[i].idp == Decisions[j].idr &&
@@ -375,8 +373,8 @@ OFT CheckConsistency () {
 	  Decisions[i].result == false &&
 	  Decisions[j].result == false) {
 #ifdef __VERBOSE
-	cout << "Violation of nondegeneracy: " << endl;
-	cout << Decisions[i].idp << " " << Decisions[i].idq << " " << Decisions[i].idr << " " << Decisions[i].result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of nondegeneracy: " << std::endl;
+	std::cout << Decisions[i].idp << " " << Decisions[i].idq << " " << Decisions[i].idr << " " << Decisions[i].result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
       if (Decisions[i].idp == Decisions[j].idq &&
@@ -385,8 +383,8 @@ OFT CheckConsistency () {
 	  Decisions[i].result == false &&
 	  Decisions[j].result == false) {
 #ifdef __VERBOSE
-	cout << "Violation of nondegeneracy: " << endl;
-	cout << Decisions[i].idp << " " << Decisions[i].idq << " " << Decisions[i].idr << " " << Decisions[i].result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << endl;
+	std::cout << "Violation of nondegeneracy: " << std::endl;
+	std::cout << Decisions[i].idp << " " << Decisions[i].idq << " " << Decisions[i].idr << " " << Decisions[i].result << "  vs  " << Decisions[j].idp << " " << Decisions[j].idq << " " << Decisions[j].idr << " " << Decisions[j].result << std::endl;
 #endif
 	return -1; }
     }
@@ -394,64 +392,3 @@ OFT CheckConsistency () {
 
   return 1;
 }
-
-#ifndef SCH_LIB
-
-int main (int argc, char *argv[]) {
-  assert(argc == 7);
-
-  CHMETHOD = atoi(argv[1]);
-  assert(CHMETHOD == 0 ||
-	 CHMETHOD == 1);
-
-  CANO_FORM = atoi(argv[2]);
-  // assert(0 <= CANO_FORM && CANO_FORM <= 2);
-  assert(CANO_FORM == 0);
-
-  SAMPLE_PHASE = atoi(argv[3]);
-  assert(0 <= SAMPLE_PHASE && SAMPLE_PHASE <= 1);
-
-  VERIFY_METHOD = atoi(argv[4]);
-  assert(0 <= VERIFY_METHOD && VERIFY_METHOD <= 1);
-
-  FILE *infile = s3fpGetInFile(argc, argv);
-  FILE *outfile = s3fpGetOutFile(argc, argv);
-
-  ReadInputs(infile);
-
-  switch (CHMETHOD) {
-  case 0:
-    SimpleComputeConvexhull(); //outfile);
-    break;
-  case 1:
-    GiftWrappingComputeConvexhull(outfile);
-    break;
-  default:
-    assert(false && "Error: Invalid convex hull method");
-    break;
-  }
-
-  VerifyHull(outfile);
-
-  if (VERIFY_METHOD == 0 ||
-      VERIFY_METHOD == 1) {
-    if (RAISE_ASSERTION == false) {
-      OFT odata = 1;
-      fwrite(&odata, sizeof(OFT), 1, outfile);
-      fwrite(&odata, sizeof(OFT), 1, outfile);
-
-      fwrite(&odata, sizeof(OFT), 1, outfile);
-      //printf("hull edge count: %u\n", CHullEdges.size());
-      odata = CHullEdges.size();
-      fwrite(&odata, sizeof(OFT), 1, outfile);
-    }
-  }
-  else assert(false && "Error: Invalid verification method");
-
-  fclose(infile);
-  fclose(outfile);
-
-  return 0;
-}
-
-#endif // #ifndef SCH_LIB

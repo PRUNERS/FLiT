@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CU_HELPERS_HPP
+#define CU_HELPERS_HPP
 
 #if defined(__CPUKERNEL__) || !defined( __CUDA__)
 #define HOST_DEVICE
@@ -16,8 +17,9 @@
 #include "QFPHelpers.hpp"
 #include "CUVector.hpp"
 
-namespace CUHelpers{
+namespace flit {
 
+// TODO: test out trying to replace csqrt() with std::sqrt()
 template <typename T>
 T
 csqrt(T /*val*/){ return 0; }
@@ -100,6 +102,42 @@ abs(T val){
   else return val * (T)-1;
 }
 
+const std::vector<float> float_rands;
+const std::vector<double> double_rands;
+const std::vector<long double> long_rands;
+const std::vector<uint_fast32_t> shuffled_16;
+
+GLOBAL void loadDeviceData(float* fsource, uint_fast32_t* ssource);
+
+
+inline void
+initDeviceData() {
+#ifdef __CPUKERNEL__
+  cuda_float_rands = flit::float_rands.data();
+  cuda_16_shuffle = flit::shuffled_16.data();
+#endif // __CPUKERNEL__
+#if defined(__CUDA__) && !defined(__CPUKERNEL__)
+  auto fsize = sizeof(float) * flit::float_rands.size();
+  auto ssize = sizeof(uint_fast32_t) * flit::shuffled_16.size();
+  float* tfloat;
+  uint_fast32_t* ssource;
+  checkCudaErrors(cudaMalloc(&tfloat,
+             fsize));
+  checkCudaErrors(cudaMemcpy(tfloat,
+             flit::float_rands.data(),
+             fsize,
+             cudaMemcpyHostToDevice));
+  checkCudaErrors(cudaMalloc(&ssource,
+             ssize));
+  checkCudaErrors(cudaMemcpy(ssource,
+             flit::shuffled_16.data(),
+             ssize,
+             cudaMemcpyHostToDevice));
+  loadDeviceData<<<1,1>>>(tfloat, ssource);
+  checkCudaErrors(cudaDeviceSynchronize());
+#endif // defined(__CUDA__) && !defined(__CPUKERNEL__)
+}
+
 template <typename T>
 class MatrixCU;
 
@@ -146,7 +184,7 @@ public:
     return data.size();
   }
 
-  DEVICE  
+  DEVICE
   static
   VectorCU<T>
   getRandomVector(vsize_t dim){
@@ -183,14 +221,14 @@ public:
     return t * (*this);
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   VectorCU<T>
   getUnitVector() const {
     VectorCU<T> retVal(*this);
     return retVal * ((T)1.0 / (L2Norm()));
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   bool
   operator==(VectorCU<T> const &b){
     if(this->data.size() != b.data.size()) return false;
@@ -200,7 +238,7 @@ public:
     return true;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   T
   L1Distance(VectorCU<T> const &rhs) const {
     T distance = 0;
@@ -210,7 +248,7 @@ public:
     return distance;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   T
   operator^(VectorCU<T> const &rhs) const {
     T sum = 0.0;
@@ -220,7 +258,7 @@ public:
     return sum;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   VectorCU<T>
   operator*(VectorCU<T> const &rhs) const{
     VectorCU<T> ret(data.size());
@@ -252,7 +290,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   T
   LInfNorm() const {
     T largest = 0;
@@ -265,7 +303,7 @@ public:
     return largest;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   T
   LInfDistance(VectorCU<T> const &rhs) const {
     auto diff = operator-(rhs);
@@ -274,7 +312,7 @@ public:
 
   //TODO this assumes there is only float and double on
   //CUDA (may change for half precision)
-  HOST_DEVICE  
+  HOST_DEVICE
   T
   L2Norm() const {
     VectorCU<T> squares = (*this) * (*this);
@@ -287,12 +325,12 @@ public:
   }
 
   T
-  HOST_DEVICE  
+  HOST_DEVICE
   L2Distance(VectorCU<T> const &rhs) const {
     return ((*this) - rhs).L2Norm();
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   VectorCU<T>
   cross(VectorCU<T> const &rhs) const {
     VectorCU<T> retVal(data.size());
@@ -302,7 +340,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   bool
   isOrtho(VectorCU<T> const &rhs){
     return operator^(rhs) == (T)0;
@@ -310,13 +348,13 @@ public:
 };
 
 template<typename T>
-class MatrixCU{
+class MatrixCU {
   using rdtype = cuvector<T>;
   cuvector<rdtype> data;
 public:
   using vsize_t = typename cuvector<T>::cvs_t;
 
-  HOST_DEVICE  
+  HOST_DEVICE
   MatrixCU(vsize_t rows, vsize_t cols):
     data(rows, cuvector<T>(cols,0)){}
 
@@ -334,7 +372,7 @@ public:
     return data[indx];
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   bool
   operator==(MatrixCU<T> const &rhs) const {
     if(data.size() != rhs.data.size()) return false;
@@ -350,7 +388,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   MatrixCU<T>
   operator*(T const &sca){
     MatrixCU<T> retVal(data.size(), data[0].size());
@@ -359,10 +397,10 @@ public:
         retVal.data[x][y] = data[x][y] * sca;
       }
     }
-    return retVal;    
+    return retVal;
   }
-  
-  HOST_DEVICE  
+
+  HOST_DEVICE
   MatrixCU<T>
   operator*(MatrixCU<T> const &rhs){
     MatrixCU<T> retVal(data.size(), rhs.data[0].size());
@@ -376,7 +414,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   static
   MatrixCU<T>
   SkewSymCrossProdM(VectorCU<T> const &v){
@@ -396,7 +434,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   static
   MatrixCU<T>
   Identity(size_t dims){
@@ -410,7 +448,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   VectorCU<T>
   operator*(VectorCU<T> const &v) const {
     VectorCU<T> retVal((vsize_t)data.size());
@@ -427,7 +465,7 @@ public:
     return retVal;
   }
 
-  HOST_DEVICE  
+  HOST_DEVICE
   MatrixCU<T>
   operator+(MatrixCU<T> const&rhs) const{
     MatrixCU<T> retVal(data.size(), data.size());
@@ -446,8 +484,9 @@ public:
       y = 0; ++x;
     }
     return retVal;
-  }  
+  }
 };
-}
 
-//#endif
+} // end of namespace flit
+
+#endif // CU_HELPERS_HPP

@@ -12,12 +12,10 @@
 #include "thrust/tuple.h"
 #endif
 
-using namespace CUHelpers;
-
 template <typename T>
 GLOBAL
 void
-DistOfMultKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
+DistOfMultKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -35,21 +33,21 @@ DistOfMultKernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultEleme
 }
 
 template <typename T>
-class DistributivityOfMultiplication : public QFPTest::TestBase<T> {
+class DistributivityOfMultiplication : public flit::TestBase<T> {
 public:
   DistributivityOfMultiplication(std::string id)
-    : QFPTest::TestBase<T>(std::move(id)) {}
+    : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 3; }
-  virtual QFPTest::TestInput<T> getDefaultInput();
+  virtual flit::TestInput<T> getDefaultInput();
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() {
+  virtual flit::KernelFunction<T>* getKernel() {
     return DistOfMultKernel;
   }
 
   virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];
@@ -57,30 +55,30 @@ protected:
     auto distributed = (a * c) + (b * c);
     auto undistributed = (a + b) * c;
 
-    QFPHelpers::info_stream << std::setw(8);
-    QFPHelpers::info_stream << id << ": (a,b,c) = (" << a << ","
+    flit::info_stream << std::setw(8);
+    flit::info_stream << id << ": (a,b,c) = (" << a << ","
                 << b << "," << c << ")" << std::endl;
-    QFPHelpers::info_stream << id << ": dist    = "
+    flit::info_stream << id << ": dist    = "
                 << distributed << std::endl;
-    QFPHelpers::info_stream << id << ": undist  = "
+    flit::info_stream << id << ": undist  = "
                 << undistributed << std::endl;
 
     return {std::pair<long double, long double>(distributed, undistributed), 0};
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 // Define the inputs
 template<>
-inline QFPTest::TestInput<float>
+inline flit::TestInput<float>
 DistributivityOfMultiplication<float>::getDefaultInput() {
   auto convert = [](uint32_t x) {
-    return QFPHelpers::as_float(x);
+    return flit::as_float(x);
   };
 
-  QFPTest::TestInput<float> ti;
+  flit::TestInput<float> ti;
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -135,13 +133,13 @@ DistributivityOfMultiplication<float>::getDefaultInput() {
 }
 
 template<>
-inline QFPTest::TestInput<double>
+inline flit::TestInput<double>
 DistributivityOfMultiplication<double>::getDefaultInput() {
   auto convert = [](uint64_t x) {
-    return QFPHelpers::as_float(x);
+    return flit::as_float(x);
   };
 
-  QFPTest::TestInput<double> ti;
+  flit::TestInput<double> ti;
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
@@ -192,17 +190,17 @@ DistributivityOfMultiplication<double>::getDefaultInput() {
 }
 
 template<>
-inline QFPTest::TestInput<long double>
+inline flit::TestInput<long double>
 DistributivityOfMultiplication<long double>::getDefaultInput() {
   // Here we are assuming that long double represents 80 bits
   auto convert = [](uint64_t left_half, uint64_t right_half) {
     unsigned __int128 val = left_half;
     val = val << 64;
     val += right_half;
-    return QFPHelpers::as_float(val);
+    return flit::as_float(val);
   };
 
-  QFPTest::TestInput<long double> ti;
+  flit::TestInput<long double> ti;
 
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying

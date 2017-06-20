@@ -1,15 +1,15 @@
 #Adding Your Own Litmus Tests to FLiT
 
-All litmus tests that are included in general execution are located in the `QFP/qfpc/tests` directory. For a test to be included in a run it only need be present in this directory. Tests must be in a templated C++ class which extends `QFPTest::TestBase<T>`.
+All litmus tests that are included in general execution are located in the `QFP/qfpc/tests` directory. For a test to be included in a run it only need be present in this directory. Tests must be in a templated C++ class which extends `flit::TestBase<T>`.
 
 ##getInputsPerRun
 This function returns the number of arguments the code under tests uses.
 
 ##getDefaultInput
-This function returns a `QFPTest::TestInput`, which is a vector like object whose `.vals` field holds a list of inputs. Note that more than one set of inputs may be placed in this field.
+This function returns a `flit::TestInput`, which is a vector like object whose `.vals` field holds a list of inputs. Note that more than one set of inputs may be placed in this field.
 
 ##run_impl
-This function is the actual code under test. The argument is a `QFPTest::TestInput` with length of the `.vals` field equal to the number of inputs requested per run. The return is a vector of two values representing the score of the test. This does not need to represent 'good' or 'bad' results, as the score is used to classify different compilations.
+This function is the actual code under test. The argument is a `flit::TestInput` with length of the `.vals` field equal to the number of inputs requested per run. The return is a vector of two values representing the score of the test. This does not need to represent 'good' or 'bad' results, as the score is used to classify different compilations.
 
 ##REGISTER_TEST
 Just as it sounds, this function is used to register the test in the framework. It's argument is the class created for the test.
@@ -48,8 +48,7 @@ my_cpp_test_core(const T input_1) // Number of arguments can be changed
 template <typename T>
 GLOBAL
 void 
-my_cuda_kern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-    using namespace CUHelpers;
+my_cuda_kern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 #ifdef __CUDA__
     auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -65,24 +64,24 @@ my_cuda_kern(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* 
 }
 
 template <typename T>
-class MyTest: public QFPTest::TestBase<T> {
+class MyTest: public flit::TestBase<T> {
 public:
-    MyTest(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+    MyTest(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
     // This must be changed to match the number of arguments used in the test code
     virtual size_t getInputsPerRun() { return 1; } 
 
-    virtual QFPTest::TestInput<T> getDefaultInput() {
-        QFPTest::TestInput<T> ti;
+    virtual flit::TestInput<T> getDefaultInput() {
+        flit::TestInput<T> ti;
         ti.vals = { 6.0 };
         return ti;
     }
 
 protected:
     virtual
-    QFPTest::KernelFunction<T>* getKernel() {return my_cuda_kern; }
+    flit::KernelFunction<T>* getKernel() {return my_cuda_kern; }
     virtual
-    QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {
+    flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
         T input_1 = ti.vals[0]; // Extract arguments from vals
         
         // Loops or other structures can be used here such as in TrianglePSylv.cpp  
@@ -92,7 +91,7 @@ protected:
     }
 
 protected:
-    using QFPTest::TestBase<T>::id;
+    using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(MyTest)

@@ -11,16 +11,12 @@ import os
 # - cu_vars_initialize: initialize scope variables for the test in CUDA using tiList[idx].vals
 # - func_body: test body that is shared between cuda and non-cuda.  Populate score1 and score2
 template_string = '''
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
-
-using namespace CUHelpers;
+#include "flit.h"
 
 template <typename T>
 GLOBAL
 void
-{name}Kernel(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results) {{
+{name}Kernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results) {{
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -40,14 +36,14 @@ void
 }}
 
 template <typename T>
-class {name} : public QFPTest::TestBase<T> {{
+class {name} : public flit::TestBase<T> {{
 public:
   {name}(std::string id)
-    : QFPTest::TestBase<T>(std::move(id)) {{}}
+    : flit::TestBase<T>(std::move(id)) {{}}
 
   virtual size_t getInputsPerRun() {{ return {input_count}; }}
-  virtual QFPTest::TestInput<T> getDefaultInput() {{
-    QFPTest::TestInput<T> ti;
+  virtual flit::TestInput<T> getDefaultInput() {{
+    flit::TestInput<T> ti;
 
     {default_input}
 
@@ -55,33 +51,33 @@ public:
   }}
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() {{
+  virtual flit::KernelFunction<T>* getKernel() {{
     return {name}Kernel;
   }}
 
   virtual
-  QFPTest::ResultType::mapped_type run_impl(const QFPTest::TestInput<T>& ti) {{
+  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {{
     T score1 = 0.0;
     T score2 = 0.0;
 
-    QFPHelpers::info_stream << id << ": Starting test with parameters" << std::endl;
+    flit::info_stream << id << ": Starting test with parameters" << std::endl;
     for (T val : ti.vals) {{
-      QFPHelpers::info_stream << id << ":   " << val << std::endl;
+      flit::info_stream << id << ":   " << val << std::endl;
     }}
 
     {vars_initialize}
 
-    QFPHelpers::info_stream << id << ": After initializing variables" << std::endl;
+    flit::info_stream << id << ": After initializing variables" << std::endl;
 
     {func_body}
 
-    QFPHelpers::info_stream << id << ": Ending test with values (" << score1 << ", " << score2 << ")" << std::endl;
+    flit::info_stream << id << ": Ending test with values (" << score1 << ", " << score2 << ")" << std::endl;
 
-    return {{score1, score2}};
+    return {{std::pair<long double, long double>(score1, score2), 0}};
   }}
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 }};
 
 REGISTER_TYPE({name})

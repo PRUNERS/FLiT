@@ -9,7 +9,6 @@
 #include <cmath>
 #include <tuple>
 
-using namespace QFPHelpers;
 
 //this is a dummy -- needs to be implemented
 //the body of a different algo in CUDA is left
@@ -17,8 +16,7 @@ using namespace QFPHelpers;
 // template <typename T>
 // GLOBAL
 // void
-// addNameHere(const QFPTest::CuTestInput<T>* tiList, QFPTest::CudaResultElement* results){
-//   using namespace CUHelpers;
+// addNameHere(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -28,19 +26,19 @@ using namespace QFPHelpers;
 //   T maxval = tiList[idx].vals[0];
 //   T a = maxval;
 //   T b = maxval;
-//   T c = maxval * csqrt((T)2.0);
+//   T c = maxval * flit::csqrt((T)2.0);
 //   const T delta = maxval / (T)ti.iters;
 //   const T checkVal = (T)0.5 * b * a;
 
 //   double score = 0.0;
 
 //   for(T pos = 0; pos <= a; pos += delta){
-//     b = csqrt(cpow(pos, (T)2.0) +
-// 	      cpow(maxval, (T)2.0));
-//     c = csqrt(cpow(a - pos, (T)2.0) +
-// 	      cpow(maxval, (T)2.0));
+//     b = flit::csqrt(flit::cpow(pos, (T)2.0) +
+// 	      flit::cpow(maxval, (T)2.0));
+//     c = flit::csqrt(flit::cpow(a - pos, (T)2.0) +
+// 	      flit::cpow(maxval, (T)2.0));
 //     auto crit = getCArea(a,b,c);
-//     score += abs(crit - checkVal);
+//     score += std::abs(crit - checkVal);
 //   }
 //   results[idx].s1 = score;
 //   results[idx].s2 = 0.0;
@@ -76,26 +74,26 @@ ThreeFMA(T a, T b, T c, T& x, T& y, T& z){
   TwoSum(u1, a1, B1, B2);
   y = (B1 - x) + B2;
 }
-}
+} // end of unnamed namespace
 
 //algorithm 11
 template <typename T>
-class langDotFMA: public QFPTest::TestBase<T> {
+class langDotFMA: public flit::TestBase<T> {
 public:
-  langDotFMA(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  langDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 0; }
-  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+  virtual flit::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     Q_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = getRandSeq<T>();
+    auto rand = flit::getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
@@ -109,29 +107,29 @@ protected:
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(langDotFMA)
 
 //algorithm 12
 template <typename T>
-class langCompDotFMA: public QFPTest::TestBase<T> {
+class langCompDotFMA: public flit::TestBase<T> {
 public:
-  langCompDotFMA(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  langCompDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 0; }
-  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+  virtual flit::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     Q_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = getRandSeq<T>();
+    auto rand = flit::getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
@@ -148,29 +146,29 @@ protected:
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(langCompDotFMA)
 
 //algorithm 13
 template <typename T>
-class langCompDot: public QFPTest::TestBase<T> {
+class langCompDot: public flit::TestBase<T> {
 public:
-  langCompDot(std::string id) : QFPTest::TestBase<T>(std::move(id)) {}
+  langCompDot(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() { return 0; }
-  virtual QFPTest::TestInput<T> getDefaultInput() { return {}; }
+  virtual flit::TestInput<T> getDefaultInput() { return {}; }
 
 protected:
-  virtual QFPTest::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual QFPTest::ResultType::mapped_type
-  run_impl(const QFPTest::TestInput<T>& ti) {
+  virtual flit::ResultType::mapped_type
+  run_impl(const flit::TestInput<T>& ti) {
     Q_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = getRandSeq<T>();
+    auto rand = flit::getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
@@ -188,7 +186,7 @@ protected:
   }
 
 protected:
-  using QFPTest::TestBase<T>::id;
+  using flit::TestBase<T>::id;
 };
 
 REGISTER_TYPE(langCompDot)

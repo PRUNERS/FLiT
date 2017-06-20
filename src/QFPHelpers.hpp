@@ -31,7 +31,7 @@
 // #endif
 
 
-namespace QFPHelpers {
+namespace flit {
 
 const int RAND_SEED = 1;
 const int RAND_VECT_SIZE = 256;
@@ -500,7 +500,7 @@ public:
   }
 };
 
-}
+} // end of namespace flit
 
 #endif
  
