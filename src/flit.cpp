@@ -3,30 +3,32 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstring>
+#include <iostream>
 #include <sstream>
 #include <type_traits>
 #include <typeinfo>
+
+#include <cstring>
 
 #include "flit.h"
 
 #include "QFPHelpers.hpp"
 #include "TestBase.hpp"
 
-void outputResults(const flit::ResultType& scores){
+void outputResults(const flit::ResultType& scores, std::ostream& out){
   using flit::operator<<;
   using flit::as_int;
   for(const auto& i: scores){
-    std::cout
+    out
       << "HOST,SWITCHES,OPTL,COMPILER,"
-      << i.first.second << ",us,"             //sort
-      << i.second.first.first << ","          //score0d
-      << as_int(i.second.first.first) << ","  //score0
-      << i.second.first.second << ","         //score1d
-      << as_int(i.second.first.second) << "," //score1
-      << i.first.first << ","                 //name
-      << i.second.second << ","               //nanoseconds
-      << "FILENAME"                           //filename
+      << i.first.second << ",us,"             // sort
+      << i.second.first.first << ","          // score0d
+      << as_int(i.second.first.first) << ","  // score0
+      << i.second.first.second << ","         // score1d
+      << as_int(i.second.first.second) << "," // score1
+      << i.first.first << ","                 // name
+      << i.second.second << ","               // nanoseconds
+      << "FILENAME"                           // filename
       << std::endl;
   }
 }
@@ -51,12 +53,13 @@ std::string FlitOptions::toString() {
 FlitOptions parseArguments(int argCount, char* argList[]) {
   FlitOptions options;
 
-  std::vector<std::string> helpOpts = { "-h", "--help" };
-  std::vector<std::string> verboseOpts = { "-v", "--verbose" };
-  std::vector<std::string> timingOpts = { "-t", "--timing" };
-  std::vector<std::string> loopsOpts = { "-l", "--timing-loops" };
+  std::vector<std::string> helpOpts      = { "-h", "--help" };
+  std::vector<std::string> verboseOpts   = { "-v", "--verbose" };
+  std::vector<std::string> timingOpts    = { "-t", "--timing" };
+  std::vector<std::string> loopsOpts     = { "-l", "--timing-loops" };
   std::vector<std::string> listTestsOpts = { "-L", "--list-tests" };
   std::vector<std::string> precisionOpts = { "-p", "--precision" };
+  std::vector<std::string> outputOpts    = { "-o", "--output" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
@@ -91,6 +94,11 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
       if (!isIn(allowedPrecisions, options.precision)) {
         throw ParseException("unsupported precision " + options.precision);
       }
+    } else if (isIn(outputOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.output = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!isIn(allowedTests, current)) {
@@ -138,6 +146,11 @@ std::string usage(std::string progName) {
        "                  amount.  If you set it to 0 or a negative number,\n"
        "                  then the number of loops will be determined\n"
        "                  automatically and tuned for each individual test.\n"
+       "\n"
+       "  -o OUTFILE, --output OUTFILE\n"
+       "                  Output test results to the given file.  All other\n"
+       "                  standard output will still go to the terminal.\n"
+       "                  The default behavior is to output to stdout.\n"
        "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"

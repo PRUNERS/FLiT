@@ -14,12 +14,16 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <memory>
 #include <sstream>
 #include <type_traits>
 #include <typeinfo>
 
-void outputResults(const flit::ResultType& scores);
+#include <cstring>
+
+void outputResults(const flit::ResultType& scores, std::ostream& out);
 
 template <typename F>
 void runTestWithDefaultInput(flit::TestFactory* factory,
@@ -40,6 +44,7 @@ struct FlitOptions {
   bool verbose = false;   // show debug verbose messages
   std::vector<std::string> tests; // which tests to run
   std::string precision = "all";  // which precision to use
+  std::string output = "";        // output file for results.  default stdout
   bool timing = true;     // should we run timing?
   int timingLoops = 1;    // < 1 means to auto-determine the timing loops
 
@@ -109,6 +114,13 @@ inline int runFlitTests(int argc, char* argv[]) {
     flit::info_stream.show();
   }
 
+  std::unique_ptr<std::ostream> stream_deleter;
+  std::ostream *outstream = &std::cout;
+  if (!options.output.empty()) {
+    stream_deleter.reset(new std::ofstream(options.output.c_str()));
+    outstream = stream_deleter.get();
+  }
+
   std::cout.precision(1000); //set cout to print many decimal places
   flit::info_stream.precision(1000);
 
@@ -137,7 +149,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   cudaDeviceSynchronize();
 #endif
 
-  outputResults(scores);
+  outputResults(scores, *outstream);
   return 0;
 }
 
