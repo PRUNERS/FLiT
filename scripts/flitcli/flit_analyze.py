@@ -17,7 +17,7 @@ def main(arguments, prog=sys.argv[0]):
                 ''',
             )
     parser.add_argument('-C', '--directory', default='.',
-                        help='Directory containing flit.conf')
+                        help='Directory containing flit-config.toml')
     parser.add_argument('-l', '--list', action='store_true',
                         help='List all runs that can be analyzed')
     parser.add_argument('run', nargs='*', default='latest',

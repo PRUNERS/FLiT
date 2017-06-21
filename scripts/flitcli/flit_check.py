@@ -20,7 +20,7 @@ def main(arguments, prog=sys.argv[0]):
                 ''',
             )
     parser.add_argument('-C', '--directory', default='.',
-                        help='The directory containing flit.conf')
+                        help='The directory containing flit-config.toml')
     parser.add_argument('-c', '--config-only', action='store_true',
                         help='''
                             Only check the config file instead of also the SSH

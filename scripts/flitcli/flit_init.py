@@ -21,7 +21,7 @@ def main(arguments, prog=sys.argv[0]):
             the directory by copying the default configuration file into
             the given directory.  If a configuration file already exists,
             this command does nothing.  The config file is called
-            flit.conf.
+            flit-config.toml.
             ''',
         )
     parser.add_argument('-C', '--directory', default='.',
