@@ -389,7 +389,7 @@ endif # ifdef HAS_CUDA
 define TARGETS_RULE
 #run test and collect results
 $(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)_out : $2_$(HOSTNAME)_$(strip $1)_$(strip $3)
-	-./$$< > $$@
+	-./$$< --output $$@
 	-sed -i -e 's/HOST/$(HOSTNAME)/g' $$@
 	-sed -i -e 's/SWITCHES/$($(strip $1))/g' $$@
 	-sed -i -e 's/OPTL/$($(strip $3))/g' $$@
@@ -429,7 +429,7 @@ $(foreach c, $(COMPILERS), \
 define CUTARGETS_RULE
 #run test
 NVCC_$(HOSTNAME)_$(strip $1)_out : NVCC_$(HOSTNAME)_$(strip $1)
-	./$$< > $$@
+	./$$< --output $$@
 	-sed -i -e 's/HOST/$(HOSTNAME)/g' $$@
 	-sed -i -e 's/SWITCHES/$($(strip $1))/g' $$@
 	-sed -i -e 's/OPTL//g' $$@

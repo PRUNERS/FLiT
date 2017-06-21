@@ -102,10 +102,10 @@ abs(T val){
   else return val * (T)-1;
 }
 
-const std::vector<float> float_rands;
-const std::vector<double> double_rands;
-const std::vector<long double> long_rands;
-const std::vector<uint_fast32_t> shuffled_16;
+extern const std::vector<float> float_rands;
+extern const std::vector<double> double_rands;
+extern const std::vector<long double> long_rands;
+extern const std::vector<uint_fast32_t> shuffled_16;
 
 GLOBAL void loadDeviceData(float* fsource, uint_fast32_t* ssource);
 
