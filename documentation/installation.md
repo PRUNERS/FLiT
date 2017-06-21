@@ -9,7 +9,7 @@ Table of Contents:
   * [Database Prerequisites](#database-prerequisites)
 * [FLiT Setup](#flit-setup)
 * [Database Setup](#database-setup)
-* [SSH Keys (Optional)](#ssh-keys)
+* [SSH Keys (Optional)](#ssh-keys-optional)
 
 ## Roles
 
