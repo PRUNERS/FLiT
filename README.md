@@ -40,6 +40,7 @@ Contents:
 * [Litmus Tests](documentation/litmus-tests.md)
 * [FLiT Command-Line](documentation/flit-command-line.md)
 * [FLiT Configuration File](documentation/flit-configuration-file.md)
+  * [Available Compiler Flags](documentation/available-compiler-flags.md)
 * [Writing Test Cases](documentation/writing-test-cases.md)
 * [Database Structure](documentation/database-structure.md)
 * [Analyze Results](documentation/analyze-results.md)
