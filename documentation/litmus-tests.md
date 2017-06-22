@@ -17,7 +17,7 @@ copied to your test directory using the `flit init` command-line tool (see
 Most litmus tests have a CUDA version as well.  You may use these tests as
 examples or play with them to gain insights into how the compiler alters simple
 examples.  The community is encouraged to contribute back interesting test
-cases that can be added to these litmus tests.  Simply do a **Pull Request** on
+cases that can be added to these litmus tests.  Simply create a **Pull Request** on
 GitHub.
 
 [Prev](installation.md)
