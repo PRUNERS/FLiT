@@ -17,10 +17,10 @@ except ImportError:
 
 def connect_to_database():
     'Returns a database handle for the framework being used'
-    dbname = 'qfp'
+    dbname = 'flit'
     host = 'localhost'
-    user = 'qfp'
-    passwd = 'qfp123'
+    user = 'flit'
+    passwd = 'flit123'
     if using_pg:
         return pg.DB(dbname=dbname, host=host, user=user, passwd=passwd)
     else:

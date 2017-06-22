@@ -1,6 +1,4 @@
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
 #include <cmath>
 #include <iomanip>
@@ -9,7 +7,7 @@
 #include <tuple>
 
 #ifdef __CUDA__
-#include "thrust/tuple.h"
+#include <thrust/tuple.h>
 #endif
 
 template <typename T>

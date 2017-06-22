@@ -68,8 +68,6 @@ CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
 #   among other places
 # more comp settings, taken from here:
 # https://software.intel.com/sites/default/files/article/326703/fp-control-2012-08.pdf
-# see psql: qfp: switch_desc for description of flags
-# also, psql: qfp:
 
 #individual flags
 ## optls

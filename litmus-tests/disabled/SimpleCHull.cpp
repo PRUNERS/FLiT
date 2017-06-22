@@ -1,8 +1,6 @@
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-
-//#define SCH_LIB
 #include "simple_convex_hull.h"
+
+#include <flit.h>
 
 #include <cmath>
 #include <cstdio>

@@ -5,7 +5,7 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "QFPHelpers.hpp"
+#include "flitHelpers.hpp"
 
 #ifdef __CUDA__
 #include "CUHelpers.hpp"

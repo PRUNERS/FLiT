@@ -1,10 +1,8 @@
-#include <cmath>
+#include <flit.h>
+
 #include <typeinfo>
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
-
+#include <cmath>
 
 template <typename T>
 DEVICE

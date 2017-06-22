@@ -1,24 +1,23 @@
-// the header for QFP helpers.  These classes, such as matrix and
-// vector, utilize the TestBase watch data items for monitoring by
-// differential debugging.
+// the header for FLiT helper functions.  These classes, such as matrix and
+// vector, utilize the TestBase watch data items for monitoring by differential
+// debugging.
 
-#ifndef QFPHELPERS
-#define QFPHELPERS
+#ifndef FLIT_HELPERS_HPP
+#define FLIT_HELPERS_HPP
 
 #include "InfoStream.hpp"
+#include "CUHelpers.hpp"
 
-#include <ostream>
+#include <algorithm>
 #include <iostream>
+#include <mutex>
+#include <ostream>
+#include <random>
 #include <sstream>
 #include <type_traits>
-#include <float.h>
-#include <random>
-#include <algorithm>
-#include <mutex>
 #include <vector>
 
-
-#include "CUHelpers.hpp"
+#include <cfloat>
 
 #ifndef Q_UNUSED
 #define Q_UNUSED(x) (void)x
@@ -502,5 +501,5 @@ public:
 
 } // end of namespace flit
 
-#endif
+#endif // FLIT_HELPERS_HPP
  

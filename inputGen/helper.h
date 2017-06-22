@@ -1,7 +1,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include "QFPHelpers.hpp"
+#include <flit.h>
 
 #include <type_traits>
 #include <random>

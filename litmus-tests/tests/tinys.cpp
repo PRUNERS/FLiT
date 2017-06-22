@@ -1,6 +1,4 @@
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
-#include "TestBase.hpp"
+#include <flit.h>
 
 #include <string>
 #include <sstream>

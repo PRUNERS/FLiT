@@ -12,7 +12,7 @@
 
 #include "flit.h"
 
-#include "QFPHelpers.hpp"
+#include "flitHelpers.hpp"
 #include "TestBase.hpp"
 
 void outputResults(const flit::ResultType& scores, std::ostream& out){

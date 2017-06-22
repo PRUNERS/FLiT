@@ -2,13 +2,11 @@
 // an EFT (error-free transformation)
 // see http://perso.ens-lyon.fr/nicolas.louvet/LaLo07b.pdf
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
-#include <cmath>
 #include <tuple>
 
+#include <cmath>
 
 //this is a dummy -- needs to be implemented
 //the body of a different algo in CUDA is left

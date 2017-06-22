@@ -4,6 +4,6 @@ export CORES=24
 export DO_PIN=False
 export DB_USER=sawaya
 export DB_HOST=localhost
-export FLIT_DIR=qfp
+export FLIT_DIR=src
 export SLURMED=None
 export CUDA_ONLY=False

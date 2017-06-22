@@ -1,7 +1,4 @@
-
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
 #include <vector>
 

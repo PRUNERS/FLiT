@@ -1,5 +1,5 @@
 #include "CUHelpers.hpp"
-#include "QFPHelpers.hpp"
+#include "flitHelpers.hpp"
 
 namespace flit {
 
