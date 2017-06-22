@@ -1,7 +1,7 @@
 # FLiT Installation
 
 [Table of Contents](README.md)
--
+|
 [Next](litmus-tests.md)
 
 Instruction Contents:
@@ -166,5 +166,5 @@ documentation](https://help.ubuntu.com/community/SSH/OpenSSH/Keys) for setting
 up SSH keys.
 
 [Table of Contents](README.md)
--
+|
 [Next](litmus-tests.md)

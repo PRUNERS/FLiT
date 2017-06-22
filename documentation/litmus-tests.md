@@ -1,9 +1,9 @@
 # Litmus Tests
 
 [Prev](installation.md)
--
+|
 [Table of Contents](README.md)
--
+|
 [Next](flit-command-line.md)
 
 FLiT comes with a large number of _litmus tests_ each that demonstrate some
@@ -21,7 +21,7 @@ cases that can be added to these litmus tests.  Simply do a **Pull Request** on
 GitHub.
 
 [Prev](installation.md)
--
+|
 [Table of Contents](README.md)
--
+|
 [Next](flit-command-line.md)

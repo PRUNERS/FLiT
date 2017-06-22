@@ -1,9 +1,9 @@
 # Available Compiler Flags
 
 [Prev](flit-configuration-file.md)
--
+|
 [Table of Contents](README.md)
--
+|
 [Next](writing-test-cases.md)
 
 Convenient TOML lists:
@@ -170,7 +170,7 @@ switches = [
 ```
 
 [Prev](flit-configuration-file.md)
--
+|
 [Table of Contents](README.md)
--
+|
 [Next](writing-test-cases.md)

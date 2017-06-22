@@ -1,9 +1,9 @@
 # FLiT Command-Line
 
 [Prev](litmus-tests.md)
--
+|
 [Table of Contents](README.md)
--
+|
 [Next](flit-configuration-file.md)
 
 FLiT comes with a command-line tool called `flit`.  This command-line tool is
@@ -116,8 +116,8 @@ repository and will create a directory called analysis inside of the flit
 directory.
 
 [Prev](litmus-tests.md)
--
+|
 [Table of Contents](README.md)
--
+|
 [Next](flit-configuration-file.md)
 
