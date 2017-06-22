@@ -19,7 +19,7 @@ private:
 
 void printTestVal(const std::string &funcName, float val) {
   FmtRestore restorer(std::cout);
-  Q_UNUSED(restorer);
+  FLIT_UNUSED(restorer);
 
   auto intval = flit::as_int(val);
   std::cout << funcName << ":     0x"
@@ -31,7 +31,7 @@ void printTestVal(const std::string &funcName, float val) {
 
 void printTestVal(const std::string &funcName, double val) {
   FmtRestore restorer(std::cout);
-  Q_UNUSED(restorer);
+  FLIT_UNUSED(restorer);
 
   auto intval = flit::as_int(val);
   std::cout << funcName << ":     0x"
@@ -43,7 +43,7 @@ void printTestVal(const std::string &funcName, double val) {
 
 void printTestVal(const std::string &funcName, long double val) {
   FmtRestore restorer(std::cout);
-  Q_UNUSED(restorer);
+  FLIT_UNUSED(restorer);
 
   auto intval = flit::as_int(val);
   uint64_t lhalf = static_cast<uint64_t>((intval >> 64)) & 0xFFFFL;

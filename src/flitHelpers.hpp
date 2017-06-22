@@ -19,8 +19,8 @@
 
 #include <cfloat>
 
-#ifndef Q_UNUSED
-#define Q_UNUSED(x) (void)x
+#ifndef FLIT_UNUSED
+#define FLIT_UNUSED(x) (void)x
 #endif
 
 // #ifdef __CUDA__
@@ -38,21 +38,21 @@ const int RAND_VECT_SIZE = 256;
 inline
 float
 get_next_type(long double x){
-  Q_UNUSED(x);
+  FLIT_UNUSED(x);
   return 0.0f;
 }
 
 inline
 double
 get_next_type(float x){
-  Q_UNUSED(x);
+  FLIT_UNUSED(x);
   return 0.0;
 }
 
 inline
 long double
 get_next_type(double x){
-  Q_UNUSED(x);
+  FLIT_UNUSED(x);
   return 0.0l;
 }
 

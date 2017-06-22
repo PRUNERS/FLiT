@@ -19,7 +19,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     CHullEdges.clear();
     PointList.clear();
     ReadInputs(fopen("data/random_input", "r"));

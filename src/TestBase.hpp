@@ -116,8 +116,8 @@ std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
 
   return ptr;
 #else
-  Q_UNUSED(vals);
-  Q_UNUSED(length);
+  FLIT_UNUSED(vals);
+  FLIT_UNUSED(length);
   throw std::runtime_error("Should not use makeCudaArr without CUDA enabled");
 #endif
 }
@@ -184,9 +184,9 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
   return results;
 #else  // not __CUDA__
   // Do nothing
-  Q_UNUSED(kernel);
-  Q_UNUSED(ti);
-  Q_UNUSED(stride);
+  FLIT_UNUSED(kernel);
+  FLIT_UNUSED(ti);
+  FLIT_UNUSED(stride);
   return {};
 #endif // __CUDA__
 }

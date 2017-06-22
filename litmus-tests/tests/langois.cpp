@@ -88,7 +88,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -124,7 +124,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -163,7 +163,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
