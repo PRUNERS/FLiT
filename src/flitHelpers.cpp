@@ -2,7 +2,7 @@
 // they utilize the watch data for sensitive points
 // of computation.
 
-#include "flitHelpers.hpp"
+#include "flitHelpers.h"
 
 #include <iostream>
 #include <mutex>

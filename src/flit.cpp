@@ -12,8 +12,8 @@
 
 #include "flit.h"
 
-#include "flitHelpers.hpp"
-#include "TestBase.hpp"
+#include "flitHelpers.h"
+#include "TestBase.h"
 
 void outputResults(const flit::ResultType& scores, std::ostream& out){
   using flit::operator<<;

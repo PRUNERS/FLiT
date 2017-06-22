@@ -14,8 +14,8 @@
 #define DEVICE __device__
 #define GLOBAL __global__
 #endif
-#include "flitHelpers.hpp"
-#include "CUVector.hpp"
+#include "flitHelpers.h"
+#include "CUVector.h"
 
 #include <vector>
 

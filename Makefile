@@ -24,7 +24,6 @@ DEPFLAGS       += -MD -MF $(SRCDIR)/$*.d
 
 SOURCE         := $(wildcard $(SRCDIR)/*.cpp)
 HEADERS        += $(wildcard $(SRCDIR)/*.h)
-HEADERS        += $(wildcard $(SRCDIR)/*.hpp)
 
 OBJ            := $(SOURCE:.cpp=.o)
 DEPS           := $(SOURCE:.cpp=.d)
@@ -36,7 +35,6 @@ DATA_DIR        = $(SCRIPT_DIR)/data
 CONFIG_DIR      = $(SCRIPT_DIR)/config
 DOC_DIR         = documentation
 LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.cpp)
-LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.hpp)
 LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.h)
 
 INSTALL_FLIT_CONFIG = $(PREFIX)/share/flit/scripts/flitconfig.py

@@ -5,10 +5,10 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "flitHelpers.hpp"
+#include "flitHelpers.h"
 
 #ifdef __CUDA__
-#include "CUHelpers.hpp"
+#include "CUHelpers.h"
 #endif // __CUDA__
 
 #include <map>

@@ -5,8 +5,8 @@
 #ifndef FLIT_HELPERS_HPP
 #define FLIT_HELPERS_HPP
 
-#include "InfoStream.hpp"
-#include "CUHelpers.hpp"
+#include "InfoStream.h"
+#include "CUHelpers.h"
 
 #include <algorithm>
 #include <iostream>
