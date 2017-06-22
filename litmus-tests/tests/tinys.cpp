@@ -1,6 +1,4 @@
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
-#include "TestBase.hpp"
+#include <flit.h>
 
 #include <string>
 #include <sstream>
@@ -120,7 +118,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     auto size = 16;
 
     auto rand = flit::getRandSeq<T>();
@@ -161,7 +159,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     auto vals = flit::getRandSeq<T>();
     auto sublen = vals.size() / 4 - 1;
     T sum = 0;

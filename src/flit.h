@@ -4,7 +4,7 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
-#include "QFPHelpers.hpp"
+#include "flitHelpers.hpp"
 #include "TestBase.hpp"
 
 #ifdef __CUDA__

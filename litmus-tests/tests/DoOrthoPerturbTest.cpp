@@ -1,9 +1,9 @@
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
+#include <flit.h>
 
-#include <cmath>
 #include <typeinfo>
 #include <iomanip>
+
+#include <cmath>
 
 template <typename T>
 GLOBAL

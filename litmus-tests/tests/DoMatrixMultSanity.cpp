@@ -1,13 +1,10 @@
-#include <cmath>
+#include <flit.h>
+
 #include <functional>
 #include <typeinfo>
 
-#include <stdio.h>
-
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
-
+#include <cmath>
+#include <cstdio>
 
 template <typename T>
 GLOBAL

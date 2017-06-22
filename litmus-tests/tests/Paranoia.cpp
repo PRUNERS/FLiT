@@ -160,9 +160,7 @@ lines
 
 */
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
 #include <chrono>
 #include <exception>
@@ -309,7 +307,7 @@ namespace {
 /* floating point exception receiver */
 void sigfpe(int i)
 {
-  Q_UNUSED(i);
+  FLIT_UNUSED(i);
   fpecount++;
   info_stream << endl << "* * * FLOATING-POINT ERROR * * *\n";
   (void)fflush(stdout);
@@ -324,7 +322,7 @@ void sigfpe(int i)
 template <typename F>
 flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
 {
-  Q_UNUSED(ti);
+  FLIT_UNUSED(ti);
   int timeoutMillis = 1000;
   enum class ExitStatus {
     SuccessStatus = 0,
@@ -1839,32 +1837,32 @@ flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti
     info_stream << id << "END OF TEST.\n";
   }
   catch (const TimeoutError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": timeout error occurred" << endl;
     status = ExitStatus::TimeoutStatus;
   }
   catch (const FailureError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": failure error occurred" << endl;
     status = ExitStatus::FailureStatus;
   }
   catch (const SeriousError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": serious error occurred" << endl;
     status = ExitStatus::SeriousStatus;
   }
   catch (const DefectError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": defect error occurred" << endl;
     status = ExitStatus::DefectStatus;
   }
   catch (const FlawError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": flaw error occurred" << endl;
     status = ExitStatus::FlawStatus;
   }
   catch (const OverflowError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": overflow error occurred" << endl;
     status = ExitStatus::OverflowStatus;
   }

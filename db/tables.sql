@@ -269,7 +269,6 @@ CREATE FUNCTION createtimeplot(run integer, prec text[], compilers text[], optls
     AS $$
 from plpy import spiexceptions
 from sys import path
-path.append('/home/sawaya/temp/qfp/db/python')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
@@ -368,14 +367,14 @@ plpy.execute(query)
 query = ("SELECT MAX(index) from runs")
 res = plpy.execute(query)
 run = res[0]['max']
-query = ("SELECT importqfpresults2('" + path + "', " +
+query = ("SELECT importflitresults2('" + path + "', " +
          str(run) + ")")
 res = plpy.execute(query)
 query = ("SELECT importopcoderesults('" + path + "/pins'," +
          str(run) + ")")
 res2 = plpy.execute(query)
 
-return [res[0]['importqfpresults2'][0],res[0]['importqfpresults2'][1],
+return [res[0]['importflitresults2'][0],res[0]['importflitresults2'][1],
         res2[0]['importopcoderesults'][0],res2[0]['importopcoderesults'][1]]
 
 $$;
@@ -511,10 +510,10 @@ $$;
 
 
 --
--- Name: importqfpresults(text); Type: FUNCTION; Schema: public; Owner: -
+-- Name: importflitresults(text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION importqfpresults(path text) RETURNS integer
+CREATE FUNCTION importflitresults(path text) RETURNS integer
     LANGUAGE plpython3u
     AS $$
    r = ("SELECT MAX(index)as index from runs;")
@@ -534,10 +533,10 @@ $$;
 
 
 --
--- Name: importqfpresults2(text, integer); Type: FUNCTION; Schema: public; Owner: -
+-- Name: importflitresults2(text, integer); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION importqfpresults2(path text, run integer) RETURNS integer[]
+CREATE FUNCTION importflitresults2(path text, run integer) RETURNS integer[]
     LANGUAGE plpython3u
     AS $$
 import glob

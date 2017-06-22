@@ -28,7 +28,7 @@ DB_HOST_AUX = '/tmp/flitDbDir'
 DBINIT = 'prepDBHost.py'
 db_host = hostfile.DB_HOST
 run_hosts = hostfile.RUN_HOSTS
-FLIT_DIR = 'qfp'
+FLIT_DIR = 'src'
 REM_ENV = {'FLIT_DIR': FLIT_DIR}
 SSHS = 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q '
 SSHL = ['ssh', '-o UserKnownHostsFile=/dev/null', '-o StrictHostKeyChecking=no', '-q']
@@ -219,11 +219,11 @@ except CalledProcessError:
     pass
 
 
-#import to database -- need to unzip and then run importqfpresults2
+#import to database -- need to unzip and then run importflitresults2
 cmd = (
     'cd ~/flit_data && ' +
     'for f in *.tgz; do tar xf \$f; done && ' +
-    'psql flit -c \\"select importqfpresults2(\'\$(pwd)\',' +
+    'psql flit -c \\"select importflitresults2(\'\$(pwd)\',' +
     str(run_num) + ')\\" '
     )
 if any(list(zip(*run_hosts))[5]): #any opcode collections

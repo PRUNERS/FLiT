@@ -3,7 +3,7 @@ require("RPostgreSQL")
 
 drv <- dbDriver("PostgreSQL")
 
-con <- dbConnect(drv, dbname = "qfp")
+con <- dbConnect(drv, dbname = "flit")
 
                                         #sanity test
 dbExistsTable(con, "tests")

@@ -2,7 +2,7 @@
 // they utilize the watch data for sensitive points
 // of computation.
 
-#include "QFPHelpers.hpp"
+#include "flitHelpers.hpp"
 
 #include <iostream>
 #include <mutex>

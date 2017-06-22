@@ -1,5 +1,9 @@
-#pragma once
+#ifndef CU_VECTOR_HPP
+#define CU_VECTOR_HPP
+
 #include "CUHelpers.hpp"
+
+#include <vector>
 
 //This vector class is designed to be used on a CUDA
 //enabled device.
@@ -218,3 +222,5 @@ public:
   cvs_t
   size() const noexcept {return vsize;}
 };
+
+#endif // CU_VECTOR_HPP

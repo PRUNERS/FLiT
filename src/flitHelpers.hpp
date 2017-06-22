@@ -1,27 +1,26 @@
-// the header for QFP helpers.  These classes, such as matrix and
-// vector, utilize the TestBase watch data items for monitoring by
-// differential debugging.
+// the header for FLiT helper functions.  These classes, such as matrix and
+// vector, utilize the TestBase watch data items for monitoring by differential
+// debugging.
 
-#ifndef QFPHELPERS
-#define QFPHELPERS
+#ifndef FLIT_HELPERS_HPP
+#define FLIT_HELPERS_HPP
 
 #include "InfoStream.hpp"
-
-#include <ostream>
-#include <iostream>
-#include <sstream>
-#include <type_traits>
-#include <float.h>
-#include <random>
-#include <algorithm>
-#include <mutex>
-#include <vector>
-
-
 #include "CUHelpers.hpp"
 
-#ifndef Q_UNUSED
-#define Q_UNUSED(x) (void)x
+#include <algorithm>
+#include <iostream>
+#include <mutex>
+#include <ostream>
+#include <random>
+#include <sstream>
+#include <type_traits>
+#include <vector>
+
+#include <cfloat>
+
+#ifndef FLIT_UNUSED
+#define FLIT_UNUSED(x) (void)x
 #endif
 
 // #ifdef __CUDA__
@@ -39,21 +38,21 @@ const int RAND_VECT_SIZE = 256;
 inline
 float
 get_next_type(long double x){
-  Q_UNUSED(x);
+  FLIT_UNUSED(x);
   return 0.0f;
 }
 
 inline
 double
 get_next_type(float x){
-  Q_UNUSED(x);
+  FLIT_UNUSED(x);
   return 0.0;
 }
 
 inline
 long double
 get_next_type(double x){
-  Q_UNUSED(x);
+  FLIT_UNUSED(x);
   return 0.0l;
 }
 
@@ -502,5 +501,5 @@ public:
 
 } // end of namespace flit
 
-#endif
+#endif // FLIT_HELPERS_HPP
  

@@ -1,8 +1,6 @@
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-
-//#define SCH_LIB
 #include "simple_convex_hull.h"
+
+#include <flit.h>
 
 #include <cmath>
 #include <cstdio>
@@ -21,7 +19,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     CHullEdges.clear();
     PointList.clear();
     ReadInputs(fopen("data/random_input", "r"));

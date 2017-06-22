@@ -2,13 +2,11 @@
 // an EFT (error-free transformation)
 // see http://perso.ens-lyon.fr/nicolas.louvet/LaLo07b.pdf
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
-#include <cmath>
 #include <tuple>
 
+#include <cmath>
 
 //this is a dummy -- needs to be implemented
 //the body of a different algo in CUDA is left
@@ -90,7 +88,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -126,7 +124,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -165,7 +163,7 @@ protected:
 
   virtual flit::ResultType::mapped_type
   run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
