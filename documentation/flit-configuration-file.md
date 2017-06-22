@@ -9,106 +9,9 @@
 The FLiT configuration file is called `flit-config.toml`.  It is written in the
 [TOML](https://github.com/toml-lang/toml) specification.
 
-Here is a full example configuration file:
-
-```toml
-[database]
-
-username = 'mbentley'
-address = 'localhost'
-type = 'postgres'
-port = 5432
-
-[[hosts]]
-
-name = 'my.hostname.com'
-flit_path = '/usr/bin/flit'
-config_dir = 'project/flit-tests'
-
-[hosts.ground_truth]
-
-compiler = 'g++'
-optimization_level = '-O0'
-switch = ''
-
-  [[hosts.compilers]]
-
-  binary = 'g++'
-  name = 'g++'
-  type = 'gcc'
-  optimization_levels = [
-    '-O0',
-    '-O3',
-  ]
-  switches = [
-    '',
-    '-fassociative-math',
-    '-mavx2 -mfma',
-  ]
-
-  [[hosts.compilers]]
-
-  binary = 'my-installs/g++-7.0/bin/g++'
-  name = 'g++-7.0'
-  type = 'gcc'
-  optimization_levels = [
-    '-O3',
-  ]
-  switches = [
-    '',
-    '-fassociative-math',
-    '-mavx2 -mfma',
-    '-funsafe-math-optimizations',
-  ]
-
-  [[hosts.compilers]]
-
-  binary = 'clang++'
-  name = 'clang'
-  type = 'clang'
-  optimization_levels = [
-    '-O0',
-    '-O1',
-    '-O2',
-    '-O3',
-  ]
-  switches = [
-    '',
-    '-fassociative-math',
-    '-mavx',
-    '-fexcess-precision=fast',
-    '-ffinite-math-only',
-    '-mavx2 -mfma',
-    '-march=core-avx2',
-  ]
-
-[[hosts]]
-
-name = 'other.hostname.com'
-flit_path = 'my-installs/flit/bin/flit'
-config_dir = 'project/flit-tests'
-
-[hosts.ground_truth]
-
-compiler = 'Intel'
-optimization_level = '-O0'
-switch = ''
-
-  [[hosts.compilers]]
-
-  binary = 'icpc'
-  name = 'intel'
-  type = 'intel'
-  optimization_levels = [
-    '-O0',
-  ]
-  switches = [
-    '',
-  ]
-```
-
-We will now go through the elements of this configuration file piece by piece
-and explain what they represent.
+Here I have an example configuration file.  I will go through it section by
+section.  If you want to see the full configuration file, it is at the end of
+this page.
 
 _Note: there are no default values for these fields.  You must specify all
 fields for an entry to be valid.  If in doubt, you can use [flit
@@ -179,7 +82,10 @@ the compiler with the matching name.
   ]
 ```
 
-Here we specify the first compiler for the first host.  Since binary here is a simple name, it will get the executable `g++` from the system `PATH`.  If you really mean you want to have a compiler that is located in your home directory, you can do `./g++`.
+Here we specify the first compiler for the first host.  Since binary here is a
+simple name, it will get the executable `g++` from the system `PATH`.  If you
+really mean you want to have a compiler that is located in your home directory,
+you can do `./g++`.
 
 The `type` parameter can be one of
 
@@ -270,6 +176,107 @@ switch = ''
 
 Here it is demonstrated that you can specify another host.  This one is called
 `other.hostname.com` with a single compiler named `intel`.
+
+## Full Configuration File
+
+Combining all of the above sections together, here is the full example configuration file:
+
+```toml
+[database]
+
+username = 'mbentley'
+address = 'localhost'
+type = 'postgres'
+port = 5432
+
+[[hosts]]
+
+name = 'my.hostname.com'
+flit_path = '/usr/bin/flit'
+config_dir = 'project/flit-tests'
+
+[hosts.ground_truth]
+
+compiler = 'g++'
+optimization_level = '-O0'
+switch = ''
+
+  [[hosts.compilers]]
+
+  binary = 'g++'
+  name = 'g++'
+  type = 'gcc'
+  optimization_levels = [
+    '-O0',
+    '-O3',
+  ]
+  switches = [
+    '',
+    '-fassociative-math',
+    '-mavx2 -mfma',
+  ]
+
+  [[hosts.compilers]]
+
+  binary = 'my-installs/g++-7.0/bin/g++'
+  name = 'g++-7.0'
+  type = 'gcc'
+  optimization_levels = [
+    '-O3',
+  ]
+  switches = [
+    '',
+    '-fassociative-math',
+    '-mavx2 -mfma',
+    '-funsafe-math-optimizations',
+  ]
+
+  [[hosts.compilers]]
+
+  binary = 'clang++'
+  name = 'clang'
+  type = 'clang'
+  optimization_levels = [
+    '-O0',
+    '-O1',
+    '-O2',
+    '-O3',
+  ]
+  switches = [
+    '',
+    '-fassociative-math',
+    '-mavx',
+    '-fexcess-precision=fast',
+    '-ffinite-math-only',
+    '-mavx2 -mfma',
+    '-march=core-avx2',
+  ]
+
+[[hosts]]
+
+name = 'other.hostname.com'
+flit_path = 'my-installs/flit/bin/flit'
+config_dir = 'project/flit-tests'
+
+[hosts.ground_truth]
+
+compiler = 'Intel'
+optimization_level = '-O0'
+switch = ''
+
+  [[hosts.compilers]]
+
+  binary = 'icpc'
+  name = 'intel'
+  type = 'intel'
+  optimization_levels = [
+    '-O0',
+  ]
+  switches = [
+    '',
+  ]
+```
+
 
 [Prev](flit-command-line.md)
 |
