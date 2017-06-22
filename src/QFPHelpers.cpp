@@ -7,7 +7,7 @@
 #include <iostream>
 #include <mutex>
 
-namespace QFPHelpers {
+namespace flit {
 
 const std::vector<uint_fast32_t>
 getShuffleSeq(uint_fast32_t size){
@@ -54,7 +54,6 @@ get_tiny2<long double>(){
 }
 
   //const std::vector<float> float_rands = setRandSequence<float>(RAND_VECT_SIZE);
-const std::vector<uint_fast32_t> shuffled_16  = getShuffleSeq(16);
 
 template<>
 const std::vector<float>&
@@ -98,5 +97,5 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
   return os;
 }
 
-}
+} // end of namespace flit
  

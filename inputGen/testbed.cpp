@@ -1,6 +1,6 @@
 #include "testbed.h"
 
-#include "testBase.hpp"
+#include "TestBase.hpp"
 #include "QFPHelpers.hpp"
 
 #include <iterator>
@@ -11,10 +11,10 @@ namespace {
   runTestbed_impl(const std::string &testName,
                   const std::vector<T> &inputvals)
   {
-    using QFPTest::TestInput;
-    using QFPHelpers::Vector;
+    using flit::TestInput;
+    using flit::Vector;
 
-    auto test = QFPTest::getTests()[testName]->get<T>();
+    auto test = flit::getTests()[testName]->get<T>();
     TestInput<T> input = test->getDefaultInput();
     input.vals = inputvals;
     auto scores = test->run(input);
@@ -22,7 +22,7 @@ namespace {
     // Return only the first score.  Ignore the key
     return std::get<0>(scores.begin()->second);
   }
-}
+} // end of unnamed namespace
 
 
 long double

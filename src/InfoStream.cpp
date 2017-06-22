@@ -21,7 +21,7 @@ namespace {
 
   static InfoStreamBackend infoStreamBackendSingleton;
   std::mutex infoStreamMutex;
-}
+} // end of unnamed namespace
 
 InfoStream::InfoStream()
   : std::ostream()

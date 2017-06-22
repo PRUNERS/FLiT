@@ -1,6 +1,6 @@
 #include "helper.h"
 #include "groundtruth.h"
-#include "testBase.hpp"
+#include "TestBase.hpp"
 //#include "testbed.h"
 
 #include <cmath>
@@ -93,7 +93,7 @@ void runAllPrecisions(const std::string testName, uint divergentCount,
 
 std::vector<std::string> getTestNames() {
   std::vector<std::string> retval;
-  for (auto entry : QFPTest::getTests()) {
+  for (auto entry : flit::getTests()) {
     retval.push_back(entry.first);
   }
   return retval;

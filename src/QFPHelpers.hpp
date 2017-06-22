@@ -1,5 +1,5 @@
 // the header for QFP helpers.  These classes, such as matrix and
-// vector, utilize the testBase watch data items for monitoring by
+// vector, utilize the TestBase watch data items for monitoring by
 // differential debugging.
 
 #ifndef QFPHELPERS
@@ -31,7 +31,7 @@
 // #endif
 
 
-namespace QFPHelpers {
+namespace flit {
 
 const int RAND_SEED = 1;
 const int RAND_VECT_SIZE = 256;
@@ -500,7 +500,7 @@ public:
   }
 };
 
-}
+} // end of namespace flit
 
 #endif
  
