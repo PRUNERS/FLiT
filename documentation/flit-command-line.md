@@ -1,5 +1,11 @@
 # FLiT Command-Line
 
+[Prev](litmus-tests.md)
+-
+[Table of Contents](README.md)
+-
+[Next](flit-configuration-file.md)
+
 FLiT comes with a command-line tool called `flit`.  This command-line tool is
 simply a symbolic link to `flit.py`.  In the repository, it is located in
 `scripts/flitcli/flit.py`.  When installed, it is installed in
@@ -108,4 +114,10 @@ _not yet implemented_
 Runs analysis on a previous flit run. The analysis will be of the current flit
 repository and will create a directory called analysis inside of the flit
 directory.
+
+[Prev](litmus-tests.md)
+-
+[Table of Contents](README.md)
+-
+[Next](flit-configuration-file.md)
 

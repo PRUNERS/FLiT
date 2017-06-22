@@ -1,5 +1,11 @@
 # Writing Test Cases
 
+[Prev](available-compiler-flags.md)
+-
+[Table of Contents](README.md)
+-
+[Next](database-structure.md)
+
 When you initialize a test directory using `flit init`, a test file called
 `Empty.cpp` will be placed in the `tests` directory.  This test is as the name
 implies - empty.  It basically shows you how to create a new test and is
@@ -21,3 +27,9 @@ mv tests/BrokenTest.cpp disabled
 ```
 
 That's it.
+
+[Prev](available-compiler-flags.md)
+-
+[Table of Contents](README.md)
+-
+[Next](database-structure.md)

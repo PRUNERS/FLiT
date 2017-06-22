@@ -1,5 +1,11 @@
 # Available Compiler Flags
 
+[Prev](flit-configuration-file.md)
+-
+[Table of Contents](README.md)
+-
+[Next](writing-test-cases.md)
+
 Convenient TOML lists:
 
 * [GCC](#gcc)
@@ -162,3 +168,9 @@ switches = [
   '--prec-sqrt=true',
 ]
 ```
+
+[Prev](flit-configuration-file.md)
+-
+[Table of Contents](README.md)
+-
+[Next](writing-test-cases.md)

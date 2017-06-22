@@ -1,6 +1,10 @@
 # FLiT Installation
 
-Table of Contents:
+[Table of Contents](README.md)
+-
+[Next](litmus-tests.md)
+
+Instruction Contents:
 
 * [Roles](#roles)
 * [Prerequisites](#prerequisites)
@@ -24,8 +28,7 @@ compilers.  There are 3 roles used in a FLiT architecture:
 
 Each role requires slightly different setup.  A particular computer may only
 satisfy one role, or it may satisfy multiple roles.  You can potentially have
-all three roles on a single machine, which is the simplest use case.  Each
-setup step has associated with it which roles the instructions apply toward.
+all three roles on a single machine, which is the simplest use case.
 
 ## Prerequisites
 
@@ -39,7 +42,7 @@ The following prerequisites are required for all three roles:
   * The [toml](https://github.com/uiri/toml) module (for
     [TOML](https://github.com/toml-lang/toml) configuration files)
 * [make](https://www.gnu.org/software/make)
-* [gcc](https://gcc.gnu.org) version 4.9 or later
+* [gcc](https://gcc.gnu.org) version 4.9 or higher
 
 For Debian-based systems:
 
@@ -161,3 +164,7 @@ so these are the connections you may want to have an SSH connection.  See
 [Ubuntu's help
 documentation](https://help.ubuntu.com/community/SSH/OpenSSH/Keys) for setting
 up SSH keys.
+
+[Table of Contents](README.md)
+-
+[Next](litmus-tests.md)

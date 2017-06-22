@@ -1,5 +1,11 @@
 # FLiT Configuration File
 
+[Prev](flit-command-line.md)
+-
+[Table of Contents](README.md)
+-
+[Next](available-compiler-flags.md)
+
 The FLiT configuration file is called `flit-config.toml`.  It is written in the
 [TOML](https://github.com/toml-lang/toml) specification.
 
@@ -262,3 +268,9 @@ switch = ''
 
 Here is demonstrated that you can specify another host.  This one is called
 `other.hostname.com` with a single compiler named `intel`.
+
+[Prev](flit-command-line.md)
+-
+[Table of Contents](README.md)
+-
+[Next](available-compiler-flags.md)
