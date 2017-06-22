@@ -6,7 +6,7 @@
 template <typename T>
 GLOBAL
 void
-DoHGSITestKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+DoHGSITestKernel(const flit::CuTestInput<T>* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -28,8 +28,7 @@ DoHGSITestKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* re
 
   double score = std::abs(o12) + std::abs(o13) + std::abs(o23);
 
-  results[idx].s1 = score;
-  results[idx].s2 = 0;
+  results[idx] = score;
 }
 
 template <typename T>
@@ -42,8 +41,7 @@ public:
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoHGSITestKernel; }
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     long double score = 0.0;
 
     //matrix = {a, b, c};
@@ -70,7 +68,7 @@ protected:
       flit::info_stream << id << ":   r3: " << r3 << std::endl;
       flit::info_stream << id << ": w dot prods: " << o12 << ", " << o13 << ", " << o23 << std::endl;
     }
-    return {std::pair<long double, long double>(score, 0.0l), 0l};
+    return score;
   }
 
 protected:

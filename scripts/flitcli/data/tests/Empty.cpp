@@ -4,15 +4,14 @@
 
 template <typename T>
 GLOBAL
-void Empty_kernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results) {
+void Empty_kernel(const flit::CuTestInput<T>* tiList, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
   auto& ti = tiList[idx];
-  results[idx].s1 = ti.vals[0];
-  results[idx].s2 = 0.0;
+  results[idx] = ti.vals[0];
 }
 
 /** An example test class to show how to make FLiT tests
@@ -71,8 +70,8 @@ protected:
    * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
    * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
    */
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
-    return {std::pair<long double, long double>(ti.vals[0], 0.0), 0};
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
+    return ti.vals[0];
   }
 
 protected:

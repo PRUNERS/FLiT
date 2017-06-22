@@ -212,7 +212,7 @@ public:
   virtual flit::TestInput<F> getDefaultInput() { return {}; }
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<F>& ti);
+  virtual long double run_impl(const flit::TestInput<F>& ti);
 
   void   setTimeout(long millis);  // starts the timer for checkTimeout()
   void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
@@ -320,7 +320,7 @@ void sigfpe(int i)
 }
 
 template <typename F>
-flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
+long double Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
 {
   FLIT_UNUSED(ti);
   int timeoutMillis = 1000;
@@ -1867,9 +1867,7 @@ flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti
     status = ExitStatus::OverflowStatus;
   }
 
-  return {std::pair<long double, long double>(Milestone,
-					      static_cast<long double>(status)),
-      0};
+  return Milestone;
 }
 
 /* setTimeout */

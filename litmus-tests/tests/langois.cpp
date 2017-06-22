@@ -14,7 +14,7 @@
 // template <typename T>
 // GLOBAL
 // void
-// addNameHere(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// addNameHere(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -38,8 +38,7 @@
 //     auto crit = getCArea(a,b,c);
 //     score += std::abs(crit - checkVal);
 //   }
-//   results[idx].s1 = score;
-//   results[idx].s2 = 0.0;
+//   results[idx] = score;
 // }
 
 //these are the helpers for the langois compensating algos
@@ -86,8 +85,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -101,7 +99,7 @@ protected:
     for(stype i = 1; i < size; ++i){
       s[i] = std::fma(x[i], y[i], s[i-1]);
     }
-    return {std::pair<long double, long double>(s[size-1], (T)0.0), 0};
+    return s[size-1];
   }
 
 protected:
@@ -122,8 +120,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -140,7 +137,7 @@ protected:
       ThreeFMA(x[i], y[i], s[i-1], s[i], a, B);
       c[i] = c[i-1] + (a + B);
     }
-    return {std::pair<long double, long double>(s[size-1] + c[size-1], (T)0.0), 0};
+    return s[size-1] + c[size-1];
   }
 
 protected:
@@ -161,8 +158,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -180,7 +176,7 @@ protected:
       TwoSum(p, s[i-1], s[i], si);
       c[i] = c[i-1] + (pi + si);
     }
-    return {std::pair<long double, long double>(s[size-1] + c[size-1], (T)0.0), 0};
+    return s[size-1] + c[size-1];
   }
 
 protected:

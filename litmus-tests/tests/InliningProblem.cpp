@@ -23,16 +23,15 @@ protected:
     const T x_again = -nx;
     return x_again;
   }
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     T a = ti.vals[0];
     T also_a = identity(a);
 
     const T score = std::sqrt(a) * std::sqrt(also_a);
-    const T score2 = std::pow(std::sqrt(a), 2);
 
     flit::info_stream << id << ": score  = " << score  << std::endl;
-    flit::info_stream << id << ": score2 = " << score2 << std::endl;
-    return {std::pair<long double, long double>(score, score2), 0};
+
+    return score;
   }
 
 protected:

@@ -21,14 +21,13 @@ public:
   }
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     const int zero = (rand() % 10) / 99;
     const T val = ti.vals[0];
     const T score = std::sin(val + zero) / std::sin(val);
-    const T score2 = score - 1.0;
-    flit::info_stream << id << ": score  = " << score  << std::endl;
-    flit::info_stream << id << ": score2 = " << score2 << std::endl;
-    return {std::pair<long double, long double>(score, score2), 0};
+    flit::info_stream << id << ": score       = " << score       << std::endl;
+    flit::info_stream << id << ": score - 1.0 = " << score - 1.0 << std::endl;
+    return score;
   }
 
 protected:

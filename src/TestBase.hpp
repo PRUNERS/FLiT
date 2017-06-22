@@ -40,11 +40,6 @@ struct TestInput {
   std::vector<T> vals;
 };
 
-struct CudaResultElement {
-  double s1;
-  double s2;
-};
-
 /** A simple structure used in CUDA tests.
  *
  * It stores some values and a pointer, but does not do dynamic allocation nor
@@ -91,7 +86,7 @@ struct CuTestInput {
  * @param results: array where to store results, already allocated
  */
 template <typename T>
-using KernelFunction = void (const CuTestInput<T>*, CudaResultElement*);
+using KernelFunction = void (const CuTestInput<T>*, double*);
 
 template <typename T>
 using CudaDeleter = void (T*);
@@ -140,7 +135,7 @@ std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
  * @param stride: how many inputs per test run
  */
 template <typename T>
-std::vector<ResultType::mapped_type>
+std::vector<double>
 runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
 #ifdef __CUDA__
   size_t runCount;
@@ -157,7 +152,7 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
     ctiList[i].vals = ti.vals.data() + i * stride;
     ctiList[i].length = stride;
   }
-  std::unique_ptr<CudaResultElement[]> cuResults(new CudaResultElement[runCount]);
+  std::unique_ptr<double[]> cuResults(new double[runCount]);
   // Note: __CPUKERNEL__ mode is broken by the change to run the kernel in
   // multithreaded mode.  Its compilation is broken.
   // TODO: fix __CPUKERNEL__ mode for testing.
@@ -170,25 +165,21 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
     ctiList[i].vals = deviceVals.get() + i * stride;
   }
   auto deviceInput = makeCudaArr(ctiList.get(), runCount);
-  auto deviceResult = makeCudaArr<CudaResultElement>(nullptr, runCount);
+  auto deviceResult = makeCudaArr<double>(nullptr, runCount);
   kernel<<<runCount,1>>>(deviceInput.get(), deviceResult.get());
-  auto resultSize = sizeof(CudaResultElement) * runCount;
+  auto resultSize = sizeof(double) * runCount;
   checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult.get(), resultSize,
                              cudaMemcpyDeviceToHost));
 # endif // __CPUKERNEL__
-  std::vector<ResultType::mapped_type> results;
-  for (size_t i = 0; i < runCount; i++) {
-    results.emplace_back(std::pair<long double, long double>
-                         (cuResults[i].s1, cuResults[i].s2), 0);
-  }
+  std::vector<double> results(cuResults, cuResults + runCount);
   return results;
-#else  // not __CUDA__
+#else   // not __CUDA__
   // Do nothing
   FLIT_UNUSED(kernel);
   FLIT_UNUSED(ti);
   FLIT_UNUSED(stride);
   return {};
-#endif // __CUDA__
+#endif  // __CUDA__
 }
 
 template <typename T>
@@ -237,74 +228,88 @@ public:
     }
 
     // Run the tests
-    std::vector<ResultType::mapped_type> scoreList;
+    std::vector<ResultType::mapped_type> resultValues;
 #ifdef __CUDA__
     auto kernel = getKernel();
     if (kernel == nullptr) {
       for (auto runInput : inputSequence) {
+        long double score = 0.0;
+        int_fast64_t timing = 0;
         if (GetTime) {
-          ResultType::mapped_type scores;
           int_fast64_t nsecs = 0;
           for (int r = 0; r < TimingLoops; ++r) {
             auto s = high_resolution_clock::now();
-            scores = run_impl(runInput);
+            score = run_impl(runInput);
             auto e = high_resolution_clock::now();
             nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
             assert(nsecs > 0);
           }
-          scores.second = nsecs / TimingLoops;
-          scoreList.push_back(scores);
+          timing = nsecs / TimingLoops;
         } else {
-          scoreList.push_back(run_impl(runInput));
+          score = run_impl(runInput);
+          timing = 0;
         }
+        resultValues.emplace_back({score, 0.0}, timing);
       }
     } else {
+      int_fast64_t timing = 0;
+      std::vector<double> scoreList;
       if (GetTime) {
-        ResultType::mapped_type scores;
         int_fast64_t nsecs = 0;
         for (size_t r = 0; r < TimingLoops; ++r){
           auto s = high_resolution_clock::now();
+          // TODO: find out how to properly profile CUDA kernels.
+          // FIXME: This strategy of timing is not right because:
+          // FIXME: 1. multiple inputs are tested in parallel
+          // FIXME: 2. timing is done not only over kernel execution, but also
+          // FIXME:    in transfer time
+          // FIXME: 3. stalls in device availability are not accounted for
           scoreList = runKernel(kernel, ti, stride);
           auto e = high_resolution_clock::now();
           nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
           assert(nsecs > 0);
         }
         auto avg = nsecs / TimingLoops;
-        auto avgPerKernel = avg / scoreList.size();
-        for (auto& s : scoreList) {
-          s.second = avgPerKernel;
-        }
+        timing = avg / scoreList.size();
       } else {
         scoreList = runKernel(kernel, ti, stride);
+        timing = 0;
+      }
+      for (auto& score : scoreList) {
+        resultValues.emplace_back(
+            std::pair<long double, long double>{score, 0.0}, timing);
       }
     }
 #else  // not __CUDA__
     for (auto runInput : inputSequence) {
+      long double score = 0.0;
+      int_fast64_t timing = 0;
       if (GetTime) {
-        ResultType::mapped_type scores;
         int_fast64_t nsecs = 0;
         for (size_t r = 0; r < TimingLoops; ++r) {
           auto s = high_resolution_clock::now();
-          scores = run_impl(runInput);
+          score = run_impl(runInput);
           auto e = high_resolution_clock::now();
           nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
           assert(nsecs > 0);
         }
-        scores.second = nsecs / TimingLoops;
-        scoreList.push_back(scores);
+        timing = nsecs / TimingLoops;
       } else {
-        scoreList.push_back(run_impl(runInput));
+        score = run_impl(runInput);
+        timing = 0;
       }
+      resultValues.emplace_back(
+          std::pair<long double, long double>{score, 0.0}, timing);
     }
 #endif // __CUDA__
 
     // Store and return the test results
-    for (size_t i = 0; i < scoreList.size(); i++) {
+    for (size_t i = 0; i < resultValues.size(); i++) {
       std::string name = id;
-      if (scoreList.size() != 1) {
+      if (resultValues.size() != 1) {
         name += "_idx" + std::to_string(i);
       }
-      results.insert({{name, typeid(T).name()}, scoreList[i]});
+      results.insert({{name, typeid(T).name()}, resultValues[i]});
     }
     return results;
   }
@@ -353,7 +358,7 @@ protected:
    *   elements.
    * @return a single result.  See ResultType to see what the mapped types is.
    */
-  virtual ResultType::mapped_type run_impl(const TestInput<T>& ti) = 0;
+  virtual long double run_impl(const TestInput<T>& ti) = 0;
 
 protected:
   const std::string id;
@@ -371,7 +376,7 @@ public:
                          const size_t) { return {}; }
 protected:
   virtual KernelFunction<T>* getKernel() { return nullptr; }
-  virtual ResultType::mapped_type run_impl(const TestInput<T>&) { return {}; }
+  virtual long double run_impl(const TestInput<T>&) { return {}; }
 };
 
 class TestFactory {

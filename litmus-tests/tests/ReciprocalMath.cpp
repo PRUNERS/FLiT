@@ -18,7 +18,7 @@ public:
   }
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];
@@ -30,12 +30,11 @@ protected:
     c = c/m;
     d = d/m;
 
-    const T score = a + c;
-    const T score2 = b + d;
+    const T score = a + b + c + d;
 
     flit::info_stream << id << ": score  = " << score  << std::endl;
-    flit::info_stream << id << ": score2 = " << score2 << std::endl;
-    return {std::pair<long double, long double>(score, score2), 0};
+
+    return score;
   }
 
 protected:

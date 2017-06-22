@@ -22,7 +22,7 @@ T getArea(const T a,
 template <typename T>
 GLOBAL
 void
-TrianglePSKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+TrianglePSKern(const flit::CuTestInput<T>* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -46,8 +46,7 @@ TrianglePSKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* resu
     auto crit = getCArea(a,b,c);
     score += std::abs(crit - checkVal);
   }
-  results[idx].s1 = score;
-  results[idx].s2 = 0.0;
+  results[idx] = score;
 }
 
 template <typename T>
@@ -64,10 +63,9 @@ public:
   }
 
 protected:
-  virtual
-  flit::KernelFunction<T>* getKernel() {return TrianglePSKern; }
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::KernelFunction<T>* getKernel() {return TrianglePSKern; }
+
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     T maxval = ti.vals[0];
     // start as a right triangle
     T a = maxval;
@@ -90,7 +88,7 @@ protected:
       auto crit = getArea(a,b,c);
       score += std::abs(crit - checkVal);
     }
-    return {std::pair<long double, long double>(score, 0.0), 0};
+    return score;
   }
 
 protected:

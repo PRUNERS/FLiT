@@ -7,7 +7,7 @@
 template <typename T>
 GLOBAL
 void
-DoSkewSCPRKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+DoSkewSCPRKernel(const flit::CuTestInput<T>* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -23,8 +23,7 @@ DoSkewSCPRKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* re
   auto rMatrix = flit::MatrixCU<T>::Identity(3) +
     sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
   auto result = rMatrix * A;
-  results[idx].s1 = result.L1Distance(B);
-  results[idx].s1 = result.LInfDistance(B);
+  results[idx] = result.L1Distance(B);
 }
 
 template <typename T>
@@ -47,11 +46,9 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoSkewSCPRKernel;}
 
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     flit::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
-    long double LIScore = 0.0;
     flit::Vector<T> A = { ti.vals[0], ti.vals[1], ti.vals[2] };
     flit::Vector<T> B = { ti.vals[3], ti.vals[4], ti.vals[5] };
     A = A.getUnitVector();
@@ -76,7 +73,6 @@ protected:
     flit::info_stream << "rotator: " << std::endl << rMatrix << std::endl;
     if(!(result == B)){
       L1Score = result.L1Distance(B);
-      LIScore = result.LInfDistance(B);
       flit::info_stream << "Skew symmetric cross product rotation failed with ";
       flit::info_stream << "L1Distance " << L1Score << std::endl;
       flit::info_stream << "starting vectors: " << std::endl;
@@ -85,9 +81,8 @@ protected:
       flit::info_stream << B << std::endl;
       flit::info_stream << "ended up with: " << std::endl;
       flit::info_stream << "L1Distance: " << L1Score << std::endl;
-      flit::info_stream << "LIDistance: " << LIScore << std::endl;
     }
-    return {std::pair<long double, long double>(L1Score, LIScore), 0};
+    return L1Score;
   }
 
 private:

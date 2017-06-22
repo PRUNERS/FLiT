@@ -4,18 +4,6 @@
 
 #include <stack>
 
-// namespace  {
-// double volatile baseD;
-// bool dReg = false;
-// float volatile baseF;
-// bool fReg = false;
-// long double volatile baseL;
-// bool lReg = false;
-// bool watching = false;
-// std::stack<float> fStack;
-// std::stack<double> dStack;
-// std::stack<long double> lStack;
-// } // end of unnamed namespace
 namespace flit {
 
   //output operator for ResultType

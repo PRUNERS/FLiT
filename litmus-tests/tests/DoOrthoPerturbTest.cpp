@@ -8,7 +8,7 @@
 template <typename T>
 GLOBAL
 void
-DoOPTKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+DoOPTKernel(const flit::CuTestInput<T>* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -50,8 +50,7 @@ DoOPTKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results
     }
     p = backup;
   }
-  results[idx].s1 = score;
-  results[idx].s2 = 0;
+  results[idx] = score;
 }
 
 template <typename T>
@@ -75,8 +74,8 @@ public:
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoOPTKernel; }
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+
+  virtual long double run_impl(const flit::TestInput<T>& ti) {
     using flit::operator<<;
 
     auto iters = ti.iters;
@@ -142,7 +141,7 @@ protected:
         << std::endl;
       cdim++;
     }
-    return {std::pair<long double, long double>(score, 0.0), 0};
+    return score;
   }
 
 private:
