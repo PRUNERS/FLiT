@@ -1,6 +1,10 @@
 # FLiT Installation
 
-Table of Contents:
+[Table of Contents](README.md)
+|
+[Next](litmus-tests.md)
+
+Instruction Contents:
 
 * [Roles](#roles)
 * [Prerequisites](#prerequisites)
@@ -24,8 +28,7 @@ compilers.  There are 3 roles used in a FLiT architecture:
 
 Each role requires slightly different setup.  A particular computer may only
 satisfy one role, or it may satisfy multiple roles.  You can potentially have
-all three roles on a single machine, which is the simplest use case.  Each
-setup step has associated with it which roles the instructions apply toward.
+all three roles on a single machine, which is the simplest use case.
 
 ## Prerequisites
 
@@ -39,7 +42,7 @@ The following prerequisites are required for all three roles:
   * The [toml](https://github.com/uiri/toml) module (for
     [TOML](https://github.com/toml-lang/toml) configuration files)
 * [make](https://www.gnu.org/software/make)
-* [gcc](https://gcc.gnu.org) version 4.9 or later
+* [gcc](https://gcc.gnu.org) version 4.9 or higher
 
 For Debian-based systems:
 
@@ -54,16 +57,16 @@ brew install make python3 gcc git
 pip3 install toml
 ```
 
-If you install python version 3.0 or more, then you will need to have a
-symbolic link called `python3` in the path pointing to that python executable.
+If you install python version 3.0 or later, then you will need to have a
+symbolic link called `python3` in your `PATH` pointing to that python executable.
 
 ### Runner Prerequisites
 
 The test runner can run multiple compilers.  For now, only one compiler is
 supported from each of the types: GCC, Clang, Intel's icpc, and NVIDIA's nvcc.
-Simply have the one you want used as the first on the system PATH.  You do not
+Simply have the one you want used as the first in your system PATH.  You do not
 need all four of those, only those ones installed will be used.  But all of
-them need to be able to support C++11.
+them need to support C++11.
 
 If this is not on the same machine as the Launcher, then the Database machine
 will need an SSH server running.
@@ -157,7 +160,11 @@ to make the following connections:
 * **Launcher** -> **Database**
 * **Runner** -> **Database**
 
-so these are the connections you may want to have an SSH connection.  See
+so these are the connections you may want to setup SSH keys for.  See
 [Ubuntu's help
 documentation](https://help.ubuntu.com/community/SSH/OpenSSH/Keys) for setting
 up SSH keys.
+
+[Table of Contents](README.md)
+|
+[Next](litmus-tests.md)
