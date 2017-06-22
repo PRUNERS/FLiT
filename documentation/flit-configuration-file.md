@@ -124,10 +124,11 @@ type = 'postgres'
 port = 5432
 ```
 
-Above we specify the information for the database connection.  Since it is not
-very secure to store passwords in the configuration file, the password will be
-asked at the time of execution.  Right now, `postgres` is the only database
-type that is supported, but more are to come.
+Above we specify the information for the database connection.  Since
+it is not very secure to store passwords in the configuration file,
+you will be prompted for the password at the time of execution.  Right
+now, `postgres` is the only database type that is supported, but more
+are to come.
 
 ```toml
 [[hosts]]
@@ -209,9 +210,10 @@ Compiler Flags](available-compiler-flags.md).
   ]
 ```
 
-Here is demonstrated that you can specify another version of `g++` with even
-different optimization levels and switches.  It is simply required that the
-compiler name be unique for this host.
+Here it is demonstrated that you can specify a second version of `g++`
+with different optimization levels and switches from the first
+version.  It is simply required that the compiler name be unique for
+this host.
 
 ```toml
   [[hosts.compilers]]
@@ -236,8 +238,8 @@ compiler name be unique for this host.
   ]
 ```
 
-We also specify a third compiler `clang++` with again different flags.  So for
-this host of `my.hostname.com` we have three compilers configured: `g++`,
+We also specify a third compiler `clang++`, again with different flags.  So for
+the host `my.hostname.com`, we have three compilers configured: `g++`,
 `g++-7.0`, and `clang`.
 
 ```toml
@@ -266,7 +268,7 @@ switch = ''
   ]
 ```
 
-Here is demonstrated that you can specify another host.  This one is called
+Here it is demonstrated that you can specify another host.  This one is called
 `other.hostname.com` with a single compiler named `intel`.
 
 [Prev](flit-command-line.md)

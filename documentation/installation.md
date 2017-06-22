@@ -57,16 +57,16 @@ brew install make python3 gcc git
 pip3 install toml
 ```
 
-If you install python version 3.0 or more, then you will need to have a
-symbolic link called `python3` in the path pointing to that python executable.
+If you install python version 3.0 or later, then you will need to have a
+symbolic link called `python3` in your `PATH` pointing to that python executable.
 
 ### Runner Prerequisites
 
 The test runner can run multiple compilers.  For now, only one compiler is
 supported from each of the types: GCC, Clang, Intel's icpc, and NVIDIA's nvcc.
-Simply have the one you want used as the first on the system PATH.  You do not
+Simply have the one you want used as the first in your system PATH.  You do not
 need all four of those, only those ones installed will be used.  But all of
-them need to be able to support C++11.
+them need to support C++11.
 
 If this is not on the same machine as the Launcher, then the Database machine
 will need an SSH server running.
@@ -160,7 +160,7 @@ to make the following connections:
 * **Launcher** -> **Database**
 * **Runner** -> **Database**
 
-so these are the connections you may want to have an SSH connection.  See
+so these are the connections you may want to setup SSH keys for.  See
 [Ubuntu's help
 documentation](https://help.ubuntu.com/community/SSH/OpenSSH/Keys) for setting
 up SSH keys.
