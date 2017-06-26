@@ -1,9 +1,12 @@
 [database]
 
-username = 'mbentley'
-address = 'localhost'
-type = 'postgres'
-port = 5432
+# older versions of flit supported postgres.  that has been removed.  only
+# sqlite is supported at the moment.
+type = 'sqlite'
+
+# if relative path, it is relative to the directory containing this
+# configuration file.
+filepath = 'results.sqlite'
 
 [[hosts]]
 

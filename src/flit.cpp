@@ -18,17 +18,34 @@
 void outputResults(const flit::ResultType& scores, std::ostream& out){
   using flit::operator<<;
   using flit::as_int;
+  // Output the column headers
+  out << "name,"
+         "host,"
+         "compiler,"
+         "optl,"
+         "switches,"
+         "precision,"
+         "score,"
+         "score_d,"
+         "resultfile,"
+         "file,"
+         "nanosec"
+      << std::endl;
   for(const auto& i: scores){
+    // TODO: Output values instead of placeholders using macro definitions
+    // TODO: through the Makefile.
     out
-      << "HOST,SWITCHES,OPTL,COMPILER,"
-      << i.first.second << ",us,"             // sort
-      << i.second.first.first << ","          // score0d
-      << as_int(i.second.first.first) << ","  // score0
-      << i.second.first.second << ","         // score1d
-      << as_int(i.second.first.second) << "," // score1
-      << i.first.first << ","                 // name
-      << i.second.second << ","               // nanoseconds
-      << "FILENAME"                           // filename
+      << i.first.first << ","                 // test case name
+      << "HOST,"                              // placeholders
+         "COMPILER,"
+         "OPTL,"
+         "SWITCHES,"
+      << i.first.second << ","                // precision
+      << as_int(i.second.first.first) << ","  // score
+      << i.second.first.first << ","          // score_d
+      << "NULL,"                              // resultfile
+      << "FILENAME,"                          // executable filename placeholder
+      << i.second.second                      // nanoseconds
       << std::endl;
   }
 }

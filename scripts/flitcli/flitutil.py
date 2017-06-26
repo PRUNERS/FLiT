@@ -2,7 +2,10 @@
 Utility functions shared between multiple flit subcommands.
 '''
 
+import flitconfig as conf
+
 import os
+import sqlite3
 import sys
 
 def process_in_file(infile, dest, vals, overwrite=False):
@@ -25,4 +28,23 @@ def process_in_file(infile, dest, vals, overwrite=False):
         with open(dest, 'w') as fout:
             fout.write(fin.read().format(**vals))
 
+def sqlite_open(filepath):
+    '''
+    Opens and returns an sqlite database cursor object.  If the database does
+    not exist, it will be created.
+    '''
+    # Using detect_types allows us to insert datetime objects
+    connection = sqlite3.connect(filepath,
+                                 detect_types=sqlite3.PARSE_DECLTYPES)
+
+    # Use the dict factory so that queries return dictionary-like objects
+    connection.row_factory = sqlite3.Row
+
+    # Create the tables if they do not exist.  Also has other setup.
+    table_file = os.path.join(conf.data_dir, 'db', 'tables-sqlite.sql')
+    with open(table_file, 'r') as table_sql:
+        connection.executescript(table_sql.read())
+    connection.commit()
+
+    return connection
 

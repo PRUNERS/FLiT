@@ -1,4 +1,4 @@
-'Implements the squelch subcommand'
+'Implements the run subcommand for executing all compilations of flit tests'
 
 import argparse
 import sys
@@ -15,8 +15,8 @@ def main(arguments, prog=sys.argv[0]):
                 should be sent to the database computer for later analysis.
                 ''',
             )
-    parser.add_argument('directory', default='.',
-                        help='The directory to initialize')
+    parser.add_argument('description',
+                        help='A description of the test run (required)')
     args = parser.parse_args(arguments)
 
     # Subcommand logic here
