@@ -90,6 +90,7 @@ install: $(TARGET)
 	mkdir -m 0755 -p $(PREFIX)/share/flit/scripts
 	mkdir -m 0755 -p $(PREFIX)/share/flit/doc
 	mkdir -m 0755 -p $(PREFIX)/share/flit/data/tests
+	mkdir -m 0755 -p $(PREFIX)/share/flit/data/db
 	mkdir -m 0755 -p $(PREFIX)/share/flit/config
 	mkdir -m 0755 -p $(PREFIX)/share/flit/litmus-tests
 	ln -sf ../share/flit/scripts/flit.py $(PREFIX)/bin/flit
@@ -103,6 +104,7 @@ install: $(TARGET)
 	install -m 0644 $(DATA_DIR)/custom.mk $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/main.cpp $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/tests/Empty.cpp $(PREFIX)/share/flit/data/tests/
+	install -m 0644 $(DATA_DIR)/db/tables-psql.sql $(PREFIX)/share/flit/data/db/
 	install -m 0644 $(CONFIG_DIR)/flit-default.toml.in $(PREFIX)/share/flit/config/
 	install -m 0644 $(LITMUS_TESTS) $(PREFIX)/share/flit/litmus-tests/
 	@echo "Generating $(INSTALL_FLIT_CONFIG)"

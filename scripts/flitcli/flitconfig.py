@@ -21,20 +21,20 @@ all = [
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
 # flit documentation
-doc_dir = os.path.realpath(os.path.join(script_dir, '../../documentation'))
+doc_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'documentation'))
 
 # compiled libflit.so
-lib_dir = os.path.realpath(os.path.join(script_dir, '../../lib'))
+lib_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'lib'))
 
 # flit C++ include files, primarily flit.h
-include_dir = os.path.realpath(os.path.join(script_dir, '../../src'))
+include_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src'))
 
 # default configuration for flit init
 config_dir = os.path.join(script_dir, 'config')
 
 # default data files such as Makefiles
-data_dir = os.path.join(script_dir, 'data')
+data_dir = os.path.join(script_dir, '..', '..', 'data')
 
 # directory containing litmus tests
-litmus_test_dir = os.path.realpath(os.path.join(script_dir, '../../litmus-tests/tests'))
+litmus_test_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'litmus-tests', 'tests'))
 
