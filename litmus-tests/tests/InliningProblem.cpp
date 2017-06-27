@@ -23,7 +23,7 @@ protected:
     const T x_again = -nx;
     return x_again;
   }
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     T a = ti.vals[0];
     T also_a = identity(a);
 

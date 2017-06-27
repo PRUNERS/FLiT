@@ -41,7 +41,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoMatrixMultSanityKernel; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto dim = ti.vals.size();
     flit::Vector<T> b(ti.vals);
     auto c = flit::Matrix<T>::Identity(dim) * b;

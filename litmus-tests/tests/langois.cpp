@@ -85,7 +85,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -120,7 +120,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -158,7 +158,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;

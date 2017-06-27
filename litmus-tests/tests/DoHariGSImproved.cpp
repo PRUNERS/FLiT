@@ -41,7 +41,7 @@ public:
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoHGSITestKernel; }
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     long double score = 0.0;
 
     //matrix = {a, b, c};

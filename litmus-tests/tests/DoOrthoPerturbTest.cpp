@@ -75,7 +75,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoOPTKernel; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     using flit::operator<<;
 
     auto iters = ti.iters;

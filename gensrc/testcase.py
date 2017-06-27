@@ -54,7 +54,7 @@ protected:
   }}
 
   virtual
-  long double run_impl(const flit::TestInput<T>& ti) {{
+  flit::Variant run_impl(const flit::TestInput<T>& ti) {{
     T score = 0.0;
 
     flit::info_stream << id << ": Starting test with parameters" << std::endl;

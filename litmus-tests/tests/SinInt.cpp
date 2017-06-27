@@ -21,7 +21,7 @@ public:
   }
 
 protected:
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     const int zero = (rand() % 10) / 99;
     const T val = ti.vals[0];
     const T score = std::sin(val + zero) / std::sin(val);

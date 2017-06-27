@@ -212,7 +212,7 @@ public:
   virtual flit::TestInput<F> getDefaultInput() { return {}; }
 
 protected:
-  virtual long double run_impl(const flit::TestInput<F>& ti);
+  virtual flit::Variant run_impl(const flit::TestInput<F>& ti);
 
   void   setTimeout(long millis);  // starts the timer for checkTimeout()
   void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
@@ -320,7 +320,7 @@ void sigfpe(int i)
 }
 
 template <typename F>
-long double Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
+flit::Variant Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
 {
   FLIT_UNUSED(ti);
   int timeoutMillis = 1000;

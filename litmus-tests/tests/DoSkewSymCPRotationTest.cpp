@@ -46,7 +46,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoSkewSCPRKernel;}
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     flit::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
     flit::Vector<T> A = { ti.vals[0], ti.vals[1], ti.vals[2] };

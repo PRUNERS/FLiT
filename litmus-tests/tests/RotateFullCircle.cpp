@@ -44,7 +44,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() {return RFCKern; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto n = ti.iters;
     flit::Vector<T> A = flit::Vector<T>(ti.vals);
     auto orig = A;

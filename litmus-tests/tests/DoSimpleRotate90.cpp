@@ -39,7 +39,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoSR90Kernel; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     flit::Vector<T> A(ti.vals);
     flit::Vector<T> expected = {-A[1], A[0], A[2]};
     flit::info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;

@@ -44,7 +44,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return DoHGSBTestKernel; } 
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     using flit::operator<<;
 
     long double score = 0.0;

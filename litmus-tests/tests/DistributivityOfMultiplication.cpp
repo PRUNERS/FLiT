@@ -41,7 +41,7 @@ protected:
     return DistOfMultKernel;
   }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];

@@ -65,7 +65,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() {return TrianglePSKern; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     T maxval = ti.vals[0];
     // start as a right triangle
     T a = maxval;

@@ -15,7 +15,7 @@ public:
   virtual flit::TestInput<T> getDefaultInput();
 
 protected:
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     Shewchuk<T> chuk;
     T naive = 0.0;
     for (auto val : ti.vals) {

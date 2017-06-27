@@ -19,7 +19,7 @@ public:
   virtual flit::TestInput<T> getDefaultInput();
 
 protected:
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     Kahan<T> kahan;
     Shewchuk<T> chuk;
     T naive = 0.0;

@@ -1,8 +1,11 @@
 #ifndef VARIANT_H
 #define VARIANT_H
 
+#include <ostream>
 #include <stdexcept>
 #include <string>
+
+namespace flit {
 
 /** Can represent various different types
  *
@@ -13,9 +16,12 @@
 class Variant {
 public:
   enum class Type {
-    LongDouble = 1,
-    String = 2,
+    None = 1,
+    LongDouble = 2,
+    String = 3,
   };
+
+  Variant() : _type(Type::None) { }
 
   Variant(long double val)
     : _type(Type::LongDouble)
@@ -30,24 +36,27 @@ public:
   Variant(std::string &&val)
     : _type(Type::String)
     , _str_val(val) { }
+  Variant(const char* val)
+    : _type(Type::String)
+    , _str_val(val) { }
 
-  Type type() { return _type; }
+  Type type() const { return _type; }
 
-  long double longDouble() {
+  long double longDouble() const {
     if (_type != Type::LongDouble) {
       throw std::runtime_error("Variant is not of type Long Double");
     }
     return _ld_val;
   }
 
-  std::string string() {
+  std::string string() const {
     if (_type != Type::String) {
       throw std::runtime_error("Variant is not of type String");
     }
     return _str_val;
   }
 
-  template <typename T> T val();
+  template <typename T> T val() const;
 
 private:
   Type _type;
@@ -55,14 +64,8 @@ private:
   std::string _str_val { "" };
 };
 
-template <>
-long double Variant::val() {
-  return this->longDouble();
-}
+std::ostream& operator<< (std::ostream&, const Variant&);
 
-template <>
-std::string Variant::val() {
-  return this->string();
-}
+} // end of namespace flit
 
 #endif // VARIANT_H

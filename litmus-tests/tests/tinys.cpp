@@ -34,7 +34,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
     uint16_t ddigs = nlim.digits * std::log10(2) + 1;
@@ -78,7 +78,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     return ti.vals[0] - ti.vals[0] / 2;
   }
   using flit::TestBase<T>::id;
@@ -109,7 +109,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     auto size = 16;
 
@@ -150,7 +150,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     auto vals = flit::getRandSeq<T>();
     auto sublen = vals.size() / 4 - 1;
@@ -222,7 +222,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] + ti.vals[1] + ti.vals[2];
     return res;
   }
@@ -260,7 +260,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
     auto big = std::pow(2, (T)man_bits - 1);
@@ -301,7 +301,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] / ti.vals[1];
     return res;
   }
@@ -335,7 +335,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = T(0.0) - ti.vals[0];
     return res;
   }
@@ -370,7 +370,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] - (T)0.0;
     return res;
   }
@@ -404,7 +404,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = (T)0.0 / ti.vals[0];
     return res;
   }
@@ -438,7 +438,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)1.0;
     return res;
   }
@@ -472,7 +472,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] / (T)-1.0;
     return res;
   }
@@ -509,7 +509,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = -(ti.vals[0] / ti.vals[1]);
     return res;
   }
@@ -543,7 +543,7 @@ REGISTER_TYPE(negAdivB)
 // protected:
 //   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 // 
-//   virtual long double run_impl(const flit::TestInput<T>& ti) {
+//   virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
 //     //yes, this is ugly.  ti.vals s/b vector of floats
 //     auto res = (T)((std::result_of<::get_next_type(T)>::type)ti.vals[0]);
 //     return res;
@@ -582,7 +582,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = -(ti.vals[0] - ti.vals[1]);
     return res;
   }
@@ -618,7 +618,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] - ti.vals[0];
     return res;
   }
@@ -656,7 +656,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = -(ti.vals[0] + ti.vals[1]);
     return res;
   }
@@ -695,7 +695,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] / ti.vals[2]);
     return res;
   }
@@ -734,7 +734,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] * (ti.vals[1] * ti.vals[2]);
     return res;
   }
@@ -773,7 +773,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto res = ti.vals[0] + (ti.vals[1] + ti.vals[2]);
     return res;
   }
@@ -812,7 +812,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     bool res = ti.vals[0] + ti.vals[1] == ti.vals[2];
     return res ? 1.0 : 0.0;
   }
@@ -851,7 +851,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     bool res = ti.vals[0] + ti.vals[1] != ti.vals[2];
     return res ? 1.0 : 0.0;
   }

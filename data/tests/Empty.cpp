@@ -40,10 +40,42 @@ public:
    * If your algorithm takes no inputs, then you can simply return an empty
    * TestInput object.  It is as simple as "return {};".
    */
-  flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() {
     flit::TestInput<T> ti;
     ti.vals = { 1.0 };
     return ti;
+  }
+
+  /** Custom comparison methods
+   *
+   * These comparison operations are meant to create a metric between the test
+   * results from this test in the current compilation, and the results from
+   * the ground truth compilation.  You can do things like the relative error
+   * or the absolute error (for the case of long double).
+   *
+   * The below specified functions are the default implementations defined in
+   * the base class.  It is safe to delete these two functions if this
+   * implementation is adequate for you.
+   *
+   * Which one is used depends on the type of Variant that is returned from the
+   * run_impl function.  The value returned by compare will be the value stored
+   * in the database for later analysis.
+   *
+   * Note: when using the CUDA kernel functionality, only long double return
+   * values are valid for now.
+   */
+  virtual long double compare(long double ground_truth,
+                              long double test_results) const {
+    // absolute error
+    return test_results - ground_truth;
+  }
+
+  /** There is no good default implementation comparing two strings */
+  virtual long double compare(const std::string &ground_truth,
+                              const std::string &test_results) const {
+    FLIT_UNUSED(ground_truth);
+    FLIT_UNUSED(test_results);
+    return 0.0;
   }
 
 protected:
@@ -70,7 +102,7 @@ protected:
    * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
    * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
    */
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     return ti.vals[0];
   }
 

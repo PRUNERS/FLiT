@@ -39,7 +39,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return RaUKern; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     auto theta = M_PI;
     auto A = flit::Vector<T>(ti.vals);
     auto orig = A;

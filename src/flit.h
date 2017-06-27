@@ -68,17 +68,30 @@ inline void outputResults (const flit::ResultType& scores, std::ostream& out) {
       << std::endl;
   for(const auto& i: scores){
     out
-      << i.first.first << ","                 // test case name
-      << FLIT_HOST << ","                     // hostname
-      << FLIT_COMPILER << ","                 // compiler
-      << FLIT_OPTL << ","                     // optimization level
-      << FLIT_SWITCHES << ","                 // compiler flags
-      << i.first.second << ","                // precision
-      << as_int(i.second.first.first) << ","  // score
-      << i.second.first.first << ","          // score_d
-      << FLIT_NULL << ","                     // resultfile
-      << FLIT_FILENAME << ","                 // executable filename
-      << i.second.second                      // nanoseconds
+      << i.first.first << ","                        // test case name
+      << FLIT_HOST << ","                            // hostname
+      << FLIT_COMPILER << ","                        // compiler
+      << FLIT_OPTL << ","                            // optimization level
+      << FLIT_SWITCHES << ","                        // compiler flags
+      << i.first.second << ","                       // precision
+      ;
+    auto test_result = i.second.first;
+    if (test_result.type() == flit::Variant::Type::LongDouble) {
+      out
+        << as_int(test_result.longDouble()) << ","   // score
+        << test_result.longDouble() << ","           // score_d
+        << FLIT_NULL << ","                          // resultfile
+        ;
+    } else {
+      out
+        << FLIT_NULL << ","                          // score
+        << FLIT_NULL << ","                          // score_d
+        << test_result.string() << ","               // resultfile
+        ;
+    }
+    out
+      << FLIT_FILENAME << ","                        // executable filename
+      << i.second.second                             // nanoseconds
       << std::endl;
   }
 }

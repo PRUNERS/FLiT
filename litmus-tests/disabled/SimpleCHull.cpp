@@ -17,7 +17,7 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual long double run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
     FLIT_UNUSED(ti);
     CHullEdges.clear();
     PointList.clear();
