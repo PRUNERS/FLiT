@@ -315,11 +315,7 @@ clean:
 	rm -f $(DEV_OBJ)
 	rm -f $(DEV_DEPS)
 	rm -f $(DEV_CUOBJ)
-	rm -f $(TARGETS)
-	rm -f $(CUTARGETS)
-	rm -f $(BIN)
 	rm -f $(OBJ)
-	rm -f $(CUBIN)
 	rm -f $(CUOBJ)
 
 .PHONY: veryclean distclean
@@ -328,8 +324,10 @@ distclean: clean
 	rm -f $(DEV_TARGET)
 	rm -f $(DEV_CUTARGET)
 	rm -f $(TARGETS)
+	rm -f $(TARGETS:%.csv=%.csv*.dat)
 	rm -f $(BIN)
 	rm -f $(CUTARGETS)
+	rm -f $(CUTARGETS:%.csv=%.csv*.dat)
 	rm -f $(CUBIN)
 	-rmdir $(RESULTS_DIR)
 

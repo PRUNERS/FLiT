@@ -188,9 +188,11 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   std::unique_ptr<std::ostream> stream_deleter;
   std::ostream *outstream = &std::cout;
+  std::string test_result_filebase(FLIT_FILENAME);
   if (!options.output.empty()) {
     stream_deleter.reset(new std::ofstream(options.output.c_str()));
     outstream = stream_deleter.get();
+    test_result_filebase = options.output;
   }
 
   std::cout.precision(1000); //set cout to print many decimal places
@@ -221,6 +223,24 @@ inline int runFlitTests(int argc, char* argv[]) {
   cudaDeviceSynchronize();
 #endif
 
+  // Output string-type results to individual files
+  for (auto& i : scores) {
+    auto test_result = i.second.first;
+    auto test_name = i.first.first;
+    auto precision = i.first.second;
+    if (i.second.first.type() == flit::Variant::Type::String) {
+      std::string test_result_fname =
+          test_result_filebase + "_"
+          + test_name + "_"
+          + precision
+          + ".dat";
+      std::ofstream test_result_out(test_result_fname);
+      test_result_out << test_result.string();
+      i.second.first = test_result_fname;
+    }
+  }
+
+  // Create the main results output
   outputResults(scores, *outstream);
   return 0;
 }
