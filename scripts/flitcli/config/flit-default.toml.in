@@ -16,15 +16,21 @@ name = '{hostname}'
 flit_path = '{flit_path}'
 config_dir = '{config_dir}'
 
+[hosts.dev_build]
+# compiler_name must be found in [[hosts.compilers]] list under name attribute
+compiler_name = 'g++'
+optimization_level = '-O2'
+switches = '-funsafe-math-optimizations'
+
 # The ground truth compilation to use in analysis
 [hosts.ground_truth]
 # compiler needs to match the name field for one of this host's hosts.compilers
 # The optimization level needs to be part of the list of optimization_levels
 # and the switch needs to be a string of compiler flags from the switches list.
 # TODO: make use of hosts.ground_truth
-compiler = 'g++'
+compiler_name = 'g++'
 optimization_level = '-O0'
-switch = ''
+switches = ''
 
   [[hosts.compilers]]
 
