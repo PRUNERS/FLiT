@@ -197,18 +197,21 @@ SWITCHES_INTEL  += USEFASTM
 TARGETS         := $(foreach c, $(COMPILERS), \
                      $(foreach s, $(SWITCHES_$(strip $c)), \
                        $(foreach o, $(OPCODES), \
-                         $c_$(HOSTNAME)_$(strip $(s))_$(strip $(o))_out \
+                         $(RESULTS_DIR)/$c_$(HOSTNAME)_$(strip $s)_$(strip $o)_out.csv \
                         ) \
                       ) \
                     )
-BIN             := $(TARGETS:%_out=%)
-OBJ              = $(foreach b,$(BIN),$(SOURCE:%.cpp=%_$(strip $(b)).o))
+BIN             := $(TARGETS:%_out.csv=%)
+OBJ              = $(foreach b,$(BIN),$(SOURCE:%.cpp=%_$(notdir $b).o))
 
 ##################################################
 #
 # Now deal with CUDA stuff if it is even available
 #
 ##################################################
+
+# TODO: double check CUDA flags.  Really?  No optimization levels?
+
 NVCC_BIN        := nvcc
 NVCC            := $(shell which $(NVCC_BIN))
 CUDA_DIR        := $(dir $(NVCC))/..
@@ -275,9 +278,9 @@ CUSWITCHES      += PRECSFC
 CUSWITCHES      += PRECSTC
 
 CUTARGETS       := $(foreach s, $(CUSWITCHES), \
-                     NVCC_$(HOSTNAME)_$(strip $(s))_out)
-CUBIN           := $(CUTARGETS:%_out=%)
-CUOBJ           := $(foreach b,$(CUBIN),$(CUSOURCE:%.cpp=%_$b.o))
+                     $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))_out.csv)
+CUBIN           := $(CUTARGETS:%_out.csv=%)
+CUOBJ           := $(foreach b,$(CUBIN),$(CUSOURCE:%.cpp=%_$(notdir $b).o))
 
 endif # ifdef HAS_CUDA
 
@@ -305,7 +308,7 @@ help:
 .PHONY: dev devcuda run
 dev: $(DEV_TARGET)
 devcuda: $(DEV_CUTARGET)
-run: $(TARGETS) $(CUTARGETS) archive
+run: $(TARGETS) $(CUTARGETS)
 
 .PHONY: clean
 clean:
@@ -324,10 +327,10 @@ veryclean: distclean
 distclean: clean
 	rm -f $(DEV_TARGET)
 	rm -f $(DEV_CUTARGET)
-	rm -f $(TARGETS:%=$(RESULTS_DIR)/%)
-	rm -f $(BIN:%=$(RESULTS_DIR)/%)
-	rm -f $(CUTARGETS:%=$(RESULTS_DIR)/%)
-	rm -f $(CUBIN:%=$(RESULTS_DIR)/%)
+	rm -f $(TARGETS)
+	rm -f $(BIN)
+	rm -f $(CUTARGETS)
+	rm -f $(CUBIN)
 	-rmdir $(RESULTS_DIR)
 
 .PRECIOUS: %.d
@@ -394,17 +397,19 @@ endif # ifdef HAS_CUDA
 # @param $2: variable name containing the compiler to use (e.g. GCC)
 # @param $3: variable name containing the optimization level (e.g. O2)
 define TARGETS_RULE
-#run test and collect results
-$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)_out : $2_$(HOSTNAME)_$(strip $1)_$(strip $3)
+# run test and collect results
+$(RESULTS_DIR)/$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: $(RESULTS_DIR)/$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)
 	-./$$< --output $$@
 
-#link
-$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
+# link
+$(RESULTS_DIR)/$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
+	mkdir -p $(RESULTS_DIR)
 	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED) \
-	   $(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
+	$(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
 	rm -f $(SOURCE:.cpp=_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
 
-#compile
+# TODO: set FLIT_COMPILER to the compiler name, not the executable used
+# compile
 %_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o : %.cpp
 	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) \
 	   $($(strip $2)_REQUIRED) $$< -o $$@                           \
@@ -433,7 +438,7 @@ $(foreach c, $(COMPILERS),                \
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
 define CUTARGETS_RULE
 #run test
-NVCC_$(HOSTNAME)_$(strip $1)_out : NVCC_$(HOSTNAME)_$(strip $1)
+NVCC_$(HOSTNAME)_$(strip $1)_out.csv : NVCC_$(HOSTNAME)_$(strip $1)
 	./$$< --output $$@
 
 #link test
@@ -443,16 +448,16 @@ NVCC_$(HOSTNAME)_$(strip $1) : $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o
 
 #compile test
 %_NVCC_$(HOSTNAME)_$(strip $1).o : %.cpp
-	-$(NVCC) -c $($(strip $1)) $(NVCC_CFLAGS) $$< -o $$@
+	-$(NVCC) -c $($(strip $1)) $(NVCC_CFLAGS) $$< -o $$@            \
+	   -DFLIT_HOST='"$(HOSTNAME)"'                                  \
+	   -DFLIT_COMPILER='"$(NVCC)"'                                  \
+	   -DFLIT_OPTL='"$($(strip $3))"'                               \
+	   -DFLIT_SWITCHES='"$($(strip $1))"'                           \
+	   -DFLIT_FILENAME='"$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)"'
 endef
 # end of def CUTARGETS_RULE
 
 # define individual rules for all elements of $(CUTARGETS)
 $(foreach s, $(CUSWITCHES), $(eval $(call CUTARGETS_RULE, $s)))
-
-.PHONY : archive
-archive : $(TARGETS) $(CUTARGETS)
-	mkdir -p $(RESULTS_DIR)
-	mv *$(HOSTNAME)* $(RESULTS_DIR)
 
 -include custom.mk

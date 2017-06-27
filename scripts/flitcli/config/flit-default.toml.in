@@ -16,8 +16,10 @@ name = '{hostname}'
 flit_path = '{flit_path}'
 config_dir = '{config_dir}'
 
+# The settings for "make dev"
 [hosts.dev_build]
 # compiler_name must be found in [[hosts.compilers]] list under name attribute
+# but the optimization level and switches do not need to be in the compiler list
 compiler_name = 'g++'
 optimization_level = '-O2'
 switches = '-funsafe-math-optimizations'
@@ -57,7 +59,7 @@ switches = ''
     #'-Ofast',
     #'-O...' ?
   ]
-  switches = [
+  switches_list = [
     '',
     '-fassociative-math',
     '-mavx',
