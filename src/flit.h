@@ -23,7 +23,66 @@
 
 #include <cstring>
 
-void outputResults(const flit::ResultType& scores, std::ostream& out);
+// Define macros to use in the output
+// These can be overridden at compile time to insert compile-time information
+
+#ifndef FLIT_HOST
+#define FLIT_HOST "HOST"
+#endif // FLIT_HOST
+
+#ifndef FLIT_COMPILER
+#define FLIT_COMPILER "COMPILER"
+#endif // FLIT_COMPILER
+
+#ifndef FLIT_OPTL
+#define FLIT_OPTL "OPTL"
+#endif // FLIT_OPTL
+
+#ifndef FLIT_SWITCHES
+#define FLIT_SWITCHES "SWITCHES"
+#endif // FLIT_SWITCHES
+
+#ifndef FLIT_NULL
+#define FLIT_NULL "NULL"
+#endif // FLIT_NULL
+
+#ifndef FLIT_FILENAME
+#define FLIT_FILENAME "FILENAME"
+#endif // FLIT_FILENAME
+
+inline void outputResults (const flit::ResultType& scores, std::ostream& out) {
+  using flit::operator<<;
+  using flit::as_int;
+  // Output the column headers
+  out << "name,"
+         "host,"
+         "compiler,"
+         "optl,"
+         "switches,"
+         "precision,"
+         "score,"
+         "score_d,"
+         "resultfile,"
+         "file,"
+         "nanosec"
+      << std::endl;
+  for(const auto& i: scores){
+    out
+      << i.first.first << ","                 // test case name
+      << FLIT_HOST << ","                     // hostname
+      << FLIT_COMPILER << ","                 // compiler
+      << FLIT_OPTL << ","                     // optimization level
+      << FLIT_SWITCHES << ","                 // compiler flags
+      << i.first.second << ","                // precision
+      << as_int(i.second.first.first) << ","  // score
+      << i.second.first.first << ","          // score_d
+      << FLIT_NULL << ","                     // resultfile
+      << FLIT_FILENAME << ","                 // executable filename
+      << i.second.second                      // nanoseconds
+      << std::endl;
+  }
+}
+
 
 template <typename F>
 void runTestWithDefaultInput(flit::TestFactory* factory,

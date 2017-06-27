@@ -22,6 +22,10 @@ DEV_CFLAGS      += -Wextra
 DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
 
+# TODO: put these into flit-config.toml
+DEV_OPTL        ?= -O2
+DEV_SWITCHES    ?=
+
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
@@ -302,7 +306,7 @@ help:
 .PHONY: dev devcuda run
 dev: $(DEV_TARGET)
 devcuda: $(DEV_CUTARGET)
-run: $(TARGETS) $(CUTARGETS) cleanResults archive
+run: $(TARGETS) $(CUTARGETS) archive
 
 .PHONY: clean
 clean:
@@ -360,7 +364,12 @@ $(DEV_TARGET): $(DEV_OBJ) Makefile
 	  -o $@ $(DEV_OBJ) $(LD_REQUIRED) $(DEV_LDFLAGS)
 
 %_dev.o: %.cpp Makefile
-	$(DEV_CC) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(DEV_CC) $(DEV_OPTL) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"'         \
+	  -DFLIT_COMPILER='"$(DEV_CC)"'       \
+	  -DFLIT_OPTL='"$(DEV_OPTL)"'         \
+	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(DEV_TARGET)"'
 
 ifdef HAS_CUDA
 $(DEV_CUTARGET): $(DEV_CUOBJ) Makefile
@@ -389,31 +398,29 @@ define TARGETS_RULE
 #run test and collect results
 $(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)_out : $2_$(HOSTNAME)_$(strip $1)_$(strip $3)
 	-./$$< --output $$@
-	-sed -i -e 's/HOST/$(HOSTNAME)/g' $$@
-	-sed -i -e 's/SWITCHES/$($(strip $1))/g' $$@
-	-sed -i -e 's/OPTL/$($(strip $3))/g' $$@
-	-sed -i -e 's/COMPILER/$($(strip $2))/g' $$@
-	-sed -i -e 's/FILENAME/$$</g' $$@
-	@# Remove backup files from older versions of sed
-	rm -f $$@-e
 
 #link
 $(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
-	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED)\
+	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED) \
 	   $(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
 	rm -f $(SOURCE:.cpp=_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
 
 #compile
 %_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o : %.cpp
 	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) \
-	   $($(strip $2)_REQUIRED) $$< -o $$@
+	   $($(strip $2)_REQUIRED) $$< -o $$@                           \
+	   -DFLIT_HOST='"$(HOSTNAME)"'                                  \
+	   -DFLIT_COMPILER='"$($(strip $2))"'                           \
+	   -DFLIT_OPTL='"$($(strip $3))"'                               \
+	   -DFLIT_SWITCHES='"$($(strip $1))"'                           \
+	   -DFLIT_FILENAME='"$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)"'
 endef
 # end of define TARGETS_RULE
 
 # Define individual rules for all elements of $(TARGETS)
-$(foreach c, $(COMPILERS), \
-  $(foreach s, $(SWITCHES_$(strip $c)), \
-    $(foreach o, $(OPCODES), \
+$(foreach c, $(COMPILERS),                \
+  $(foreach s, $(SWITCHES_$(strip $c)),   \
+    $(foreach o, $(OPCODES),              \
       $(eval $(call TARGETS_RULE, $s, $c, $o)))))
 
 
@@ -429,13 +436,6 @@ define CUTARGETS_RULE
 #run test
 NVCC_$(HOSTNAME)_$(strip $1)_out : NVCC_$(HOSTNAME)_$(strip $1)
 	./$$< --output $$@
-	-sed -i -e 's/HOST/$(HOSTNAME)/g' $$@
-	-sed -i -e 's/SWITCHES/$($(strip $1))/g' $$@
-	-sed -i -e 's/OPTL//g' $$@
-	-sed -i -e 's/COMPILER/NVCC/g' $$@
-	-sed -i -e 's/FILENAME/$$</g' $$@
-	@# Remove backup files from older versions of sed
-	rm -f $$@-e
 
 #link test
 NVCC_$(HOSTNAME)_$(strip $1) : $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o)
@@ -451,15 +451,8 @@ endef
 # define individual rules for all elements of $(CUTARGETS)
 $(foreach s, $(CUSWITCHES), $(eval $(call CUTARGETS_RULE, $s)))
 
-# strip excess info from Intel output (__file__) and remove emtpy outputs
-.PHONY : cleanResults
-cleanResults : $(TARGETS) $(CUTARGETS)
-	sed -i -e 's/FPTests:://' *_$(HOSTNAME)_*_out
-	@# Remove backup files from older versions of sed
-	rm -f *_$(HOSTNAME)_*_out-e
-
 .PHONY : archive
-archive : cleanResults
+archive : $(TARGETS) $(CUTARGETS)
 	mkdir -p $(RESULTS_DIR)
 	mv *$(HOSTNAME)* $(RESULTS_DIR)
 
