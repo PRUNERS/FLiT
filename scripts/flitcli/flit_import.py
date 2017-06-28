@@ -109,6 +109,10 @@ def main(arguments, prog=sys.argv[0]):
                 rows = [row for row in reader]
         to_insert = []
         for row in rows:
+            # Convert 'NULL' to None
+            for key, val in row.items():
+                row[key] = val if val != 'NULL' else None
+            # Insert
             to_insert.append((
                 args.run,
                 row['name'],
@@ -117,9 +121,8 @@ def main(arguments, prog=sys.argv[0]):
                 row['optl'],
                 row['switches'],
                 row['precision'],
-                row['score'] if row['score'] != 'NULL' else None,
-                row['score_d'] if row['score_d'] != 'NULL' else None,
-                row['resultfile'] if row['resultfile'] != 'NULL' else None,
+                row['comparison'],
+                row['comparison_d'],
                 row['file'],
                 row['nanosec'],
                 ))

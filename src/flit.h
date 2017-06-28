@@ -50,9 +50,11 @@
 #define FLIT_FILENAME "FILENAME"
 #endif // FLIT_FILENAME
 
-inline void outputResults (const flit::ResultType& scores, std::ostream& out) {
-  using flit::operator<<;
-  using flit::as_int;
+namespace flit {
+
+inline void outputResults (const std::vector<TestResult>& results,
+    std::ostream& out)
+{
   // Output the column headers
   out << "name,"
          "host,"
@@ -63,50 +65,69 @@ inline void outputResults (const flit::ResultType& scores, std::ostream& out) {
          "score,"
          "score_d,"
          "resultfile,"
+         "comparison,"
+         "comparison_d,"
          "file,"
          "nanosec"
       << std::endl;
-  for(const auto& i: scores){
+  for(const auto& result: results){
     out
-      << i.first.first << ","                        // test case name
+      << result.name() << ","                        // test case name
       << FLIT_HOST << ","                            // hostname
       << FLIT_COMPILER << ","                        // compiler
       << FLIT_OPTL << ","                            // optimization level
       << FLIT_SWITCHES << ","                        // compiler flags
-      << i.first.second << ","                       // precision
+      << result.precision() << ","                   // precision
       ;
-    auto test_result = i.second.first;
-    if (test_result.type() == flit::Variant::Type::LongDouble) {
+
+    if (result.result().type() == Variant::Type::LongDouble) {
       out
-        << as_int(test_result.longDouble()) << ","   // score
-        << test_result.longDouble() << ","           // score_d
-        << FLIT_NULL << ","                          // resultfile
+        << as_int(result.result().longDouble()) << "," // score
+        << result.result().longDouble() << ","       // score_d
         ;
     } else {
       out
         << FLIT_NULL << ","                          // score
         << FLIT_NULL << ","                          // score_d
-        << test_result.string() << ","               // resultfile
         ;
     }
+
+    if (result.resultfile().empty()) {
+      out << FLIT_NULL << ",";                       // resultfile
+    } else {
+      out << result.resultfile() << ",";             // resultfile
+    }
+
+    if (result.is_comparison_null()) {
+      out
+        << FLIT_NULL << ","                          // comparison
+        << FLIT_NULL << ","                          // comparison_d
+        ;
+    } else {
+      out
+        << as_int(result.comparison()) << ","        // comparison
+        << result.comparison() << ","                // comparison_d
+        ;
+    }
+
     out
       << FLIT_FILENAME << ","                        // executable filename
-      << i.second.second                             // nanoseconds
+      << result.nanosecs()                           // nanoseconds
       << std::endl;
   }
 }
 
 
 template <typename F>
-void runTestWithDefaultInput(flit::TestFactory* factory,
-                             flit::ResultType& totScores,
+void runTestWithDefaultInput(TestFactory* factory,
+                             std::vector<TestResult>& totResults,
                              bool shouldTime = true,
                              int timingLoops = 1) {
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
-  auto scores = test->run(ip, shouldTime, timingLoops);
-  totScores.insert(scores.begin(), scores.end());
-  flit::info_stream.flushout();
+  auto results = test->run(ip, shouldTime, timingLoops);
+  totResults.insert(totResults.end(), results.begin(), results.end());
+  info_stream.flushout();
 }
 
 /** Command-line options */
@@ -176,14 +197,14 @@ inline int runFlitTests(int argc, char* argv[]) {
   }
 
   if (options.listTests) {
-    for (auto& test : getKeys(flit::getTests())) {
+    for (auto& test : getKeys(getTests())) {
       std::cout << test << std::endl;
     }
     return 0;
   }
 
   if (options.verbose) {
-    flit::info_stream.show();
+    info_stream.show();
   }
 
   std::unique_ptr<std::ostream> stream_deleter;
@@ -196,26 +217,26 @@ inline int runFlitTests(int argc, char* argv[]) {
   }
 
   std::cout.precision(1000); //set cout to print many decimal places
-  flit::info_stream.precision(1000);
+  info_stream.precision(1000);
 
 #ifdef __CUDA__
-  flit::initDeviceData();
+  initDeviceData();
 #endif
 
-  flit::ResultType scores;
-  auto testMap = flit::getTests();
+  std::vector<TestResult> results;
+  auto testMap = getTests();
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
     if (options.precision == "all" || options.precision == "float") {
-      runTestWithDefaultInput<float>(factory, scores, options.timing,
+      runTestWithDefaultInput<float>(factory, results, options.timing,
                                      options.timingLoops);
     }
     if (options.precision == "all" || options.precision == "double") {
-      runTestWithDefaultInput<double>(factory, scores, options.timing,
+      runTestWithDefaultInput<double>(factory, results, options.timing,
                                       options.timingLoops);
     }
     if (options.precision == "all" || options.precision == "long double") {
-      runTestWithDefaultInput<long double>(factory, scores, options.timing,
+      runTestWithDefaultInput<long double>(factory, results, options.timing,
                                            options.timingLoops);
     }
   }
@@ -224,25 +245,24 @@ inline int runFlitTests(int argc, char* argv[]) {
 #endif
 
   // Output string-type results to individual files
-  for (auto& i : scores) {
-    auto test_result = i.second.first;
-    auto test_name = i.first.first;
-    auto precision = i.first.second;
-    if (i.second.first.type() == flit::Variant::Type::String) {
+  for (auto& result : results) {
+    if (result.result().type() == Variant::Type::String) {
       std::string test_result_fname =
           test_result_filebase + "_"
-          + test_name + "_"
-          + precision
+          + result.name() + "_"
+          + result.precision()
           + ".dat";
       std::ofstream test_result_out(test_result_fname);
-      test_result_out << test_result.string();
-      i.second.first = test_result_fname;
+      test_result_out << result.result().string();
+      result.set_resultfile(test_result_fname);
     }
   }
 
   // Create the main results output
-  outputResults(scores, *outstream);
+  outputResults(results, *outstream);
   return 0;
 }
+
+} // end of namespace flit
 
 #endif // FLIT_H

@@ -15,6 +15,8 @@
 #include "flitHelpers.h"
 #include "TestBase.h"
 
+namespace flit {
+
 std::string FlitOptions::toString() {
   std::ostringstream messanger;
   messanger
@@ -45,7 +47,7 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
-  auto allowedTests = getKeys(flit::getTests());
+  auto allowedTests = getKeys(getTests());
   allowedTests.emplace_back("all");
   for (int i = 1; i < argCount; i++) {
     std::string current(argList[i]);
@@ -90,7 +92,7 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
   }
 
   if (options.tests.size() == 0 || isIn(options.tests, std::string("all"))) {
-    options.tests = getKeys(flit::getTests());
+    options.tests = getKeys(getTests());
   }
 
   return options;
@@ -142,3 +144,4 @@ std::string usage(std::string progName) {
   return messanger.str();
 }
 
+} // end of namespace flit

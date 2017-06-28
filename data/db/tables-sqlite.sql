@@ -42,12 +42,12 @@ CREATE TABLE IF NOT EXISTS tests (
   compiler       varchar,   -- compiler name
   optl           varchar,   -- optimization level (e.g. "-O2")
   switches       varchar,   -- compiler flag(s) (e.g. "-ffast-math")
-  precision      varchar,   -- precision (f = float, d = double, e = long double)
-  score          varchar,   -- hex of score returned from the test
-  score_d        real,      -- float of the score returned from the test
-  resultfile     varchar,   -- filename containing results string from test
+  precision      varchar,   -- precision (f = float, d = double, e = extended)
+  comparison     varchar,   -- metric of comparison - hex value
+  comparison_d   real,      -- metric of comparison of result vs ground truth
   file           varchar,   -- filename of test executable
   nanosec        integer    check(nanosec >= 0),  -- timing for the function
+
   foreign key(run) references runs(id),
   check (score is not null or resultfile is not null)
   );

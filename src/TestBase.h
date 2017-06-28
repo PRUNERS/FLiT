@@ -27,12 +27,45 @@ namespace flit {
 
 void setWatching(bool watch = true);
 
+struct TestResult {
+public:
+  TestResult(const std::string &_name, const std::string &_precision,
+             const Variant &_result, int_fast64_t _nanosecs)
+    : m_name(_name)
+    , m_precision(_precision)
+    , m_result(_result)
+    , m_nanosecs(_nanosecs)
+  { }
 
-using ResultType = std::map<std::pair<const std::string, const std::string>,
-                            std::pair<Variant, int_fast64_t>>;
+  // getters
+  std::string name() const { return m_name; }
+  std::string precision() const { return m_precision; }
+  Variant result() const { return m_result; }
+  int_fast64_t nanosecs() const { return m_nanosecs; }
+  long double comparison() const { return m_comparison; }
+  bool is_comparison_null() const { return m_is_comparison_null; }
+  std::string resultfile() const { return m_resultfile; }
 
-std::ostream&
-operator<<(std::ostream&, const ResultType&);
+  // setters
+  void set_comparison(long double _comparison) {
+    m_comparison = _comparison;
+    m_is_comparison_null = false;
+  }
+  void set_resultfile(const std::string _resultfile) {
+    m_resultfile = _resultfile;
+  }
+
+private:
+  std::string m_name;
+  std::string m_precision;
+  Variant m_result;
+  int_fast64_t m_nanosecs {0};
+  long double m_comparison {0.0L};
+  bool m_is_comparison_null {true};
+  std::string m_resultfile;
+};
+
+std::ostream& operator<<(std::ostream& os, const TestResult& res);
 
 template <typename T>
 struct TestInput {
@@ -203,13 +236,13 @@ public:
    *
    * @see getInputsPerRun
    */
-  virtual ResultType run(const TestInput<T>& ti,
+  virtual std::vector<TestResult> run(const TestInput<T>& ti,
                          const bool GetTime,
                          const size_t TimingLoops) {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
-    ResultType results;
+    std::vector<TestResult> results;
     TestInput<T> emptyInput {
       ti.iters, ti.highestDim, ti.ulp_inc, ti.min, ti.max, {}
     };
@@ -232,7 +265,14 @@ public:
     }
 
     // Run the tests
-    std::vector<ResultType::mapped_type> resultValues;
+    struct TimedResult {
+      Variant result;
+      int_fast64_t time;
+
+      TimedResult(Variant res, int_fast64_t t)
+        : result(res), time(t) { }
+    };
+    std::vector<TimedResult> resultValues;
 #ifdef __CUDA__
     auto kernel = getKernel();
     if (kernel == nullptr) {
@@ -311,7 +351,8 @@ public:
       if (resultValues.size() != 1) {
         name += "_idx" + std::to_string(i);
       }
-      results.insert({{name, typeid(T).name()}, resultValues[i]});
+      results.emplace_back(name, typeid(T).name(), resultValues[i].result,
+                           resultValues[i].time);
     }
     return results;
   }
@@ -436,9 +477,8 @@ public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
   virtual TestInput<T> getDefaultInput() { return {}; }
   virtual size_t getInputsPerRun() { return 0; }
-  virtual ResultType run(const TestInput<T>&,
-                         const bool,
-                         const size_t) { return {}; }
+  virtual std::vector<TestResult> run(
+      const TestInput<T>&, const bool, const size_t) { return {}; }
 protected:
   virtual KernelFunction<T>* getKernel() { return nullptr; }
   virtual Variant run_impl(const TestInput<T>&) { return {}; }
