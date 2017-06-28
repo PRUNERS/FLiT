@@ -140,6 +140,7 @@ struct FlitOptions {
   std::string output = "";        // output file for results.  default stdout
   bool timing = true;     // should we run timing?
   int timingLoops = 1;    // < 1 means to auto-determine the timing loops
+  std::string groundTruth = "";   // input for ground-truth comparison
 
   /** Give a string representation of this struct for printing purposes */
   std::string toString();

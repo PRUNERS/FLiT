@@ -26,6 +26,8 @@ std::string FlitOptions::toString() {
     << "  verbose:      " << boolToString(this->verbose) << "\n"
     << "  timing:       " << boolToString(this->timing) << "\n"
     << "  timingLoops:  " << this->timingLoops << "\n"
+    << "  output:       " << this->output << "\n"
+    << "  groundTruth:  " << this->groundTruth << "\n"
     << "  precision:    " << this->precision << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
@@ -37,13 +39,14 @@ std::string FlitOptions::toString() {
 FlitOptions parseArguments(int argCount, char* argList[]) {
   FlitOptions options;
 
-  std::vector<std::string> helpOpts      = { "-h", "--help" };
-  std::vector<std::string> verboseOpts   = { "-v", "--verbose" };
-  std::vector<std::string> timingOpts    = { "-t", "--timing" };
-  std::vector<std::string> loopsOpts     = { "-l", "--timing-loops" };
-  std::vector<std::string> listTestsOpts = { "-L", "--list-tests" };
-  std::vector<std::string> precisionOpts = { "-p", "--precision" };
-  std::vector<std::string> outputOpts    = { "-o", "--output" };
+  std::vector<std::string> helpOpts          = { "-h", "--help" };
+  std::vector<std::string> verboseOpts       = { "-v", "--verbose" };
+  std::vector<std::string> timingOpts        = { "-t", "--timing" };
+  std::vector<std::string> loopsOpts         = { "-l", "--timing-loops" };
+  std::vector<std::string> listTestsOpts     = { "-L", "--list-tests" };
+  std::vector<std::string> precisionOpts     = { "-p", "--precision" };
+  std::vector<std::string> outputOpts        = { "-o", "--output" };
+  std::vector<std::string> groundTruthOpts   = { "-g", "--ground-truth" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
@@ -83,6 +86,11 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
         throw ParseException(current + " requires an argument");
       }
       options.output = argList[++i];
+    } else if (isIn(groundTruthOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.groundTruth = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!isIn(allowedTests, current)) {
@@ -135,6 +143,18 @@ std::string usage(std::string progName) {
        "                  Output test results to the given file.  All other\n"
        "                  standard output will still go to the terminal.\n"
        "                  The default behavior is to output to stdout.\n"
+       "\n"
+       "  -g INFILE, --ground-truth INFILE\n"
+       "                  Use the following results file (usually generated\n"
+       "                  using the --output option with the ground-truth\n"
+       "                  compiled executable).  This option allows the\n"
+       "                  creation of data for the comparison column in the\n"
+       "                  results.  The test's compare() function is used.\n"
+       "\n"
+       "                  Note: for tests outputting string data, the path\n"
+       "                  may be a relative path from where you executed the\n"
+       "                  ground-truth executable, in which case you will\n"
+       "                  want to run this test from that same directory.\n"
        "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"
