@@ -31,7 +31,7 @@ DEPS           := $(SOURCE:.cpp=.d)
 # Install variables
 
 SCRIPT_DIR      = scripts/flitcli
-DATA_DIR        = $(SCRIPT_DIR)/data
+DATA_DIR        = data
 CONFIG_DIR      = $(SCRIPT_DIR)/config
 DOC_DIR         = documentation
 LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.cpp)
