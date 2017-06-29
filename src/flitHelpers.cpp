@@ -7,6 +7,8 @@
 #include <iostream>
 #include <mutex>
 
+#include <cassert>
+
 namespace flit {
 
 const std::vector<uint_fast32_t>
@@ -95,6 +97,35 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
     ostreamMutex.unlock();
   }
   return os;
+}
+
+unsigned __int128 stouint128(const std::string &str) {
+  uint64_t hi, lo;
+  // TODO: make this more efficient (maybe).
+  std::string copy;
+  if (str[0] == '0' && str[1] == 'x') {
+    copy = std::string(str.begin() + 2, str.end());
+  } else {
+    copy = str;
+  }
+
+  // Convert each section of 8-bytes (16 characters)
+  assert(copy.size() <= 32);
+  if (copy.size() <= 16) {
+    hi = 0;
+    lo = std::stoull(copy, nullptr, 16); 
+  } else {
+    auto mid = copy.end() - 16;
+    hi = std::stoull(std::string(copy.begin(), mid), nullptr, 16);
+    lo = std::stoull(std::string(mid, copy.end()), nullptr, 16);
+  }
+
+  // Combine the two 64-bit values.
+  unsigned __int128 val;
+  val = hi;
+  val = val << 64;
+  val += lo;
+  return val;
 }
 
 } // end of namespace flit

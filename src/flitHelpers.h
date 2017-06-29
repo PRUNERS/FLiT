@@ -89,6 +89,7 @@ std::vector<T> const &
 getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
+unsigned __int128 stouint128(const std::string &str);
 
 HOST_DEVICE
 inline float

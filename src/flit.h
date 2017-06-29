@@ -52,6 +52,36 @@
 
 namespace flit {
 
+/** Command-line options */
+struct FlitOptions {
+  bool help = false;      // show usage and exit
+  bool listTests = false; // list available tests and exit
+  bool verbose = false;   // show debug verbose messages
+  std::vector<std::string> tests; // which tests to run
+  std::string precision = "all";  // which precision to use
+  std::string output = "";        // output file for results.  default stdout
+  bool timing = true;     // should we run timing?
+  int timingLoops = 1;    // < 1 means to auto-determine the timing loops
+  std::string groundTruth = "";   // input for ground-truth comparison
+
+  /** Give a string representation of this struct for printing purposes */
+  std::string toString();
+private:
+  /** Convert a bool to a string */
+  static inline std::string boolToString(bool boolean) {
+    return (boolean ? "true" : "false");
+  }
+};
+
+/** Parse arguments */
+FlitOptions parseArguments(int argCount, char* argList[]);
+
+/** Returns the usage information as a string */
+std::string usage(std::string progName);
+
+/** Parse the results file into a vector of results */
+std::vector<TestResult> parseResults(std::istream &in);
+
 inline void outputResults (const std::vector<TestResult>& results,
     std::ostream& out)
 {
@@ -130,27 +160,6 @@ void runTestWithDefaultInput(TestFactory* factory,
   info_stream.flushout();
 }
 
-/** Command-line options */
-struct FlitOptions {
-  bool help = false;      // show usage and exit
-  bool listTests = false; // list available tests and exit
-  bool verbose = false;   // show debug verbose messages
-  std::vector<std::string> tests; // which tests to run
-  std::string precision = "all";  // which precision to use
-  std::string output = "";        // output file for results.  default stdout
-  bool timing = true;     // should we run timing?
-  int timingLoops = 1;    // < 1 means to auto-determine the timing loops
-  std::string groundTruth = "";   // input for ground-truth comparison
-
-  /** Give a string representation of this struct for printing purposes */
-  std::string toString();
-private:
-  /** Convert a bool to a string */
-  static inline std::string boolToString(bool boolean) {
-    return (boolean ? "true" : "false");
-  }
-};
-
 /** Returns true if the element is in the container */
 template<typename Container, typename Element>
 bool isIn(Container c, Element e) {
@@ -174,12 +183,6 @@ public:
 private:
   const std::string _message;
 };
-
-/** Parse arguments */
-FlitOptions parseArguments(int argCount, char* argList[]);
-
-/** Returns the usage information as a string */
-std::string usage(std::string progName);
 
 inline int runFlitTests(int argc, char* argv[]) {
   // Argument parsing
@@ -225,12 +228,19 @@ inline int runFlitTests(int argc, char* argv[]) {
 #endif
 
   std::vector<TestResult> results;
+  std::vector<TestResult> groundTruthResults;
+  if (!options.groundTruth.empty()) {
+    std::ifstream gtfile(options.groundTruth);
+    groundTruthResults = parseResults(gtfile);
+  }
+
   auto testMap = getTests();
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
     if (options.precision == "all" || options.precision == "float") {
       runTestWithDefaultInput<float>(factory, results, options.timing,
                                      options.timingLoops);
+      //runTestComparison<float>(factory, results, options.groundTruth);
     }
     if (options.precision == "all" || options.precision == "double") {
       runTestWithDefaultInput<double>(factory, results, options.timing,

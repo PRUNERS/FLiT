@@ -332,7 +332,7 @@ distclean: clean
 	-rmdir $(RESULTS_DIR)
 
 .PRECIOUS: %.d
--include $(SOURCE:%.cpp=%.d)
+-include $(SOURCE:%.cpp=%.d) $(DEV_DEPS)
 
 Makefile: flit-config.toml $(dir $(FLIT_SCRIPT))/flit_update.py
 	$(FLIT_SCRIPT) update

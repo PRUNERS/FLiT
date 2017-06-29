@@ -8,12 +8,84 @@
 #include <type_traits>
 #include <typeinfo>
 
+#include <cassert>
 #include <cstring>
 
 #include "flit.h"
 
 #include "flitHelpers.h"
 #include "TestBase.h"
+
+namespace {
+
+/** Helper class for Csv.
+ *
+ * Represents a single row either indexed by number or by column name.
+ */
+class CsvRow : public std::vector<std::string> {
+public:
+  const CsvRow* header() const { return m_header; }
+  void setHeader(CsvRow* head) { m_header = head; }
+
+  using std::vector<std::string>::operator[];
+  std::string const& operator[](std::string col) const {
+    auto iter = std::find(m_header->begin(), m_header->end(), col);
+    if (iter == m_header->end()) {
+      std::stringstream message;
+      message << "No column named " << col;
+      throw std::invalid_argument(message.str());
+    }
+    auto idx = iter - m_header->begin();
+    return this->operator[](idx);
+  }
+
+private:
+  CsvRow* m_header {nullptr};  // not owned by this class
+};
+
+/** Class for parsing csv files */
+class Csv {
+public:
+  Csv(std::istream &in) : m_header(Csv::parseRow(in)), m_in(in) {
+    m_header.setHeader(&m_header);
+  }
+
+  Csv& operator>> (CsvRow& row) {
+    row = Csv::parseRow(m_in);
+    row.setHeader(&m_header);
+    return *this;
+  }
+
+  operator bool() const { return static_cast<bool>(m_in); }
+  
+private:
+  static CsvRow parseRow(std::istream &in) {
+    std::string line;
+    std::getline(in, line);
+
+    std::stringstream lineStream(line);
+    std::string token;
+
+    // tokenize on ','
+    CsvRow row;
+    while(std::getline(lineStream, token, ',')) {
+      row.emplace_back(token);
+    }
+
+    // check for trailing comma with no data after it
+    if (!lineStream && token.empty()) {
+      row.emplace_back("");
+    }
+
+    return row;
+  }
+
+private:
+  CsvRow m_header;
+  std::istream &m_in;
+};
+
+} // end of unnamed namespace
 
 namespace flit {
 
@@ -162,6 +234,32 @@ std::string usage(std::string progName) {
        "                  is 'all' which runs all of them.\n"
        "\n";
   return messanger.str();
+}
+
+std::vector<TestResult> parseResults(std::istream &in) {
+  std::vector<TestResult> results;
+
+  Csv csv(in);
+  CsvRow row;
+  while (csv >> row) {
+    auto nanosec = std::stol(row["nanosec"]);
+    Variant value;
+    if (row["score"] != "NULL") {
+      // Convert score into a long double
+      value = as_float(flit::stouint128(row["score"]));
+    } else {
+      // Read string from the resultfile
+      assert(row["resultfile"] != "NULL");
+      std::ifstream filein(row["resultfile"]);
+      std::stringstream buffer;
+      buffer << filein.rdbuf();
+      value = buffer.str();
+    }
+
+    results.emplace_back(row["name"], row["precision"], value, nanosec);
+  }
+
+  return results;
 }
 
 } // end of namespace flit

@@ -13,8 +13,7 @@ std::ostream& operator<<(std::ostream& os, const TestResult& res) {
   os << res.name() << ":" << res.precision() << ","
      << res.result() << ","
      << comparison << ","
-     << res.nanosecs()
-     << std::endl;
+     << res.nanosecs();
 
   return os;
 }
