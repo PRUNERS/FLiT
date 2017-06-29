@@ -75,27 +75,21 @@ const std::vector<long double> long_rands = setRandSeq<long double>(RAND_VECT_SI
 
   
 thread_local InfoStream info_stream;
-std::mutex ostreamMutex;
 
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
-  if(i == 0) os << 0;
-  else{
-    std::ostringstream ost;
-    uint64_t hi = i >> 64;
-    uint64_t lo = (uint64_t)i;
-    ostreamMutex.lock();
-    auto bflags = os.flags();
-    os.flags(std::ios::hex & ~std::ios::showbase);
-    ost.flags(std::ios::hex & ~std::ios::showbase);
-    ost << lo;    
-    os << "0x" << hi;
-    for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
-      os << "0";
-    }
-    os << ost.str();
-    os.flags( bflags );
-    ostreamMutex.unlock();
+  std::ostringstream ost;
+  uint64_t hi = i >> 64;
+  uint64_t lo = (uint64_t)i;
+  auto bflags = os.flags();
+  os.flags(std::ios::hex & ~std::ios::showbase);
+  ost.flags(std::ios::hex & ~std::ios::showbase);
+  ost << lo;    
+  os << "0x" << hi;
+  for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
+    os << "0";
   }
+  os << ost.str();
+  os.flags( bflags );
   return os;
 }
 

@@ -160,6 +160,31 @@ void runTestWithDefaultInput(TestFactory* factory,
   info_stream.flushout();
 }
 
+template <typename F>
+long double runComparison_impl(TestFactory* factory, const TestResult &gt,
+                               const TestResult &res) {
+  auto test = factory->get<F>();
+  if (res.result().type() == Variant::Type::String) {
+    return test->compare(gt.result().string(), res.result().string());
+  } else if (res.result().type() == Variant::Type::LongDouble) {
+    return test->compare(gt.result().longDouble(), res.result().longDouble());
+  } else { throw std::runtime_error("Unsupported variant type"); }
+}
+
+inline long double runComparison(TestFactory* factory, const TestResult &gt,
+                                 const TestResult &res) {
+  // TODO: after moving to lazy file load, load file contents at comparison
+  if (res.precision() == "f") {
+    return runComparison_impl<float>(factory, gt, res);
+  } else if (res.precision() == "d") {
+    return runComparison_impl<double>(factory, gt, res);
+  } else if (res.precision() == "e") {
+    return runComparison_impl<long double>(factory, gt, res);
+  } else { throw std::runtime_error("Unrecognized precision encountered"); }
+}
+
+    
+    
 /** Returns true if the element is in the container */
 template<typename Container, typename Element>
 bool isIn(Container c, Element e) {
@@ -231,6 +256,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::vector<TestResult> groundTruthResults;
   if (!options.groundTruth.empty()) {
     std::ifstream gtfile(options.groundTruth);
+    // TODO: only load file contents at time of comparison
     groundTruthResults = parseResults(gtfile);
   }
 
@@ -250,11 +276,42 @@ inline int runFlitTests(int argc, char* argv[]) {
       runTestWithDefaultInput<long double>(factory, results, options.timing,
                                            options.timingLoops);
     }
+    // TODO: dump string result to file because we might run out of memory
   }
 #if defined(__CUDA__) && !defined(__CPUKERNEL__)
   cudaDeviceSynchronize();
 #endif
 
+  // Sort the results first by name then by precision
+  auto testComparator = [](const TestResult &a, const TestResult &b) {
+    if (a.name() != b.name()) {
+      return a.name() < b.name();
+    } else {
+      return a.precision() < b.precision();
+    }
+  };
+  std::sort(results.begin(), results.end(), testComparator);
+  std::sort(groundTruthResults.begin(), groundTruthResults.end(),
+            testComparator);
+
+  // Let's now run the ground-truth comparisons
+  if (groundTruthResults.size() > 0) {
+    for (auto& res : results) {
+      auto factory = testMap[res.name()];
+      // Use binary search to find the first associated ground truth element
+      auto gtIter = std::lower_bound(groundTruthResults.begin(),
+                                     groundTruthResults.end(), res,
+                                     testComparator);
+      // Compare the two results if the element was found
+      if (gtIter != groundTruthResults.end() &&
+          res.name() == (*gtIter).name() &&
+          res.precision() == (*gtIter).precision())
+      {
+        res.set_comparison(runComparison(factory, *gtIter, res));
+      }
+    }
+  }
+  
   // Output string-type results to individual files
   for (auto& result : results) {
     if (result.result().type() == Variant::Type::String) {
