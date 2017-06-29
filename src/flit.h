@@ -82,6 +82,9 @@ std::string usage(std::string progName);
 /** Parse the results file into a vector of results */
 std::vector<TestResult> parseResults(std::istream &in);
 
+/** Test names sometimes are postfixed with "_idx" + <num>.  Remove that postfix */
+std::string removeIdxFromName(const std::string &name);
+
 inline void outputResults (const std::vector<TestResult>& results,
     std::ostream& out)
 {
@@ -297,7 +300,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   // Let's now run the ground-truth comparisons
   if (groundTruthResults.size() > 0) {
     for (auto& res : results) {
-      auto factory = testMap[res.name()];
+      auto factory = testMap[removeIdxFromName(res.name())];
       // Use binary search to find the first associated ground truth element
       auto gtIter = std::lower_bound(groundTruthResults.begin(),
                                      groundTruthResults.end(), res,

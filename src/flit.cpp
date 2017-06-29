@@ -262,4 +262,16 @@ std::vector<TestResult> parseResults(std::istream &in) {
   return results;
 }
 
+std::string removeIdxFromName(const std::string &name) {
+  std::string pattern("_idx"); // followed by 1 or more digits
+  auto it = std::find_end(name.begin(), name.end(),
+                          pattern.begin(), pattern.end());
+  // assert that after the pattern, all the remaining chars are digits.
+  assert(it == name.end() ||
+         std::all_of(it + pattern.size(), name.end(), [](char c) {
+           return '0' <= c && c <= '9';
+         }));
+  return std::string(name.begin(), it);
+}
+
 } // end of namespace flit
