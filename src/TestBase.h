@@ -13,6 +13,7 @@
 
 #include "Variant.h"
 
+#include <fstream>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -30,11 +31,13 @@ void setWatching(bool watch = true);
 struct TestResult {
 public:
   TestResult(const std::string &_name, const std::string &_precision,
-             const Variant &_result, int_fast64_t _nanosecs)
+             const Variant &_result, int_fast64_t _nanosecs,
+             const std::string &_resultfile = "")
     : m_name(_name)
     , m_precision(_precision)
     , m_result(_result)
     , m_nanosecs(_nanosecs)
+    , m_resultfile(_resultfile)
   { }
 
   // getters
@@ -51,7 +54,7 @@ public:
     m_comparison = _comparison;
     m_is_comparison_null = false;
   }
-  void set_resultfile(const std::string _resultfile) {
+  void set_resultfile(const std::string &_resultfile) {
     m_resultfile = _resultfile;
   }
 
@@ -237,8 +240,9 @@ public:
    * @see getInputsPerRun
    */
   virtual std::vector<TestResult> run(const TestInput<T>& ti,
-                         const bool GetTime,
-                         const size_t TimingLoops) {
+                                      const std::string &filebase,
+                                      const bool GetTime,
+                                      const size_t TimingLoops) {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
@@ -268,9 +272,10 @@ public:
     struct TimedResult {
       Variant result;
       int_fast64_t time;
+      std::string resultfile;
 
-      TimedResult(Variant res, int_fast64_t t)
-        : result(res), time(t) { }
+      TimedResult(Variant res, int_fast64_t t, const std::string &f = "")
+        : result(res), time(t), resultfile(f) { }
     };
     std::vector<TimedResult> resultValues;
 #ifdef __CUDA__
@@ -293,7 +298,16 @@ public:
           testResult = run_impl(runInput);
           timing = 0;
         }
-        resultValues.emplace_back(testResult, timing);
+        // Output string results to file since it alone may take up to 300 MB
+        // or more
+        std::string outfile;
+        if (testResult.type() == Variant::Type::String) {
+          outfile = filebase + "_" + id + "_" + typeid(T).name() + ".dat";
+          std::ofstream resultout(outfile);
+          resultout << testResult.string();
+          testResult = Variant(); // empty the result to release memory
+        }
+        resultValues.emplace_back(testResult, timing, outfile);
       }
     } else {
       int_fast64_t timing = 0;
@@ -341,7 +355,16 @@ public:
         testResult = run_impl(runInput);
         timing = 0;
       }
-      resultValues.emplace_back(testResult, timing);
+      // Output string results to file since it alone may take up to 300 MB
+      // or more
+      std::string outfile;
+      if (testResult.type() == Variant::Type::String) {
+        outfile = filebase + "_" + id + "_" + typeid(T).name() + ".dat";
+        std::ofstream resultout(outfile);
+        resultout << testResult.string();
+        testResult = Variant(); // empty the result to release memory
+      }
+      resultValues.emplace_back(testResult, timing, outfile);
     }
 #endif // __CUDA__
 
@@ -352,7 +375,7 @@ public:
         name += "_idx" + std::to_string(i);
       }
       results.emplace_back(name, typeid(T).name(), resultValues[i].result,
-                           resultValues[i].time);
+                           resultValues[i].time, resultValues[i].resultfile);
     }
     return results;
   }

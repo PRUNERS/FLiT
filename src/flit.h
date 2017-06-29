@@ -79,6 +79,9 @@ FlitOptions parseArguments(int argCount, char* argList[]);
 /** Returns the usage information as a string */
 std::string usage(std::string progName);
 
+/** Read file contents entirely into a string */
+std::string readFile(const std::string &filename);
+
 /** Parse the results file into a vector of results */
 std::vector<TestResult> parseResults(std::istream &in);
 
@@ -154,11 +157,12 @@ inline void outputResults (const std::vector<TestResult>& results,
 template <typename F>
 void runTestWithDefaultInput(TestFactory* factory,
                              std::vector<TestResult>& totResults,
+                             const std::string &filebase = "",
                              bool shouldTime = true,
                              int timingLoops = 1) {
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
-  auto results = test->run(ip, shouldTime, timingLoops);
+  auto results = test->run(ip, filebase, shouldTime, timingLoops);
   totResults.insert(totResults.end(), results.begin(), results.end());
   info_stream.flushout();
 }
@@ -167,8 +171,11 @@ template <typename F>
 long double runComparison_impl(TestFactory* factory, const TestResult &gt,
                                const TestResult &res) {
   auto test = factory->get<F>();
-  if (res.result().type() == Variant::Type::String) {
-    return test->compare(gt.result().string(), res.result().string());
+  if (!res.resultfile().empty()) {
+    assert(res.result().type() == Variant::Type::None);
+    assert( gt.result().type() == Variant::Type::None);
+    return test->compare(readFile(gt.resultfile()),
+                         readFile(res.resultfile()));
   } else if (res.result().type() == Variant::Type::LongDouble) {
     return test->compare(gt.result().longDouble(), res.result().longDouble());
   } else { throw std::runtime_error("Unsupported variant type"); }
@@ -267,17 +274,17 @@ inline int runFlitTests(int argc, char* argv[]) {
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
     if (options.precision == "all" || options.precision == "float") {
-      runTestWithDefaultInput<float>(factory, results, options.timing,
-                                     options.timingLoops);
-      //runTestComparison<float>(factory, results, options.groundTruth);
+      runTestWithDefaultInput<float>(factory, results, test_result_filebase,
+                                     options.timing, options.timingLoops);
     }
     if (options.precision == "all" || options.precision == "double") {
-      runTestWithDefaultInput<double>(factory, results, options.timing,
-                                      options.timingLoops);
+      runTestWithDefaultInput<double>(factory, results, test_result_filebase,
+                                      options.timing, options.timingLoops);
     }
     if (options.precision == "all" || options.precision == "long double") {
-      runTestWithDefaultInput<long double>(factory, results, options.timing,
-                                           options.timingLoops);
+      runTestWithDefaultInput<long double>(
+          factory, results, test_result_filebase, options.timing,
+          options.timingLoops);
     }
     // TODO: dump string result to file because we might run out of memory
   }
@@ -312,20 +319,6 @@ inline int runFlitTests(int argc, char* argv[]) {
       {
         res.set_comparison(runComparison(factory, *gtIter, res));
       }
-    }
-  }
-  
-  // Output string-type results to individual files
-  for (auto& result : results) {
-    if (result.result().type() == Variant::Type::String) {
-      std::string test_result_fname =
-          test_result_filebase + "_"
-          + result.name() + "_"
-          + result.precision()
-          + ".dat";
-      std::ofstream test_result_out(test_result_fname);
-      test_result_out << result.result().string();
-      result.set_resultfile(test_result_fname);
     }
   }
 

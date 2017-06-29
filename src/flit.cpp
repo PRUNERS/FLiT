@@ -236,6 +236,13 @@ std::string usage(std::string progName) {
   return messanger.str();
 }
 
+std::string readFile(const std::string &filename) {
+  std::ifstream filein(filename);
+  std::stringstream buffer;
+  buffer << filein.rdbuf();
+  return buffer.str();
+}
+
 std::vector<TestResult> parseResults(std::istream &in) {
   std::vector<TestResult> results;
 
@@ -244,19 +251,18 @@ std::vector<TestResult> parseResults(std::istream &in) {
   while (csv >> row) {
     auto nanosec = std::stol(row["nanosec"]);
     Variant value;
+    std::string resultfile;
     if (row["score"] != "NULL") {
       // Convert score into a long double
       value = as_float(flit::stouint128(row["score"]));
     } else {
       // Read string from the resultfile
       assert(row["resultfile"] != "NULL");
-      std::ifstream filein(row["resultfile"]);
-      std::stringstream buffer;
-      buffer << filein.rdbuf();
-      value = buffer.str();
+      resultfile = row["resultfile"];
     }
 
-    results.emplace_back(row["name"], row["precision"], value, nanosec);
+    results.emplace_back(row["name"], row["precision"], value, nanosec,
+                         resultfile);
   }
 
   return results;
