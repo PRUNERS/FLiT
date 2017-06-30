@@ -10,14 +10,13 @@
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -25,18 +24,17 @@ class FtoDecToF: public flit::TestBase<T> {
 public:
   FtoDecToF(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
   flit::TestInput<T> ti;
     ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
     uint16_t ddigs = nlim.digits * std::log10(2) + 1;
@@ -46,7 +44,7 @@ protected:
     dstr = res.str();
     T backAgain;
     std::istringstream(dstr) >> backAgain;
-    return{std::pair<long double, long double>(std::fabs((long double)ti.vals[0] - backAgain), 0.0), 0};
+    return ti.vals[0] - backAgain;
   }
 
   using flit::TestBase<T>::id;
@@ -57,14 +55,13 @@ REGISTER_TYPE(FtoDecToF)
 // template <typename T>
 // GLOBAL
 // void
-// subnormalKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// subnormalKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -72,20 +69,17 @@ class subnormal: public flit::TestBase<T> {
 public:
   subnormal(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    return {
-      std::pair<long double, long double>(ti.vals[0] - ti.vals[0] / 2, 0.0), 0
-    };
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    return ti.vals[0] - ti.vals[0] / 2;
   }
   using flit::TestBase<T>::id;
 };
@@ -95,14 +89,13 @@ REGISTER_TYPE(subnormal)
 // template <typename T>
 // GLOBAL
 // void
-// dotProdKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// dotProdKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -110,14 +103,13 @@ class dotProd: public flit::TestBase<T> {
 public:
   dotProd(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     FLIT_UNUSED(ti);
     auto size = 16;
 
@@ -127,8 +119,10 @@ protected:
 			    rand.begin() + size));
     flit::Vector<T> B(std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size));
-    return {std::pair<long double, long double>(A ^ B, 0.0), 0};
+    return A ^ B;
   }
+
+protected:
   using flit::TestBase<T>::id;
 };
 REGISTER_TYPE(dotProd)
@@ -136,14 +130,13 @@ REGISTER_TYPE(dotProd)
 // template <typename T>
 // GLOBAL
 // void
-// simpleReductionKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// simpleReductionKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -151,14 +144,13 @@ class simpleReduction: public flit::TestBase<T> {
 public:
   simpleReduction(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     FLIT_UNUSED(ti);
     auto vals = flit::getRandSeq<T>();
     auto sublen = vals.size() / 4 - 1;
@@ -172,7 +164,7 @@ protected:
     for(uint32_t i = sublen; i < vals.size(); ++i){
       sum += vals[i];
     }
-    return {std::pair<long double, long double>((long double) sum, 0.0), 0};
+    return sum;
   }
   using flit::TestBase<T>::id;
 };
@@ -183,14 +175,13 @@ REGISTER_TYPE(simpleReduction)
 // template <typename T>
 // GLOBAL
 // void
-// addTOLKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// addTOLKernel(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -198,8 +189,8 @@ class addTOL : public flit::TestBase<T> {
 public:
   addTOL(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
@@ -229,13 +220,13 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] + ti.vals[1] + ti.vals[2];
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
+
   using flit::TestBase<T>::id;
 };
 
@@ -246,14 +237,13 @@ REGISTER_TYPE(addTOL)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -261,22 +251,21 @@ class addSub: public flit::TestBase<T> {
 public:
   addSub(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {T(1.0)};
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
     auto big = std::pow(2, (T)man_bits - 1);
     auto res = (ti.vals[0] + big) - big;
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -285,14 +274,13 @@ REGISTER_TYPE(addSub)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -300,8 +288,8 @@ class divc: public flit::TestBase<T> {
 public:
   divc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -311,12 +299,11 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] / ti.vals[1];
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -324,14 +311,13 @@ REGISTER_TYPE(divc)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -339,20 +325,19 @@ class zeroMinusX: public flit::TestBase<T> {
 public:
   zeroMinusX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = T(0.0) - ti.vals[0];
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -361,14 +346,13 @@ REGISTER_TYPE(zeroMinusX)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -376,20 +360,19 @@ class xMinusZero: public flit::TestBase<T> {
 public:
   xMinusZero(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] - (T)0.0;
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -398,14 +381,13 @@ REGISTER_TYPE(xMinusZero)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -413,19 +395,18 @@ class zeroDivX: public flit::TestBase<T> {
 public:
   zeroDivX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = (T)0.0 / ti.vals[0];
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -434,14 +415,13 @@ REGISTER_TYPE(zeroDivX)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -449,19 +429,18 @@ class xDivOne: public flit::TestBase<T> {
 public:
   xDivOne(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] / (T)1.0;
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -470,14 +449,13 @@ REGISTER_TYPE(xDivOne)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -485,19 +463,18 @@ class xDivNegOne: public flit::TestBase<T> {
 public:
   xDivNegOne(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] / (T)-1.0;
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -506,14 +483,13 @@ REGISTER_TYPE(xDivNegOne)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -521,8 +497,8 @@ class negAdivB: public flit::TestBase<T> {
 public:
   negAdivB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -531,12 +507,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = -(ti.vals[0] / ti.vals[1]);
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -545,14 +520,13 @@ REGISTER_TYPE(negAdivB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 // template <typename T>
@@ -569,11 +543,10 @@ REGISTER_TYPE(negAdivB)
 // protected:
 //   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 // 
-//   virtual flit::ResultType::mapped_type
-//   run_impl(const flit::TestInput<T>& ti) {
+//   virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
 //     //yes, this is ugly.  ti.vals s/b vector of floats
 //     auto res = (T)((std::result_of<::get_next_type(T)>::type)ti.vals[0]);
-//     return {res, 0.0};
+//     return res;
 //   }
 //   using flit::TestBase<T>::id;
 // };
@@ -583,14 +556,13 @@ REGISTER_TYPE(negAdivB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -598,8 +570,8 @@ class negAminB: public flit::TestBase<T> {
 public:
   negAminB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -608,12 +580,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = -(ti.vals[0] - ti.vals[1]);
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -623,14 +594,13 @@ REGISTER_TYPE(negAminB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -638,20 +608,19 @@ class xMinusX: public flit::TestBase<T> {
 public:
   xMinusX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] - ti.vals[0];
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -661,14 +630,13 @@ REGISTER_TYPE(xMinusX)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -676,8 +644,8 @@ class negAplusB: public flit::TestBase<T> {
 public:
   negAplusB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -686,12 +654,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = -(ti.vals[0] + ti.vals[1]);
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -701,14 +668,13 @@ REGISTER_TYPE(negAplusB)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -716,8 +682,8 @@ class aXbDivC: public flit::TestBase<T> {
 public:
   aXbDivC(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -727,12 +693,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] * (ti.vals[1] / ti.vals[2]);
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -742,14 +707,13 @@ REGISTER_TYPE(aXbDivC)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -757,8 +721,8 @@ class aXbXc: public flit::TestBase<T> {
 public:
   aXbXc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -768,12 +732,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] * (ti.vals[1] * ti.vals[2]);
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -783,14 +746,13 @@ REGISTER_TYPE(aXbXc)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -798,8 +760,8 @@ class aPbPc: public flit::TestBase<T> {
 public:
   aPbPc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -809,12 +771,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] + (ti.vals[1] + ti.vals[2]);
-    return {std::pair<long double, long double>(res, 0.0), 0};
+    return res;
   }
   using flit::TestBase<T>::id;
 };
@@ -824,14 +785,13 @@ REGISTER_TYPE(aPbPc)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -839,8 +799,8 @@ class xPc1EqC2: public flit::TestBase<T> {
 public:
   xPc1EqC2(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -850,12 +810,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    auto res = ti.vals[0] + ti.vals[1] == ti.vals[2];
-    return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    bool res = ti.vals[0] + ti.vals[1] == ti.vals[2];
+    return res ? 1.0 : 0.0;
   }
   using flit::TestBase<T>::id;
 };
@@ -865,14 +824,13 @@ REGISTER_TYPE(xPc1EqC2)
 // template <typename T>
 // GLOBAL
 // void
-// FtoDecToFKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// FtoDecToFKern(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
 //   auto idx = 0;
 // #endif
-//   results[idx].s1 = ;
-//   results[idx].s2 = ;
+//   results[idx] = 0.0;
 // }
 
 template <typename T>
@@ -880,8 +838,8 @@ class xPc1NeqC2: public flit::TestBase<T> {
 public:
   xPc1NeqC2(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -891,12 +849,11 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    auto res = ti.vals[0] + ti.vals[1] != ti.vals[2];
-    return {std::pair<long double, long double>(res?1.0:0.0, 0.0), 0};
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    bool res = ti.vals[0] + ti.vals[1] != ti.vals[2];
+    return res ? 1.0 : 0.0;
   }
   using flit::TestBase<T>::id;
 };

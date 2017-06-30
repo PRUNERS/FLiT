@@ -11,22 +11,16 @@ class ShewchukSum : public flit::TestBase<T> {
 public:
   ShewchukSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
   
-  virtual size_t getInputsPerRun() { return 1000; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 1000; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     Shewchuk<T> chuk;
     T naive = 0.0;
     for (auto val : ti.vals) {
       chuk.add(val);
       naive += val;
-      //flit::info_stream
-      //  << std::setw(7)
-      //  << std::setprecision(7)
-      //  << id << ": + " << val
-      //  << " = " << chuk.sum() << " or " << naive
-      //  << std::endl;
 			flit::info_stream
 				<< id << ":   partials now: (" << chuk.partials().size() << ") ";
       for (auto p : chuk.partials()) {
@@ -35,10 +29,10 @@ protected:
       flit::info_stream << std::endl;
     }
     T sum = chuk.sum();
-    flit::info_stream << id << ": naive sum    = " << naive << std::endl;
-    flit::info_stream << id << ": shewchuk sum = " << sum << std::endl;
+    flit::info_stream << id << ": naive sum         = " << naive << std::endl;
+    flit::info_stream << id << ": shewchuk sum      = " << sum << std::endl;
     flit::info_stream << id << ": shewchuk partials = " << chuk.partials().size() << std::endl;
-    return {std::pair<long double, long double>(sum, chuk.sum2()), 0};
+    return sum;
   }
 
 protected:

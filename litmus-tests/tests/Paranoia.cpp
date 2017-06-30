@@ -208,11 +208,11 @@ class Paranoia : public flit::TestBase<F> {
 public:
   Paranoia(std::string id) : flit::TestBase<F>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<F> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<F> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<F>& ti);
+  virtual flit::Variant run_impl(const flit::TestInput<F>& ti) override;
 
   void   setTimeout(long millis);  // starts the timer for checkTimeout()
   void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
@@ -320,7 +320,7 @@ void sigfpe(int i)
 }
 
 template <typename F>
-flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
+flit::Variant Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
 {
   FLIT_UNUSED(ti);
   int timeoutMillis = 1000;
@@ -1867,9 +1867,7 @@ flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti
     status = ExitStatus::OverflowStatus;
   }
 
-  return {std::pair<long double, long double>(Milestone,
-					      static_cast<long double>(status)),
-      0};
+  return Milestone;
 }
 
 /* setTimeout */

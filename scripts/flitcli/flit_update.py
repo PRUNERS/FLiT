@@ -39,15 +39,46 @@ def main(arguments, prog=sys.argv[0]):
     else:
         print('Creating {0}'.format(makefile))
 
-    compiler = projconf['hosts'][0]['compilers'][0]['binary']
-    if '/' in compiler:
-        compiler = os.path.realpath(compiler)
+    host = projconf['hosts'][0]
+    dev_build = host['dev_build']
+    dev_compiler_name = dev_build['compiler_name']
+    dev_optl = dev_build['optimization_level']
+    dev_switches = dev_build['switches']
+    matching_dev_compilers = [x for x in host['compilers']
+                              if x['name'] == dev_compiler_name]
+    assert len(matching_dev_compilers) > 0, \
+            'Compiler name {0} not found'.format(dev_compiler_name)
+    assert len(matching_dev_compilers) < 2, \
+            'Multiple compilers with name {0} found'.format(dev_compiler_name)
+    dev_compiler_bin = matching_dev_compilers[0]['binary']
+    if '/' in dev_compiler_bin:
+        dev_compiler_bin = os.path.realpath(dev_compiler_bin)
+
+    ground_truth = host['ground_truth']
+    gt_compiler_name = ground_truth['compiler_name']
+    gt_optl = ground_truth['optimization_level']
+    gt_switches = ground_truth['switches']
+    matching_gt_compilers = [x for x in host['compilers']
+                             if x['name'] == gt_compiler_name]
+    assert len(matching_dev_compilers) > 0, \
+            'Compiler name {0} not found'.format(gt_compiler_name)
+    assert len(matching_dev_compilers) < 2, \
+            'Multiple compilers with name {0} found'.format(gt_compiler_names)
+    # TODO: use the compiler mnemonic rather than the path
+    gt_compiler_bin = matching_gt_compilers[0]['binary']
+    if '/' in dev_compiler_bin:
+        gt_compiler_bin = os.path.realpath(gt_compiler_name)
 
     flitutil.process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),
         makefile,
         {
-            'compiler': compiler,
+            'dev_compiler': dev_compiler_bin,
+            'dev_optl': dev_optl,
+            'dev_switches': dev_switches,
+            'ground_truth_compiler': gt_compiler_bin,
+            'ground_truth_optl': gt_optl,
+            'ground_truth_switches': gt_switches,
             'flit_include_dir': conf.include_dir,
             'flit_lib_dir': conf.lib_dir,
             'flit_script': os.path.join(conf.script_dir, 'flit.py'),

@@ -13,7 +13,7 @@
 template <typename T>
 GLOBAL
 void
-DistOfMultKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+DistOfMultKernel(const flit::CuTestInput<T>* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -24,10 +24,7 @@ DistOfMultKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* re
   T c = tiList[idx].vals[2];
 
   auto distributed = (a * c) + (b * c);
-  auto undistributed = (a + b) * c;
-  results[idx].s1 = distributed;
-  results[idx].s2 = undistributed;
-
+  results[idx] = distributed;
 }
 
 template <typename T>
@@ -36,32 +33,28 @@ public:
   DistributivityOfMultiplication(std::string id)
     : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() {
+  virtual flit::KernelFunction<T>* getKernel() override {
     return DistOfMultKernel;
   }
 
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];
 
     auto distributed = (a * c) + (b * c);
-    auto undistributed = (a + b) * c;
 
     flit::info_stream << std::setw(8);
     flit::info_stream << id << ": (a,b,c) = (" << a << ","
                 << b << "," << c << ")" << std::endl;
     flit::info_stream << id << ": dist    = "
                 << distributed << std::endl;
-    flit::info_stream << id << ": undist  = "
-                << undistributed << std::endl;
 
-    return {std::pair<long double, long double>(distributed, undistributed), 0};
+    return distributed;
   }
 
 protected:

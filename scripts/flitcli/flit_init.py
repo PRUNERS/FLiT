@@ -57,7 +57,7 @@ def main(arguments, prog=sys.argv[0]):
     # Add litmus tests too
     if args.litmus_tests:
         for srcfile in os.listdir(conf.litmus_test_dir):
-            if os.path.splitext(srcfile)[1] in ('.cpp', '.hpp', '.h'):
+            if os.path.splitext(srcfile)[1] in ('.cpp', '.h'):
                 srcpath = os.path.join(conf.litmus_test_dir, srcfile)
                 to_copy[os.path.join('tests', srcfile)] = srcpath
 

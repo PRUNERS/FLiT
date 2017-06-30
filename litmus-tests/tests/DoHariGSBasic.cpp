@@ -7,7 +7,7 @@
 template <typename T>
 GLOBAL
 void
-DoHGSBTestKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* result){
+DoHGSBTestKernel(const flit::CuTestInput<T>* tiList, double* result){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -30,8 +30,7 @@ DoHGSBTestKernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* re
 
   double score = std::abs(o12) + std::abs(o13) + std::abs(o23);
 
-  result[idx].s1 = score;
-  result[idx].s2 = 0;
+  result[idx] = score;
 }
 
 template <typename T>
@@ -39,13 +38,13 @@ class DoHariGSBasic: public flit::TestBase<T> {
 public:
   DoHariGSBasic(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 9; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 9; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return DoHGSBTestKernel; } 
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::KernelFunction<T>* getKernel() override { return DoHGSBTestKernel; } 
+
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     using flit::operator<<;
 
     long double score = 0.0;
@@ -83,7 +82,7 @@ protected:
                               << flit::as_int(score) << std::endl;
       flit::info_stream << id << ": score (dec):  " << score << std::endl;
     }
-    return {std::pair<long double, long double>(score, 0.0), 0};
+    return score;
   }
 
 protected:

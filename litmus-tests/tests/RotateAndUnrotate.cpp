@@ -7,7 +7,7 @@
 template <typename T>
 GLOBAL
 void
-RaUKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+RaUKern(const flit::CuTestInput<T>* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -19,8 +19,7 @@ RaUKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
   auto orig = A;
   A = A.rotateAboutZ_3d(theta);
   A = A.rotateAboutZ_3d(-theta);
-  results[idx].s1 = A.L1Distance(orig);
-  results[idx].s2 = A.LInfDistance(orig);
+  results[idx] = A.L1Distance(orig);
 }
 
 template <typename T>
@@ -28,8 +27,8 @@ class RotateAndUnrotate: public flit::TestBase<T> {
 public:
   RotateAndUnrotate(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.min = -6;
     ti.max = 6;
@@ -38,9 +37,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return RaUKern; }
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::KernelFunction<T>* getKernel() override { return RaUKern; }
+
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto theta = M_PI;
     auto A = flit::Vector<T>(ti.vals);
     auto orig = A;
@@ -58,7 +57,7 @@ protected:
     }
     flit::info_stream << "in " << id << std::endl;
     A.dumpDistanceMetrics(orig, flit::info_stream);
-    return {std::pair<long double, long double>(dist, A.LInfDistance(orig)), 0};
+    return dist;
   }
 
 protected:

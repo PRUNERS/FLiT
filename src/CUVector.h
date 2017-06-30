@@ -1,7 +1,7 @@
 #ifndef CU_VECTOR_HPP
 #define CU_VECTOR_HPP
 
-#include "CUHelpers.hpp"
+#include "CUHelpers.h"
 
 #include <vector>
 

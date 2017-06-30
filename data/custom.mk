@@ -23,6 +23,8 @@ CC_REQUIRED    +=
 LD_REQUIRED    +=
 
 # compiler and linker flags respectively - specifically for a dev build
+# - DEV_CFLAGS:   non-recorded compiler flags (such as includes)
+# - DEV_LDFLAGS:  linker flags (also not under test)
 DEV_CFLAGS     +=
 DEV_LDFLAGS    +=
 

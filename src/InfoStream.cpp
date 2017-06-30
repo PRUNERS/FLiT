@@ -1,4 +1,4 @@
-#include "InfoStream.hpp"
+#include "InfoStream.h"
 
 #include <mutex>
 
