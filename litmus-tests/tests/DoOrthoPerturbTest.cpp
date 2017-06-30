@@ -58,8 +58,8 @@ class DoOrthoPerturbTest : public flit::TestBase<T> {
 public:
   DoOrthoPerturbTest(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 16; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 16; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.iters = 200;
     ti.ulp_inc = 1;
@@ -73,9 +73,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return DoOPTKernel; }
+  virtual flit::KernelFunction<T>* getKernel() override { return DoOPTKernel; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     using flit::operator<<;
 
     auto iters = ti.iters;

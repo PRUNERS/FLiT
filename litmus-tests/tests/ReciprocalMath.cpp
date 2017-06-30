@@ -9,16 +9,16 @@ class ReciprocalMath : public flit::TestBase<T> {
 public:
   ReciprocalMath(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 5; }
+  virtual size_t getInputsPerRun() override { return 5; }
 
-  flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { .1, 1.1e3, -.1, -1.1e3, 1/3 };
     return ti;
   }
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];

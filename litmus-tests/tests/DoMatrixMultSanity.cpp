@@ -26,9 +26,9 @@ class DoMatrixMultSanity: public flit::TestBase<T> {
 public:
   DoMatrixMultSanity(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 16; }
+  virtual size_t getInputsPerRun() override { return 16; }
 
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.highestDim = getInputsPerRun();
     ti.min = -6;
@@ -39,9 +39,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return DoMatrixMultSanityKernel; }
+  virtual flit::KernelFunction<T>* getKernel() override { return DoMatrixMultSanityKernel; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto dim = ti.vals.size();
     flit::Vector<T> b(ti.vals);
     auto c = flit::Matrix<T>::Identity(dim) * b;

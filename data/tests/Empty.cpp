@@ -1,4 +1,4 @@
-#include "flit.h"
+#include <flit.h>
 
 #include <string>
 
@@ -29,7 +29,7 @@ public:
    * Can be zero.  If it is zero, then getDefaultInput should return an empty
    * TestInput object which is as simple as "return {};"
    */
-  virtual size_t getInputsPerRun() { return 1; }
+  virtual size_t getInputsPerRun() override { return 1; }
 
   /** Specify the default inputs for your test.
    *
@@ -40,7 +40,7 @@ public:
    * If your algorithm takes no inputs, then you can simply return an empty
    * TestInput object.  It is as simple as "return {};".
    */
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { 1.0 };
     return ti;
@@ -65,14 +65,14 @@ public:
    * values are valid for now.
    */
   virtual long double compare(long double ground_truth,
-                              long double test_results) const {
+                              long double test_results) const override {
     // absolute error
     return test_results - ground_truth;
   }
 
   /** There is no good default implementation comparing two strings */
   virtual long double compare(const std::string &ground_truth,
-                              const std::string &test_results) const {
+                              const std::string &test_results) const override {
     FLIT_UNUSED(ground_truth);
     FLIT_UNUSED(test_results);
     return 0.0;
@@ -91,7 +91,7 @@ protected:
    * See the documentation above Empty_kernel() for details about what the
    * kernel is expected to have.
    */
-  virtual flit::KernelFunction<T>* getKernel() { return Empty_kernel; }
+  virtual flit::KernelFunction<T>* getKernel() override { return Empty_kernel; }
 
   /** Call or implement the algorithm here.
    *
@@ -102,7 +102,7 @@ protected:
    * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
    * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
    */
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     return ti.vals[0];
   }
 

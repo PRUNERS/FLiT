@@ -39,8 +39,8 @@ public:
   {name}(std::string id)
     : flit::TestBase<T>(std::move(id)) {{}}
 
-  virtual size_t getInputsPerRun() {{ return {input_count}; }}
-  virtual flit::TestInput<T> getDefaultInput() {{
+  virtual size_t getInputsPerRun() override {{ return {input_count}; }}
+  virtual flit::TestInput<T> getDefaultInput() override {{
     flit::TestInput<T> ti;
 
     {default_input}
@@ -49,12 +49,12 @@ public:
   }}
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() {{
+  virtual flit::KernelFunction<T>* getKernel() override {{
     return {name}Kernel;
   }}
 
   virtual
-  flit::Variant run_impl(const flit::TestInput<T>& ti) {{
+  flit::Variant run_impl(const flit::TestInput<T>& ti) override {{
     T score = 0.0;
 
     flit::info_stream << id << ": Starting test with parameters" << std::endl;

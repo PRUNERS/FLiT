@@ -38,13 +38,13 @@ class DoHariGSBasic: public flit::TestBase<T> {
 public:
   DoHariGSBasic(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 9; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 9; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return DoHGSBTestKernel; } 
+  virtual flit::KernelFunction<T>* getKernel() override { return DoHGSBTestKernel; } 
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     using flit::operator<<;
 
     long double score = 0.0;

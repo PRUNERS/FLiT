@@ -27,8 +27,8 @@ class RotateAndUnrotate: public flit::TestBase<T> {
 public:
   RotateAndUnrotate(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.min = -6;
     ti.max = 6;
@@ -37,9 +37,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return RaUKern; }
+  virtual flit::KernelFunction<T>* getKernel() override { return RaUKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto theta = M_PI;
     auto A = flit::Vector<T>(ti.vals);
     auto orig = A;

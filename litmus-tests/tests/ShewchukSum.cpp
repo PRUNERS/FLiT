@@ -11,11 +11,11 @@ class ShewchukSum : public flit::TestBase<T> {
 public:
   ShewchukSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
   
-  virtual size_t getInputsPerRun() { return 1000; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 1000; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     Shewchuk<T> chuk;
     T naive = 0.0;
     for (auto val : ti.vals) {

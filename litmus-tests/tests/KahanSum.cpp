@@ -15,11 +15,11 @@ class KahanSum : public flit::TestBase<T> {
 public:
   KahanSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 10000; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 10000; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     Kahan<T> kahan;
     Shewchuk<T> chuk;
     T naive = 0.0;

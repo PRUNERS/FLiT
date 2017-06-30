@@ -9,9 +9,9 @@ class InliningProblem : public flit::TestBase<T> {
 public:
   InliningProblem(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 1; }
+  virtual size_t getInputsPerRun() override { return 1; }
 
-  flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { .1, 1.1e3, -.1, -1.1e3, 1/3 };
     return ti;
@@ -23,7 +23,7 @@ protected:
     const T x_again = -nx;
     return x_again;
   }
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     T a = ti.vals[0];
     T also_a = identity(a);
 

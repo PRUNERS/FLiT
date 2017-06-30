@@ -36,12 +36,12 @@ class DoHariGSImproved: public flit::TestBase<T> {
 public:
   DoHariGSImproved(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 9; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 9; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return DoHGSITestKernel; }
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::KernelFunction<T>* getKernel() override { return DoHGSITestKernel; }
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     long double score = 0.0;
 
     //matrix = {a, b, c};

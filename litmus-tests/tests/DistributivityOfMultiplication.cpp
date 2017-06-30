@@ -33,15 +33,15 @@ public:
   DistributivityOfMultiplication(std::string id)
     : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() {
+  virtual flit::KernelFunction<T>* getKernel() override {
     return DistOfMultKernel;
   }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];

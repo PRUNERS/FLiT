@@ -29,8 +29,8 @@ class RotateFullCircle: public flit::TestBase<T> {
 public:
   RotateFullCircle(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.min = -6;
     ti.max = 6;
@@ -42,9 +42,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() {return RFCKern; }
+  virtual flit::KernelFunction<T>* getKernel() override {return RFCKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto n = ti.iters;
     flit::Vector<T> A = flit::Vector<T>(ti.vals);
     auto orig = A;

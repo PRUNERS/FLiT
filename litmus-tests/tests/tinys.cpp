@@ -24,17 +24,17 @@ class FtoDecToF: public flit::TestBase<T> {
 public:
   FtoDecToF(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
   flit::TestInput<T> ti;
     ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
     uint16_t ddigs = nlim.digits * std::log10(2) + 1;
@@ -69,16 +69,16 @@ class subnormal: public flit::TestBase<T> {
 public:
   subnormal(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {std::nextafter(T(0.0), T(1.0))};
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     return ti.vals[0] - ti.vals[0] / 2;
   }
   using flit::TestBase<T>::id;
@@ -103,13 +103,13 @@ class dotProd: public flit::TestBase<T> {
 public:
   dotProd(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     FLIT_UNUSED(ti);
     auto size = 16;
 
@@ -144,13 +144,13 @@ class simpleReduction: public flit::TestBase<T> {
 public:
   simpleReduction(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     FLIT_UNUSED(ti);
     auto vals = flit::getRandSeq<T>();
     auto sublen = vals.size() / 4 - 1;
@@ -189,8 +189,8 @@ class addTOL : public flit::TestBase<T> {
 public:
   addTOL(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
@@ -220,9 +220,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] + ti.vals[1] + ti.vals[2];
     return res;
   }
@@ -251,16 +251,16 @@ class addSub: public flit::TestBase<T> {
 public:
   addSub(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {T(1.0)};
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
     auto big = std::pow(2, (T)man_bits - 1);
@@ -288,8 +288,8 @@ class divc: public flit::TestBase<T> {
 public:
   divc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -299,9 +299,9 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] / ti.vals[1];
     return res;
   }
@@ -325,17 +325,17 @@ class zeroMinusX: public flit::TestBase<T> {
 public:
   zeroMinusX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = T(0.0) - ti.vals[0];
     return res;
   }
@@ -360,17 +360,17 @@ class xMinusZero: public flit::TestBase<T> {
 public:
   xMinusZero(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] - (T)0.0;
     return res;
   }
@@ -395,16 +395,16 @@ class zeroDivX: public flit::TestBase<T> {
 public:
   zeroDivX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = (T)0.0 / ti.vals[0];
     return res;
   }
@@ -429,16 +429,16 @@ class xDivOne: public flit::TestBase<T> {
 public:
   xDivOne(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] / (T)1.0;
     return res;
   }
@@ -463,16 +463,16 @@ class xDivNegOne: public flit::TestBase<T> {
 public:
   xDivNegOne(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] / (T)-1.0;
     return res;
   }
@@ -497,8 +497,8 @@ class negAdivB: public flit::TestBase<T> {
 public:
   negAdivB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -507,9 +507,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = -(ti.vals[0] / ti.vals[1]);
     return res;
   }
@@ -570,8 +570,8 @@ class negAminB: public flit::TestBase<T> {
 public:
   negAminB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -580,9 +580,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = -(ti.vals[0] - ti.vals[1]);
     return res;
   }
@@ -608,17 +608,17 @@ class xMinusX: public flit::TestBase<T> {
 public:
   xMinusX(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { flit::getRandSeq<T>()[0] };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] - ti.vals[0];
     return res;
   }
@@ -644,8 +644,8 @@ class negAplusB: public flit::TestBase<T> {
 public:
   negAplusB(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 2; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -654,9 +654,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = -(ti.vals[0] + ti.vals[1]);
     return res;
   }
@@ -682,8 +682,8 @@ class aXbDivC: public flit::TestBase<T> {
 public:
   aXbDivC(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -693,9 +693,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] * (ti.vals[1] / ti.vals[2]);
     return res;
   }
@@ -721,8 +721,8 @@ class aXbXc: public flit::TestBase<T> {
 public:
   aXbXc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -732,9 +732,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] * (ti.vals[1] * ti.vals[2]);
     return res;
   }
@@ -760,8 +760,8 @@ class aPbPc: public flit::TestBase<T> {
 public:
   aPbPc(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -771,9 +771,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     auto res = ti.vals[0] + (ti.vals[1] + ti.vals[2]);
     return res;
   }
@@ -799,8 +799,8 @@ class xPc1EqC2: public flit::TestBase<T> {
 public:
   xPc1EqC2(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -810,9 +810,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     bool res = ti.vals[0] + ti.vals[1] == ti.vals[2];
     return res ? 1.0 : 0.0;
   }
@@ -838,8 +838,8 @@ class xPc1NeqC2: public flit::TestBase<T> {
 public:
   xPc1NeqC2(std::string id) : flit::TestBase<T>(std::move(id)){}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput(){
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = {
       flit::getRandSeq<T>()[0],
@@ -849,9 +849,9 @@ public:
     return ti;
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     bool res = ti.vals[0] + ti.vals[1] != ti.vals[2];
     return res ? 1.0 : 0.0;
   }

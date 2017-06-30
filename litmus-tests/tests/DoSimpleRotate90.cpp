@@ -29,17 +29,17 @@ class DoSimpleRotate90: public flit::TestBase<T> {
 public:
   DoSimpleRotate90(std::string id):flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 3; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { 1, 1, 1 };
     return ti;
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return DoSR90Kernel; }
+  virtual flit::KernelFunction<T>* getKernel() override { return DoSR90Kernel; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     flit::Vector<T> A(ti.vals);
     flit::Vector<T> expected = {-A[1], A[0], A[2]};
     flit::info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;

@@ -498,13 +498,13 @@ template <typename T>
 class NullTest : public TestBase<T> {
 public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
-  virtual TestInput<T> getDefaultInput() { return {}; }
-  virtual size_t getInputsPerRun() { return 0; }
+  virtual TestInput<T> getDefaultInput() override { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
   virtual std::vector<TestResult> run(
-      const TestInput<T>&, const bool, const size_t) { return {}; }
+      const TestInput<T>&, const bool, const size_t) override { return {}; }
 protected:
-  virtual KernelFunction<T>* getKernel() { return nullptr; }
-  virtual Variant run_impl(const TestInput<T>&) { return {}; }
+  virtual KernelFunction<T>* getKernel() override { return nullptr; }
+  virtual Variant run_impl(const TestInput<T>&) override { return {}; }
 };
 
 class TestFactory {
@@ -559,7 +559,7 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
       flit::registerTest(#klass, this);                     \
     }                                                       \
   protected:                                                \
-    virtual createType create() {                           \
+    virtual createType create() override {                  \
       return std::make_tuple(                               \
           std::make_shared<klass<float>>(#klass),           \
           std::make_shared<klass<double>>(#klass),          \
@@ -579,7 +579,7 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
       flit::registerTest(#klass, this);                     \
     }                                                       \
   protected:                                                \
-    virtual createType create() {                           \
+    virtual createType create() override {                  \
       return std::make_tuple(                               \
           std::make_shared<klass<float>>(#klass),           \
           std::make_shared<klass<double>>(#klass),          \
