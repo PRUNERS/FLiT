@@ -284,7 +284,6 @@ CUOBJ           := $(foreach b,$(CUBIN),$(CUSOURCE:%.cpp=%_$(notdir $b).o))
 
 endif # ifdef HAS_CUDA
 
-
 .PHONY: help
 help:
 	@echo 'You can run the Makefile directly, but it is recommended to use'
@@ -384,6 +383,8 @@ endif # ifdef HAS_CUDA
 # http://make.mad-scientist.net/the-eval-function/
 
 
+PERCENT         := %
+
 # Generates rules for
 #   1. compiling
 #   2. running
@@ -396,26 +397,26 @@ endif # ifdef HAS_CUDA
 # @param $3: variable name containing the optimization level (e.g. O2)
 define TARGETS_RULE
 # run test and collect results
-$(RESULTS_DIR)/$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: $(RESULTS_DIR)/$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)
+$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)
 	-./$$< --output $$@
 
 # link
-$(RESULTS_DIR)/$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3) : $(SOURCE:%.cpp=%_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
-	mkdir -p $(RESULTS_DIR)
-	-$($(strip $2)) $($(strip $1)) $($(strip $3)) $($(strip $2)_REQUIRED) \
-	$(CC_REQUIRED) $$^ -o $$@ $(LD_REQUIRED)
-	rm -f $(SOURCE:.cpp=_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o)
+$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) : $$(SOURCE:$(PERCENT).cpp=$(PERCENT)_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o)
+	mkdir -p $$(RESULTS_DIR)
+	-$$($(strip $2)) $$($(strip $1)) $$($(strip $3)) $$($(strip $2)_REQUIRED) \
+	$$(CC_REQUIRED) $$^ -o $$@ $$(LD_REQUIRED)
+	rm -f $$(SOURCE:.cpp=_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o)
 
 # TODO: set FLIT_COMPILER to the compiler name, not the executable used
 # compile
-%_$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3).o : %.cpp
-	-$($(strip $2)) -c $($(strip $1)) $($(strip $3)) $(CC_REQUIRED) \
-	   $($(strip $2)_REQUIRED) $$< -o $$@                           \
-	   -DFLIT_HOST='"$(HOSTNAME)"'                                  \
-	   -DFLIT_COMPILER='"$($(strip $2))"'                           \
-	   -DFLIT_OPTL='"$($(strip $3))"'                               \
-	   -DFLIT_SWITCHES='"$($(strip $1))"'                           \
-	   -DFLIT_FILENAME='"$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)"'
+%_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o : %.cpp
+	-$$($(strip $2)) -c $$($(strip $1)) $$($(strip $3)) $$(CC_REQUIRED) \
+	   $$($(strip $2)_REQUIRED) $$< -o $$@                           \
+	   -DFLIT_HOST='"$$(HOSTNAME)"'                                  \
+	   -DFLIT_COMPILER='"$$($(strip $2))"'                           \
+	   -DFLIT_OPTL='"$$($(strip $3))"'                               \
+	   -DFLIT_SWITCHES='"$$($(strip $1))"'                           \
+	   -DFLIT_FILENAME='"$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)"'
 endef
 # end of define TARGETS_RULE
 
@@ -436,22 +437,22 @@ $(foreach c, $(COMPILERS),                \
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
 define CUTARGETS_RULE
 #run test
-NVCC_$(HOSTNAME)_$(strip $1)_out.csv : NVCC_$(HOSTNAME)_$(strip $1)
+NVCC_$$(HOSTNAME)_$(strip $1)_out.csv : NVCC_$$(HOSTNAME)_$(strip $1)
 	./$$< --output $$@
 
 #link test
-NVCC_$(HOSTNAME)_$(strip $1) : $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o)
-	$(NVCC) $($(strip $1)) $(NVCC_LINK) $$^ -o $$@
-	rm -f $(CUSOURCE:%.cpp=%_NVCC_$(HOSTNAME)_$(strip $1).o)
+NVCC_$$(HOSTNAME)_$(strip $1) : $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HOSTNAME)_$(strip $1).o)
+	$$(NVCC) $$($(strip $1)) $$(NVCC_LINK) $$^ -o $$@
+	rm -f $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HOSTNAME)_$(strip $1).o)
 
 #compile test
-%_NVCC_$(HOSTNAME)_$(strip $1).o : %.cpp
-	-$(NVCC) -c $($(strip $1)) $(NVCC_CFLAGS) $$< -o $$@            \
-	   -DFLIT_HOST='"$(HOSTNAME)"'                                  \
-	   -DFLIT_COMPILER='"$(NVCC)"'                                  \
-	   -DFLIT_OPTL='"$($(strip $3))"'                               \
-	   -DFLIT_SWITCHES='"$($(strip $1))"'                           \
-	   -DFLIT_FILENAME='"$(strip $2)_$(HOSTNAME)_$(strip $1)_$(strip $3)"'
+%_NVCC_$$(HOSTNAME)_$(strip $1).o : %.cpp
+	-$$(NVCC) -c $$($(strip $1)) $$(NVCC_CFLAGS) $$< -o $$@          \
+	   -DFLIT_HOST='"$$(HOSTNAME)"'                                  \
+	   -DFLIT_COMPILER='"$$(NVCC)"'                                  \
+	   -DFLIT_OPTL='"$$($(strip $3))"'                               \
+	   -DFLIT_SWITCHES='"$$($(strip $1))"'                           \
+	   -DFLIT_FILENAME='"$$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)"'
 endef
 # end of def CUTARGETS_RULE
 
