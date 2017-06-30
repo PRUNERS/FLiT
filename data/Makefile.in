@@ -3,6 +3,8 @@
 FFLAGS          ?=
 DEV_TARGET      ?= devrun
 DEV_CUTARGET    ?= cu_devrun
+GT_TARGET       ?= gtrun
+GT_OUT          := ground-truth.csv
 
 UNAME_S         := $(shell uname -s)
 
@@ -25,6 +27,10 @@ DEV_CC          ?= {dev_compiler}
 DEV_OPTL        ?= {dev_optl}
 DEV_SWITCHES    ?= {dev_switches}
 
+GT_CC           := {ground_truth_compiler}
+GT_OPTL         := {ground_truth_optl}
+GT_SWITCHES     := {ground_truth_switches}
+
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
@@ -42,8 +48,10 @@ TESTS           := $(wildcard tests/*.cpp)
 SOURCE          := $(wildcard *.cpp)
 SOURCE          += $(TESTS)
 
-DEV_OBJ         := $(SOURCE:%.cpp=%_dev.o)
-DEV_DEPS        := $(SOURCE:%.cpp=%_dev.d)
+DEV_OBJ          = $(SOURCE:%.cpp=%_dev.o)
+DEV_DEPS         = $(SOURCE:%.cpp=%_dev.d)
+GT_OBJ           = $(SOURCE:%.cpp=%_gt.o)
+GT_DEPS          = $(SOURCE:%.cpp=%_gt.d)
 
 CLANG           := clang++
 INTEL           := icpc
@@ -298,15 +306,20 @@ help:
 	@echo '  help        Show this help and exit (default target)'
 	@echo '  dev         Only run the devel compilation to test things out'
 	@echo '  devcuda     Only run the devel CUDA compilation to test CUDA out'
+	@echo '  groundtruth Compile the ground-truth version and get its output'
+	@echo '  gt          Same as groundtruth'
 	@echo '  run         Run all combinations of compilation, results in results/'
 	@echo '  clean       Clean intermediate files'
 	@echo '  veryclean   Runs clean + removes targets and results'
 	@echo '  distclean   Same as veryclean'
 	@echo
 
-.PHONY: dev devcuda run
+.PHONY: dev devcuda gt groundtruth run
 dev: $(DEV_TARGET)
 devcuda: $(DEV_CUTARGET)
+gt: $(GT_TARGET) $(GT_OUT)
+groundtruth: $(GT_TARGET) $(GT_OUT)
+
 run: $(TARGETS) $(CUTARGETS)
 
 .PHONY: clean
@@ -316,6 +329,8 @@ clean:
 	rm -f $(DEV_CUOBJ)
 	rm -f $(OBJ)
 	rm -f $(CUOBJ)
+	rm -f $(GT_OBJ)
+	rm -f $(GT_DEPS)
 
 .PHONY: veryclean distclean
 veryclean: distclean
@@ -323,15 +338,18 @@ distclean: clean
 	rm -f $(DEV_TARGET)
 	rm -f $(DEV_CUTARGET)
 	rm -f $(TARGETS)
-	rm -f $(TARGETS:%.csv=%.csv*.dat)
+	rm -f $(addsuffix *.dat,$(TARGETS))
 	rm -f $(BIN)
 	rm -f $(CUTARGETS)
-	rm -f $(CUTARGETS:%.csv=%.csv*.dat)
+	rm -f $(addsuffix *.dat,$(CUTARGETS))
 	rm -f $(CUBIN)
+	rm -f $(GT_TARGET)
+	rm -f $(GT_OUT)
+	rm -f $(addsuffix *.dat,$(GT_OUT))
 	-rmdir $(RESULTS_DIR)
 
 .PRECIOUS: %.d
--include $(SOURCE:%.cpp=%.d) $(DEV_DEPS)
+-include $(SOURCE:%.cpp=%.d) $(DEV_DEPS) $(GT_DEPS)
 
 Makefile: flit-config.toml $(dir $(FLIT_SCRIPT))/flit_update.py
 	$(FLIT_SCRIPT) update
@@ -348,6 +366,7 @@ cleanlibflit:
 	rm -rf lib
 
 $(DEV_TARGET): lib/libflit.so
+$(GT_TARGET): lib/libflit.so
 $(BIN): lib/libflit.so
 $(CUBIN): lib/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
@@ -368,7 +387,7 @@ $(DEV_TARGET): $(DEV_OBJ) Makefile
 	  -DFLIT_COMPILER='"$(DEV_CC)"'       \
 	  -DFLIT_OPTL='"$(DEV_OPTL)"'         \
 	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
-	  -DFLIT_FILENAME='"$(DEV_TARGET)"'
+	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
 
 ifdef HAS_CUDA
 $(DEV_CUTARGET): $(DEV_CUOBJ) Makefile
@@ -378,11 +397,26 @@ $(DEV_CUTARGET): $(DEV_CUOBJ) Makefile
 	$(NVCC) -c $(NVCC_CFLAGS) $(DEV_NVCC_CC) $< -o $@
 endif # ifdef HAS_CUDA
 
+# Ground truth compilation rules
+$(GT_OUT): $(GT_TARGET)
+	./$(GT_TARGET) --output $(GT_OUT)
+
+$(GT_TARGET): $(GT_OBJ) Makefile
+	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
+
+%_gt.o: %.cpp Makefile
+	$(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"'         \
+	  -DFLIT_COMPILER='"$(GT_CC)"'       \
+	  -DFLIT_OPTL='"$(GT_OPTL)"'         \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
 # Now the true magic begins for the full run compilation rules
 # very cool: recyclable target definitions! adapted from
 # http://make.mad-scientist.net/the-eval-function/
 
-
+# TODO: try without PERCENT variable
 PERCENT         := %
 
 # Generates rules for
@@ -397,8 +431,8 @@ PERCENT         := %
 # @param $3: variable name containing the optimization level (e.g. O2)
 define TARGETS_RULE
 # run test and collect results
-$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)
-	-./$$< --output $$@
+$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) $$(GT_OUT)
+	-./$$< --output $$@ --ground-truth $$(GT_OUT)
 
 # link
 $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) : $$(SOURCE:$(PERCENT).cpp=$(PERCENT)_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o)
@@ -437,8 +471,8 @@ $(foreach c, $(COMPILERS),                \
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
 define CUTARGETS_RULE
 #run test
-NVCC_$$(HOSTNAME)_$(strip $1)_out.csv : NVCC_$$(HOSTNAME)_$(strip $1)
-	./$$< --output $$@
+NVCC_$$(HOSTNAME)_$(strip $1)_out.csv : NVCC_$$(HOSTNAME)_$(strip $1) $$(GT_OUT)
+	./$$< --output $$@ --ground-truth $$(GT_OUT)
 
 #link test
 NVCC_$$(HOSTNAME)_$(strip $1) : $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HOSTNAME)_$(strip $1).o)
