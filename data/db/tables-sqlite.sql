@@ -48,8 +48,7 @@ CREATE TABLE IF NOT EXISTS tests (
   file           varchar,   -- filename of test executable
   nanosec        integer    check(nanosec >= 0),  -- timing for the function
 
-  foreign key(run) references runs(id),
-  check (score is not null or resultfile is not null)
+  foreign key(run) references runs(id)
   );
 
 -- Tables not created:

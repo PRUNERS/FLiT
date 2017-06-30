@@ -48,3 +48,18 @@ def sqlite_open(filepath):
 
     return connection
 
+def is_sqlite(filename):
+    'Returns true if the file is likely an sqlite file.'
+    from os.path import isfile, getsize
+
+    if not os.path.isfile(filename):
+        return False
+
+    # SQLite database file header is 100 bytes
+    if os.path.getsize(filename) < 100:
+        return False
+
+    with open(filename, 'rb') as fd:
+        header = fd.read(100)
+
+    return header[:16] == b'SQLite format 3\000'

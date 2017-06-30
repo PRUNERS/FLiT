@@ -8,6 +8,7 @@ import argparse
 import csv
 import datetime
 import os
+import sqlite3
 import sys
 
 brief_description = 'Import flit results into the configured database'
@@ -24,7 +25,9 @@ def main(arguments, prog=sys.argv[0]):
                 Import flit results into the configured database.  The
                 configured database is found from the settings in
                 flit-config.toml.  You can import either exported results or
-                results from manually running the tests.
+                results from manually running the tests.  Note that importing
+                the same thing twice will result in having two copies of it
+                in the database.
                 ''',
             )
     parser.add_argument('importfile', nargs='+', type=_file_check,
@@ -78,6 +81,7 @@ def main(arguments, prog=sys.argv[0]):
     run_ids = [x['id'] for x in db.execute('select id from runs')]
     if len(run_ids) == 0:
         args.new_run = True
+    print('run_ids: ', run_ids)
 
     # Find the destination run
     if not args.new_run:
@@ -89,24 +93,32 @@ def main(arguments, prog=sys.argv[0]):
         # Create a new run to use in import
         db.execute('insert into runs(rdate,notes) values (?,?)',
                 (datetime.datetime.now(), 'Imported using flit import'))
+        db.commit()
         args.run = db.execute('select id from runs order by id').fetchall()[-1]['id']
 
     for importee in args.importfile:
-        try:
+        print(importee)
+        if util.is_sqlite(importee):
+            # Try to treat the importfile like a sqlite database
             import_db = util.sqlite_open(importee)
             cur = import_db.cursor()
             cur.execute('select id from runs')
             run_ids = sorted([x['id'] for x in cur])
-            assert len(run_ids) > 0
+            if len(run_ids) == 0:
+                print('  nothing to import')
+                continue
             latest_run = run_ids[-1]
-            cur.execute('select name,host,compiler,optl,switches,precision,score,'
-                               'score_d,resultfile,file,nanosec '
+            cur.execute('select name,host,compiler,optl,switches,precision,'
+                        'comparison,comparison_d,file,nanosec '
                         'from tests where run = ?', (latest_run,))
             rows = cur.fetchall()
-        except:
+        else:
             with open(importee, 'r') as csvin:
                 reader = csv.DictReader(csvin)
                 rows = [row for row in reader]
+        if len(rows) == 0:
+            print('  nothing to import')
+            continue
         to_insert = []
         for row in rows:
             # Convert 'NULL' to None
@@ -135,12 +147,11 @@ def main(arguments, prog=sys.argv[0]):
                 optl,
                 switches,
                 precision,
-                score,
-                score_d,
-                resultfile,
+                comparison,
+                comparison_d,
                 file,
                 nanosec)
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', to_insert)
     db.commit()
 
