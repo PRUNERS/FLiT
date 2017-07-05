@@ -12,9 +12,9 @@ want, to the point that you may not get the same result from your
 floating-point algorithms.  For many applications, this may not matter as the
 difference is typically very small.  But there are situations where
 
-1. the difference is not so small
-2. your application cares even about small differences, or
-3. your application is so large (such as a weather simulation) that a small
+1. The difference is not so small
+2. Your application cares even about small differences, or
+3. Your application is so large (such as a weather simulation) that a small
    change may propagate into very large result variability.
 
 FLiT helps developers determine where reproducibility problems may occur due to

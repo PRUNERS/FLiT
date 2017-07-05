@@ -11,8 +11,8 @@ When you initialize a test directory using `flit init`, a test file called
 implies - empty.  It basically shows you how to create a new test and is
 intended to be used as a template for creating tests.
 
-To add a test, simply copy Empty.cpp and place it in the `tests` directory with
-an ending of `cpp`.  Rename the class inside, and you're good to go.
+To add a test, simply copy `Empty.cpp` and place it in the `tests` directory
+with an ending of `cpp`.  Rename the class inside, and you're good to go.
 
 ## Disabling Test Cases
 

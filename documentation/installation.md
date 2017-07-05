@@ -17,7 +17,7 @@ Instruction Contents:
 
 ## Roles
 
-FLiT is designed to build and excute its test suite on a variety of hosts and
+FLiT is designed to build and execute its test suite on a variety of hosts and
 compilers.  There are 3 roles used in a FLiT architecture:
 
 * **Launcher**: Where you start a large run which remotely executes on
@@ -63,7 +63,7 @@ symbolic link called `python3` in your `PATH` pointing to that python executable
 ### Runner Prerequisites
 
 The test runner can run multiple compilers.  For now, only one compiler is
-supported from each of the types: GCC, Clang, Intel's icpc, and NVIDIA's nvcc.
+supported from each of the types: GCC, Clang, Intel's `icpc`, and NVIDIA's `nvcc`.
 Simply have the one you want used as the first in your system PATH.  You do not
 need all four of those, only those ones installed will be used.  But all of
 them need to support C++11.
@@ -78,7 +78,7 @@ sudo apt install openssh-server
 ### Database Prerequisites
 
 Postgres used to be the supported database for FLiT.  That has since been
-changed to using SQLite3.  Because of this, all you need is sqlite3 installed,
+changed to using SQLite3.  Because of this, all you need is `sqlite3` installed,
 which you should already have installed because `python3` already requires it.
 
 ## FLiT Setup
