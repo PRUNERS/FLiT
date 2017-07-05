@@ -68,7 +68,7 @@ There are a few other files copied over:
   framework
 
 If you want to play with the litmus tests in this directory, you can pass the
-`--litmus-tests` which will copy over the litmus tests into the `tests`
+`--litmus-tests` flag which will copy over the litmus tests into the `tests`
 directory for use.
 
 ## flit update
@@ -105,6 +105,29 @@ Run flit on the configured remote machine(s). Note that you may need to
 provide a password for SSH, but that should be taken care of pretty early on
 in the process. The results will be sent to the database computer for later
 analysis.
+
+## flit import
+
+Imports flit results into the database configured in `flit-config.toml`.  It
+can either import a CSV file created from a FLiT test executable (using the
+`--output` flag) or it can import another SQLite3 database file created from
+another call to `flit import`.
+
+The following is an example of how to do a full run of the FLiT litmus tests
+and import them into a database file.
+
+```bash
+flit init --directory litmus-test-run --litmus-tests
+cd litmus-test-run
+rm tests/Empty.cpp
+make run -j8
+flit import --new-run results/*.csv
+```
+
+These commands will populate by default a file called `results.sqlite` within
+the created `litmus-test-run` directory.  You are free to examine the results
+using the `sqlite3` interactive tool or any other method you have for running
+queries on an SQLite3 database.
 
 ## flit analyze
 
