@@ -2,37 +2,46 @@
 
 [![FLiT Bird](/images/flit-small.png)](https://github.com/PRUNERS/FLiT "FLiT")
 
-Floating-point Litmus Tests (FLiT) is a test infrastructure for detecting varibility
-in floating-point code caused by variations in compiler code generation,
-hardware and execution environments.
+Floating-point Litmus Tests (FLiT) is a C++ test infrastructure for detecting
+variability in floating-point code caused by variations in compiler code
+generation, hardware and execution environments.
 
-FLiT works by compiling many versions of user-provided test cases, using multiple c++
-compilers, floating-point related compiler options (i.e. flags) and optimization
-levels.  These tests are then executed on target platforms, where a
-representative "score" is collected into a database, along with the other
-parameters relevant to the execution, such as host, compiler configuration and
-compiler vendor.  In addition to the user-configured test output, FLiT can collect
-counts of each assembly opcode executed (currently, this works with Intel
-architectures only, using their PIN dynamic binary instrumentation tool).
+Compilers are primarily focused on optimizing the speed of your code.  However,
+when it comes to floating-point, compilers go a little further than some might
+want, to the point that you may not get the same result from your
+floating-point algorithms.  For many applications, this may not matter as the
+difference is typically very small.  But there are situations where
 
-After executing the test cases and collecting the data, the test results can be
-mined to find and demonstrate divergent behavior due to factors other than the
-source code.  This information can be used by the developer to understand and
-configure their software compilations so that they can obtain consistent and
-reproducible floating-point results.
+1. The difference is not so small
+2. Your application cares even about small differences, or
+3. Your application is so large (such as a weather simulation) that a small
+   change may propagate into very large result variability.
 
-Additionally, we've provided the capability to __time__ the test suite, generating
-a time plot per test, comparing both the result divergence and the timing for
-each compiler flag.
+FLiT helps developers determine where reproducibility problems may occur due to
+compilers.  The developer creates reproducibility tests with their code using
+the FLiT testing framework.  Then FLiT takes those reproducibility tests and
+compiles them under a set of configured compilers and a large range of compiler
+flags.  The results from the tests under different compilations are then compared
+against the results from a "ground truth" compilation (e.g. a completely
+unoptimized compilation).
+
+More than simply comparing against a "ground truth" test result, the FLiT
+framework also measures runtime of your tests.  Using this information, you can
+not only determine which compilations of your code are safe for your specific
+application, but you can also determine the fastest safe compilation.  This
+ability really helps the developer navigate the tradeoff between
+reproducibility and performance.
 
 It consists of the following components:
 
 * a c++ reproducibility test infrastructure
 * a dynamic make system to generate diverse compilations
 * _(currently broken)_ an execution disbursement system 
-* _(currently broken)_ a SQL database for collecting results
-  * a collection of queries to help the user understand results
-  * some data analysis tools, providing visualization of results
+* an SQL database for collecting results
+  * _(currently broken)_ a collection of queries to help the user understand
+    results
+  * _(currently broken)_ some data analysis tools, providing visualization of
+    results
 
 Contents:
 

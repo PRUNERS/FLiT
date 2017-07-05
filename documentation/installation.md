@@ -17,7 +17,7 @@ Instruction Contents:
 
 ## Roles
 
-FLiT is designed to build and excute its test suite on a variety of hosts and
+FLiT is designed to build and execute its test suite on a variety of hosts and
 compilers.  There are 3 roles used in a FLiT architecture:
 
 * **Launcher**: Where you start a large run which remotely executes on
@@ -63,7 +63,7 @@ symbolic link called `python3` in your `PATH` pointing to that python executable
 ### Runner Prerequisites
 
 The test runner can run multiple compilers.  For now, only one compiler is
-supported from each of the types: GCC, Clang, Intel's icpc, and NVIDIA's nvcc.
+supported from each of the types: GCC, Clang, Intel's `icpc`, and NVIDIA's `nvcc`.
 Simply have the one you want used as the first in your system PATH.  You do not
 need all four of those, only those ones installed will be used.  But all of
 them need to support C++11.
@@ -77,17 +77,9 @@ sudo apt install openssh-server
 
 ### Database Prerequisites
 
-This functionality is actually currently broken.  But when it is fixed, you
-need to configure a Postgres database which is detailed [later
-on](#database-setup), along with the python modules for interfacing with the
-postgres database.
-
-If this is not on the same machine as the Launcher, then the Database machine
-will need an SSH server running.
-
-```bash
-sudo apt install openssh-server
-```
+Postgres used to be the supported database for FLiT.  That has since been
+changed to using SQLite3.  Because of this, all you need is `sqlite3` installed,
+which you should already have installed because `python3` already requires it.
 
 ## FLiT Setup
 
@@ -127,24 +119,11 @@ use the command-line tool.
 
 ## Database Setup
 
-_The database functionality is currently broken and will be fixed soon.  You
-may be able to setup the database, but the functionality to populate it is
-currently broken._
+There should be nothing to setup since `sqlite3` should already be present.
 
-In future versions of FLiT, there may be support for other types of databases
-such as SQLite or MySQL.
-
-Install postgres:
-
-```bash
-sudo apt install postgres
-```
-
-There is a script for setting up the FLiT database in Postgres:
-
-```bash
-FLiT/db/InstallFlitDB.sh
-```
+Creating sqlite3 databases is currently working for the **Runner** machines,
+but the central **Database** system is not currently supported.  We plan to fix
+this functionality and support a separate **Database** system.
 
 ## SSH Keys (Optional)
 
