@@ -5,30 +5,70 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "QFPHelpers.hpp"
+#include "flitHelpers.h"
 
 #ifdef __CUDA__
-#include "CUHelpers.hpp"
+#include "CUHelpers.h"
 #endif // __CUDA__
 
+#include "Variant.h"
+
+#include <fstream>
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
+
 #include <cassert>
 
 namespace flit {
 
 void setWatching(bool watch = true);
 
+struct TestResult {
+public:
+  TestResult(const std::string &_name, const std::string &_precision,
+             const Variant &_result, int_fast64_t _nanosecs,
+             const std::string &_resultfile = "")
+    : m_name(_name)
+    , m_precision(_precision)
+    , m_result(_result)
+    , m_nanosecs(_nanosecs)
+    , m_resultfile(_resultfile)
+  { }
 
-using ResultType = std::map<std::pair<const std::string, const std::string>,
-                            std::pair<std::pair<long double, long double>, int_fast64_t>>;
+  // getters
+  std::string name() const { return m_name; }
+  std::string precision() const { return m_precision; }
+  Variant result() const { return m_result; }
+  int_fast64_t nanosecs() const { return m_nanosecs; }
+  long double comparison() const { return m_comparison; }
+  bool is_comparison_null() const { return m_is_comparison_null; }
+  std::string resultfile() const { return m_resultfile; }
 
-std::ostream&
-operator<<(std::ostream&, const ResultType&);
+  // setters
+  void set_comparison(long double _comparison) {
+    m_comparison = _comparison;
+    m_is_comparison_null = false;
+  }
+  void set_resultfile(const std::string &_resultfile) {
+    m_resultfile = _resultfile;
+  }
+
+private:
+  std::string m_name;
+  std::string m_precision;
+  Variant m_result;
+  int_fast64_t m_nanosecs {0};
+  long double m_comparison {0.0L};
+  bool m_is_comparison_null {true};
+  std::string m_resultfile;
+};
+
+std::ostream& operator<<(std::ostream& os, const TestResult& res);
 
 template <typename T>
 struct TestInput {
@@ -38,11 +78,6 @@ struct TestInput {
   T min;
   T max;
   std::vector<T> vals;
-};
-
-struct CudaResultElement {
-  double s1;
-  double s2;
 };
 
 /** A simple structure used in CUDA tests.
@@ -91,7 +126,7 @@ struct CuTestInput {
  * @param results: array where to store results, already allocated
  */
 template <typename T>
-using KernelFunction = void (const CuTestInput<T>*, CudaResultElement*);
+using KernelFunction = void (const CuTestInput<T>*, double*);
 
 template <typename T>
 using CudaDeleter = void (T*);
@@ -116,8 +151,8 @@ std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
 
   return ptr;
 #else
-  Q_UNUSED(vals);
-  Q_UNUSED(length);
+  FLIT_UNUSED(vals);
+  FLIT_UNUSED(length);
   throw std::runtime_error("Should not use makeCudaArr without CUDA enabled");
 #endif
 }
@@ -140,7 +175,7 @@ std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
  * @param stride: how many inputs per test run
  */
 template <typename T>
-std::vector<ResultType::mapped_type>
+std::vector<double>
 runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
 #ifdef __CUDA__
   size_t runCount;
@@ -157,7 +192,7 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
     ctiList[i].vals = ti.vals.data() + i * stride;
     ctiList[i].length = stride;
   }
-  std::unique_ptr<CudaResultElement[]> cuResults(new CudaResultElement[runCount]);
+  std::unique_ptr<double[]> cuResults(new double[runCount]);
   // Note: __CPUKERNEL__ mode is broken by the change to run the kernel in
   // multithreaded mode.  Its compilation is broken.
   // TODO: fix __CPUKERNEL__ mode for testing.
@@ -170,25 +205,21 @@ runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
     ctiList[i].vals = deviceVals.get() + i * stride;
   }
   auto deviceInput = makeCudaArr(ctiList.get(), runCount);
-  auto deviceResult = makeCudaArr<CudaResultElement>(nullptr, runCount);
+  auto deviceResult = makeCudaArr<double>(nullptr, runCount);
   kernel<<<runCount,1>>>(deviceInput.get(), deviceResult.get());
-  auto resultSize = sizeof(CudaResultElement) * runCount;
+  auto resultSize = sizeof(double) * runCount;
   checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult.get(), resultSize,
                              cudaMemcpyDeviceToHost));
 # endif // __CPUKERNEL__
-  std::vector<ResultType::mapped_type> results;
-  for (size_t i = 0; i < runCount; i++) {
-    results.emplace_back(std::pair<long double, long double>
-                         (cuResults[i].s1, cuResults[i].s2), 0);
-  }
+  std::vector<double> results(cuResults, cuResults + runCount);
   return results;
-#else  // not __CUDA__
+#else   // not __CUDA__
   // Do nothing
-  Q_UNUSED(kernel);
-  Q_UNUSED(ti);
-  Q_UNUSED(stride);
+  FLIT_UNUSED(kernel);
+  FLIT_UNUSED(ti);
+  FLIT_UNUSED(stride);
   return {};
-#endif // __CUDA__
+#endif  // __CUDA__
 }
 
 template <typename T>
@@ -208,13 +239,14 @@ public:
    *
    * @see getInputsPerRun
    */
-  virtual ResultType run(const TestInput<T>& ti,
-                         const bool GetTime,
-                         const size_t TimingLoops) {
+  virtual std::vector<TestResult> run(const TestInput<T>& ti,
+                                      const std::string &filebase,
+                                      const bool GetTime,
+                                      const size_t TimingLoops) {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
-    ResultType results;
+    std::vector<TestResult> results;
     TestInput<T> emptyInput {
       ti.iters, ti.highestDim, ti.ulp_inc, ti.min, ti.max, {}
     };
@@ -237,76 +269,143 @@ public:
     }
 
     // Run the tests
-    std::vector<ResultType::mapped_type> scoreList;
+    struct TimedResult {
+      Variant result;
+      int_fast64_t time;
+      std::string resultfile;
+
+      TimedResult(Variant res, int_fast64_t t, const std::string &f = "")
+        : result(res), time(t), resultfile(f) { }
+    };
+    std::vector<TimedResult> resultValues;
 #ifdef __CUDA__
     auto kernel = getKernel();
     if (kernel == nullptr) {
       for (auto runInput : inputSequence) {
+        Variant testResult;
+        int_fast64_t timing = 0;
         if (GetTime) {
-          ResultType::mapped_type scores;
           int_fast64_t nsecs = 0;
           for (int r = 0; r < TimingLoops; ++r) {
             auto s = high_resolution_clock::now();
-            scores = run_impl(runInput);
+            testResult = run_impl(runInput);
             auto e = high_resolution_clock::now();
             nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
             assert(nsecs > 0);
           }
-          scores.second = nsecs / TimingLoops;
-          scoreList.push_back(scores);
+          timing = nsecs / TimingLoops;
         } else {
-          scoreList.push_back(run_impl(runInput));
+          testResult = run_impl(runInput);
+          timing = 0;
         }
+        // Output string results to file since it alone may take up to 300 MB
+        // or more
+        std::string outfile;
+        if (testResult.type() == Variant::Type::String) {
+          outfile = filebase + "_" + id + "_" + typeid(T).name() + ".dat";
+          std::ofstream resultout(outfile);
+          resultout << testResult.string();
+          testResult = Variant(); // empty the result to release memory
+        }
+        resultValues.emplace_back(testResult, timing, outfile);
       }
     } else {
+      int_fast64_t timing = 0;
+      std::vector<double> scoreList;
       if (GetTime) {
-        ResultType::mapped_type scores;
         int_fast64_t nsecs = 0;
         for (size_t r = 0; r < TimingLoops; ++r){
           auto s = high_resolution_clock::now();
+          // TODO: find out how to properly profile CUDA kernels.
+          // FIXME: This strategy of timing is not right because:
+          // FIXME: 1. multiple inputs are tested in parallel
+          // FIXME: 2. timing is done not only over kernel execution, but also
+          // FIXME:    in transfer time
+          // FIXME: 3. stalls in device availability are not accounted for
           scoreList = runKernel(kernel, ti, stride);
           auto e = high_resolution_clock::now();
           nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
           assert(nsecs > 0);
         }
         auto avg = nsecs / TimingLoops;
-        auto avgPerKernel = avg / scoreList.size();
-        for (auto& s : scoreList) {
-          s.second = avgPerKernel;
-        }
+        timing = avg / scoreList.size();
       } else {
         scoreList = runKernel(kernel, ti, stride);
+        timing = 0;
+      }
+      for (auto& testResult : scoreList) {
+        resultValues.emplace_back(testResult, timing);
       }
     }
 #else  // not __CUDA__
     for (auto runInput : inputSequence) {
+      Variant testResult;
+      int_fast64_t timing = 0;
       if (GetTime) {
-        ResultType::mapped_type scores;
         int_fast64_t nsecs = 0;
         for (size_t r = 0; r < TimingLoops; ++r) {
           auto s = high_resolution_clock::now();
-          scores = run_impl(runInput);
+          testResult = run_impl(runInput);
           auto e = high_resolution_clock::now();
           nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
           assert(nsecs > 0);
         }
-        scores.second = nsecs / TimingLoops;
-        scoreList.push_back(scores);
+        timing = nsecs / TimingLoops;
       } else {
-        scoreList.push_back(run_impl(runInput));
+        testResult = run_impl(runInput);
+        timing = 0;
       }
+      // Output string results to file since it alone may take up to 300 MB
+      // or more
+      std::string outfile;
+      if (testResult.type() == Variant::Type::String) {
+        outfile = filebase + "_" + id + "_" + typeid(T).name() + ".dat";
+        std::ofstream resultout(outfile);
+        resultout << testResult.string();
+        testResult = Variant(); // empty the result to release memory
+      }
+      resultValues.emplace_back(testResult, timing, outfile);
     }
 #endif // __CUDA__
 
     // Store and return the test results
-    for (size_t i = 0; i < scoreList.size(); i++) {
+    for (size_t i = 0; i < resultValues.size(); i++) {
       std::string name = id;
-      if (scoreList.size() != 1) {
+      if (resultValues.size() != 1) {
         name += "_idx" + std::to_string(i);
       }
-      results.insert({{name, typeid(T).name()}, scoreList[i]});
+      results.emplace_back(name, typeid(T).name(), resultValues[i].result,
+                           resultValues[i].time, resultValues[i].resultfile);
     }
     return results;
+  }
+
+  /** Simply forwards the request to the appropriate overload of compare.
+   *
+   * If the types of the variants do not match, then a std::runtime_error is
+   * thrown.
+   */
+  long double variant_compare(const Variant &ground_truth,
+                              const Variant &test_results) {
+    if (ground_truth.type() != test_results.type()) {
+      throw std::runtime_error("Variants to compare are of different types");
+    }
+    long double val = 0.0;
+    switch (ground_truth.type()) {
+      case Variant::Type::LongDouble:
+        val = this->compare(ground_truth.longDouble(),
+                            test_results.longDouble());
+        break;
+
+      case Variant::Type::String:
+        val = this->compare(ground_truth.string(),
+                            test_results.string());
+        break;
+
+      default:
+        throw std::runtime_error("Unimplemented Variant type");
+    }
+    return val;
   }
 
   /** This is a set of default inputs to use for the test
@@ -330,6 +429,38 @@ public:
    */
   virtual size_t getInputsPerRun() = 0;
 
+  /** Custom comparison methods
+   *
+   * These comparison operations are meant to create a metric between the test
+   * results from this test in the current compilation, and the results from
+   * the ground truth compilation.  You can do things like the relative error
+   * or the absolute error (for the case of long double).
+   *
+   * The below specified functions are the default implementations defined in
+   * the base class.  It is safe to delete these two functions if this
+   * implementation is adequate for you.
+   *
+   * Which one is used depends on the type of Variant that is returned from the
+   * run_impl function.  The value returned by compare will be the value stored
+   * in the database for later analysis.
+   *
+   * Note: when using the CUDA kernel functionality, only long double return
+   * values are valid for now.
+   */
+  virtual long double compare(long double ground_truth,
+                              long double test_results) const {
+    // absolute error
+    return test_results - ground_truth;
+  }
+
+  /** There is no good default implementation comparing two strings */
+  virtual long double compare(const std::string &ground_truth,
+                              const std::string &test_results) const {
+    FLIT_UNUSED(ground_truth);
+    FLIT_UNUSED(test_results);
+    return 0.0;
+  }
+
 protected:
   /** If this test implements a CUDA kernel, return the kernel pointer
    *
@@ -351,27 +482,29 @@ protected:
    *   test inputs required according to the implemented getInputsPerRun().  So
    *   if that function returns 9, then the vector will have exactly 9
    *   elements.
-   * @return a single result.  See ResultType to see what the mapped types is.
+   * @return a single result.  You can return any type supported by flit::Variant.
+   *
+   * The returned value (whichever type is chosen) will be used by the public
+   * virtual compare() method.
    */
-  virtual ResultType::mapped_type run_impl(const TestInput<T>& ti) = 0;
+  virtual Variant run_impl(const TestInput<T>& ti) = 0;
 
 protected:
   const std::string id;
 };
 
-/// A completely empty test that outputs nothing
+/** A completely empty test that outputs nothing */
 template <typename T>
 class NullTest : public TestBase<T> {
 public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
-  virtual TestInput<T> getDefaultInput() { return {}; }
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual ResultType run(const TestInput<T>&,
-                         const bool,
-                         const size_t) { return {}; }
+  virtual TestInput<T> getDefaultInput() override { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual std::vector<TestResult> run(
+      const TestInput<T>&, const bool, const size_t) override { return {}; }
 protected:
-  virtual KernelFunction<T>* getKernel() { return nullptr; }
-  virtual ResultType::mapped_type run_impl(const TestInput<T>&) { return {}; }
+  virtual KernelFunction<T>* getKernel() override { return nullptr; }
+  virtual Variant run_impl(const TestInput<T>&) override { return {}; }
 };
 
 class TestFactory {
@@ -420,13 +553,13 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
 #ifdef __CUDA__
 
 #define REGISTER_TYPE(klass)                                \
-  class klass##Factory : public flit::TestFactory {      \
+  class klass##Factory : public flit::TestFactory {         \
   public:                                                   \
     klass##Factory() {                                      \
-      flit::registerTest(#klass, this);                  \
+      flit::registerTest(#klass, this);                     \
     }                                                       \
   protected:                                                \
-    virtual createType create() {                           \
+    virtual createType create() override {                  \
       return std::make_tuple(                               \
           std::make_shared<klass<float>>(#klass),           \
           std::make_shared<klass<double>>(#klass),          \
@@ -440,13 +573,13 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
 #else // not __CUDA__
 
 #define REGISTER_TYPE(klass)                                \
-  class klass##Factory : public flit::TestFactory {      \
+  class klass##Factory : public flit::TestFactory {         \
   public:                                                   \
     klass##Factory() {                                      \
-      flit::registerTest(#klass, this);                  \
+      flit::registerTest(#klass, this);                     \
     }                                                       \
   protected:                                                \
-    virtual createType create() {                           \
+    virtual createType create() override {                  \
       return std::make_tuple(                               \
           std::make_shared<klass<float>>(#klass),           \
           std::make_shared<klass<double>>(#klass),          \
@@ -462,16 +595,6 @@ inline std::map<std::string, TestFactory*>& getTests() {
   static std::map<std::string, TestFactory*> tests;
   return tests;
 }
-
-// template <bool C = hasCuda, typename std::enable_if<!C>::type* = nullptr>
-// static std::map<std::string, TestFactory*>& getTests() {
-// #ifdef __CUDA__
-//   return {};
-// #else
-//   static std::map<std::string, TestFactory*> tests;
-//   return tests;
-// #endif
-// }
 
 inline void registerTest(const std::string& name, TestFactory *factory) {
   getTests()[name] = factory;

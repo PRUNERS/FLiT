@@ -8,30 +8,86 @@
 #include <type_traits>
 #include <typeinfo>
 
+#include <cassert>
 #include <cstring>
 
 #include "flit.h"
 
-#include "QFPHelpers.hpp"
-#include "TestBase.hpp"
+#include "flitHelpers.h"
+#include "TestBase.h"
 
-void outputResults(const flit::ResultType& scores, std::ostream& out){
-  using flit::operator<<;
-  using flit::as_int;
-  for(const auto& i: scores){
-    out
-      << "HOST,SWITCHES,OPTL,COMPILER,"
-      << i.first.second << ",us,"             // sort
-      << i.second.first.first << ","          // score0d
-      << as_int(i.second.first.first) << ","  // score0
-      << i.second.first.second << ","         // score1d
-      << as_int(i.second.first.second) << "," // score1
-      << i.first.first << ","                 // name
-      << i.second.second << ","               // nanoseconds
-      << "FILENAME"                           // filename
-      << std::endl;
+namespace {
+
+/** Helper class for Csv.
+ *
+ * Represents a single row either indexed by number or by column name.
+ */
+class CsvRow : public std::vector<std::string> {
+public:
+  const CsvRow* header() const { return m_header; }
+  void setHeader(CsvRow* head) { m_header = head; }
+
+  using std::vector<std::string>::operator[];
+  std::string const& operator[](std::string col) const {
+    auto iter = std::find(m_header->begin(), m_header->end(), col);
+    if (iter == m_header->end()) {
+      std::stringstream message;
+      message << "No column named " << col;
+      throw std::invalid_argument(message.str());
+    }
+    auto idx = iter - m_header->begin();
+    return this->operator[](idx);
   }
-}
+
+private:
+  CsvRow* m_header {nullptr};  // not owned by this class
+};
+
+/** Class for parsing csv files */
+class Csv {
+public:
+  Csv(std::istream &in) : m_header(Csv::parseRow(in)), m_in(in) {
+    m_header.setHeader(&m_header);
+  }
+
+  Csv& operator>> (CsvRow& row) {
+    row = Csv::parseRow(m_in);
+    row.setHeader(&m_header);
+    return *this;
+  }
+
+  operator bool() const { return static_cast<bool>(m_in); }
+  
+private:
+  static CsvRow parseRow(std::istream &in) {
+    std::string line;
+    std::getline(in, line);
+
+    std::stringstream lineStream(line);
+    std::string token;
+
+    // tokenize on ','
+    CsvRow row;
+    while(std::getline(lineStream, token, ',')) {
+      row.emplace_back(token);
+    }
+
+    // check for trailing comma with no data after it
+    if (!lineStream && token.empty()) {
+      row.emplace_back("");
+    }
+
+    return row;
+  }
+
+private:
+  CsvRow m_header;
+  std::istream &m_in;
+};
+
+} // end of unnamed namespace
+
+namespace flit {
 
 std::string FlitOptions::toString() {
   std::ostringstream messanger;
@@ -42,6 +98,8 @@ std::string FlitOptions::toString() {
     << "  verbose:      " << boolToString(this->verbose) << "\n"
     << "  timing:       " << boolToString(this->timing) << "\n"
     << "  timingLoops:  " << this->timingLoops << "\n"
+    << "  output:       " << this->output << "\n"
+    << "  groundTruth:  " << this->groundTruth << "\n"
     << "  precision:    " << this->precision << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
@@ -53,17 +111,18 @@ std::string FlitOptions::toString() {
 FlitOptions parseArguments(int argCount, char* argList[]) {
   FlitOptions options;
 
-  std::vector<std::string> helpOpts      = { "-h", "--help" };
-  std::vector<std::string> verboseOpts   = { "-v", "--verbose" };
-  std::vector<std::string> timingOpts    = { "-t", "--timing" };
-  std::vector<std::string> loopsOpts     = { "-l", "--timing-loops" };
-  std::vector<std::string> listTestsOpts = { "-L", "--list-tests" };
-  std::vector<std::string> precisionOpts = { "-p", "--precision" };
-  std::vector<std::string> outputOpts    = { "-o", "--output" };
+  std::vector<std::string> helpOpts          = { "-h", "--help" };
+  std::vector<std::string> verboseOpts       = { "-v", "--verbose" };
+  std::vector<std::string> timingOpts        = { "-t", "--timing" };
+  std::vector<std::string> loopsOpts         = { "-l", "--timing-loops" };
+  std::vector<std::string> listTestsOpts     = { "-L", "--list-tests" };
+  std::vector<std::string> precisionOpts     = { "-p", "--precision" };
+  std::vector<std::string> outputOpts        = { "-o", "--output" };
+  std::vector<std::string> groundTruthOpts   = { "-g", "--ground-truth" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
-  auto allowedTests = getKeys(flit::getTests());
+  auto allowedTests = getKeys(getTests());
   allowedTests.emplace_back("all");
   for (int i = 1; i < argCount; i++) {
     std::string current(argList[i]);
@@ -99,6 +158,11 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
         throw ParseException(current + " requires an argument");
       }
       options.output = argList[++i];
+    } else if (isIn(groundTruthOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.groundTruth = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!isIn(allowedTests, current)) {
@@ -108,7 +172,7 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
   }
 
   if (options.tests.size() == 0 || isIn(options.tests, std::string("all"))) {
-    options.tests = getKeys(flit::getTests());
+    options.tests = getKeys(getTests());
   }
 
   return options;
@@ -152,6 +216,18 @@ std::string usage(std::string progName) {
        "                  standard output will still go to the terminal.\n"
        "                  The default behavior is to output to stdout.\n"
        "\n"
+       "  -g INFILE, --ground-truth INFILE\n"
+       "                  Use the following results file (usually generated\n"
+       "                  using the --output option with the ground-truth\n"
+       "                  compiled executable).  This option allows the\n"
+       "                  creation of data for the comparison column in the\n"
+       "                  results.  The test's compare() function is used.\n"
+       "\n"
+       "                  Note: for tests outputting string data, the path\n"
+       "                  may be a relative path from where you executed the\n"
+       "                  ground-truth executable, in which case you will\n"
+       "                  want to run this test from that same directory.\n"
+       "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"
        "                  'double', 'long double', and 'all'.  The default\n"
@@ -160,3 +236,48 @@ std::string usage(std::string progName) {
   return messanger.str();
 }
 
+std::string readFile(const std::string &filename) {
+  std::ifstream filein(filename);
+  std::stringstream buffer;
+  buffer << filein.rdbuf();
+  return buffer.str();
+}
+
+std::vector<TestResult> parseResults(std::istream &in) {
+  std::vector<TestResult> results;
+
+  Csv csv(in);
+  CsvRow row;
+  while (csv >> row) {
+    auto nanosec = std::stol(row["nanosec"]);
+    Variant value;
+    std::string resultfile;
+    if (row["score"] != "NULL") {
+      // Convert score into a long double
+      value = as_float(flit::stouint128(row["score"]));
+    } else {
+      // Read string from the resultfile
+      assert(row["resultfile"] != "NULL");
+      resultfile = row["resultfile"];
+    }
+
+    results.emplace_back(row["name"], row["precision"], value, nanosec,
+                         resultfile);
+  }
+
+  return results;
+}
+
+std::string removeIdxFromName(const std::string &name) {
+  std::string pattern("_idx"); // followed by 1 or more digits
+  auto it = std::find_end(name.begin(), name.end(),
+                          pattern.begin(), pattern.end());
+  // assert that after the pattern, all the remaining chars are digits.
+  assert(it == name.end() ||
+         std::all_of(it + pattern.size(), name.end(), [](char c) {
+           return '0' <= c && c <= '9';
+         }));
+  return std::string(name.begin(), it);
+}
+
+} // end of namespace flit

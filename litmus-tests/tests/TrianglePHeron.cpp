@@ -1,10 +1,8 @@
-#include <cmath>
+#include <flit.h>
+
 #include <typeinfo>
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
-
+#include <cmath>
 
 template <typename T>
 DEVICE
@@ -26,7 +24,7 @@ T getArea(const T a,
 template <typename T>
 GLOBAL
 void
-TrianglePHKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results) {
+TrianglePHKern(const flit::CuTestInput<T>* tiList, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -50,8 +48,7 @@ TrianglePHKern(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* resu
     auto crit = getCArea(a,b,c);
     score += std::abs(crit - checkVal);
   }
-  results[idx].s1 = score;
-  results[idx].s2 = 0.0;
+  results[idx] = score;
 }
 
 template <typename T>
@@ -59,8 +56,8 @@ class TrianglePHeron: public flit::TestBase<T> {
 public:
   TrianglePHeron(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() {
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.iters = 200;
     ti.vals = { 6.0 };
@@ -68,17 +65,15 @@ public:
   }
 
 protected:
-  virtual
-  flit::KernelFunction<T>* getKernel() {return TrianglePHKern; }
-  virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::KernelFunction<T>* getKernel() override {return TrianglePHKern; }
+
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     T maxval = ti.vals[0];
     // start as a right triangle
     T a = maxval;
     T b = maxval;
     T c = maxval * std::sqrt(2);
     const T delta = maxval / (T)ti.iters;
-
 
     // 1/2 b*h = A
     // all perturbations will have the same base and height (plus some FP noise)
@@ -94,7 +89,7 @@ protected:
       auto crit = getArea(a,b,c);
       score += std::abs(crit - checkVal);
     }
-    return {std::pair<long double, long double>(score, 0.0), 0};
+    return score;
   }
 
 protected:

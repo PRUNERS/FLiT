@@ -1,7 +1,6 @@
 #include "groundtruth.h"
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
+#include <flit.h>
 
 // Only store these locally because we want multiple compiled copies
 namespace {

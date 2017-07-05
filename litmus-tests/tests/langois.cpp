@@ -2,13 +2,11 @@
 // an EFT (error-free transformation)
 // see http://perso.ens-lyon.fr/nicolas.louvet/LaLo07b.pdf
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
-#include <cmath>
 #include <tuple>
 
+#include <cmath>
 
 //this is a dummy -- needs to be implemented
 //the body of a different algo in CUDA is left
@@ -16,7 +14,7 @@
 // template <typename T>
 // GLOBAL
 // void
-// addNameHere(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results){
+// addNameHere(const flit::CuTestInput<T>* tiList, double* results){
 // #ifdef __CUDA__
 //   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 // #else
@@ -40,8 +38,7 @@
 //     auto crit = getCArea(a,b,c);
 //     score += std::abs(crit - checkVal);
 //   }
-//   results[idx].s1 = score;
-//   results[idx].s2 = 0.0;
+//   results[idx] = score;
 // }
 
 //these are the helpers for the langois compensating algos
@@ -82,15 +79,14 @@ class langDotFMA: public flit::TestBase<T> {
 public:
   langDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -103,7 +99,7 @@ protected:
     for(stype i = 1; i < size; ++i){
       s[i] = std::fma(x[i], y[i], s[i-1]);
     }
-    return {std::pair<long double, long double>(s[size-1], (T)0.0), 0};
+    return s[size-1];
   }
 
 protected:
@@ -118,15 +114,14 @@ class langCompDotFMA: public flit::TestBase<T> {
 public:
   langCompDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -142,7 +137,7 @@ protected:
       ThreeFMA(x[i], y[i], s[i-1], s[i], a, B);
       c[i] = c[i-1] + (a + B);
     }
-    return {std::pair<long double, long double>(s[size-1] + c[size-1], (T)0.0), 0};
+    return s[size-1] + c[size-1];
   }
 
 protected:
@@ -157,15 +152,14 @@ class langCompDot: public flit::TestBase<T> {
 public:
   langCompDot(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
     auto rand = flit::getRandSeq<T>();
@@ -182,7 +176,7 @@ protected:
       TwoSum(p, s[i-1], s[i], si);
       c[i] = c[i-1] + (pi + si);
     }
-    return {std::pair<long double, long double>(s[size-1] + c[size-1], (T)0.0), 0};
+    return s[size-1] + c[size-1];
   }
 
 protected:

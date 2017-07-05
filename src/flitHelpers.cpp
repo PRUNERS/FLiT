@@ -2,10 +2,12 @@
 // they utilize the watch data for sensitive points
 // of computation.
 
-#include "QFPHelpers.hpp"
+#include "flitHelpers.h"
 
 #include <iostream>
 #include <mutex>
+
+#include <cassert>
 
 namespace flit {
 
@@ -73,28 +75,51 @@ const std::vector<long double> long_rands = setRandSeq<long double>(RAND_VECT_SI
 
   
 thread_local InfoStream info_stream;
-std::mutex ostreamMutex;
 
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
-  if(i == 0) os << 0;
-  else{
-    std::ostringstream ost;
-    uint64_t hi = i >> 64;
-    uint64_t lo = (uint64_t)i;
-    ostreamMutex.lock();
-    auto bflags = os.flags();
-    os.flags(std::ios::hex & ~std::ios::showbase);
-    ost.flags(std::ios::hex & ~std::ios::showbase);
-    ost << lo;    
-    os << "0x" << hi;
-    for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
-      os << "0";
-    }
-    os << ost.str();
-    os.flags( bflags );
-    ostreamMutex.unlock();
+  std::ostringstream ost;
+  uint64_t hi = i >> 64;
+  uint64_t lo = (uint64_t)i;
+  auto bflags = os.flags();
+  os.flags(std::ios::hex & ~std::ios::showbase);
+  ost.flags(std::ios::hex & ~std::ios::showbase);
+  ost << lo;    
+  os << "0x" << hi;
+  for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
+    os << "0";
   }
+  os << ost.str();
+  os.flags( bflags );
   return os;
+}
+
+unsigned __int128 stouint128(const std::string &str) {
+  uint64_t hi, lo;
+  // TODO: make this more efficient (maybe).
+  std::string copy;
+  if (str[0] == '0' && str[1] == 'x') {
+    copy = std::string(str.begin() + 2, str.end());
+  } else {
+    copy = str;
+  }
+
+  // Convert each section of 8-bytes (16 characters)
+  assert(copy.size() <= 32);
+  if (copy.size() <= 16) {
+    hi = 0;
+    lo = std::stoull(copy, nullptr, 16); 
+  } else {
+    auto mid = copy.end() - 16;
+    hi = std::stoull(std::string(copy.begin(), mid), nullptr, 16);
+    lo = std::stoull(std::string(mid, copy.end()), nullptr, 16);
+  }
+
+  // Combine the two 64-bit values.
+  unsigned __int128 val;
+  val = hi;
+  val = val << 64;
+  val += lo;
+  return val;
 }
 
 } // end of namespace flit

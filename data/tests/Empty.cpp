@@ -1,18 +1,17 @@
-#include "flit.h"
+#include <flit.h>
 
 #include <string>
 
 template <typename T>
 GLOBAL
-void Empty_kernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results) {
+void Empty_kernel(const flit::CuTestInput<T>* tiList, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
   auto& ti = tiList[idx];
-  results[idx].s1 = ti.vals[0];
-  results[idx].s2 = 0.0;
+  results[idx] = ti.vals[0];
 }
 
 /** An example test class to show how to make FLiT tests
@@ -30,7 +29,7 @@ public:
    * Can be zero.  If it is zero, then getDefaultInput should return an empty
    * TestInput object which is as simple as "return {};"
    */
-  virtual size_t getInputsPerRun() { return 1; }
+  virtual size_t getInputsPerRun() override { return 1; }
 
   /** Specify the default inputs for your test.
    *
@@ -41,10 +40,42 @@ public:
    * If your algorithm takes no inputs, then you can simply return an empty
    * TestInput object.  It is as simple as "return {};".
    */
-  flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { 1.0 };
     return ti;
+  }
+
+  /** Custom comparison methods
+   *
+   * These comparison operations are meant to create a metric between the test
+   * results from this test in the current compilation, and the results from
+   * the ground truth compilation.  You can do things like the relative error
+   * or the absolute error (for the case of long double).
+   *
+   * The below specified functions are the default implementations defined in
+   * the base class.  It is safe to delete these two functions if this
+   * implementation is adequate for you.
+   *
+   * Which one is used depends on the type of Variant that is returned from the
+   * run_impl function.  The value returned by compare will be the value stored
+   * in the database for later analysis.
+   *
+   * Note: when using the CUDA kernel functionality, only long double return
+   * values are valid for now.
+   */
+  virtual long double compare(long double ground_truth,
+                              long double test_results) const override {
+    // absolute error
+    return test_results - ground_truth;
+  }
+
+  /** There is no good default implementation comparing two strings */
+  virtual long double compare(const std::string &ground_truth,
+                              const std::string &test_results) const override {
+    FLIT_UNUSED(ground_truth);
+    FLIT_UNUSED(test_results);
+    return 0.0;
   }
 
 protected:
@@ -60,7 +91,7 @@ protected:
    * See the documentation above Empty_kernel() for details about what the
    * kernel is expected to have.
    */
-  virtual flit::KernelFunction<T>* getKernel() { return Empty_kernel; }
+  virtual flit::KernelFunction<T>* getKernel() override { return Empty_kernel; }
 
   /** Call or implement the algorithm here.
    *
@@ -71,8 +102,8 @@ protected:
    * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
    * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
    */
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
-    return {std::pair<long double, long double>(ti.vals[0], 0.0), 0};
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+    return ti.vals[0];
   }
 
 protected:

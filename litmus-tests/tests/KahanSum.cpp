@@ -1,9 +1,7 @@
 #include "Kahan.h"
 #include "Shewchuk.h"
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
 #include <iomanip>
 #include <iostream>
@@ -17,11 +15,11 @@ class KahanSum : public flit::TestBase<T> {
 public:
   KahanSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 10000; }
-  virtual flit::TestInput<T> getDefaultInput();
+  virtual size_t getInputsPerRun() override { return 10000; }
+  virtual flit::TestInput<T> getDefaultInput() override;
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     Kahan<T> kahan;
     Shewchuk<T> chuk;
     T naive = 0.0;
@@ -30,13 +28,15 @@ protected:
       kahan.add(val);
       naive += val;
     }
+    T kahan_sum = kahan.sum();
+    T shewchuk_sum = chuk.sum();
     flit::info_stream << id << ": pi           = " << static_cast<T>(PI) << std::endl;
     flit::info_stream << id << ": exp(1)       = " << static_cast<T>(EXP) << std::endl;
     flit::info_stream << id << ": naive sum    = " << naive << std::endl;
-    flit::info_stream << id << ": kahan sum    = " << kahan.sum() << std::endl;
-    flit::info_stream << id << ": shewchuk sum = " << kahan.sum() << std::endl;
+    flit::info_stream << id << ": kahan sum    = " << kahan_sum << std::endl;
+    flit::info_stream << id << ": shewchuk sum = " << shewchuk_sum << std::endl;
     flit::info_stream << id << ": Epsilon      = " << std::numeric_limits<T>::epsilon() << std::endl;
-    return {std::pair<long double, long double>(kahan.sum(), naive), 0};
+    return kahan_sum;
   }
 
 protected:

@@ -1,18 +1,23 @@
 # FLiT Command-Line
 
+[Prev](litmus-tests.md)
+|
+[Table of Contents](README.md)
+|
+[Next](flit-configuration-file.md)
+
 FLiT comes with a command-line tool called `flit`.  This command-line tool is
 simply a symbolic link to `flit.py`.  In the repository, it is located in
 `scripts/flitcli/flit.py`.  When installed, it is installed in
-`<PREFIX>/share/flit/scripts/flit.py`.
+`<PREFIX>/share/flit/scripts/flit.py` with the symbolic link at
+`<PREFIX>/bin/flit`.
 
 This command is split up into many subcommands.  Most of it is self documented.
-Simply call
+For more information, simply call:
 
 ```bash
 flit --help
 ```
-
-for more information.
 
 Possible subcommands:
 
@@ -21,7 +26,8 @@ Possible subcommands:
 * [flit update](#flit-update): Updates the Makefile based on `flit-config.toml`
 * [flit check](#flit-check): Verifies the correctness of a config file
 * [flit run](#flit-run): Run flit on the configured remote machine(s)
-* [flit analyze](#flit-analyze): Runs analysis on a previous flit run
+* [flit import](#flit-import): Imports test results into an SQLite3 database
+* [flit analyze](#flit-analyze): Performs analysis on a previous flit run
 
 ## flit help
 
@@ -45,8 +51,7 @@ be up to date than this markdown description.
 ## flit init
 
 Initializes a flit test directory for use. It will initialize the directory by
-copying the default configuration file into the given directory. If a
-configuration file already exists, this command does nothing. The config file
+copying the default configuration file into the given directory. The config file
 is called `flit-config.toml`.
 
 To see how to modify `flit-config.toml`, see the documentation for [FLiT
@@ -63,7 +68,7 @@ There are a few other files copied over:
   framework
 
 If you want to play with the litmus tests in this directory, you can pass the
-`--litmus-tests` which will copy over the litmus tests into the `tests`
+`--litmus-tests` flag which will copy over the litmus tests into the `tests`
 directory for use.
 
 ## flit update
@@ -84,10 +89,10 @@ _not yet implemented_
 
 This command only verifies the correctness of the configurations you have for
 your flit tests. As part of this verification, this command checks to see if
-the remote connections are capable of being done, such as the connection to
+it is possible to establish the remote connections, such as the connection to
 the machines to run the software, the connection to the database machine, and
 the connection to the database machine from the run machine. You may need to
-provide a few SSH passwords to do this check.
+provide a few SSH passwords to perform this check.
 
 Since this subcommand is not yet implemented, it may change in nature when it
 does finally get implemented.
@@ -98,8 +103,31 @@ _not yet implemented_
 
 Run flit on the configured remote machine(s). Note that you may need to
 provide a password for SSH, but that should be taken care of pretty early on
-in the process. The results should be sent to the database computer for later
+in the process. The results will be sent to the database computer for later
 analysis.
+
+## flit import
+
+Imports flit results into the database configured in `flit-config.toml`.  It
+can either import a CSV file created from a FLiT test executable (using the
+`--output` flag) or it can import another SQLite3 database file created from
+another call to `flit import`.
+
+The following is an example of how to do a full run of the FLiT litmus tests
+and import them into a database file.
+
+```bash
+flit init --directory litmus-test-run --litmus-tests
+cd litmus-test-run
+rm tests/Empty.cpp
+make run -j8
+flit import --new-run results/*.csv
+```
+
+These commands will populate by default a file called `results.sqlite` within
+the created `litmus-test-run` directory.  You are free to examine the results
+using the `sqlite3` interactive tool or any other method you have for running
+queries on an SQLite3 database.
 
 ## flit analyze
 
@@ -108,4 +136,10 @@ _not yet implemented_
 Runs analysis on a previous flit run. The analysis will be of the current flit
 repository and will create a directory called analysis inside of the flit
 directory.
+
+[Prev](litmus-tests.md)
+|
+[Table of Contents](README.md)
+|
+[Next](flit-configuration-file.md)
 

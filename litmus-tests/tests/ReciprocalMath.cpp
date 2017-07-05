@@ -1,7 +1,4 @@
-
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
 #include <vector>
 
@@ -12,16 +9,16 @@ class ReciprocalMath : public flit::TestBase<T> {
 public:
   ReciprocalMath(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 5; }
+  virtual size_t getInputsPerRun() override { return 5; }
 
-  flit::TestInput<T> getDefaultInput() {
+  virtual flit::TestInput<T> getDefaultInput() override {
     flit::TestInput<T> ti;
     ti.vals = { .1, 1.1e3, -.1, -1.1e3, 1/3 };
     return ti;
   }
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
     T a = ti.vals[0];
     T b = ti.vals[1];
     T c = ti.vals[2];
@@ -33,12 +30,11 @@ protected:
     c = c/m;
     d = d/m;
 
-    const T score = a + c;
-    const T score2 = b + d;
+    const T score = a + b + c + d;
 
     flit::info_stream << id << ": score  = " << score  << std::endl;
-    flit::info_stream << id << ": score2 = " << score2 << std::endl;
-    return {std::pair<long double, long double>(score, score2), 0};
+
+    return score;
   }
 
 protected:

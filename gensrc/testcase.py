@@ -9,21 +9,20 @@ import os
 # - default_input: populate ti.vals vector.
 # - vars_initialize: initialize scope variable for the test using ti.vals
 # - cu_vars_initialize: initialize scope variables for the test in CUDA using tiList[idx].vals
-# - func_body: test body that is shared between cuda and non-cuda.  Populate score1 and score2
+# - func_body: test body that is shared between cuda and non-cuda.  Populate score
 template_string = '''
 #include "flit.h"
 
 template <typename T>
 GLOBAL
 void
-{name}Kernel(const flit::CuTestInput<T>* tiList, flit::CudaResultElement* results) {{
+{name}Kernel(const flit::CuTestInput<T>* tiList, double* results) {{
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  decltype(results->s1) score1 = 0.0;
-  decltype(results->s2) score2 = 0.0;
+  double score = 0.0;
 
   {cu_vars_initialize}
 
@@ -31,8 +30,7 @@ void
     {func_body}
   }}
 
-  results[idx].s1 = score1;
-  results[idx].s2 = score2;
+  results[idx] = score;
 }}
 
 template <typename T>
@@ -41,8 +39,8 @@ public:
   {name}(std::string id)
     : flit::TestBase<T>(std::move(id)) {{}}
 
-  virtual size_t getInputsPerRun() {{ return {input_count}; }}
-  virtual flit::TestInput<T> getDefaultInput() {{
+  virtual size_t getInputsPerRun() override {{ return {input_count}; }}
+  virtual flit::TestInput<T> getDefaultInput() override {{
     flit::TestInput<T> ti;
 
     {default_input}
@@ -51,14 +49,13 @@ public:
   }}
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() {{
+  virtual flit::KernelFunction<T>* getKernel() override {{
     return {name}Kernel;
   }}
 
   virtual
-  flit::ResultType::mapped_type run_impl(const flit::TestInput<T>& ti) {{
-    T score1 = 0.0;
-    T score2 = 0.0;
+  flit::Variant run_impl(const flit::TestInput<T>& ti) override {{
+    T score = 0.0;
 
     flit::info_stream << id << ": Starting test with parameters" << std::endl;
     for (T val : ti.vals) {{
@@ -71,9 +68,9 @@ protected:
 
     {func_body}
 
-    flit::info_stream << id << ": Ending test with values (" << score1 << ", " << score2 << ")" << std::endl;
+    flit::info_stream << id << ": Ending test with value (" << score << ")" << std::endl;
 
-    return {{std::pair<long double, long double>(score1, score2), 0}};
+    return score;
   }}
 
 protected:
@@ -104,8 +101,6 @@ class TestCase(object):
 
     # Create an environment for the function body
     env = Environment({
-      #'score1': Variable('score1', 'T'),
-      #'score2': Variable('score2', 'T'),
       })
     var_list = [Variable('in_{0}'.format(i+1), 'T') for i in range(self.input_count)]
     env.update(zip([x.name for x in var_list], var_list))
@@ -116,8 +111,7 @@ class TestCase(object):
       var = Variable('e{0}'.format(i+1), 'T')
       self.func_body_lines.append('{0} {1} = {2};'.format(var.type, var.name, random_expression(env, 3)))
       env[var.name] = var
-    self.func_body_lines.append('score1 = {0};'.format(random_expression(env, 4, vars_only=True)))
-    self.func_body_lines.append('score2 = {0};'.format(random_expression(env, 4, vars_only=True)))
+    self.func_body_lines.append('score = {0};'.format(random_expression(env, 4, vars_only=True)))
 
   def write(self, directory='.'):
     '''

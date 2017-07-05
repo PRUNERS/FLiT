@@ -14,8 +14,12 @@
 #define DEVICE __device__
 #define GLOBAL __global__
 #endif
-#include "QFPHelpers.hpp"
-#include "CUVector.hpp"
+#include "flitHelpers.h"
+#include "CUVector.h"
+
+#include <vector>
+
+#include <cmath>
 
 namespace flit {
 

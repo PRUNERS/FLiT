@@ -160,9 +160,7 @@ lines
 
 */
 
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-#include "CUHelpers.hpp"
+#include <flit.h>
 
 #include <chrono>
 #include <exception>
@@ -210,11 +208,11 @@ class Paranoia : public flit::TestBase<F> {
 public:
   Paranoia(std::string id) : flit::TestBase<F>(std::move(id)) {}
 
-  virtual size_t getInputsPerRun() { return 0; }
-  virtual flit::TestInput<F> getDefaultInput() { return {}; }
+  virtual size_t getInputsPerRun() override { return 0; }
+  virtual flit::TestInput<F> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::ResultType::mapped_type run_impl(const flit::TestInput<F>& ti);
+  virtual flit::Variant run_impl(const flit::TestInput<F>& ti) override;
 
   void   setTimeout(long millis);  // starts the timer for checkTimeout()
   void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
@@ -309,7 +307,7 @@ namespace {
 /* floating point exception receiver */
 void sigfpe(int i)
 {
-  Q_UNUSED(i);
+  FLIT_UNUSED(i);
   fpecount++;
   info_stream << endl << "* * * FLOATING-POINT ERROR * * *\n";
   (void)fflush(stdout);
@@ -322,9 +320,9 @@ void sigfpe(int i)
 }
 
 template <typename F>
-flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
+flit::Variant Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
 {
-  Q_UNUSED(ti);
+  FLIT_UNUSED(ti);
   int timeoutMillis = 1000;
   enum class ExitStatus {
     SuccessStatus = 0,
@@ -1839,39 +1837,37 @@ flit::ResultType::mapped_type Paranoia<F>::run_impl(const flit::TestInput<F>& ti
     info_stream << id << "END OF TEST.\n";
   }
   catch (const TimeoutError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": timeout error occurred" << endl;
     status = ExitStatus::TimeoutStatus;
   }
   catch (const FailureError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": failure error occurred" << endl;
     status = ExitStatus::FailureStatus;
   }
   catch (const SeriousError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": serious error occurred" << endl;
     status = ExitStatus::SeriousStatus;
   }
   catch (const DefectError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": defect error occurred" << endl;
     status = ExitStatus::DefectStatus;
   }
   catch (const FlawError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": flaw error occurred" << endl;
     status = ExitStatus::FlawStatus;
   }
   catch (const OverflowError &e) {
-    Q_UNUSED(e);
+    FLIT_UNUSED(e);
     info_stream << id << ": overflow error occurred" << endl;
     status = ExitStatus::OverflowStatus;
   }
 
-  return {std::pair<long double, long double>(Milestone,
-					      static_cast<long double>(status)),
-      0};
+  return Milestone;
 }
 
 /* setTimeout */

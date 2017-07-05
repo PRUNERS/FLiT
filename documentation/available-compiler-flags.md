@@ -1,5 +1,11 @@
 # Available Compiler Flags
 
+[Prev](flit-configuration-file.md)
+|
+[Table of Contents](README.md)
+|
+[Next](writing-test-cases.md)
+
 Convenient TOML lists:
 
 * [GCC](#gcc)
@@ -11,8 +17,8 @@ In your configuration file `flit-config.toml` (see [FLiT Configuration
 File](flit-configuration-file.md)), you specify compiler flags for each of the
 compilers.  Only one compiler flag will be used with one optimization level.
 If you want to have specific flag combinations, you can place it in the list,
-such as `"-mavx2 -mfma -ffastmath"`.  Below is the original default list for
-the supported compilers:
+such as `"-mavx2 -mfma -funsafe-math-optimizations"`.  Below is the original
+default list for the supported compilers:
 
 | Flag                          |  GCC  | Clang | Intel | NVCC |
 | ----------------------------- |:-----:|:-----:|:-----:|:----:|
@@ -162,3 +168,9 @@ switches = [
   '--prec-sqrt=true',
 ]
 ```
+
+[Prev](flit-configuration-file.md)
+|
+[Table of Contents](README.md)
+|
+[Next](writing-test-cases.md)

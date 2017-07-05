@@ -1,8 +1,6 @@
-#include "TestBase.hpp"
-#include "QFPHelpers.hpp"
-
-//#define SCH_LIB
 #include "simple_convex_hull.h"
+
+#include <flit.h>
 
 #include <cmath>
 #include <cstdio>
@@ -19,15 +17,13 @@ public:
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual flit::ResultType::mapped_type
-  run_impl(const flit::TestInput<T>& ti) {
-    Q_UNUSED(ti);
+  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+    FLIT_UNUSED(ti);
     CHullEdges.clear();
     PointList.clear();
     ReadInputs(fopen("data/random_input", "r"));
     SimpleComputeConvexhull<T>();
-    return {std::pair<long double, long double>((long double)
-						getEdgeCount(), 0.0), 0};
+    return getEdgeCount();
   }
 
 protected:
