@@ -10,7 +10,16 @@ UNAME_S         := $(shell uname -s)
 
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
-FLIT_SCRIPT     := {flit_script}
+FLIT_DATA_DIR   := {flit_data_dir}
+FLIT_SCRIPT_DIR := {flit_script_dir}
+
+DEV_CC          ?= {dev_compiler}
+DEV_OPTL        ?= {dev_optl}
+DEV_SWITCHES    ?= {dev_switches}
+
+GT_CC           := {ground_truth_compiler}
+GT_OPTL         := {ground_truth_optl}
+GT_SWITCHES     := {ground_truth_switches}
 
 CC_REQUIRED     += $(FFLAGS)
 CC_REQUIRED     += -std=c++11
@@ -22,14 +31,6 @@ DEV_CFLAGS      += -Wall
 DEV_CFLAGS      += -Wextra
 DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
-
-DEV_CC          ?= {dev_compiler}
-DEV_OPTL        ?= {dev_optl}
-DEV_SWITCHES    ?= {dev_switches}
-
-GT_CC           := {ground_truth_compiler}
-GT_OPTL         := {ground_truth_optl}
-GT_SWITCHES     := {ground_truth_switches}
 
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
@@ -351,8 +352,12 @@ distclean: clean
 .PRECIOUS: %.d
 -include $(SOURCE:%.cpp=%.d) $(DEV_DEPS) $(GT_DEPS)
 
-Makefile: flit-config.toml $(dir $(FLIT_SCRIPT))/flit_update.py
-	$(FLIT_SCRIPT) update
+Makefile: flit-config.toml
+Makefile: $(FLIT_DATA_DIR)/Makefile.in
+Makefile: $(FLIT_SCRIPT_DIR)/flitconfig.py
+Makefile: $(FLIT_SCRIPT_DIR)/flitutil.py
+Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
+	$(FLIT_SCRIPT_DIR)/flit.py update
 
 # We have a different solution if we are on a mac
 ifeq ($(UNAME_S),Darwin)

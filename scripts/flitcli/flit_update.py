@@ -81,7 +81,8 @@ def main(arguments, prog=sys.argv[0]):
             'ground_truth_switches': gt_switches,
             'flit_include_dir': conf.include_dir,
             'flit_lib_dir': conf.lib_dir,
-            'flit_script': os.path.join(conf.script_dir, 'flit.py'),
+            'flit_data_dir': conf.data_dir,
+            'flit_script_dir': conf.script_dir,
         },
         overwrite=True)
 
