@@ -29,7 +29,7 @@ DEV_CFLAGS     +=
 DEV_LDFLAGS    +=
 
 # required compiler flags for CUDA
-NVCC_FLAGS     +=
+NVCC_CFLAGS    +=
 
 # required link flags for CUDA
 NVCC_LINK      +=
