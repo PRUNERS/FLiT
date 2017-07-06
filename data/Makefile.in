@@ -109,6 +109,7 @@ help:
 	@echo '  devcuda     Only run the devel CUDA compilation to test CUDA out'
 	@echo '  groundtruth Compile the ground-truth version and get its output'
 	@echo '  gt          Same as groundtruth'
+	@echo '  runbuild    Build all executables needed for the run target'
 	@echo '  run         Run all combinations of compilation, results in results/'
 	@echo '  clean       Clean intermediate files'
 	@echo '  veryclean   Runs clean + removes targets and results'
@@ -276,15 +277,15 @@ SWITCHES_INTEL  += SINGLEPRECCONST
 SWITCHES_INTEL  += SSE
 SWITCHES_INTEL  += USEFASTM
 
-TARGETS         := $(foreach c, $(COMPILERS), \
+TARGET_OUTS     := $(foreach c, $(COMPILERS), \
                      $(foreach s, $(SWITCHES_$(strip $c)), \
                        $(foreach o, $(OPCODES), \
                          $(RESULTS_DIR)/$c_$(HOSTNAME)_$(strip $s)_$(strip $o)_out.csv \
                         ) \
                       ) \
                     )
-BIN             := $(TARGETS:%_out.csv=%)
-DEPS             = $(foreach b,$(BIN), \
+TARGETS         := $(TARGET_OUTS:%_out.csv=%)
+DEPS             = $(foreach b,$(TARGETS), \
                      $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(notdir $b).d))) \
                     )
 OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
@@ -327,27 +328,30 @@ CUSWITCHES      += PRECDTC
 CUSWITCHES      += PRECSFC
 CUSWITCHES      += PRECSTC
 
-CUTARGETS       := $(foreach s, $(CUSWITCHES), \
+CUTARGET_OUTS   := $(foreach s, $(CUSWITCHES), \
                      $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))_out.csv)
-CUBIN           := $(CUTARGETS:%_out.csv=%)
-CUDEPS           = $(foreach b,$(CUBIN), \
+CUTARGETS       := $(CUTARGET_OUTS:%_out.csv=%)
+CUDEPS           = $(foreach b,$(CUTARGETS), \
                      $(addprefix $(OBJ_DIR)/, \
                        $(notdir $(CUSOURCE:%.cpp=%_$(notdir $b).d))))
 
 endif # ifdef HAS_CUDA
 
-.PHONY: dev devcuda gt groundtruth run
+.PHONY: dev devcuda gt groundtruth run runbuild
 dev: $(DEV_TARGET)
 devcuda: $(DEV_CUTARGET)
 gt: $(GT_TARGET) $(GT_OUT)
 groundtruth: $(GT_TARGET) $(GT_OUT)
 
-run: $(TARGETS) $(CUTARGETS)
+run: $(TARGET_OUTS) $(CUTARGET_OUTS) runbuild
+runbuild: $(TARGETS) $(CUTARGETS)
 
 .PHONY: clean
 clean:
-	rm -f $(OBJ_CLEAN)
-	rm -f $(DEP_CLEAN)
+	# Here we do it this way because we were running into the error of too many
+	# arguments given to rm.
+	$(foreach obj,$(OBJ_CLEAN),rm -f $(obj);)
+	$(foreach obj,$(DEP_CLEAN),rm -f $(obj);)
 	-rmdir $(OBJ_DIR)
 
 .PHONY: veryclean distclean
@@ -355,12 +359,12 @@ veryclean: distclean
 distclean: clean
 	rm -f $(DEV_TARGET)
 	rm -f $(DEV_CUTARGET)
+	rm -f $(TARGET_OUTS)
+	rm -f $(addsuffix *.dat,$(TARGET_OUTS))
 	rm -f $(TARGETS)
-	rm -f $(addsuffix *.dat,$(TARGETS))
-	rm -f $(BIN)
+	rm -f $(CUTARGET_OUTS)
+	rm -f $(addsuffix *.dat,$(CUTARGET_OUTS))
 	rm -f $(CUTARGETS)
-	rm -f $(addsuffix *.dat,$(CUTARGETS))
-	rm -f $(CUBIN)
 	rm -f $(GT_TARGET)
 	rm -f $(GT_OUT)
 	rm -f $(addsuffix *.dat,$(GT_OUT))
@@ -387,8 +391,8 @@ cleanlibflit:
 
 $(DEV_TARGET): lib/libflit.so
 $(GT_TARGET): lib/libflit.so
-$(BIN): lib/libflit.so
-$(CUBIN): lib/libflit.so
+$(TARGETS): lib/libflit.so
+$(CUTARGETS): lib/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 
@@ -429,7 +433,7 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"'         \
+	  -DFLIT_HOST='"$(HOSTNAME)"'        \
 	  -DFLIT_COMPILER='"$(GT_CC)"'       \
 	  -DFLIT_OPTL='"$(GT_OPTL)"'         \
 	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
@@ -446,7 +450,7 @@ PERCENT         := %
 #   1. compiling
 #   2. running
 #   3. replacing placeholders in output
-# for a single target from TARGETS.
+# for a single target from TARGET_OUTS.
 #
 # @param $1: variable name containing compiler switch(es) for this compilation
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
@@ -481,7 +485,7 @@ $$(OBJ_DIR)/%_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o: \
 endef
 # end of define TARGETS_RULE
 
-# Define individual rules for all elements of $(TARGETS)
+# Define individual rules for all elements of $(TARGET_OUTS)
 $(foreach c, $(COMPILERS),                \
   $(foreach s, $(SWITCHES_$(strip $c)),   \
     $(foreach o, $(OPCODES),              \
@@ -492,7 +496,7 @@ $(foreach c, $(COMPILERS),                \
 #   1. compiling
 #   2. running
 #   3. replacing placeholders in output
-# for a single target from CUTARGETS.
+# for a single target from CUTARGET_OUTS.
 #
 # @param $1: variable name containing compiler switch(es) for this compilation
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
@@ -519,7 +523,7 @@ $(OBJ_DIR)/%_NVCC_$$(HOSTNAME)_$(strip $1).o : %.cpp Makefile custom.mk | $(OBJ_
 endef
 # end of def CUTARGETS_RULE
 
-# define individual rules for all elements of $(CUTARGETS)
+# define individual rules for all elements of $(CUTARGET_OUTS)
 $(foreach s, $(CUSWITCHES), $(eval $(call CUTARGETS_RULE, $s)))
 
 .PRECIOUS: %.d
