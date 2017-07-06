@@ -23,7 +23,7 @@ import hostfile
 home_dir = os.path.dirname(os.path.realpath(__file__))
 
 #vars
-notes = ''
+label = ''
 DB_HOST_AUX = '/tmp/flitDbDir'
 DBINIT = 'prepDBHost.py'
 db_host = hostfile.DB_HOST
@@ -37,7 +37,7 @@ SCPL = ['scp', '-o UserKnownHostsFile=/dev/null', '-o StrictHostKeyChecking=no',
 pwds = {}
 
 def usage():
-    print('usage: ' + sys.argv[0] + ' "notes"')
+    print('usage: ' + sys.argv[0] + ' "label"')
     print('\tyou must populate ' + home_dir + '/hostfile.py with')
     print('\trun and db host info (see file for details)')
 
@@ -116,7 +116,7 @@ def getPasswords():
             )
 
 if len(sys.argv) == 2:
-    notes = sys.argv[1]
+    label = sys.argv[1]
 
 else:
     usage()
@@ -150,8 +150,8 @@ print(check_output(['sshpass', '-e', *SSHL, db_host[0] + '@' + db_host[1],
 # #get run# from db
 print(check_output(['sshpass', '-e', *SSHL,
                     db_host[0] + '@' + db_host[1],
-              'psql flit -t -c "insert into runs (rdate, notes) ' +
-              'values (\'' + str(datetime.now()) + '\', \'' + notes + '\')"'],
+              'psql flit -t -c "insert into runs (rdate, label) ' +
+              'values (\'' + str(datetime.now()) + '\', \'' + label + '\')"'],
                    env=new_env).decode("utf-8"))
 run_num = int(check_output(['sshpass', '-e', *SSHL,
                             db_host[0] + '@' + db_host[1],

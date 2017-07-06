@@ -30,8 +30,8 @@ CREATE TABLE runs (
   -- it and convert it to a sqlite3 basic type and back.
   rdate          timestamp,
 
-  -- The message describing what this run is all about
-  notes          text
+  -- The label for the run describing what it is about
+  label          text
   );
 CREATE TABLE tests (
   id             integer    primary key autoincrement     not null,
@@ -57,7 +57,7 @@ This output is as of this writing.  You can execute those same commands to see
 the exact schema used in your version of FLiT.
 
 The `runs` table only stores information about each executed full run, the id,
-datetime and user-specified label for the run (called `notes`).
+datetime and user-specified label for the run (called `label`).
 
 The `tests` table contains the actual test results.  Each row has a run number
 that matches the `id` field of the `runs` table, so you can do things like:
