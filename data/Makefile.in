@@ -149,6 +149,12 @@ RESULTS_DIR     := results
 GCC_TOOLCHAIN   := $(dir $(shell which $(GCC)))/..
 CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
 
+# will be set internally when doing recursive calls.  Get set to variable names
+# containing the information (e.g. R_CUR_COMPILER=CLANG)
+R_CUR_COMPILER  ?=
+R_CUR_OPTL      ?=
+R_CUR_SWITCHES  ?=
+
 # Compiler setting targets
 #   taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
 #   among other places
@@ -277,20 +283,6 @@ SWITCHES_INTEL  += SINGLEPRECCONST
 SWITCHES_INTEL  += SSE
 SWITCHES_INTEL  += USEFASTM
 
-TARGET_OUTS     := $(foreach c, $(COMPILERS), \
-                     $(foreach s, $(SWITCHES_$(strip $c)), \
-                       $(foreach o, $(OPCODES), \
-                         $(RESULTS_DIR)/$c_$(HOSTNAME)_$(strip $s)_$(strip $o)_out.csv \
-                        ) \
-                      ) \
-                    )
-TARGETS         := $(TARGET_OUTS:%_out.csv=%)
-DEPS             = $(foreach b,$(TARGETS), \
-                     $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(notdir $b).d))) \
-                    )
-OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
-DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
-
 ##################################################
 #
 # Now deal with CUDA stuff if it is even available
@@ -328,13 +320,75 @@ CUSWITCHES      += PRECDTC
 CUSWITCHES      += PRECSFC
 CUSWITCHES      += PRECSTC
 
+endif # end of ifdef HAS_CUDA
+
+
+##########################################################
+#
+# Now to define the recursion for speed and memory reasons
+#
+##########################################################
+
+
+# If we're not in a recursion, then define the recursion rules
+ifndef R_IS_RECURSED
+
+define RECURSION_RULE
+REC_TARGETS     += RECURSION_$(strip $1)_$(strip $2)_$(strip $3)
+
+# TODO: use the variable $(MAKECMDGOALS) to get the original make target
+#       or see if it is even necessary
+
+.PHONY: RECURSION_$(strip $1)_$(strip $2)_$(strip $3)
+RECURSION_$(strip $1)_$(strip $2)_$(strip $3):
+	$(MAKE)                      \
+	  R_IS_RECURSED=True         \
+	  R_CUR_COMPILER=$(strip $1) \
+	  R_CUR_OPTL=$(strip $2)     \
+	  R_CUR_SWITCHES=$(strip $3)
+endef
+
+$(foreach c, $(COMPILERS),                 \
+  $(foreach s, $(SWITCHES_$(strip $c)),    \
+    $(foreach o, $(OPCODES),               \
+      $(eval $(call RECURSION_RULE, $s, $c, $o)))))
+
+.PHONY: $(REC_TARGETS)
+
+$(info $(REC_TARGETS))
+
+# Otherwise, we are in a recursion
+else
+
+#REC_TARGETS     := $(foreach c, $(COMPILERS), \
+#                     $(foreach s, $(SWITCHES_$(strip $c)), \
+#                       $(foreach o, $(OPCODES), \
+#                         
+#                        ) \
+#                      ) \
+#                    )
+#TARGET_OUTS     := $(foreach c, $(COMPILERS), \
+#                     $(foreach s, $(SWITCHES_$(strip $c)), \
+#                       $(foreach o, $(OPCODES), \
+#                         $(RESULTS_DIR)/$c_$(HOSTNAME)_$(strip $s)_$(strip $o)_out.csv \
+#                        ) \
+#                      ) \
+#                    )
+TARGETS         := $(TARGET_OUTS:%_out.csv=%)
+DEPS             = $(foreach b,$(TARGETS), \
+                     $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(notdir $b).d))) \
+                    )
+OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
+DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
+
+
+ifdef HAS_CUDA
 CUTARGET_OUTS   := $(foreach s, $(CUSWITCHES), \
                      $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))_out.csv)
 CUTARGETS       := $(CUTARGET_OUTS:%_out.csv=%)
 CUDEPS           = $(foreach b,$(CUTARGETS), \
                      $(addprefix $(OBJ_DIR)/, \
                        $(notdir $(CUSOURCE:%.cpp=%_$(notdir $b).d))))
-
 endif # ifdef HAS_CUDA
 
 .PHONY: dev devcuda gt groundtruth run runbuild
@@ -532,6 +586,6 @@ endef
 # define individual rules for all elements of $(CUTARGET_OUTS)
 $(foreach s, $(CUSWITCHES), $(eval $(call CUTARGETS_RULE, $s)))
 
-.PRECIOUS: %.d
 -include $(DEPS) $(CUDEPS) $(DEV_DEPS) $(GT_DEPS)
 
+endif # end of ifndef R_IS_RECURSED
