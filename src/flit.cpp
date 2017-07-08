@@ -94,16 +94,21 @@ std::string FlitOptions::toString() {
   messanger
     << "Options:\n"
     << "  help:         " << boolToString(this->help) << "\n"
-    << "  listTests:    " << boolToString(this->listTests) << "\n"
     << "  verbose:      " << boolToString(this->verbose) << "\n"
     << "  timing:       " << boolToString(this->timing) << "\n"
     << "  timingLoops:  " << this->timingLoops << "\n"
-    << "  output:       " << this->output << "\n"
-    << "  groundTruth:  " << this->groundTruth << "\n"
+    << "  listTests:    " << boolToString(this->listTests) << "\n"
     << "  precision:    " << this->precision << "\n"
+    << "  output:       " << this->output << "\n"
+    << "  compareMode:  " << boolToString(this->compareMode) << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
+  }
+  messanger
+    << "  compareFiles:\n";
+  for (auto& filename : this->compareFiles) {
+    messanger << "    " << filename << "\n";
   }
   return messanger.str();
 }
@@ -118,7 +123,7 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
   std::vector<std::string> listTestsOpts     = { "-L", "--list-tests" };
   std::vector<std::string> precisionOpts     = { "-p", "--precision" };
   std::vector<std::string> outputOpts        = { "-o", "--output" };
-  std::vector<std::string> groundTruthOpts   = { "-g", "--ground-truth" };
+  std::vector<std::string> compareMode       = { "-c", "--compare-mode" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
@@ -158,16 +163,22 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
         throw ParseException(current + " requires an argument");
       }
       options.output = argList[++i];
-    } else if (isIn(groundTruthOpts, current)) {
-      if (i+1 == argCount) {
-        throw ParseException(current + " requires an argument");
-      }
-      options.groundTruth = argList[++i];
+    } else if (isIn(compareMode, current)) {
+      options.compareMode = true;
     } else {
       options.tests.push_back(current);
-      if (!isIn(allowedTests, current)) {
+      if (!options.compareMode && !isIn(allowedTests, current)) {
         throw ParseException("unknown test " + current);
       }
+    }
+  }
+
+  // names passed on the command line in compareMode are compareFiles not tests
+  if (options.compareMode) {
+    options.tests.swap(options.compareFiles);
+    options.tests.emplace_back("all");
+    if (options.compareFiles.size() == 0) {
+      throw ParseException("You must pass in some test results in compare mode");
     }
   }
 
@@ -183,7 +194,8 @@ std::string usage(std::string progName) {
   std::ostringstream messanger;
   messanger
     << "Usage:\n"
-    << "  " << progName << " [options] [[test] ...]\n"
+    << "  " << progName << " [options] [<test> ...]\n"
+    << "  " << progName << " --compare-mode <csvfile> [<csvfile> ...]\n"
     << "\n"
        "Description:\n"
        "  Runs the FLiT tests and outputs the results to the console in CSV\n"
@@ -216,17 +228,19 @@ std::string usage(std::string progName) {
        "                  standard output will still go to the terminal.\n"
        "                  The default behavior is to output to stdout.\n"
        "\n"
-       "  -g INFILE, --ground-truth INFILE\n"
-       "                  Use the following results file (usually generated\n"
-       "                  using the --output option with the ground-truth\n"
-       "                  compiled executable).  This option allows the\n"
-       "                  creation of data for the comparison column in the\n"
-       "                  results.  The test's compare() function is used.\n"
+       "  -c, --compare-mode\n"
+       "                  This option only makes sense to use on the ground\n"
+       "                  truth executable.  You will no longer be able to\n"
+       "                  pass in particular tests to execute because the\n"
+       "                  arguments are interpreted as the results files to\n"
+       "                  use in the comparison.\n"
        "\n"
-       "                  Note: for tests outputting string data, the path\n"
-       "                  may be a relative path from where you executed the\n"
-       "                  ground-truth executable, in which case you will\n"
-       "                  want to run this test from that same directory.\n"
+       "                  Note: for tests returning a string, the results\n"
+       "                  file will contain a relative path to the file that\n"
+       "                  actually contains the string return value.  So you\n"
+       "                  will want to make sure to call this option in the\n"
+       "                  same directory used when executing the test\n"
+       "                  executable.\n"
        "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"
@@ -266,6 +280,28 @@ std::vector<TestResult> parseResults(std::istream &in) {
   }
 
   return results;
+}
+
+std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
+  std::unordered_map<std::string, std::string> metadata;
+
+  const std::string metadataKeys[] = {
+    "host",
+    "compiler",
+    "optl",
+    "switches",
+    "file"
+  };
+
+  Csv csv(in);
+  CsvRow row;
+  if (csv >> row) {
+    for (auto key : metadataKeys) {
+      metadata.emplace(key, row[key]);
+    }
+  }
+
+  return metadata;
 }
 
 std::string removeIdxFromName(const std::string &name) {

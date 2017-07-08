@@ -107,7 +107,7 @@ help:
 	@echo '  help        Show this help and exit (default target)'
 	@echo '  dev         Only run the devel compilation to test things out'
 	@echo '  devcuda     Only run the devel CUDA compilation to test CUDA out'
-	@echo '  groundtruth Compile the ground-truth version and get its output'
+	@echo '  groundtruth Compile the ground-truth version'
 	@echo '  gt          Same as groundtruth'
 	@echo '  runbuild    Build all executables needed for the run target'
 	@echo '  run         Run all combinations of compilation, results in results/'
@@ -340,11 +340,11 @@ endif # ifdef HAS_CUDA
 .PHONY: dev devcuda gt groundtruth run runbuild
 dev: $(DEV_TARGET)
 devcuda: $(DEV_CUTARGET)
-gt: $(GT_TARGET) $(GT_OUT)
-groundtruth: $(GT_TARGET) $(GT_OUT)
+gt: groundtruth
+groundtruth: $(GT_TARGET)
 
-run: $(TARGET_OUTS) $(CUTARGET_OUTS) runbuild
-runbuild: $(TARGETS) $(CUTARGETS)
+run: $(TARGET_OUTS) $(CUTARGET_OUTS) runbuild $(GT_OUT)
+runbuild: $(TARGETS) $(CUTARGETS) groundtruth
 
 .PHONY: clean
 clean:
@@ -425,8 +425,9 @@ $(OBJ_DIR)/%_cu_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 endif # ifdef HAS_CUDA
 
 # Ground truth compilation rules
-$(GT_OUT): $(GT_TARGET)
-	./$(GT_TARGET) --output $(GT_OUT)
+$(GT_OUT): $(GT_TARGET) $(TARGET_OUTS) $(CUTARGET_OUTS)
+	./$(GT_TARGET) --output $(GT_OUT) \
+	  --compare-mode $(TARGET_OUTS) $(CUTARGET_OUTS)
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
@@ -459,8 +460,8 @@ PERCENT         := %
 define TARGETS_RULE
 # run test and collect results
 $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: \
-  $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) $$(GT_OUT)
-	-./$$< --output $$@ --ground-truth $$(GT_OUT)
+  $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)
+	-./$$< --output $$@
 
 # link
 $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) : \
@@ -502,8 +503,8 @@ $(foreach c, $(COMPILERS),                \
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
 define CUTARGETS_RULE
 #run test
-NVCC_$$(HOSTNAME)_$(strip $1)_out.csv: NVCC_$$(HOSTNAME)_$(strip $1) $$(GT_OUT)
-	./$$< --output $$@ --ground-truth $$(GT_OUT)
+NVCC_$$(HOSTNAME)_$(strip $1)_out.csv: NVCC_$$(HOSTNAME)_$(strip $1)
+	./$$< --output $$@
 
 #link test
 NVCC_$$(HOSTNAME)_$(strip $1): \
