@@ -355,14 +355,14 @@ $$;
 -- Name: dofullflitimport(text, text); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION dofullflitimport(path text, notes text) RETURNS integer[]
+CREATE FUNCTION dofullflitimport(path text, label text) RETURNS integer[]
     LANGUAGE plpython3u
     AS $$
 import datetime
 
-query = ("INSERT INTO runs (rdate, notes) "
+query = ("INSERT INTO runs (rdate, label) "
          "VALUES ('" + str(datetime.datetime.now())  +
-         "','" + notes + "')")
+         "','" + label + "')")
 plpy.execute(query)
 query = ("SELECT MAX(index) from runs")
 res = plpy.execute(query)
@@ -681,7 +681,7 @@ CREATE TABLE opcodes (
 CREATE TABLE runs (
     index integer NOT NULL,
     rdate timestamp without time zone,
-    notes text
+    label text
 );
 
 

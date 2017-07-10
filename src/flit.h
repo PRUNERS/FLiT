@@ -20,6 +20,8 @@
 #include <sstream>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_map>
+#include <utility>
 
 #include <cstring>
 
@@ -62,7 +64,8 @@ struct FlitOptions {
   std::string output = "";        // output file for results.  default stdout
   bool timing = true;     // should we run timing?
   int timingLoops = 1;    // < 1 means to auto-determine the timing loops
-  std::string groundTruth = "";   // input for ground-truth comparison
+  bool compareMode = false; // compare results after running the test
+  std::vector<std::string> compareFiles; // files for compareMode
 
   /** Give a string representation of this struct for printing purposes */
   std::string toString();
@@ -70,6 +73,19 @@ private:
   /** Convert a bool to a string */
   static inline std::string boolToString(bool boolean) {
     return (boolean ? "true" : "false");
+  }
+};
+
+template<typename A, typename B>
+struct pair_hash {
+  // This is from python's implementation of hashing a tuple
+  size_t operator()(const std::pair<A, B> &thepair) const {
+    std::hash<A> hasherA;
+    std::hash<B> hasherB;
+    size_t value = 0x345678;
+    value = (1000003 * value) ^ hasherA(thepair.first);
+    value = (1000003 * value) ^ hasherB(thepair.second);
+    return value;
   }
 };
 
@@ -85,11 +101,74 @@ std::string readFile(const std::string &filename);
 /** Parse the results file into a vector of results */
 std::vector<TestResult> parseResults(std::istream &in);
 
+/** Parse the result file to get metadata from the first row */
+std::unordered_map<std::string, std::string> parseMetadata(std::istream &in);
+
 /** Test names sometimes are postfixed with "_idx" + <num>.  Remove that postfix */
 std::string removeIdxFromName(const std::string &name);
 
-inline void outputResults (const std::vector<TestResult>& results,
-    std::ostream& out)
+class TestResultMap {
+public:
+  using key_type = std::pair<std::string, std::string>;
+
+  void loadfile(const std::string &filename) {
+    std::ifstream resultfile(filename);
+    auto parsed = parseResults(resultfile);
+    this->extend(parsed, filename);
+  }
+
+  std::vector<TestResult*> operator[](
+      const key_type &key) const
+  {
+    std::vector<TestResult*> all_vals;
+    auto range = m_testmap.equal_range(key);
+    for (auto iter = range.first; iter != range.second; iter++) {
+      all_vals.push_back(iter->second);
+    }
+    return all_vals;
+  }
+
+  std::vector<TestResult*> fileresults(const std::string &filename) {
+    std::vector<TestResult*> all_vals;
+    auto range = m_filemap.equal_range(filename);
+    for (auto iter = range.first; iter != range.second; iter++) {
+      all_vals.push_back(&(iter->second));
+    }
+    return all_vals;
+  }
+
+private:
+  void append(const TestResult &result, const std::string &filename) {
+    auto it = m_filemap.emplace(filename, result);
+    m_testmap.emplace(key_type{result.name(), result.precision()},
+                      &(it->second));
+  }
+
+  void extend(const std::vector<TestResult> &results,
+              const std::string &filename)
+  {
+    for (auto& result : results) {
+      this->append(result, filename);
+    }
+  }
+
+private:
+  std::unordered_multimap<
+    std::pair<std::string, std::string>,
+    TestResult*,
+    pair_hash<std::string, std::string>
+    > m_testmap;   // (testname, precision) -> TestResult*
+  std::unordered_multimap<std::string, TestResult> m_filemap; // filename -> TestResult
+};
+
+inline void outputResults (
+    const std::vector<TestResult>& results,
+    std::ostream& out,
+    std::string hostname = FLIT_HOST,
+    std::string compiler = FLIT_COMPILER,
+    std::string optimization_level = FLIT_OPTL,
+    std::string switches = FLIT_SWITCHES,
+    std::string executableFilename = FLIT_FILENAME)
 {
   // Output the column headers
   out << "name,"
@@ -109,10 +188,10 @@ inline void outputResults (const std::vector<TestResult>& results,
   for(const auto& result: results){
     out
       << result.name() << ","                        // test case name
-      << FLIT_HOST << ","                            // hostname
-      << FLIT_COMPILER << ","                        // compiler
-      << FLIT_OPTL << ","                            // optimization level
-      << FLIT_SWITCHES << ","                        // compiler flags
+      << hostname << ","                             // hostname
+      << compiler << ","                             // compiler
+      << optimization_level << ","                   // optimization level
+      << switches << ","                             // compiler flags
       << result.precision() << ","                   // precision
       ;
 
@@ -147,7 +226,7 @@ inline void outputResults (const std::vector<TestResult>& results,
     }
 
     out
-      << FLIT_FILENAME << ","                        // executable filename
+      << executableFilename << ","                   // executable filename
       << result.nanosecs()                           // nanoseconds
       << std::endl;
   }
@@ -171,12 +250,12 @@ template <typename F>
 long double runComparison_impl(TestFactory* factory, const TestResult &gt,
                                const TestResult &res) {
   auto test = factory->get<F>();
-  if (!res.resultfile().empty()) {
+  if (!gt.resultfile().empty()) {
     assert(res.result().type() == Variant::Type::None);
     assert( gt.result().type() == Variant::Type::None);
     return test->compare(readFile(gt.resultfile()),
                          readFile(res.resultfile()));
-  } else if (res.result().type() == Variant::Type::LongDouble) {
+  } else if (gt.result().type() == Variant::Type::LongDouble) {
     return test->compare(gt.result().longDouble(), res.result().longDouble());
   } else { throw std::runtime_error("Unsupported variant type"); }
 }
@@ -263,13 +342,6 @@ inline int runFlitTests(int argc, char* argv[]) {
 #endif
 
   std::vector<TestResult> results;
-  std::vector<TestResult> groundTruthResults;
-  if (!options.groundTruth.empty()) {
-    std::ifstream gtfile(options.groundTruth);
-    // TODO: only load file contents at time of comparison
-    groundTruthResults = parseResults(gtfile);
-  }
-
   auto testMap = getTests();
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
@@ -286,7 +358,6 @@ inline int runFlitTests(int argc, char* argv[]) {
           factory, results, test_result_filebase, options.timing,
           options.timingLoops);
     }
-    // TODO: dump string result to file because we might run out of memory
   }
 #if defined(__CUDA__) && !defined(__CPUKERNEL__)
   cudaDeviceSynchronize();
@@ -301,23 +372,57 @@ inline int runFlitTests(int argc, char* argv[]) {
     }
   };
   std::sort(results.begin(), results.end(), testComparator);
-  std::sort(groundTruthResults.begin(), groundTruthResults.end(),
-            testComparator);
 
   // Let's now run the ground-truth comparisons
-  if (groundTruthResults.size() > 0) {
-    for (auto& res : results) {
-      auto factory = testMap[removeIdxFromName(res.name())];
-      // Use binary search to find the first associated ground truth element
-      auto gtIter = std::lower_bound(groundTruthResults.begin(),
-                                     groundTruthResults.end(), res,
-                                     testComparator);
-      // Compare the two results if the element was found
-      if (gtIter != groundTruthResults.end() &&
-          res.name() == (*gtIter).name() &&
-          res.precision() == (*gtIter).precision())
+  if (options.compareMode) {
+    TestResultMap comparisonResults;
+  
+    for (auto fname : options.compareFiles) {
+      comparisonResults.loadfile(fname);
+    }
+
+    // compare mode is only done in the ground truth compilation
+    // so "results" are the ground truth results.
+    for (auto& gtres : results) {
+      auto factory = testMap[removeIdxFromName(gtres.name())];
+      auto toCompare = comparisonResults[{gtres.name(), gtres.precision()}];
+      for (TestResult* compResult : toCompare) {
+        auto compVal = runComparison(factory, gtres, *compResult);
+        compResult->set_comparison(compVal);
+      }
+    }
+
+    // save back to the compare files with compare value set
+    for (auto fname : options.compareFiles) {
+      // read in the metadata to use in creating the file again
+      std::unordered_map<std::string, std::string> metadata;
       {
-        res.set_comparison(runComparison(factory, *gtIter, res));
+        std::ifstream fin(fname);
+        metadata = parseMetadata(fin);
+      }
+
+      // get all results from this file
+      auto fileresultPtrs = comparisonResults.fileresults(fname);
+      std::vector<TestResult> fileresults;
+      for (auto resultPtr : fileresultPtrs) {
+        fileresults.push_back(*resultPtr);
+      }
+
+      // sort the file results
+      std::sort(fileresults.begin(), fileresults.end(), testComparator);
+
+      // output back to a file
+      {
+        std::ofstream fout(fname);
+        outputResults(
+            fileresults,
+            fout,
+            metadata["host"],
+            metadata["compiler"],
+            metadata["optl"],
+            metadata["switches"],
+            metadata["file"]
+            );
       }
     }
   }
