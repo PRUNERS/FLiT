@@ -10,7 +10,22 @@ UNAME_S         := $(shell uname -s)
 
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
-FLIT_SCRIPT     := {flit_script}
+FLIT_DATA_DIR   := {flit_data_dir}
+FLIT_SCRIPT_DIR := {flit_script_dir}
+
+DEV_CC          ?= {dev_compiler}
+DEV_OPTL        ?= {dev_optl}
+DEV_SWITCHES    ?= {dev_switches}
+
+GT_CC           := {ground_truth_compiler}
+GT_OPTL         := {ground_truth_optl}
+GT_SWITCHES     := {ground_truth_switches}
+
+NVCC_BIN        := nvcc
+NVCC            := $(shell which $(NVCC_BIN))
+CUDA_DIR        := $(dir $(NVCC))/..
+
+OBJ_DIR          = obj
 
 CC_REQUIRED     += $(FFLAGS)
 CC_REQUIRED     += -std=c++11
@@ -23,14 +38,6 @@ DEV_CFLAGS      += -Wextra
 DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
 
-DEV_CC          ?= {dev_compiler}
-DEV_OPTL        ?= {dev_optl}
-DEV_SWITCHES    ?= {dev_switches}
-
-GT_CC           := {ground_truth_compiler}
-GT_OPTL         := {ground_truth_optl}
-GT_SWITCHES     := {ground_truth_switches}
-
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
@@ -42,16 +49,84 @@ endif
 
 DEV_LDFLAGS     +=
 
-DEPFLAGS        += -MD -MF $*_dev.d
+DEPFLAGS        += -MMD -MF $(patsubst %.o,%.d,$@)
 
-TESTS           := $(wildcard tests/*.cpp)
-SOURCE          := $(wildcard *.cpp)
+TESTS            = $(wildcard tests/*.cpp)
+SOURCE           = $(wildcard *.cpp)
 SOURCE          += $(TESTS)
 
-DEV_OBJ          = $(SOURCE:%.cpp=%_dev.o)
-DEV_DEPS         = $(SOURCE:%.cpp=%_dev.d)
-GT_OBJ           = $(SOURCE:%.cpp=%_gt.o)
-GT_DEPS          = $(SOURCE:%.cpp=%_gt.d)
+VPATH            = $(dir $(SOURCE))
+
+CUSOURCE        += $(TESTS)
+CUSOURCE        += $(wildcard *.cpp)
+# TODO: use DEV_CUOBJ.  It is not yet used
+DEV_CUOBJ       += $(addprefix $(OBJ_DIR)/,$(notdir $(CUSOURCE:%.cpp=%_cu_dev.o)))
+
+VPATH           += $(dir $(CUSOURCE))
+
+HAS_CUDA        := $(shell command -v $(NVCC_BIN) 2> /dev/null)
+ifdef HAS_CUDA
+NVCC_CFLAGS     += --std=c++11
+NVCC_CFLAGS     += -ccbin=g++
+NVCC_CFLAGS     += $(DEVCAP)
+NVCC_CFLAGS     += -I .
+NVCC_CFLAGS     += -x cu
+NVCC_CFLAGS     += -dc
+NVCC_CFLAGS     += -D__CUDA__
+NVCC_CFLAGS     += -I$(FLIT_INC_DIR)
+NVCC_CFLAGS     += -I$(CUDA_DIR)/samples/common/inc
+endif # end of ifdef HAS_CUDA
+
+ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
+  NVCC_LINK     += -Llib -lflit
+else  # not on Mac OSX
+  NVCC_LINK     += -L$(FLIT_LIB_DIR) -lflit
+  NVCC_LINK     += -Xcompiler \"-Wl,-rpath=$(realpath $(FLIT_LIB_DIR))\"
+endif # end of if on Mac OSX
+
+NVCC_LINK       += --std=c++11
+NVCC_LINK       += -ccbin=g++
+NVCC_LINK       += -L$(CUDA_DIR)/lib64
+
+# TODO: double check CUDA flags.  Really?  No optimization levels?
+
+DEV_NVCC_CC     +=
+DEV_NVCC_LD     +=
+
+.PHONY: help
+help:
+	@echo 'You can run the Makefile directly, but it is recommended to use'
+	@echo
+	@echo '  flit make'
+	@echo
+	@echo 'so that you can have functionality such as adding the results to a'
+	@echo 'database.'
+	@echo
+	@echo 'The following targets are available:'
+	@echo
+	@echo '  help        Show this help and exit (default target)'
+	@echo '  dev         Only run the devel compilation to test things out'
+	@echo '  devcuda     Only run the devel CUDA compilation to test CUDA out'
+	@echo '  groundtruth Compile the ground-truth version'
+	@echo '  gt          Same as groundtruth'
+	@echo '  runbuild    Build all executables needed for the run target'
+	@echo '  run         Run all combinations of compilation, results in results/'
+	@echo '  clean       Clean intermediate files'
+	@echo '  veryclean   Runs clean + removes targets and results'
+	@echo '  distclean   Same as veryclean'
+	@echo
+
+# Note: having this include at the end breaks the makefile for when users add
+# to SOURCE from custom.mk
+-include custom.mk
+
+VPATH           := $(sort $(VPATH))
+
+
+DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
+DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
+GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
+GT_DEPS          = $(GT_OBJ:%.o=%.d)
 
 CLANG           := clang++
 INTEL           := icpc
@@ -202,15 +277,19 @@ SWITCHES_INTEL  += SINGLEPRECCONST
 SWITCHES_INTEL  += SSE
 SWITCHES_INTEL  += USEFASTM
 
-TARGETS         := $(foreach c, $(COMPILERS), \
+TARGET_OUTS     := $(foreach c, $(COMPILERS), \
                      $(foreach s, $(SWITCHES_$(strip $c)), \
                        $(foreach o, $(OPCODES), \
                          $(RESULTS_DIR)/$c_$(HOSTNAME)_$(strip $s)_$(strip $o)_out.csv \
                         ) \
                       ) \
                     )
-BIN             := $(TARGETS:%_out.csv=%)
-OBJ              = $(foreach b,$(BIN),$(SOURCE:%.cpp=%_$(notdir $b).o))
+TARGETS         := $(TARGET_OUTS:%_out.csv=%)
+DEPS             = $(foreach b,$(TARGETS), \
+                     $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(notdir $b).d))) \
+                    )
+OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
+DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
 ##################################################
 #
@@ -218,51 +297,15 @@ OBJ              = $(foreach b,$(BIN),$(SOURCE:%.cpp=%_$(notdir $b).o))
 #
 ##################################################
 
-# TODO: double check CUDA flags.  Really?  No optimization levels?
 
-NVCC_BIN        := nvcc
-NVCC            := $(shell which $(NVCC_BIN))
-CUDA_DIR        := $(dir $(NVCC))/..
-
-HAS_CUDA        := $(shell command -v $(NVCC_BIN) 2> /dev/null)
-ifdef HAS_CUDA
-
-NVCC_CFLAGS     += --std=c++11
-NVCC_CFLAGS     += -ccbin=g++
-NVCC_CFLAGS     += $(DEVCAP)
-NVCC_CFLAGS     += -I .
-NVCC_CFLAGS     += -x cu
-NVCC_CFLAGS     += -dc
-NVCC_CFLAGS     += -D__CUDA__
-NVCC_CFLAGS     += -I$(FLIT_INC_DIR)
-NVCC_CFLAGS     += -I$(CUDA_DIR)/samples/common/inc
-
-ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
-  NVCC_LINK     += -Llib -lflit
-else
-  NVCC_LINK     += -L$(FLIT_LIB_DIR) -lflit
-  NVCC_LINK     += -Xcompiler \"-Wl,-rpath=$(realpath $(FLIT_LIB_DIR))\"
-endif
-
-LD_REQUIRED     += -lm
-LD_REQUIRED     += -lstdc++
-NVCC_LINK       += --std=c++11
-NVCC_LINK       += -ccbin=g++
-NVCC_LINK       += -L$(CUDA_DIR)/lib64
-
-DEV_NVCC_CC     +=
-DEV_NVCC_LD     +=
-
-CUSOURCE        += $(TESTS)
-CUSOURCE        += $(wildcard *.cpp)
-# TODO: use DEV_CUOBJ.  It is not yet used
-DEV_CUOBJ       += $(CUSOURCE:%.cpp=%_cu_dev.o)
 
 # These are the fp affecting switches for CUDA (7.5).
 # We will naively apply these (though the docs say
 # that, for instance, --use_fast_math implies
 # --ftz=true --prec-div=false --prec-sqrt=false
 # --fmad=true.
+
+ifdef HAS_CUDA
 
 FASTMC          := --use_fast_math
 FMADFC          := --fmad=false
@@ -285,74 +328,55 @@ CUSWITCHES      += PRECDTC
 CUSWITCHES      += PRECSFC
 CUSWITCHES      += PRECSTC
 
-CUTARGETS       := $(foreach s, $(CUSWITCHES), \
+CUTARGET_OUTS   := $(foreach s, $(CUSWITCHES), \
                      $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))_out.csv)
-CUBIN           := $(CUTARGETS:%_out.csv=%)
-CUOBJ           := $(foreach b,$(CUBIN),$(CUSOURCE:%.cpp=%_$(notdir $b).o))
+CUTARGETS       := $(CUTARGET_OUTS:%_out.csv=%)
+CUDEPS           = $(foreach b,$(CUTARGETS), \
+                     $(addprefix $(OBJ_DIR)/, \
+                       $(notdir $(CUSOURCE:%.cpp=%_$(notdir $b).d))))
 
 endif # ifdef HAS_CUDA
 
-.PHONY: help
-help:
-	@echo 'You can run the Makefile directly, but it is recommended to use'
-	@echo
-	@echo '  flit make'
-	@echo
-	@echo 'so that you can have functionality such as adding the results to a'
-	@echo 'database.'
-	@echo
-	@echo 'The following targets are available:'
-	@echo
-	@echo '  help        Show this help and exit (default target)'
-	@echo '  dev         Only run the devel compilation to test things out'
-	@echo '  devcuda     Only run the devel CUDA compilation to test CUDA out'
-	@echo '  groundtruth Compile the ground-truth version and get its output'
-	@echo '  gt          Same as groundtruth'
-	@echo '  run         Run all combinations of compilation, results in results/'
-	@echo '  clean       Clean intermediate files'
-	@echo '  veryclean   Runs clean + removes targets and results'
-	@echo '  distclean   Same as veryclean'
-	@echo
-
-.PHONY: dev devcuda gt groundtruth run
+.PHONY: dev devcuda gt groundtruth run runbuild
 dev: $(DEV_TARGET)
 devcuda: $(DEV_CUTARGET)
-gt: $(GT_TARGET) $(GT_OUT)
-groundtruth: $(GT_TARGET) $(GT_OUT)
+gt: groundtruth
+groundtruth: $(GT_TARGET)
 
-run: $(TARGETS) $(CUTARGETS)
+run: $(TARGET_OUTS) $(CUTARGET_OUTS) runbuild $(GT_OUT)
+runbuild: $(TARGETS) $(CUTARGETS) groundtruth
 
 .PHONY: clean
 clean:
-	rm -f $(DEV_OBJ)
-	rm -f $(DEV_DEPS)
-	rm -f $(DEV_CUOBJ)
-	rm -f $(OBJ)
-	rm -f $(CUOBJ)
-	rm -f $(GT_OBJ)
-	rm -f $(GT_DEPS)
+	# Here we do it this way because we were running into the error of too many
+	# arguments given to rm.
+	$(foreach obj,$(OBJ_CLEAN),rm -f $(obj);)
+	$(foreach obj,$(DEP_CLEAN),rm -f $(obj);)
+	-rmdir $(OBJ_DIR)
 
 .PHONY: veryclean distclean
 veryclean: distclean
 distclean: clean
 	rm -f $(DEV_TARGET)
 	rm -f $(DEV_CUTARGET)
+	rm -f $(TARGET_OUTS)
+	rm -f $(addsuffix *.dat,$(TARGET_OUTS))
 	rm -f $(TARGETS)
-	rm -f $(addsuffix *.dat,$(TARGETS))
-	rm -f $(BIN)
+	rm -f $(CUTARGET_OUTS)
+	rm -f $(addsuffix *.dat,$(CUTARGET_OUTS))
 	rm -f $(CUTARGETS)
-	rm -f $(addsuffix *.dat,$(CUTARGETS))
-	rm -f $(CUBIN)
 	rm -f $(GT_TARGET)
 	rm -f $(GT_OUT)
 	rm -f $(addsuffix *.dat,$(GT_OUT))
 	-rmdir $(RESULTS_DIR)
 
-.PRECIOUS: %.d
--include $(SOURCE:%.cpp=%.d) $(DEV_DEPS) $(GT_DEPS)
+Makefile: flit-config.toml
+Makefile: $(FLIT_DATA_DIR)/Makefile.in
+Makefile: $(FLIT_SCRIPT_DIR)/flitconfig.py
+Makefile: $(FLIT_SCRIPT_DIR)/flitutil.py
+Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
+	$(FLIT_SCRIPT_DIR)/flit.py update
 
-Makefile: flit-config.toml $(dir $(FLIT_SCRIPT))/flit_update.py
-	$(FLIT_SCRIPT) update
 
 # We have a different solution if we are on a mac
 ifeq ($(UNAME_S),Darwin)
@@ -367,8 +391,8 @@ cleanlibflit:
 
 $(DEV_TARGET): lib/libflit.so
 $(GT_TARGET): lib/libflit.so
-$(BIN): lib/libflit.so
-$(CUBIN): lib/libflit.so
+$(TARGETS): lib/libflit.so
+$(CUTARGETS): lib/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 
@@ -376,12 +400,15 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 # Now for the compilation rules:
 #
 
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
 # Dev compilation rules first (easier to understand)
-$(DEV_TARGET): $(DEV_OBJ) Makefile
+$(DEV_TARGET): $(DEV_OBJ) Makefile custom.mk
 	$(DEV_CC) $(CC_REQUIRED) $(DEV_CFLAGS) \
 	  -o $@ $(DEV_OBJ) $(LD_REQUIRED) $(DEV_LDFLAGS)
 
-%_dev.o: %.cpp Makefile
+$(OBJ_DIR)/%_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(DEV_CC) $(DEV_OPTL) $(DEV_SWITCHES) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"'         \
 	  -DFLIT_COMPILER='"$(DEV_CC)"'       \
@@ -390,23 +417,24 @@ $(DEV_TARGET): $(DEV_OBJ) Makefile
 	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
 
 ifdef HAS_CUDA
-$(DEV_CUTARGET): $(DEV_CUOBJ) Makefile
+$(DEV_CUTARGET): $(DEV_CUOBJ) Makefile custom.mk
 	$(NVCC) $(NVCC_LINK) $(DEV_NVCC_LD) $(DEV_CUOBJ) -o $(DEV_CUTARGET)
 
-%_cu_dev.o: %.cpp
+$(OBJ_DIR)/%_cu_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(NVCC) -c $(NVCC_CFLAGS) $(DEV_NVCC_CC) $< -o $@
 endif # ifdef HAS_CUDA
 
 # Ground truth compilation rules
-$(GT_OUT): $(GT_TARGET)
-	./$(GT_TARGET) --output $(GT_OUT)
+$(GT_OUT): $(GT_TARGET) $(TARGET_OUTS) $(CUTARGET_OUTS)
+	./$(GT_TARGET) --output $(GT_OUT) \
+	  --compare-mode $(TARGET_OUTS) $(CUTARGET_OUTS)
 
-$(GT_TARGET): $(GT_OBJ) Makefile
+$(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
 
-%_gt.o: %.cpp Makefile
+$(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"'         \
+	  -DFLIT_HOST='"$(HOSTNAME)"'        \
 	  -DFLIT_COMPILER='"$(GT_CC)"'       \
 	  -DFLIT_OPTL='"$(GT_OPTL)"'         \
 	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
@@ -423,7 +451,7 @@ PERCENT         := %
 #   1. compiling
 #   2. running
 #   3. replacing placeholders in output
-# for a single target from TARGETS.
+# for a single target from TARGET_OUTS.
 #
 # @param $1: variable name containing compiler switch(es) for this compilation
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
@@ -431,21 +459,25 @@ PERCENT         := %
 # @param $3: variable name containing the optimization level (e.g. O2)
 define TARGETS_RULE
 # run test and collect results
-$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) $$(GT_OUT)
-	-./$$< --output $$@ --ground-truth $$(GT_OUT)
+$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)_out.csv: \
+  $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3)
+	-./$$< --output $$@
 
 # link
-$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) : $$(SOURCE:$(PERCENT).cpp=$(PERCENT)_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o)
+$$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) : \
+  $$(addprefix $$(OBJ_DIR)/, \
+     $$(notdir $$(SOURCE:$(PERCENT).cpp=$(PERCENT)_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o)))
 	mkdir -p $$(RESULTS_DIR)
 	-$$($(strip $2)) $$($(strip $1)) $$($(strip $3)) $$($(strip $2)_REQUIRED) \
 	$$(CC_REQUIRED) $$^ -o $$@ $$(LD_REQUIRED)
-	rm -f $$(SOURCE:.cpp=_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o)
 
 # TODO: set FLIT_COMPILER to the compiler name, not the executable used
 # compile
-%_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o : %.cpp
+$$(OBJ_DIR)/%_$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3).o: \
+  %.cpp Makefile custom.mk | $$(OBJ_DIR)
 	-$$($(strip $2)) -c $$($(strip $1)) $$($(strip $3)) $$(CC_REQUIRED) \
 	   $$($(strip $2)_REQUIRED) $$< -o $$@                           \
+	   $$(DEPFLAGS)                                                  \
 	   -DFLIT_HOST='"$$(HOSTNAME)"'                                  \
 	   -DFLIT_COMPILER='"$$($(strip $2))"'                           \
 	   -DFLIT_OPTL='"$$($(strip $3))"'                               \
@@ -454,7 +486,7 @@ $$(RESULTS_DIR)/$(strip $2)_$$(HOSTNAME)_$(strip $1)_$(strip $3) : $$(SOURCE:$(P
 endef
 # end of define TARGETS_RULE
 
-# Define individual rules for all elements of $(TARGETS)
+# Define individual rules for all elements of $(TARGET_OUTS)
 $(foreach c, $(COMPILERS),                \
   $(foreach s, $(SWITCHES_$(strip $c)),   \
     $(foreach o, $(OPCODES),              \
@@ -465,23 +497,25 @@ $(foreach c, $(COMPILERS),                \
 #   1. compiling
 #   2. running
 #   3. replacing placeholders in output
-# for a single target from CUTARGETS.
+# for a single target from CUTARGET_OUTS.
 #
 # @param $1: variable name containing compiler switch(es) for this compilation
 #            (e.g. UNSOPTS for --funsafe-math-optimizations)
 define CUTARGETS_RULE
 #run test
-NVCC_$$(HOSTNAME)_$(strip $1)_out.csv : NVCC_$$(HOSTNAME)_$(strip $1) $$(GT_OUT)
-	./$$< --output $$@ --ground-truth $$(GT_OUT)
+NVCC_$$(HOSTNAME)_$(strip $1)_out.csv: NVCC_$$(HOSTNAME)_$(strip $1)
+	./$$< --output $$@
 
 #link test
-NVCC_$$(HOSTNAME)_$(strip $1) : $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HOSTNAME)_$(strip $1).o)
+NVCC_$$(HOSTNAME)_$(strip $1): \
+  $$(addprefix $$(OBJ_DIR)/, \
+     $$(notdir $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HOSTNAME)_$(strip $1).o)))
 	$$(NVCC) $$($(strip $1)) $$(NVCC_LINK) $$^ -o $$@
-	rm -f $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HOSTNAME)_$(strip $1).o)
 
 #compile test
-%_NVCC_$$(HOSTNAME)_$(strip $1).o : %.cpp
+$(OBJ_DIR)/%_NVCC_$$(HOSTNAME)_$(strip $1).o : %.cpp Makefile custom.mk | $(OBJ_DIR)
 	-$$(NVCC) -c $$($(strip $1)) $$(NVCC_CFLAGS) $$< -o $$@          \
+	   $$(DEPFLAGS)                                                  \
 	   -DFLIT_HOST='"$$(HOSTNAME)"'                                  \
 	   -DFLIT_COMPILER='"$$(NVCC)"'                                  \
 	   -DFLIT_OPTL='"$$($(strip $3))"'                               \
@@ -490,7 +524,9 @@ NVCC_$$(HOSTNAME)_$(strip $1) : $$(CUSOURCE:$(PERCENT).cpp=$(PERCENT)_NVCC_$$(HO
 endef
 # end of def CUTARGETS_RULE
 
-# define individual rules for all elements of $(CUTARGETS)
+# define individual rules for all elements of $(CUTARGET_OUTS)
 $(foreach s, $(CUSWITCHES), $(eval $(call CUTARGETS_RULE, $s)))
 
--include custom.mk
+.PRECIOUS: %.d
+-include $(DEPS) $(CUDEPS) $(DEV_DEPS) $(GT_DEPS)
+

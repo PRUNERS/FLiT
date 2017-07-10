@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS runs (
   rdate          timestamp,
 
   -- The message describing what this run is all about
-  notes          text
+  label          text
   );
 
 --
