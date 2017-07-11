@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
+'''
+Plots the speedup vs compilation.  The x-axis is organized to make the speedup
+curve be monotonically non-decreasing.  Along the speedup curve, there are
+marks at each point.  A blue dot represents where the answer was the same as
+the ground truth.  A red X represents where the answer differed from the ground
+truth answer.
+'''
 
-import csv
-import sys
-import os
 import argparse
+import csv
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import sqlite3
+import sys
 
 def read_csv(csvfile):
     '''
@@ -16,6 +24,20 @@ def read_csv(csvfile):
         reader = csv.DictReader(fin)
         rows = [row for row in reader]
     return rows
+
+def read_sqlite(sqlitefile):
+    connection = sqlite3.connect(sqlitefile,
+            detect_types=sqlite3.PARSE_DECLTYPES)
+    connection.row_factory = sqlite3.Row
+    cur = connection.cursor()
+    cur.execute('select id from runs order by id')
+    run_ids = sorted([x['id'] for x in cur])
+    if len(run_ids) == 0:
+        raise RuntimeError('No runs in the database: ' + sqlitefile)
+    latest_run = run_ids[-1]
+    read_run = latest_run
+    cur.execute('select * from tests where run = ?', (read_run,))
+    return [dict(x) for x in cur]
 
 def plot_timing(csvfile, test_names):
     '''
