@@ -8,12 +8,16 @@ truth answer.
 '''
 
 import argparse
-import csv
-import matplotlib.pyplot as plt
+import csv 
 import numpy as np
 import os
 import sqlite3
 import sys
+
+# This matplot command makes the use of pyplot without X11 possible
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 def read_csv(csvfile):
     '''
@@ -25,7 +29,7 @@ def read_csv(csvfile):
         rows = [row for row in reader]
     return rows
 
-def read_sqlite(sqlitefile):
+def read_sqlite(sqlitefile, run=None):
     connection = sqlite3.connect(sqlitefile,
             detect_types=sqlite3.PARSE_DECLTYPES)
     connection.row_factory = sqlite3.Row
@@ -34,44 +38,73 @@ def read_sqlite(sqlitefile):
     run_ids = sorted([x['id'] for x in cur])
     if len(run_ids) == 0:
         raise RuntimeError('No runs in the database: ' + sqlitefile)
-    latest_run = run_ids[-1]
-    read_run = latest_run
-    cur.execute('select * from tests where run = ?', (read_run,))
+    if run is None:
+        run = run_ids[-1]
+    else:
+        assert run in run_ids
+    cur.execute('select * from tests where run = ?', (run,))
     return [dict(x) for x in cur]
 
-def plot_timing(csvfile, test_names):
+def plot_timing(rows, test_names=[], outdir='.'):
     '''
-    Plots the timing metrics from the csv file and for the given test_names
+    Plots the timing metrics from the rows and for the given test_names.  The
+    resultant plots will be placed in outdir.
+
+    If test_names is empty, then all tests in the rows will be plotted.
     '''
-    rows = read_csv(csvfile)
-    to_x_lab = lambda row: '{0} {1} {2}'.format(row['compiler'], row['optl'], row['switches'])
+    # Make sure test_names are found in the rows.
+    # Also, if test_names is empty, plot all tests
+    all_test_names = set(x['name'] for x in rows)
+    if len(test_names) == 0:
+        test_names = sorted(all_test_names)
+    assert all(x in all_test_names for x in test_names), \
+            'unfound test names detected'
+    
+    # Make sure outdir exists
+    try:
+        os.mkdir(outdir)
+    except FileExistsError:
+        pass
+
+    # generates labels for the x-axis
+    to_x_label = lambda row: \
+            '{0} {1} {2}' \
+            .format(row['compiler'], row['optl'], row['switches']) \
+            .strip()
+
     test_data = {}
     for name in test_names:
-        data = {}
-        data['name'] = name
-        data['rows'] = [row for row in rows
-                        if row['name'] == name
-                        and row['precision'] == 'f'
-                        and (row['optl'] != '-O0' or row['switches'] == '')
-                        ]
-        data['times'] = np.asarray([int(row['nanosec']) for row in data['rows']])
-        data['fastest'] = min(data['times'])
-        data['slowest'] = max(data['times'])
-        data['speedup'] = data['slowest'] / data['times']
-        data['xlab'] = [to_x_lab(row) for row in data['rows']]
-        data['unopt'] = [row['score0'] for row in data['rows']
-                if row['optl'] == '-O0' and row['switches'] == '']
-        assert all([x == data['unopt'][0] for x in data['unopt']]), str(data['unopt'])
-        data['unopt'] = data['unopt'][0]
-        data['iseql'] = [row['score0'] == data['unopt'] for row in data['rows']]
-        test_data[name] = data
-    for name in test_data:
-        print(name, max(test_data[name]['speedup']))
-        print('  slowest', test_data[name]['slowest'])
-        print('  fastest', test_data[name]['fastest'])
-        speedup = test_data[name]['speedup']
-        xlab = test_data[name]['xlab']
-        iseql = test_data[name]['iseql']
+        test_rows = [row for row in rows if row['name'] == name]
+        hosts = set(row['host'] for row in test_rows)
+        for host in hosts:
+            host_rows = [row for row in test_rows if row['host'] == host]
+            precisions = set(row['precision'] for row in host_rows)
+            for p in precisions:
+                p_rows = [row for row in host_rows if row['precision'] == p]
+                data = {}
+                data['name'] = name
+                data['rows'] = p_rows
+                data['times'] = np.asarray([int(row['nanosec'])
+                                            for row in data['rows']])
+                data['fastest'] = min(data['times'])
+                data['slowest'] = max(data['times'])
+                # TODO: instead of calculating the speedup using the slowest
+                # TODO: time, use the ground-truth time.
+                data['speedup'] = data['slowest'] / data['times']
+                data['xlab'] = [to_x_label(row) for row in data['rows']]
+                data['iseql'] = [float(row['comparison_d']) == 0.0
+                                 for row in data['rows']]
+                key = (name, host, p)
+                test_data[key] = data
+
+    for key, data in test_data.items():
+        name, host, p = key
+        print(name, max(data['speedup']))
+        print('  slowest', data['slowest'])
+        print('  fastest', data['fastest'])
+        speedup = data['speedup']
+        xlab = data['xlab']
+        iseql = data['iseql']
         joint_sort = sorted(zip(xlab, speedup, iseql), key=lambda x: x[1])
         xlab = [x[0] for x in joint_sort]
         speedup = [x[1] for x in joint_sort]
@@ -83,16 +116,18 @@ def plot_timing(csvfile, test_names):
 
         plt.figure(num=1, figsize=(12.5,5), dpi=80)
         plt.plot(speedup)#, label=name)
-        plt.plot(eql_idxs, eql_speeds, 'b.', label='same answer as unoptimized')
-        plt.plot(not_eql_idxs, not_eql_speeds, 'rx', label='different answer than unoptimized')
+        plt.plot(eql_idxs, eql_speeds, 'b.',
+                 label='same answer as ground truth')
+        plt.plot(not_eql_idxs, not_eql_speeds, 'rx',
+                 label='different answer than ground truth')
         plt.xticks(np.arange(len(xlab)), xlab, rotation='vertical')
         plt.legend()
         plt.ylim(ymin=0)
-        plt.ylabel('Speedup from unoptimized')
+        plt.ylabel('Speedup from slowest')
         plt.tight_layout()
         #plt.show()
-        newname = name + '.svg'
-        plt.savefig(newname, format='svg')
+        newname = '{0}-{1}-{2}.svg'.format(name, host, p)
+        plt.savefig(os.path.join(outdir, newname), format='svg')
         plt.cla()
     #fig, ax = plt.subplots()
     #plt.xticks(np.arange(len(flags)), flags, rotation='vertical')
@@ -105,10 +140,22 @@ def plot_timing(csvfile, test_names):
 def main(arguments):
     'Main entry point, calls plot_timing()'
     parser = argparse.ArgumentParser()
-    parser.add_argument('csv')
-    parser.add_argument('test', nargs='+')
+    parser.add_argument('-o', '--outdir', default='.',
+            help='Specify output directory for generated plots')
+    parser.add_argument('-r', '--run', default=None, type=int,
+            help='Which run to use from the sqlite database')
+    parser.add_argument('-p', '--precision', default='all',
+            choices=['all', 'f', 'd', 'e'],
+            help='Which precision to draw.  By default does all precisions')
+    #parser.add_argument('csv')
+    parser.add_argument('sqlite')
+    parser.add_argument('test', nargs='*')
     args = parser.parse_args(arguments)
-    plot_timing(args.csv, args.test)
+    #rows = read_csv(args.csv)
+    rows = read_sqlite(args.sqlite, args.run)
+    if args.precision != 'all':
+        rows = [x for x in rows if x['precision'] == args.precision]
+    plot_timing(rows, args.test, args.outdir)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
