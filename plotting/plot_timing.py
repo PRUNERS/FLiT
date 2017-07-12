@@ -115,7 +115,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
         not_eql_speeds = [speedup[i] for i in not_eql_idxs]
 
         plt.figure(num=1, figsize=(12.5,5), dpi=80)
-        plt.plot(speedup)#, label=name)
+        plt.plot(speedup)
         plt.plot(eql_idxs, eql_speeds, 'b.',
                  label='same answer as ground truth')
         plt.plot(not_eql_idxs, not_eql_speeds, 'rx',
@@ -125,17 +125,9 @@ def plot_timing(rows, test_names=[], outdir='.'):
         plt.ylim(ymin=0)
         plt.ylabel('Speedup from slowest')
         plt.tight_layout()
-        #plt.show()
         newname = '{0}-{1}-{2}.svg'.format(name, host, p)
         plt.savefig(os.path.join(outdir, newname), format='svg')
         plt.cla()
-    #fig, ax = plt.subplots()
-    #plt.xticks(np.arange(len(flags)), flags, rotation='vertical')
-    #plt.show()
-    #base = os.path.basename(csvfile)
-    #newname = os.path.splitext(base)[0] + '.svg'
-    #plt.savefig(newname, format='svg', dpi=300)
-
 
 def main(arguments):
     'Main entry point, calls plot_timing()'
