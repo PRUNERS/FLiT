@@ -45,7 +45,7 @@ int_fast64_t time_function_autoloop(const TimingFunction &func, size_t repeats)
     size_t time;
     size_t loops;
     for (loops = min_loops; loops <= max_loops; loops *= 10) {
-      time = time_function_impl(func, loops, repeats);
+      time = time_function_impl(func, loops, 1);
       if (time >= min_time) {
         break;
       }
