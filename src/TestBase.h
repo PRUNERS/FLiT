@@ -11,9 +11,12 @@
 #include "CUHelpers.h"
 #endif // __CUDA__
 
+#include "timeFunction.h"
 #include "Variant.h"
 
 #include <fstream>
+#include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -241,8 +244,10 @@ public:
    */
   virtual std::vector<TestResult> run(const TestInput<T>& ti,
                                       const std::string &filebase,
-                                      const bool GetTime,
-                                      const size_t TimingLoops) {
+                                      const bool shouldTime,
+                                      const int timingLoops,
+                                      const int timingRepeats) {
+    FLIT_UNUSED(timingRepeats);
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
@@ -268,6 +273,26 @@ public:
       }
     }
 
+    // By default, the function to be timed is run_impl
+    std::function<Variant(const TestInput<T>&)> runner;
+    int runcount = 0;
+    runner = [this,&runcount] (const TestInput<T>& runInput) {
+      runcount++;
+      return this->run_impl(runInput);
+    };
+#ifdef __CUDA__
+    // Use the cuda kernel if it is available by replacing runner
+    auto kernel = getKernel();
+    if (kernel != nullptr) {
+      runner = [kernel, stride, &runcount] (const TestInput<T>& ti) {
+        // TODO: implement this timer better.
+        runcount++;
+        auto scorelist = runKernel(kernel, ti, stride);
+        return Variant{ scorelist[0] };
+      }
+    }
+#endif // __CUDA__
+
     // Run the tests
     struct TimedResult {
       Variant result;
@@ -278,105 +303,39 @@ public:
         : result(res), time(t), resultfile(f) { }
     };
     std::vector<TimedResult> resultValues;
-#ifdef __CUDA__
-    auto kernel = getKernel();
-    if (kernel == nullptr) {
-      for (auto runInput : inputSequence) {
-        Variant testResult;
-        int_fast64_t timing = 0;
-        if (GetTime) {
-          int_fast64_t nsecs = 0;
-          for (int r = 0; r < TimingLoops; ++r) {
-            auto s = high_resolution_clock::now();
-            testResult = run_impl(runInput);
-            auto e = high_resolution_clock::now();
-            nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
-            assert(nsecs > 0);
-          }
-          timing = nsecs / TimingLoops;
-        } else {
-          testResult = run_impl(runInput);
-          timing = 0;
-        }
-        // Output string results to file since it alone may take up to 300 MB
-        // or more
-        std::string outfile;
-        if (testResult.type() == Variant::Type::String) {
-          outfile = filebase + "_" + id + "_" + typeid(T).name() + ".dat";
-          std::ofstream resultout(outfile);
-          resultout << testResult.string();
-          testResult = Variant(); // empty the result to release memory
-        }
-        resultValues.emplace_back(testResult, timing, outfile);
-      }
-    } else {
-      int_fast64_t timing = 0;
-      std::vector<double> scoreList;
-      if (GetTime) {
-        int_fast64_t nsecs = 0;
-        for (size_t r = 0; r < TimingLoops; ++r){
-          auto s = high_resolution_clock::now();
-          // TODO: find out how to properly profile CUDA kernels.
-          // FIXME: This strategy of timing is not right because:
-          // FIXME: 1. multiple inputs are tested in parallel
-          // FIXME: 2. timing is done not only over kernel execution, but also
-          // FIXME:    in transfer time
-          // FIXME: 3. stalls in device availability are not accounted for
-          scoreList = runKernel(kernel, ti, stride);
-          auto e = high_resolution_clock::now();
-          nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
-          assert(nsecs > 0);
-        }
-        auto avg = nsecs / TimingLoops;
-        timing = avg / scoreList.size();
-      } else {
-        scoreList = runKernel(kernel, ti, stride);
-        timing = 0;
-      }
-      for (auto& testResult : scoreList) {
-        resultValues.emplace_back(testResult, timing);
-      }
-    }
-#else  // not __CUDA__
-    for (auto runInput : inputSequence) {
+
+    for (size_t i = 0; i < inputSequence.size(); i++) {
+      auto& runInput = inputSequence.at(i);
       Variant testResult;
       int_fast64_t timing = 0;
-      if (GetTime) {
-        int_fast64_t nsecs = 0;
-        for (size_t r = 0; r < TimingLoops; ++r) {
-          auto s = high_resolution_clock::now();
-          testResult = run_impl(runInput);
-          auto e = high_resolution_clock::now();
-          nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
-          assert(nsecs > 0);
+      if (shouldTime) {
+        auto timed_runner = [runner,&runInput,&testResult] () {
+          testResult = runner(runInput);
+        };
+        if (timingLoops < 1) {
+          timing = time_function_autoloop(timed_runner, timingRepeats);
+        } else {
+          timing = time_function(timed_runner, timingLoops, timingRepeats);
         }
-        timing = nsecs / TimingLoops;
       } else {
-        testResult = run_impl(runInput);
-        timing = 0;
+        testResult = runner(runInput);
       }
-      // Output string results to file since it alone may take up to 300 MB
-      // or more
-      std::string outfile;
+      std::string name = id;
+      if (inputSequence.size() > 1) {
+        name += "_idx" + std::to_string(i);
+      }
+      std::string resultfile;
       if (testResult.type() == Variant::Type::String) {
-        outfile = filebase + "_" + id + "_" + typeid(T).name() + ".dat";
-        std::ofstream resultout(outfile);
+        resultfile = filebase + "_" + name + "_" + typeid(T).name() + ".dat";
+        std::ofstream resultout(resultfile);
         resultout << testResult.string();
         testResult = Variant(); // empty the result to release memory
       }
-      resultValues.emplace_back(testResult, timing, outfile);
+      results.emplace_back(name, typeid(T).name(), testResult,
+                           timing, resultfile);
     }
-#endif // __CUDA__
-
-    // Store and return the test results
-    for (size_t i = 0; i < resultValues.size(); i++) {
-      std::string name = id;
-      if (resultValues.size() != 1) {
-        name += "_idx" + std::to_string(i);
-      }
-      results.emplace_back(name, typeid(T).name(), resultValues[i].result,
-                           resultValues[i].time, resultValues[i].resultfile);
-    }
+    info_stream << id << "-" << typeid(T).name() << ": # runs = "
+                << runcount << std::endl;
     return results;
   }
 
