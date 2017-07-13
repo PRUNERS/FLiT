@@ -56,25 +56,31 @@ namespace flit {
 
 /** Command-line options */
 struct FlitOptions {
-  bool help = false;      // show usage and exit
-  bool listTests = false; // list available tests and exit
-  bool verbose = false;   // show debug verbose messages
+  bool help = false;        // show usage and exit
+  bool listTests = false;   // list available tests and exit
+  bool verbose = false;     // show debug verbose messages
   std::vector<std::string> tests; // which tests to run
   std::string precision = "all";  // which precision to use
   std::string output = "";        // output file for results.  default stdout
-  bool timing = true;     // should we run timing?
-  int timingLoops = 1;    // < 1 means to auto-determine the timing loops
+  bool timing = true;       // should we run timing?
+  int timingLoops = -1;     // < 1 means to auto-determine the timing loops
+  int timingRepeats = 3;    // return best of this many timings
+  
   bool compareMode = false; // compare results after running the test
   std::vector<std::string> compareFiles; // files for compareMode
 
   /** Give a string representation of this struct for printing purposes */
-  std::string toString();
+  std::string toString() const;
 private:
   /** Convert a bool to a string */
   static inline std::string boolToString(bool boolean) {
     return (boolean ? "true" : "false");
   }
 };
+
+inline std::ostream& operator<<(std::ostream& out, const FlitOptions &opt) {
+  return out << opt.toString();
+}
 
 template<typename A, typename B>
 struct pair_hash {
@@ -238,10 +244,12 @@ void runTestWithDefaultInput(TestFactory* factory,
                              std::vector<TestResult>& totResults,
                              const std::string &filebase = "",
                              bool shouldTime = true,
-                             int timingLoops = 1) {
+                             int timingLoops = -1,
+                             int timingRepeats = 3) {
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
-  auto results = test->run(ip, filebase, shouldTime, timingLoops);
+  auto results = test->run(ip, filebase, shouldTime, timingLoops,
+                           timingRepeats);
   totResults.insert(totResults.end(), results.begin(), results.end());
   info_stream.flushout();
 }
@@ -250,8 +258,8 @@ template <typename F>
 long double runComparison_impl(TestFactory* factory, const TestResult &gt,
                                const TestResult &res) {
   auto test = factory->get<F>();
+  assert(res.result().type() == gt.result().type());
   if (!gt.resultfile().empty()) {
-    assert(res.result().type() == Variant::Type::None);
     assert( gt.result().type() == Variant::Type::None);
     return test->compare(readFile(gt.resultfile()),
                          readFile(res.resultfile()));
@@ -262,7 +270,6 @@ long double runComparison_impl(TestFactory* factory, const TestResult &gt,
 
 inline long double runComparison(TestFactory* factory, const TestResult &gt,
                                  const TestResult &res) {
-  // TODO: after moving to lazy file load, load file contents at comparison
   if (res.precision() == "f") {
     return runComparison_impl<float>(factory, gt, res);
   } else if (res.precision() == "d") {
@@ -270,14 +277,6 @@ inline long double runComparison(TestFactory* factory, const TestResult &gt,
   } else if (res.precision() == "e") {
     return runComparison_impl<long double>(factory, gt, res);
   } else { throw std::runtime_error("Unrecognized precision encountered"); }
-}
-
-    
-    
-/** Returns true if the element is in the container */
-template<typename Container, typename Element>
-bool isIn(Container c, Element e) {
-  return std::find(std::begin(c), std::end(c), e) != std::end(c);
 }
 
 /** Returns the keys of a std::map as a std::vector */
@@ -347,16 +346,18 @@ inline int runFlitTests(int argc, char* argv[]) {
     auto factory = testMap[testName];
     if (options.precision == "all" || options.precision == "float") {
       runTestWithDefaultInput<float>(factory, results, test_result_filebase,
-                                     options.timing, options.timingLoops);
+                                     options.timing, options.timingLoops,
+                                     options.timingRepeats);
     }
     if (options.precision == "all" || options.precision == "double") {
       runTestWithDefaultInput<double>(factory, results, test_result_filebase,
-                                      options.timing, options.timingLoops);
+                                      options.timing, options.timingLoops,
+                                      options.timingRepeats);
     }
     if (options.precision == "all" || options.precision == "long double") {
       runTestWithDefaultInput<long double>(
           factory, results, test_result_filebase, options.timing,
-          options.timingLoops);
+          options.timingLoops, options.timingRepeats);
     }
   }
 #if defined(__CUDA__) && !defined(__CPUKERNEL__)

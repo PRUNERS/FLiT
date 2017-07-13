@@ -241,8 +241,10 @@ public:
    */
   virtual std::vector<TestResult> run(const TestInput<T>& ti,
                                       const std::string &filebase,
-                                      const bool GetTime,
-                                      const size_t TimingLoops) {
+                                      const bool shouldTime,
+                                      const int timingLoops,
+                                      const int timingRepeats) {
+    FLIT_UNUSED(timingRepeats);
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
@@ -284,16 +286,16 @@ public:
       for (auto runInput : inputSequence) {
         Variant testResult;
         int_fast64_t timing = 0;
-        if (GetTime) {
+        if (shouldTime) {
           int_fast64_t nsecs = 0;
-          for (int r = 0; r < TimingLoops; ++r) {
+          for (int r = 0; r < timingLoops; ++r) {
             auto s = high_resolution_clock::now();
             testResult = run_impl(runInput);
             auto e = high_resolution_clock::now();
             nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
             assert(nsecs > 0);
           }
-          timing = nsecs / TimingLoops;
+          timing = nsecs / timingLoops;
         } else {
           testResult = run_impl(runInput);
           timing = 0;
@@ -312,9 +314,9 @@ public:
     } else {
       int_fast64_t timing = 0;
       std::vector<double> scoreList;
-      if (GetTime) {
+      if (shouldTime) {
         int_fast64_t nsecs = 0;
-        for (size_t r = 0; r < TimingLoops; ++r){
+        for (int r = 0; r < timingLoops; ++r){
           auto s = high_resolution_clock::now();
           // TODO: find out how to properly profile CUDA kernels.
           // FIXME: This strategy of timing is not right because:
@@ -327,7 +329,7 @@ public:
           nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
           assert(nsecs > 0);
         }
-        auto avg = nsecs / TimingLoops;
+        auto avg = nsecs / timingLoops;
         timing = avg / scoreList.size();
       } else {
         scoreList = runKernel(kernel, ti, stride);
@@ -341,16 +343,16 @@ public:
     for (auto runInput : inputSequence) {
       Variant testResult;
       int_fast64_t timing = 0;
-      if (GetTime) {
+      if (shouldTime) {
         int_fast64_t nsecs = 0;
-        for (size_t r = 0; r < TimingLoops; ++r) {
+        for (int r = 0; r < timingLoops; ++r) {
           auto s = high_resolution_clock::now();
           testResult = run_impl(runInput);
           auto e = high_resolution_clock::now();
           nsecs += duration_cast<duration<int_fast64_t, std::nano>>(e-s).count();
           assert(nsecs > 0);
         }
-        timing = nsecs / TimingLoops;
+        timing = nsecs / timingLoops;
       } else {
         testResult = run_impl(runInput);
         timing = 0;
