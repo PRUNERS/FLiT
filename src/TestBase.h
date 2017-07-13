@@ -16,6 +16,7 @@
 
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -274,15 +275,18 @@ public:
 
     // By default, the function to be timed is run_impl
     std::function<Variant(const TestInput<T>&)> runner;
-    runner = [this] (const TestInput<T>& runInput) {
+    int runcount = 0;
+    runner = [this,&runcount] (const TestInput<T>& runInput) {
+      runcount++;
       return this->run_impl(runInput);
     };
 #ifdef __CUDA__
     // Use the cuda kernel if it is available by replacing runner
     auto kernel = getKernel();
     if (kernel != nullptr) {
-      runner = [kernel, stride] (const TestInput<T>& ti) {
+      runner = [kernel, stride, &runcount] (const TestInput<T>& ti) {
         // TODO: implement this timer better.
+        runcount++;
         auto scorelist = runKernel(kernel, ti, stride);
         return Variant{ scorelist[0] };
       }
@@ -330,6 +334,8 @@ public:
       results.emplace_back(name, typeid(T).name(), testResult,
                            timing, resultfile);
     }
+    info_stream << id << "-" << typeid(T).name() << ": # runs = "
+                << runcount << std::endl;
     return results;
   }
 
