@@ -550,10 +550,7 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
 
 #endif // __CUDA__
 
-inline std::map<std::string, TestFactory*>& getTests() {
-  static std::map<std::string, TestFactory*> tests;
-  return tests;
-}
+std::map<std::string, TestFactory*>& getTests();
 
 inline void registerTest(const std::string& name, TestFactory *factory) {
   getTests()[name] = factory;
