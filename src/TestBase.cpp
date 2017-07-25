@@ -18,4 +18,9 @@ std::ostream& operator<<(std::ostream& os, const TestResult& res) {
   return os;
 }
 
+std::map<std::string, TestFactory*>& getTests() {
+  static std::map<std::string, TestFactory*> tests;
+  return tests;
+}
+
 } // end of namespace flit
