@@ -95,15 +95,21 @@ protected:
 
   /** Call or implement the algorithm here.
    *
-   * You need to return two scores, each are of type long double.  Usually the
-   * first value is used in analysis and the second score is ignored, so feel
-   * free to return 0.0 as the second value if you only need one metric.
+   * You return a flit::Variant which can represent one of a number of
+   * different types.  See the flit::Variant class for more details.  In short,
+   * it can represent a long double, a std::string, or an empty nothing (at
+   * least as of this writing.  See the flit::Variant documentation for more
+   * up-to-date information).  If you return an empty flit::Variant, then that
+   * result will not show up in the output (meaning that test is disabled).
+   * This is desirable for example if you only have functionality with double
+   * precision and want to disable the float and long double test
+   * implementations (simply have those return an empty flit::Variant).
    *
-   * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
-   * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
+   * The value returned by run_impl is the same value used in compare()
+   * implemented above.
    */
   virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    return ti.vals[0];
+    return flit::Variant();
   }
 
 protected:
