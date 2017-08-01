@@ -160,6 +160,11 @@ std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
 #endif
 }
 
+class TestDisabledError : public std::runtime_error {
+public:
+  using std::runtime_error::runtime_error;
+};
+
 /** Calls a CUDA kernel function and returns the scores
  *
  * This function is expecting a non-nullptr kernel function with a test input
@@ -311,14 +316,24 @@ public:
       if (shouldTime) {
         auto timed_runner = [runner,&runInput,&testResult] () {
           testResult = runner(runInput);
+          // Throw an exception to exit early
+          if (testResult.type() == Variant::Type::None) {
+            throw TestDisabledError(std::string("FLiT test is disabled"));
+          }
         };
-        if (timingLoops < 1) {
-          timing = time_function_autoloop(timed_runner, timingRepeats);
-        } else {
-          timing = time_function(timed_runner, timingLoops, timingRepeats);
-        }
+        try {
+          if (timingLoops < 1) {
+            timing = time_function_autoloop(timed_runner, timingRepeats);
+          } else {
+            timing = time_function(timed_runner, timingLoops, timingRepeats);
+          }
+        } catch (const TestDisabledError& er) { }
       } else {
         testResult = runner(runInput);
+      }
+      // If the test returns a dummy value, then do not record this run.
+      if (testResult.type() == Variant::Type::None) {
+        continue;
       }
       std::string name = id;
       if (inputSequence.size() > 1) {
