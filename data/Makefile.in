@@ -345,13 +345,13 @@ $(info $(R_OBJ))
 rec: $(R_TARGET)
 
 $(R_TARGET): $(R_OBJ)
-	-$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
 	  $(R_OBJ) -o $@ \
 		$(LD_REQUIRED)
 
 $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	-$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  -c $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
 	  $< -o $@ \
 	  $(DEPFLAGS) \
@@ -387,7 +387,7 @@ TARGETS         += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip 
 #       or see if it is even necessary
 
 $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): | $$(OBJ_DIR) $$(RESULTS_DIR)
-	$$(MAKE) rec \
+	-$$(MAKE) rec \
 	  R_IS_RECURSED=True \
 	  R_CUR_COMPILER=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
