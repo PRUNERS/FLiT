@@ -1,6 +1,7 @@
 'Implements the make subcommand'
 
 import argparse
+import glob
 import multiprocessing
 import subprocess
 import sys
@@ -74,7 +75,9 @@ def main(arguments, prog=sys.argv[0]):
         **check_call_kwargs
         )
     print('Importing into the database')
-    status = flit_import.main(['--label', args.label])
+    # TODO: find a way to not import over again if called multiple times
+    status = flit_import.main(['--label', args.label] +
+                              glob.glob('results/*_out.csv'))
     if status != 0:
         return status
 
