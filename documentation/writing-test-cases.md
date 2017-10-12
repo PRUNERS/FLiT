@@ -4,7 +4,7 @@
 |
 [Table of Contents](README.md)
 |
-[Next](database-structure.md)
+[Next](test-executable.md)
 
 When you initialize a test directory using `flit init`, a test file called
 `Empty.cpp` will be placed in the `tests` directory.  This test is as the name
@@ -32,4 +32,4 @@ That's it.
 |
 [Table of Contents](README.md)
 |
-[Next](database-structure.md)
+[Next](test-executable.md)
