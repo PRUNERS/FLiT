@@ -70,7 +70,7 @@ Paranoia,bihexal,g++,-O2,-funsafe-math-optimizations,f,0x4002a000000000000000,10
 
 The above creates a new directory called `flit-litmus` that is populated with
 the [flit litmus tests](litmus-tests.md).  It then compiles the dev build and
-executes only the `DistributivityOfMultiplication` test instead of running all
+executes only the `Paranoia` test instead of running all
 of them.  You can list all available tests with the `--litmus-tests` option.
 
 ```bash
@@ -190,10 +190,10 @@ Here is some pseudo-code of how this works:
 if timing:
     for _ in range(repeats):
         avg_times = []
-        if loops_is_specified:
+        if loops_are_specified:
             start = time()
             for _ in range(loops):
-                run_tests()
+                run_test()
             end = time()
             avg_times.append((end - start) / loops)
         else:
@@ -202,7 +202,7 @@ if timing:
             while avg_time < 0.2 seconds:
                 start = time()
                 for _ in range(loops):
-                    run_tests()
+                    run_test()
                 end = time()
                 avg_time = (end - start) / loops
                 loops *= 10
@@ -210,7 +210,7 @@ if timing:
     min_avg_time = min(avg_times)
 else:
     run_test()
-    min_avg_time = 0
+    min_avg_time = 0.0 seconds
 ```
 
 [Prev](writing-test-cases.md)
