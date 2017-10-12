@@ -25,6 +25,7 @@ Possible subcommands:
 * [flit init](#flit-init): Initializes a flit test directory for use
 * [flit update](#flit-update): Updates the Makefile based on `flit-config.toml`
 * [flit check](#flit-check): Verifies the correctness of a config file
+* [flit make](#flit-make): Run flit tests locally and add results to the database
 * [flit run](#flit-run): Run flit on the configured remote machine(s)
 * [flit import](#flit-import): Imports test results into an SQLite3 database
 * [flit analyze](#flit-analyze): Performs analysis on a previous flit run
