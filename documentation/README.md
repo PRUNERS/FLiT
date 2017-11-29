@@ -8,6 +8,7 @@
 * [FLiT Configuration File](flit-configuration-file.md)
   * [Available Compiler Flags](available-compiler-flags.md)
 * [Writing Test Cases](writing-test-cases.md)
+* [Test Executable](test-executable.md)
 * [Database Structure](database-structure.md)
 * [Analyze Results](analyze-results.md)
 * **Extra Tools**
