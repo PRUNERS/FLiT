@@ -28,6 +28,42 @@ mv tests/BrokenTest.cpp disabled
 
 That's it.
 
+## Only Using Particular Precisions
+
+You may have code you want tested that only has implemented one precision, for
+example `double` precision.  That's okay, you can still use flit for your code
+without having lots of trouble.
+
+In the class declaration of the templated test class of yours, simply have an
+empty `run_impl()` function like the following:
+
+```c++
+// Default implementation does nothing
+virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  FLIT_UNUSED(ti);
+  return flit::Variant();
+}
+```
+
+If an empty `flit::Variant()` is returned from `run_impl()`, then that test is
+considered disabled.  The beauty is that you can specialize this and only
+implement it for a particular precision.  After the template class declaration,
+you can now implement only the `double` precision version to return something
+meaningful:
+
+```c++
+template<>
+flit::Variant MyTestClass<double>::run_impl(const flit::TestInput<double>& ti) {
+   // test logic here ...
+   return something_meaningful;
+}
+```
+
+Using this approach, you can have this test only implemented for `double`
+precision, and have the other precisions disabled.  That way, you will not have
+misleading information of your test case using `float` or `long double`
+precision taking up space in your results database.
+
 [Prev](available-compiler-flags.md)
 |
 [Table of Contents](README.md)
