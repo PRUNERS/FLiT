@@ -7,11 +7,11 @@
  * inspection and not require heavy testing.
  *
  * Usage instructions:
- * 
+ *
  * Include it as usual with
- * 
+ *
  *   #include "test_harness.h"
- * 
+ *
  * This file define the main() function as well as the following functions:
  *
  * TH_VERIFY(bool)                  - your standard assertion
