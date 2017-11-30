@@ -83,6 +83,7 @@ def main(arguments, prog=sys.argv[0]):
             'flit_lib_dir': conf.lib_dir,
             'flit_data_dir': conf.data_dir,
             'flit_script_dir': conf.script_dir,
+            'flit_version': conf.version,
         },
         overwrite=True)
 
