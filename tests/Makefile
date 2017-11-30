@@ -1,15 +1,18 @@
-CC         := g++
-CFLAGS     := -O2
-CFLAGS     += -std=c++11
-LDFLAGS    :=
-TESTER_SRC := harness_tester.cpp
-HARNESS    := test_harness.h
-TESTER     := $(TESTER_SRC:%.cpp=%)
+CC          := g++
+CFLAGS      := -O2
+CFLAGS      += -std=c++11
+LDFLAGS     :=
+TESTER_SRC  := harness_tester.cpp
+HARNESS     := test_harness.h
+TESTER      := $(TESTER_SRC:%.cpp=%)
+SUB_MAKES   := $(wildcard */Makefile */makefile)
+SUB_DIRS    := $(dir $(SUB_MAKES))
+SUB_TARGETS := $(addprefix sub__,$(patsubst %/,%,$(SUB_DIRS)))
 
+.PHONY: default check help clean run__% sub__%
 default: $(TESTER)
 
-check: $(TESTER)
-	@./$(TESTER) | grep "failures: *6" >/dev/null
+check: run__$(TESTER) $(SUB_TARGETS)
 	@echo "All tests pass"
 
 help:
@@ -21,6 +24,12 @@ help:
 
 clean:
 	rm -f $(TESTER)
+
+run__$(TESTER): $(TESTER)
+	@./$(TESTER) | grep "failures: *6" >/dev/null
+
+sub__%:
+	@$(MAKE) check --directory $*
 
 $(TESTER): $(TESTER_SRC) $(HARNESS) Makefile
 	@echo "Compiling $(TESTER)"

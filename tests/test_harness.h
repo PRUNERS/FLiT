@@ -112,10 +112,17 @@ namespace th {
       _what = msg_stream.str();
     }
   };
-  
+
 };
 
-int main() { \
+int main(int argCount, char *argList[]) {
+  bool quiet = false;
+  if (argCount > 1 &&
+      (argList[1] == std::string("--quiet") ||
+       argList[1] == std::string("-q")))
+  {
+    quiet = true;
+  }
   std::vector<std::string> failed_tests;
   std::vector<std::string> skipped_tests;
 
@@ -126,7 +133,9 @@ int main() { \
     try {
       test_ptr();
     } catch (const th::SkipError &err) {
-      std::cout << err.what() << std::endl;
+      if (!quiet) {
+        std::cout << err.what() << std::endl;
+      }
       skipped_tests.emplace_back(test_name);
     } catch (const th::AssertionError &err) {
       std::cout << err.what() << std::endl;
@@ -135,25 +144,27 @@ int main() { \
   }
 
   // print results
-  std::cout << "----------------------------------------"
-               "----------------------------------------\n\n";
-  std::cout << "Failed tests:\n";
-  for (auto &test_name : failed_tests) {
-    std::cout << "  " << test_name << std::endl;
-  }
-  std::cout << "\n"
-            << "Skipped tests:\n";
-  for (auto &test_name : skipped_tests) {
-    std::cout << "  " << test_name << std::endl;
-  }
+  if (!quiet) {
+    std::cout << "----------------------------------------"
+                 "----------------------------------------\n\n";
+    std::cout << "Failed tests:\n";
+    for (auto &test_name : failed_tests) {
+      std::cout << "  " << test_name << std::endl;
+    }
+    std::cout << "\n"
+              << "Skipped tests:\n";
+    for (auto &test_name : skipped_tests) {
+      std::cout << "  " << test_name << std::endl;
+    }
 
-  int test_successes = th::tests.size() - failed_tests.size()
-                       - skipped_tests.size();
-  std::cout << std::endl
-            << "Test Results:\n"
-            << "  failures:   " << failed_tests.size() << std::endl
-            << "  successes:  " << test_successes << std::endl
-            << "  skips:      " << skipped_tests.size() << std::endl;
+    int test_successes = th::tests.size() - failed_tests.size()
+                         - skipped_tests.size();
+    std::cout << std::endl
+              << "Test Results:\n"
+              << "  failures:   " << failed_tests.size() << std::endl
+              << "  successes:  " << test_successes << std::endl
+              << "  skips:      " << skipped_tests.size() << std::endl;
+  }
 
   return failed_tests.size();
 }
