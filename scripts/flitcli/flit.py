@@ -54,6 +54,8 @@ def generate_help_documentation(subcom_map):
                 tool, although you may come up with some other uses.
                 ''',
             )
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='Print version and exit')
     subparsers = parser.add_subparsers(metavar='subcommand', dest='subcommand')
     help_subparser = subparsers.add_parser(
             'help', help='display help for a specific subcommand')
@@ -85,6 +87,10 @@ def main(arguments):
     help_str, help_subcommand_str = generate_help_documentation(subcom_map)
     if len(arguments) == 0 or arguments[0] in ('-h', '--help'):
         print(help_str)
+        return 0
+
+    if arguments[0] in ('-v', '--version'):
+        print(conf.version)
         return 0
 
     all_subcommands = ['help'] + list(subcom_map.keys())
