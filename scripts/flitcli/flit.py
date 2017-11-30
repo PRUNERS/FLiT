@@ -90,7 +90,7 @@ def main(arguments):
         return 0
 
     if arguments[0] in ('-v', '--version'):
-        print(conf.version)
+        print('flit version', conf.version)
         return 0
 
     all_subcommands = ['help'] + list(subcom_map.keys())
