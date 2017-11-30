@@ -56,6 +56,7 @@ help:
 	@echo "              to install to a different directory.  The default"
 	@echo "              PREFIX value is /usr."
 	@echo '                exe: "make install PREFIX=$$HOME/installs/usr"'
+	@echo "  check       Run tests for FLiT framework (requires $(TARGET))"
 	@echo "  clean       Clean the intermediate build artifacts from building"
 	@echo "              $(TARGET)"
 	@echo "  distclean   Run clean and then also remove $(TARGET)"
@@ -71,6 +72,9 @@ $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
 
 .PRECIOUS: src/%.d
 -include $(SOURCE:%.cpp=%.d)
+
+check: $(TARGET)
+	$(MAKE) check --directory tests
 
 .PHONY: clean
 clean:
