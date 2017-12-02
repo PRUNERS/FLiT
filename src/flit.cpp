@@ -24,6 +24,9 @@ namespace {
  */
 class CsvRow : public std::vector<std::string> {
 public:
+  // Inherit base class constructors
+  using std::vector<std::string>::vector;
+
   const CsvRow* header() const { return m_header; }
   void setHeader(CsvRow* head) { m_header = head; }
 

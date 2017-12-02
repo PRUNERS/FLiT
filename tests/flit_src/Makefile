@@ -1,12 +1,18 @@
 CC          := g++
+FLITDIR     := ../..
+FLITLIBDIR  := $(FLITDIR)/lib
+FLITLIB     := $(FLITLIBDIR)/libflit.so
+
 CFLAGS      := -O2
 CFLAGS      += -std=c++11
-LDFLAGS     :=
+LDFLAGS     := -L$(FLITLIBDIR) -lflit
+LDFLAGS     += -Wl,-rpath=$(FLITLIBDIR)
 SRC         := $(wildcard *.cpp)
 TARGETS     := $(SRC:%.cpp=%)
 RUN_TARGETS := $(TARGETS:%=run_%)
 HARNESS     := ../test_harness.h
 CFLAGS      += $(addprefix -I,$(dir $(HARNESS)))
+CFLAGS      += -I../../src
 
 .PHONY: build check help clean run_%
 build: $(TARGETS)
@@ -27,5 +33,9 @@ run_% : %
 	@./$< --quiet
 
 % : %.cpp $(HARNESS) Makefile
-	@$(CC) $(CFLAGS) $< -o $@ $(LD_FLAGS)
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
+$(TARGETS): $(FLITLIB)
+
+$(FLITLIB):
+	@$(MAKE) -C $(FLITDIR)

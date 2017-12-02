@@ -145,8 +145,10 @@ int main(int argCount, char *argList[]) {
 
   // print results
   if (!quiet) {
-    std::cout << "----------------------------------------"
-                 "----------------------------------------\n\n";
+    if (failed_tests.size() > 0 || skipped_tests.size() > 0) {
+      std::cout << "----------------------------------------"
+                   "----------------------------------------\n\n";
+    }
     std::cout << "Failed tests:\n";
     for (auto &test_name : failed_tests) {
       std::cout << "  " << test_name << std::endl;
