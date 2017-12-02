@@ -162,20 +162,24 @@ int main(int argCount, char *argList[]) {
       std::cout << "----------------------------------------"
                    "----------------------------------------\n\n";
     }
-    std::cout << "Failed tests:\n";
-    for (auto &test_name : failed_tests) {
-      std::cout << "  " << test_name << std::endl;
+    if (failed_tests.size() > 0) {
+      std::cout << "Failed tests:\n";
+      for (auto &test_name : failed_tests) {
+        std::cout << "  " << test_name << std::endl;
+      }
+      std::cout << "\n";
     }
-    std::cout << "\n"
-              << "Skipped tests:\n";
-    for (auto &test_name : skipped_tests) {
-      std::cout << "  " << test_name << std::endl;
+    if (skipped_tests.size() > 0) {
+      std::cout << "Skipped tests:\n";
+      for (auto &test_name : skipped_tests) {
+        std::cout << "  " << test_name << std::endl;
+      }
+      std::cout << "\n";
     }
 
     int test_successes = th::tests.size() - failed_tests.size()
                          - skipped_tests.size();
-    std::cout << std::endl
-              << "Test Results:\n"
+    std::cout << "Test Results:\n"
               << "  failures:   " << failed_tests.size() << std::endl
               << "  successes:  " << test_successes << std::endl
               << "  skips:      " << skipped_tests.size() << std::endl;

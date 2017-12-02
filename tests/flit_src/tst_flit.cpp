@@ -19,6 +19,13 @@ void tst_CsvRow_operator_brackets() {
   TH_EQUAL(row["b"], "2");
   TH_EQUAL(row["c"], "3");
   TH_EQUAL(row["d"], "4");
+  try {
+    auto x = row["Mike"];
+    TH_FAIL("Should have thrown");
+  } catch (std::invalid_argument &ex) {
+    std::string what(ex.what());
+    TH_NOT_EQUAL(std::string::npos, what.find("No column named Mike"));
+  }
 }
 TH_REGISTER(tst_CsvRow_operator_brackets);
 
