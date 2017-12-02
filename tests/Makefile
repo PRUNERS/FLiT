@@ -41,5 +41,5 @@ clean__%:
 	@$(MAKE) clean --directory $*
 
 $(TESTER): $(TESTER_SRC) $(HARNESS) Makefile
-	@$(CC) $(CFLAGS) $(TESTER_SRC) -o $(TESTER) $(LD_FLAGS)
+	$(CC) $(CFLAGS) $(TESTER_SRC) -o $(TESTER) $(LD_FLAGS)
 
