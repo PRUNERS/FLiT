@@ -22,7 +22,8 @@
  *
  * These macros can be called from the top-level or from helper functions
  *
- * A test is simply a void function taking no arguments.  It is registered with the macro
+ * A test is simply a void function taking no arguments.  It is registered with
+ * the macro
  *
  * TH_REGISTER(test_name)
  *
@@ -34,7 +35,8 @@
  *   }
  *   TH_REGISTER(test_add)
  *
- * That is all that is required to implement and add a test.
+ * That is all that is required to implement and add a test.  Tests will
+ * execute in alphabetical order.
  */
 
 #ifndef TEST_HARNESS_H
@@ -66,6 +68,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <typeinfo>
 #include <vector>
 
 // namespace definitions
@@ -78,13 +81,11 @@ namespace th {
   class AssertionError : public std::exception {
   public:
     AssertionError(std::string func, long line, std::string msg)
-      : _func(func), _line(line), _msg(msg), _test(current_test)
+      : _func(func), _line(line), _msg(msg)
     {
       std::ostringstream msg_stream;
       msg_stream
-        << "Assertion failure: " << _test << " at " <<  _func << " line " <<
-           _line << "\n"
-        << "  " << _msg << "\n";
+        << "Assertion failure: " << _func << ":" << _line << " - " << _msg;
       _what = msg_stream.str();
     }
     virtual const char* what() const noexcept override {
@@ -94,7 +95,6 @@ namespace th {
     std::string _func;
     long _line;
     std::string _msg;
-    std::string _test;
     std::string _what;
   };
 
@@ -106,9 +106,7 @@ namespace th {
     {
       std::ostringstream msg_stream;
       msg_stream
-        << "Test skipped: " << _test << " at " << _func << " line " << _line <<
-           "\n"
-        << "  " << _msg << "\n";
+        << "Test skipped: " << _func << ":" << _line << " - " << _msg;
       _what = msg_stream.str();
     }
   };
@@ -134,14 +132,19 @@ int main(int argCount, char *argList[]) {
       test_ptr();
     } catch (const th::SkipError &err) {
       if (!quiet) {
-        std::cout << err.what() << std::endl;
+        std::cout << test_name << ": " << err.what() << "\n";
       }
       skipped_tests.emplace_back(test_name);
     } catch (const th::AssertionError &err) {
-      std::cout << err.what() << std::endl;
+      std::cout << test_name << ": " << err.what() << "\n";
+      failed_tests.emplace_back(test_name);
+    } catch (const std::exception &err) {
+      std::cout << test_name << ": Uncought exception - "
+                << typeid(err).name() << ": " << err.what() << "\n";
       failed_tests.emplace_back(test_name);
     } catch (...) {
-      std::cout << "Uncought exception in test " << test_name << std::endl;
+      auto err = std::current_exception;
+      std::cout << test_name << ": Uncought throw (not a std::exception)\n";
       failed_tests.emplace_back(test_name);
     }
   }
