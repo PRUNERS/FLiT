@@ -80,6 +80,7 @@ check: $(TARGET)
 clean:
 	rm -f $(OBJ)
 	rm -f $(DEPS)
+	$(MAKE) clean --directory tests
 
 .PHONY: veryclean distclean
 veryclean: distclean
