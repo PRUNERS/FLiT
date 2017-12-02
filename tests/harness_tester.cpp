@@ -6,19 +6,21 @@
  * Expected results are the following:
  *
  *   Failed tests:
- *     test_should_fail_1
- *     test_should_fail_2
- *     test_should_fail_3
- *     test_should_fail_4
- *     test_use_custom_equal_should_fail
- *     test_use_custom_not_equal_should_fail
+ *     tst_should_fail_1
+ *     tst_should_fail_2
+ *     tst_should_fail_3
+ *     tst_should_fail_4
+ *     tst_use_custom_equal_should_fail
+ *     tst_use_custom_not_equal_should_fail
+ *     tst_uncaught_exception_1
+ *     tst_uncaught_exception_2
  *
  *   Skipped tests:
- *     test_should_skip_1
- *     test_should_skip_2
+ *     tst_should_skip_1
+ *     tst_should_skip_2
  *
  *   Test Results:
- *     failures:   6
+ *     failures:   8
  *     successes:  3
  *     skips:      2
  *
@@ -27,54 +29,54 @@
 
 #include "test_harness.h"
 
-void test_a() {
+void tst_a() {
   TH_VERIFY(1 + 2 == 3);
   TH_EQUAL(1 + 2, 3);
   TH_NOT_EQUAL(1 + 2, 4);
 }
-TH_REGISTER(test_a);
+TH_REGISTER(tst_a);
 
-void test_should_fail_1() {
+void tst_should_fail_1() {
   TH_VERIFY(1 + 2 == 4);
   std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
 }
-TH_REGISTER(test_should_fail_1);
+TH_REGISTER(tst_should_fail_1);
 
-void test_should_fail_2() {
+void tst_should_fail_2() {
   TH_EQUAL(1 + 2, 4);
   std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
 }
-TH_REGISTER(test_should_fail_2);
+TH_REGISTER(tst_should_fail_2);
 
-void test_should_fail_3() {
+void tst_should_fail_3() {
   TH_FAIL("should fail");
   std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
 }
-TH_REGISTER(test_should_fail_3);
+TH_REGISTER(tst_should_fail_3);
 
 void fail_helper() {
   TH_FAIL("should fail");
 }
-void test_should_fail_4() {
+void tst_should_fail_4() {
   fail_helper();
   std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
 }
-TH_REGISTER(test_should_fail_4);
+TH_REGISTER(tst_should_fail_4);
 
-void test_should_skip_1() {
+void tst_should_skip_1() {
   TH_SKIP("should skip");
   std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
 }
-TH_REGISTER(test_should_skip_1);
+TH_REGISTER(tst_should_skip_1);
 
 void skip_helper() {
   TH_SKIP("should skip");
 }
-void test_should_skip_2() {
+void tst_should_skip_2() {
   skip_helper();
   std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
 }
-TH_REGISTER(test_should_skip_2);
+TH_REGISTER(tst_should_skip_2);
 
 struct Point { int x, y; };
 bool operator==(const Point& a, const Point& b) {
@@ -84,32 +86,45 @@ bool operator!=(const Point& a, const Point& b) {
   return a.x != b.x; // For whatever reason, different logic than for ==
 }
 
-void test_use_custom_equal() {
+void tst_use_custom_equal() {
   Point a{1, 3};
   Point b{0, 3};
   TH_EQUAL(a, b);
   TH_VERIFY(a == b);
 }
-TH_REGISTER(test_use_custom_equal);
+TH_REGISTER(tst_use_custom_equal);
 
-void test_use_custom_equal_should_fail() {
+void tst_use_custom_equal_should_fail() {
   Point a{0, 4};
   Point b{0, 3};
   TH_EQUAL(a, b);
 }
-TH_REGISTER(test_use_custom_equal_should_fail);
+TH_REGISTER(tst_use_custom_equal_should_fail);
 
-void test_use_custom_not_equal() {
+void tst_use_custom_not_equal() {
   Point a{1, 3};
   Point b{0, 3};
   TH_NOT_EQUAL(a, b);
   TH_VERIFY(a != b);
 }
-TH_REGISTER(test_use_custom_not_equal);
+TH_REGISTER(tst_use_custom_not_equal);
 
-void test_use_custom_not_equal_should_fail() {
+void tst_use_custom_not_equal_should_fail() {
   Point a{0, 4};
   Point b{0, 3};
   TH_NOT_EQUAL(a, b);
 }
-TH_REGISTER(test_use_custom_not_equal_should_fail);
+TH_REGISTER(tst_use_custom_not_equal_should_fail);
+
+void tst_uncaught_exception_1() {
+  throw std::logic_error("logical failure");
+  std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
+}
+TH_REGISTER(tst_uncaught_exception_1);
+
+void tst_uncaught_exception_2() {
+  throw 3;
+  std::cout << "YOU SHOULD NEVER SEE THIS MESSAGE!\n";
+}
+TH_REGISTER(tst_uncaught_exception_2);
+

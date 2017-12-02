@@ -29,7 +29,7 @@ clean: $(CLEAN_TARGETS)
 
 .PHONY: run__% build__% check__% clean__%
 run__$(TESTER): $(TESTER)
-	@./$(TESTER) | grep "failures: *6" >/dev/null
+	@./$(TESTER) | grep "failures: *8" >/dev/null
 
 build__%:
 	@$(MAKE) build --directory $*

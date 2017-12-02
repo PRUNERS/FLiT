@@ -140,6 +140,9 @@ int main(int argCount, char *argList[]) {
     } catch (const th::AssertionError &err) {
       std::cout << err.what() << std::endl;
       failed_tests.emplace_back(test_name);
+    } catch (...) {
+      std::cout << "Uncought exception in test " << test_name << std::endl;
+      failed_tests.emplace_back(test_name);
     }
   }
 
