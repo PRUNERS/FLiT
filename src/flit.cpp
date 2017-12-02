@@ -32,6 +32,9 @@ public:
 
   using std::vector<std::string>::operator[];
   std::string const& operator[](std::string col) const {
+    if (m_header == nullptr) {
+      throw std::logic_error("No header defined");
+    }
     auto iter = std::find(m_header->begin(), m_header->end(), col);
     if (iter == m_header->end()) {
       std::stringstream message;
