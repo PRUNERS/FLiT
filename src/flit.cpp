@@ -287,7 +287,9 @@ std::string usage(std::string progName) {
 }
 
 std::string readFile(const std::string &filename) {
-  std::ifstream filein(filename);
+  std::ifstream filein;
+  filein.exceptions(std::ios::failbit);
+  filein.open(filename);
   std::stringstream buffer;
   buffer << filein.rdbuf();
   return buffer.str();

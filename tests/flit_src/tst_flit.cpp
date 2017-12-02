@@ -7,6 +7,8 @@
 #include <vector>
 #include <array>
 
+#include <cstdio>
+
 namespace tst_CsvRow {
 void tst_CsvRow_header() {
   CsvRow row {"1", "2", "3", "4"};
@@ -349,3 +351,87 @@ TH_REGISTER(tst_parseArguments_specify_test_more_than_once);
 
 } // end of namespace tst_parseArguments
 
+void tst_usage() {
+  const auto usage = flit::usage("progName");
+  auto usage_contains = [&usage](const std::string &x) {
+    return std::string::npos != usage.find(x);
+  };
+
+  // only test that the usage has some key elements.  Other than this, it
+  // should be manually inspected.
+  TH_VERIFY(usage_contains("Usage:\n"));
+  TH_VERIFY(usage_contains("progName [options] [<test> ...]\n"));
+  TH_VERIFY(usage_contains("progName --compare-mode <csvfile> [<csvfile> ...]\n"));
+  TH_VERIFY(usage_contains("Description:\n"));
+  TH_VERIFY(usage_contains("Options:\n"));
+  TH_VERIFY(usage_contains("-h, --help"));
+  TH_VERIFY(usage_contains("-L, --list-tests"));
+  TH_VERIFY(usage_contains("-v, --verbose"));
+  TH_VERIFY(usage_contains("-t, --timing"));
+  TH_VERIFY(usage_contains("--no-timing"));
+  TH_VERIFY(usage_contains("-r REPEATS, --timing-repeats REPEATS"));
+  TH_VERIFY(usage_contains("-o OUTFILE, --output OUTFILE"));
+  TH_VERIFY(usage_contains("-c, --compare-mode"));
+  TH_VERIFY(usage_contains("-p PRECISION, --precision PRECISION"));
+  TH_VERIFY(usage_contains("'float'"));
+  TH_VERIFY(usage_contains("'double'"));
+  TH_VERIFY(usage_contains("'long double'"));
+  TH_VERIFY(usage_contains("'all'"));
+}
+TH_REGISTER(tst_usage);
+
+void tst_readFile_exists() {
+  struct TmpFile {
+    std::ofstream out;
+    std::string fname;
+
+    TmpFile() {
+      char fname_buf[L_tmpnam];
+      auto ptr = std::tmpnam(fname_buf); // gives a warning, but I'm not worried
+
+      fname = fname_buf;
+      fname += "-tst_flit.in";           // this makes the danger much less likely
+      out.exceptions(std::ios::failbit);
+      out.open(fname);
+    }
+
+    ~TmpFile() {
+      out.close();
+      std::remove(fname.c_str());
+    }
+  };
+  TmpFile tmp;
+  std::string contents =
+    "This is the sequence of characters and lines\n"
+    "that I want to check that the readFile()\n"
+    "can return.\n"
+    "\n"
+    "\n"
+    "You okay with that?";
+  tmp.out << contents;
+  tmp.out.flush();
+
+  TH_EQUAL(contents, flit::readFile(tmp.fname));
+}
+TH_REGISTER(tst_readFile_exists);
+
+void tst_readFile_doesnt_exist() {
+  TH_THROWS(flit::readFile("/this/file/should/not/exist"),
+            std::system_error);
+}
+TH_REGISTER(tst_readFile_doesnt_exist);
+
+void tst_parseResults() {
+  TH_FAIL("unimplemented");
+}
+TH_REGISTER(tst_parseResults);
+
+void tst_parseMetadata() {
+  TH_FAIL("unimplemented");
+}
+TH_REGISTER(tst_parseMetadata);
+
+void tst_removeIdxFromName() {
+  TH_FAIL("unimplemented");
+}
+TH_REGISTER(tst_removeIdxFromName);
