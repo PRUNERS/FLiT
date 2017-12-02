@@ -128,3 +128,31 @@ void tst_uncaught_exception_2() {
 }
 TH_REGISTER(tst_uncaught_exception_2);
 
+void tst_expected_throw_works_1() {
+  TH_THROWS(throw std::logic_error("logical failure"), std::logic_error);
+}
+TH_REGISTER(tst_expected_throw_works_1);
+
+void throw_helper() {
+  throw std::runtime_error("runtime failure");
+}
+void tst_expected_throw_works_2() {
+  TH_THROWS(throw_helper(), std::runtime_error);
+}
+TH_REGISTER(tst_expected_throw_works_2);
+
+void tst_expected_throw_works_3() {
+  TH_THROWS(throw 3, int);
+}
+TH_REGISTER(tst_expected_throw_works_3);
+
+void tst_expected_throw_fails_1() {
+  TH_THROWS(throw std::logic_error("logic failure msg"), std::runtime_error);
+}
+TH_REGISTER(tst_expected_throw_fails_1);
+
+void tst_expected_throw_fails_2() {
+  TH_THROWS(throw 1.2, float);
+}
+TH_REGISTER(tst_expected_throw_fails_2);
+

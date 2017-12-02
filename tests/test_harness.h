@@ -19,6 +19,8 @@
  * TH_NOT_EQUAL(actual, unexpected) - assert (actual != expected)
  * TH_FAIL(description)             - a failed assertion with a description
  * TH_SKIP(description)             - exit the test early with a description
+ * TH_THROWS(expression, exception) - fail unless the expression throws
+ *                                    exception
  *
  * These macros can be called from the top-level or from helper functions
  *
@@ -53,6 +55,11 @@
 #define TH_FAIL(msg) \
   TH_VERIFY_MSG(false, std::string("TH_FAIL(\"") + msg + "\")")
 #define TH_SKIP(msg) throw th::SkipError(__func__, __LINE__, msg)
+#define TH_THROWS(exp, exception)                            \
+  try {                                                      \
+    exp;                                                     \
+    TH_VERIFY_MSG(false, #exp " did not throw " #exception); \
+  } catch (exception&) {}
 // Adds the test to map th::tests before main() is called
 #define TH_REGISTER(test_name)             \
   struct TH_Registered_Test_##test_name {  \
