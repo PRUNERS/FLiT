@@ -96,7 +96,7 @@ struct pair_hash {
 };
 
 /** Parse arguments */
-FlitOptions parseArguments(int argCount, char* argList[]);
+FlitOptions parseArguments(int argCount, char const* const argList[]);
 
 /** Returns the usage information as a string */
 std::string usage(std::string progName);
@@ -289,7 +289,7 @@ std::vector<A> getKeys(std::map<A, B> map) {
   return keys;
 }
 
-class ParseException : std::exception {
+class ParseException : public std::exception {
 public:
   ParseException(const std::string& message) : _message(message) {}
   virtual const char* what() const noexcept { return _message.c_str(); }

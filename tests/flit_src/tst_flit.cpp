@@ -3,6 +3,11 @@
 #include "flit.h"
 #include "flit.cpp"
 
+#include <sstream>
+#include <vector>
+#include <array>
+
+namespace tst_CsvRow {
 void tst_CsvRow_header() {
   CsvRow row {"1", "2", "3", "4"};
   TH_EQUAL(row.header(), nullptr);
@@ -21,15 +26,326 @@ void tst_CsvRow_operator_brackets() {
   TH_EQUAL(row["d"], "4");
   TH_THROWS(row["Mike"], std::invalid_argument);
 
+  // Row missing elements
+  header.emplace_back("e");
+  TH_THROWS(row["e"], std::out_of_range);
+
   // null header
   row.setHeader(nullptr);
   TH_THROWS(row["a"], std::logic_error);
 }
 TH_REGISTER(tst_CsvRow_operator_brackets);
+} // end of namespace tst_CsvRow
 
+void tst_Csv() {
+  std::istringstream in(
+      "first,second,third,fourth\n"
+      "a, b,c,\n"
+      "1,2,3,4,5,6,7\n"
+      "\n"
+      );
+  Csv csv(in);
+  CsvRow row;
+  csv >> row;
+  auto &header = *row.header();
+  TH_EQUAL(header, CsvRow({"first", "second", "third", "fourth"}));
+  TH_EQUAL(row, CsvRow({"a", " b", "c", ""}));
 
+  csv >> row;
+  TH_EQUAL(row, CsvRow({"1", "2", "3", "4", "5", "6", "7"}));
 
+  csv >> row;
+  TH_EQUAL(row, CsvRow({""}));
+}
+TH_REGISTER(tst_Csv);
 
+void tst_isIn() {
+  // an empty vector
+  TH_VERIFY(!isIn(std::vector<std::string>{}, ""));
 
+  // non-empty vector
+  std::vector<int> vals {1, 3, 1, 2, 5, 7, 8, 5, 5, 7};
+  TH_VERIFY(isIn(vals, 3));
+  TH_VERIFY(isIn(vals, 5));
+  TH_VERIFY(!isIn(vals, 6));
 
+  // array
+  std::array<int, 6> arr = {1,2,3,5,3,7};
+  TH_VERIFY(isIn(arr, 3));
+  TH_VERIFY(!isIn(arr, 6));
+}
+TH_REGISTER(tst_isIn);
+
+void tst_default_macro_values() {
+  TH_EQUAL(FLIT_HOST, "HOST");
+  TH_EQUAL(FLIT_COMPILER, "COMPILER");
+  TH_EQUAL(FLIT_OPTL, "OPTL");
+  TH_EQUAL(FLIT_SWITCHES, "SWITCHES");
+  TH_EQUAL(FLIT_NULL, "NULL");
+  TH_EQUAL(FLIT_FILENAME, "FILENAME");
+}
+TH_REGISTER(tst_default_macro_values);
+
+void tst_FlitOptions_toString() {
+  flit::FlitOptions opt;
+  opt.help = true;
+  opt.listTests = false;
+  opt.verbose = false;
+  opt.tests = {"one", "two", "three"};
+  opt.precision = "my precision";
+  opt.output = "my output";
+  opt.timing = false;
+  opt.timingLoops = 100;
+  opt.timingRepeats = 2;
+  opt.compareMode = true;
+  opt.compareFiles = {"A", "B", "C", "D"};
+
+  TH_EQUAL(opt.toString(),
+      "Options:\n"
+      "  help:           true\n"
+      "  verbose:        false\n"
+      "  timing:         false\n"
+      "  timingLoops:    100\n"
+      "  timingRepeats:  2\n"
+      "  listTests:      false\n"
+      "  precision:      my precision\n"
+      "  output:         my output\n"
+      "  compareMode:    true\n"
+      "  tests:\n"
+      "    one\n"
+      "    two\n"
+      "    three\n"
+      "  compareFiles:\n"
+      "    A\n"
+      "    B\n"
+      "    C\n"
+      "    D\n"
+      );
+
+  // Also test the << operator for streams
+  std::ostringstream out;
+  out << opt;
+  TH_EQUAL(opt.toString(), out.str());
+}
+TH_REGISTER(tst_FlitOptions_toString);
+
+class A {}; class B {};
+namespace std {
+  template<> struct hash<A> { size_t operator()(const A&) { return 1234; } };
+  template<> struct hash<B> { size_t operator()(const B&) { return 4321; } };
+}
+void tst_pair_hash() {
+  std::pair<A, B> p;
+  size_t expected = 0x345678;
+  expected = (1000003 * expected) ^ 1234;
+  expected = (1000003 * expected) ^ 4321;
+  size_t actual = flit::pair_hash<A, B>()(p);
+  TH_EQUAL(actual, expected);
+}
+TH_REGISTER(tst_pair_hash);
+
+namespace tst_parseArguments {
+bool operator==(const flit::FlitOptions& a, const flit::FlitOptions& b) {
+  return a.toString() == b.toString();
+}
+bool operator!=(const flit::FlitOptions& a, const flit::FlitOptions& b) {
+  return ! (a == b);
+}
+void tst_parseArguments_empty() {
+  const char* argList[1] = {"progName"};
+  flit::FlitOptions expected;
+  auto actual = flit::parseArguments(1, argList);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_parseArguments_empty);
+
+void tst_parseArguments_one_flag() {
+  const char* argList[2] = {"progName", "-h"};
+  flit::FlitOptions expected;
+  expected.help = true;
+  auto actual = flit::parseArguments(2, argList);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_parseArguments_one_flag);
+
+void tst_parseArguments_short_flags() {
+  const char* argList[17] = {"progName",
+    "-h", "-v", "-t", "-L", "-c", // bool flags
+    "-l", "323",
+    "-r", "21",
+    "-p", "double",
+    "-o", "out.txt",
+    "comp1", "comp2", "comp3",
+  };
+  flit::FlitOptions expected;
+  expected.help = true;
+  expected.verbose = true;
+  expected.timing = true;
+  expected.listTests = true;
+  expected.compareMode = true;
+  expected.timingLoops = 323;
+  expected.timingRepeats = 21;
+  expected.precision = "double";
+  expected.output = "out.txt";
+  expected.compareFiles = {"comp1", "comp2", "comp3"};
+  auto actual = flit::parseArguments(17, argList);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_parseArguments_short_flags);
+
+void tst_parseArguments_long_flags() {
+  const char* argList[17] = {"progName",
+    "--help", "--verbose", "--timing", "--list-tests", "--compare-mode",
+    "--timing-loops", "323",
+    "--timing-repeats", "21",
+    "--precision", "double",
+    "--output", "out.txt",
+    "comp1", "comp2", "comp3",
+  };
+  flit::FlitOptions expected;
+  expected.help = true;
+  expected.verbose = true;
+  expected.timing = true;
+  expected.listTests = true;
+  expected.compareMode = true;
+  expected.timingLoops = 323;
+  expected.timingRepeats = 21;
+  expected.precision = "double";
+  expected.output = "out.txt";
+  expected.compareFiles = {"comp1", "comp2", "comp3"};
+  auto actual = flit::parseArguments(17, argList);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_parseArguments_long_flags);
+
+void tst_parseArguments_unrecognized_flag() {
+  const char* argList[2] = {"progName", "-T"};
+  TH_THROWS(flit::parseArguments(2, argList), flit::ParseException);
+}
+TH_REGISTER(tst_parseArguments_unrecognized_flag);
+
+void tst_parseArguments_unknown_precision() {
+  const char* argList[3] = {"progName", "--precision", "half"};
+  TH_THROWS(flit::parseArguments(2, argList), flit::ParseException);
+}
+TH_REGISTER(tst_parseArguments_unknown_precision);
+
+void tst_parseArguments_valid_precisions() {
+  const char* argList[10] = {"progName",
+    "--precision", "all",
+    "--precision", "float",
+    "--precision", "double",
+    "--precision", "long double",
+    "--no-timing",
+  };
+  flit::FlitOptions expected;
+  expected.precision = "long double";
+  expected.timing = false;
+  auto actual = flit::parseArguments(10, argList);
+  TH_EQUAL(actual, expected);
+}
+TH_REGISTER(tst_parseArguments_valid_precisions);
+
+void tst_parseArguments_requires_argument() {
+  const char* argList1[2] = {"progName", "--precision"};
+  TH_THROWS(flit::parseArguments(2, argList1), flit::ParseException);
+  const char* argList2[2] = {"progName", "--timing-loops"};
+  TH_THROWS(flit::parseArguments(2, argList2), flit::ParseException);
+  const char* argList3[2] = {"progName", "--timing-repeats"};
+  TH_THROWS(flit::parseArguments(2, argList3), flit::ParseException);
+  const char* argList4[2] = {"progName", "--output"};
+  TH_THROWS(flit::parseArguments(2, argList4), flit::ParseException);
+
+  // Giving a flag after a parameter option will result in the parameter option
+  // assuming the flag is the argument to store.
+  const char* argList5[3] = {"progName", "--output", "--help"};
+  flit::FlitOptions expected;
+  expected.output = "--help";
+  auto actual = flit::parseArguments(3, argList5);
+  TH_EQUAL(actual, expected);
+}
+TH_REGISTER(tst_parseArguments_requires_argument);
+
+void tst_parseArguments_expects_integers() {
+  const char* argList1[3] = {"progName", "--timing-loops", "123abc"};
+  flit::FlitOptions expected;
+  expected.timingLoops = 123;
+  auto actual = flit::parseArguments(3, argList1);
+  TH_EQUAL(actual, expected);
+  
+  const char* argList2[3] = {"progName", "--timing-loops", "abc"};
+  TH_THROWS(flit::parseArguments(3, argList2), flit::ParseException);
+  
+  const char* argList3[3] = {"progName", "--timing-repeats", "abc"};
+  TH_THROWS(flit::parseArguments(3, argList3), flit::ParseException);
+}
+TH_REGISTER(tst_parseArguments_expects_integers);
+
+struct TestContainerDeleter {
+  ~TestContainerDeleter() { flit::getTests().clear(); }
+};
+void tst_parseArguments_specify_tests() {
+  // Setup to empty the getTests() map when the test ends
+  // even if an exception is thrown
+  TestContainerDeleter deleter;
+  (void)deleter;  // suppresses the warning that deleter is not used
+
+  const char* argList[3] = {"progName", "test1", "test2"};
+  TH_THROWS(flit::parseArguments(3, argList), flit::ParseException);
+
+  flit::getTests()["test1"] = nullptr;
+  TH_THROWS(flit::parseArguments(3, argList), flit::ParseException);
+
+  flit::getTests()["test2"] = nullptr;
+  flit::FlitOptions expected;
+  expected.tests = {"test1", "test2"};
+  auto actual = flit::parseArguments(3, argList);
+  TH_EQUAL(actual, expected);
+}
+TH_REGISTER(tst_parseArguments_specify_tests);
+
+void tst_parseArguments_all_tests_expand() {
+  // Setup to empty the getTests() map when the test ends
+  // even if an exception is thrown
+  TestContainerDeleter deleter;
+  (void)deleter;  // suppresses the warning that deleter is not used
+
+  flit::getTests()["test1"] = nullptr;
+  flit::getTests()["test2"] = nullptr;
+  flit::getTests()["test3"] = nullptr;
+
+  // even if tests are provided, if "all" is there, just have each test once
+  const char* argList1[3] = {"progName", "test3", "all"};
+  auto actual1 = flit::parseArguments(3, argList1);
+  TH_EQUAL(1, std::count(actual1.tests.begin(), actual1.tests.end(), "test1"));
+  TH_EQUAL(1, std::count(actual1.tests.begin(), actual1.tests.end(), "test2"));
+  TH_EQUAL(1, std::count(actual1.tests.begin(), actual1.tests.end(), "test3"));
+
+  // if no tests are provided, then use all tests
+  const char* argList2[1] = {"progName"};
+  auto actual2 = flit::parseArguments(1, argList2);
+  TH_EQUAL(1, std::count(actual2.tests.begin(), actual2.tests.end(), "test1"));
+  TH_EQUAL(1, std::count(actual2.tests.begin(), actual2.tests.end(), "test2"));
+  TH_EQUAL(1, std::count(actual2.tests.begin(), actual2.tests.end(), "test3"));
+}
+TH_REGISTER(tst_parseArguments_all_tests_expand);
+
+void tst_parseArguments_specify_test_more_than_once() {
+  // Setup to empty the getTests() map when the test ends
+  // even if an exception is thrown
+  TestContainerDeleter deleter;
+  (void)deleter;  // suppresses the warning that deleter is not used
+
+  flit::getTests()["test1"] = nullptr;
+  flit::getTests()["test2"] = nullptr;
+  flit::getTests()["test3"] = nullptr;
+
+  const char* argList[4] = {"progName", "test2", "test3", "test2"};
+  auto actual = flit::parseArguments(4, argList);
+  decltype(actual.tests) expected_tests {"test2", "test3", "test2"};
+  TH_EQUAL(actual.tests, expected_tests);
+}
+TH_REGISTER(tst_parseArguments_specify_test_more_than_once);
+
+} // end of namespace tst_parseArguments
 

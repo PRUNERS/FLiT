@@ -42,7 +42,7 @@ public:
       throw std::invalid_argument(message.str());
     }
     auto idx = iter - m_header->begin();
-    return this->operator[](idx);
+    return this->at(idx);
   }
 
 private:
@@ -126,7 +126,7 @@ std::string FlitOptions::toString() const {
   return messanger.str();
 }
 
-FlitOptions parseArguments(int argCount, char* argList[]) {
+FlitOptions parseArguments(int argCount, char const* const* argList) {
   FlitOptions options;
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };

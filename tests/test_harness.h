@@ -159,7 +159,7 @@ int main(int argCount, char *argList[]) {
   // print results
   if (!quiet) {
     if (failed_tests.size() > 0 || skipped_tests.size() > 0) {
-      std::cout << "----------------------------------------"
+      std::cout << "\n----------------------------------------"
                    "----------------------------------------\n\n";
     }
     if (failed_tests.size() > 0) {
