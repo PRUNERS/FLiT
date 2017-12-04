@@ -8,7 +8,6 @@
 #include <type_traits>
 #include <typeinfo>
 
-#include <cassert>
 #include <cstring>
 
 #include "flit.h"
@@ -24,11 +23,17 @@ namespace {
  */
 class CsvRow : public std::vector<std::string> {
 public:
+  // Inherit base class constructors
+  using std::vector<std::string>::vector;
+
   const CsvRow* header() const { return m_header; }
   void setHeader(CsvRow* head) { m_header = head; }
 
   using std::vector<std::string>::operator[];
   std::string const& operator[](std::string col) const {
+    if (m_header == nullptr) {
+      throw std::logic_error("No header defined");
+    }
     auto iter = std::find(m_header->begin(), m_header->end(), col);
     if (iter == m_header->end()) {
       std::stringstream message;
@@ -36,7 +41,7 @@ public:
       throw std::invalid_argument(message.str());
     }
     auto idx = iter - m_header->begin();
-    return this->operator[](idx);
+    return this->at(idx);
   }
 
 private:
@@ -120,7 +125,7 @@ std::string FlitOptions::toString() const {
   return messanger.str();
 }
 
-FlitOptions parseArguments(int argCount, char* argList[]) {
+FlitOptions parseArguments(int argCount, char const* const* argList) {
   FlitOptions options;
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };
@@ -281,7 +286,9 @@ std::string usage(std::string progName) {
 }
 
 std::string readFile(const std::string &filename) {
-  std::ifstream filein(filename);
+  std::ifstream filein;
+  filein.exceptions(std::ios::failbit);
+  filein.open(filename);
   std::stringstream buffer;
   buffer << filein.rdbuf();
   return buffer.str();
@@ -301,7 +308,9 @@ std::vector<TestResult> parseResults(std::istream &in) {
       value = as_float(flit::stouint128(row["score"]));
     } else {
       // Read string from the resultfile
-      assert(row["resultfile"] != "NULL");
+      if (row["resultfile"] == "NULL") {
+        throw std::invalid_argument("must give score or resultfile");
+      }
       resultfile = row["resultfile"];
     }
 
@@ -338,11 +347,15 @@ std::string removeIdxFromName(const std::string &name) {
   std::string pattern("_idx"); // followed by 1 or more digits
   auto it = std::find_end(name.begin(), name.end(),
                           pattern.begin(), pattern.end());
-  // assert that after the pattern, all the remaining chars are digits.
-  assert(it == name.end() ||
-         std::all_of(it + pattern.size(), name.end(), [](char c) {
+  // make sure after the pattern, all the remaining chars are digits.
+  bool is_integer_idx = \
+        it == name.end() ||
+        std::all_of(it + pattern.size(), name.end(), [](char c) {
            return '0' <= c && c <= '9';
-         }));
+        });
+  if (!is_integer_idx) {
+    throw std::invalid_argument("in removeIdxFromName, non-integer idx");
+  }
   return std::string(name.begin(), it);
 }
 
