@@ -25,8 +25,6 @@
 #include <utility>
 #include <vector>
 
-#include <cassert>
-
 namespace flit {
 
 void setWatching(bool watch = true);
