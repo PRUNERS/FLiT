@@ -3,9 +3,12 @@
 #include "flit.h"
 #include "flit.cpp"
 
+#include "TestBase.h"   // for operator<<(flit::TestResult ...)
+
+#include <algorithm>
+#include <array>
 #include <sstream>
 #include <vector>
-#include <array>
 
 #include <cstdio>
 
@@ -421,17 +424,116 @@ void tst_readFile_doesnt_exist() {
 }
 TH_REGISTER(tst_readFile_doesnt_exist);
 
+namespace flit {
+  // Note: if you do not put this in the flit namespace, then I cannot do a
+  //   direct comparison of vectors of TestResult objects -- it would result in a
+  //   compiler error.
+  bool operator==(const TestResult a, const TestResult b) {
+    return
+      a.name() == b.name() &&
+      a.precision() == b.precision() &&
+      a.result() == b.result() &&
+      a.nanosecs() == b.nanosecs() &&
+      a.comparison() == b.comparison() &&
+      a.is_comparison_null() == b.is_comparison_null() &&
+      a.resultfile() == b.resultfile();
+  }
+}
 void tst_parseResults() {
-  TH_FAIL("unimplemented");
+  std::istringstream in(
+      "name,precision,score,resultfile,nanosec\n"
+      "Mike,double,0x00000000000000000000,output.txt,149293\n"
+      "Brady,long double,0x3fff8000000000000000,NULL,-1\n"
+      "Julia,float,NULL,test-output.txt,498531\n"
+      );
+  auto results = flit::parseResults(in);
+
+  decltype(results) expected;
+  expected.emplace_back("Mike", "double", flit::Variant(0.0), 149293, "");
+  expected.emplace_back("Brady", "long double", flit::Variant(1.0), -1, "");
+  expected.emplace_back("Julia", "float", flit::Variant(), 498531, "test-output.txt");
+
+  TH_EQUAL(results, expected);
 }
 TH_REGISTER(tst_parseResults);
 
+void tst_parseResults_invalid_format() {
+  // header does not contain the correct columns
+  std::istringstream in;
+  in.str("hello,there\n"
+         "Mike,double\n"
+         "Brady,float\n");
+  TH_THROWS(flit::parseResults(in), std::invalid_argument);
+
+  // empty row
+  in.str("name,precision,score,resultfile,nanosec\n"
+         "\n");
+  TH_THROWS(flit::parseResults(in), std::out_of_range);
+
+  // non-integer nanosec
+  in.str("name,precision,score,resultfile,nanosec\n"
+         "Mike,double,0x0,NULL,bob\n");
+  TH_THROWS(flit::parseResults(in), std::invalid_argument);
+
+  // non-integer score
+  in.str("name,precision,score,resultfile,nanosec\n"
+         "Mike,double,giraffe,NULL,323\n");
+  TH_THROWS(flit::parseResults(in), std::invalid_argument);
+
+  // doesn't end in a newline.  Make sure it doesn't throw
+  in.str("name,precision,score,resultfile,nanosec\n"
+         "Mike,double,0x0,NULL,323");
+  auto actual = flit::parseResults(in);
+  decltype(actual) expected;
+  expected.emplace_back("Mike", "double", flit::Variant(0.0), 323, "");
+  TH_EQUAL(actual, expected);
+}
+TH_REGISTER(tst_parseResults_invalid_format);
+
 void tst_parseMetadata() {
-  TH_FAIL("unimplemented");
+  // This just parses the first row of data.  If there is no row, then an empty
+  // map is returned.  Only the following columns are used in retrieving
+  // metadata
+  // - host
+  // - compiler
+  // - optl
+  // - switches
+  // - file
+  // extra columns are not used.
+
+  std::istringstream in;
+  in.str(
+      "unused,host,compiler,optl,switches,file\n"
+      "hello,my host,g++,-O3,,executable file,ignored,ignored again\n"
+      "ignored,ignored,ignored,ignored,ignored,ignored,ignored,ignored,ignored\n"
+      );
+  auto metadata = flit::parseMetadata(in);
+  decltype(metadata) expected;
+  expected["host"]     = "my host";
+  expected["compiler"] = "g++";
+  expected["optl"]     = "-O3";
+  expected["switches"] = "";
+  expected["file"]     = "executable file";
+  TH_EQUAL(metadata, expected);
+  expected.clear();
+
+  // no rows should be fine
+  in.str(
+      "unused,host,compiler,optl,switches,file\n"
+      );
+  metadata = flit::parseMetadata(in);
+  TH_EQUAL(metadata, expected);
+
+  // not even a header row should be fine
+  in.str("");
+  metadata = flit::parseMetadata(in);
+  TH_EQUAL(metadata, expected);
 }
 TH_REGISTER(tst_parseMetadata);
 
 void tst_removeIdxFromName() {
-  TH_FAIL("unimplemented");
+  TH_EQUAL(flit::removeIdxFromName("hello there"), "hello there");
+  TH_EQUAL(flit::removeIdxFromName("hello there_idx0"), "hello there");
+  TH_THROWS(flit::removeIdxFromName("hello there_idxa"), std::invalid_argument);
 }
 TH_REGISTER(tst_removeIdxFromName);

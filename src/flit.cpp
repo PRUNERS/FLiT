@@ -8,7 +8,6 @@
 #include <type_traits>
 #include <typeinfo>
 
-#include <cassert>
 #include <cstring>
 
 #include "flit.h"
@@ -309,7 +308,9 @@ std::vector<TestResult> parseResults(std::istream &in) {
       value = as_float(flit::stouint128(row["score"]));
     } else {
       // Read string from the resultfile
-      assert(row["resultfile"] != "NULL");
+      if (row["resultfile"] == "NULL") {
+        throw std::invalid_argument("must give score or resultfile");
+      }
       resultfile = row["resultfile"];
     }
 
@@ -346,11 +347,15 @@ std::string removeIdxFromName(const std::string &name) {
   std::string pattern("_idx"); // followed by 1 or more digits
   auto it = std::find_end(name.begin(), name.end(),
                           pattern.begin(), pattern.end());
-  // assert that after the pattern, all the remaining chars are digits.
-  assert(it == name.end() ||
-         std::all_of(it + pattern.size(), name.end(), [](char c) {
+  // make sure after the pattern, all the remaining chars are digits.
+  bool is_integer_idx = \
+        it == name.end() ||
+        std::all_of(it + pattern.size(), name.end(), [](char c) {
            return '0' <= c && c <= '9';
-         }));
+        });
+  if (!is_integer_idx) {
+    throw std::invalid_argument("in removeIdxFromName, non-integer idx");
+  }
   return std::string(name.begin(), it);
 }
 

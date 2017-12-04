@@ -7,8 +7,6 @@
 #include <iostream>
 #include <mutex>
 
-#include <cassert>
-
 namespace flit {
 
 const std::vector<uint_fast32_t>
@@ -104,7 +102,9 @@ unsigned __int128 stouint128(const std::string &str) {
   }
 
   // Convert each section of 8-bytes (16 characters)
-  assert(copy.size() <= 32);
+  if (copy.size() > 32) {
+    throw std::invalid_argument("Too many digits to convert with stouint128");
+  }
   if (copy.size() <= 16) {
     hi = 0;
     lo = std::stoull(copy, nullptr, 16); 

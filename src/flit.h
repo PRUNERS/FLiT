@@ -258,9 +258,15 @@ template <typename F>
 long double runComparison_impl(TestFactory* factory, const TestResult &gt,
                                const TestResult &res) {
   auto test = factory->get<F>();
-  assert(res.result().type() == gt.result().type());
+  if (res.result().type() != gt.result().type()) {
+    throw std::invalid_argument("Result and baseline comparison types do not"
+                                " match");
+  }
   if (!gt.resultfile().empty()) {
-    assert( gt.result().type() == Variant::Type::None);
+    if (gt.result().type() != Variant::Type::None) {
+      throw std::invalid_argument("baseline comparison type is not None when"
+                                  " the resultfile is defined");
+    }
     return test->compare(readFile(gt.resultfile()),
                          readFile(res.resultfile()));
   } else if (gt.result().type() == Variant::Type::LongDouble) {
