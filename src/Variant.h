@@ -58,6 +58,22 @@ public:
 
   template <typename T> T val() const;
 
+  bool equals(const Variant &other) const {
+    if (_type != other._type) {
+      return false;
+    }
+    switch (_type) {
+      case Type::None:
+        return true;
+      case Type::LongDouble:
+        return _ld_val == other._ld_val;
+      case Type::String:
+        return _str_val == other._str_val;
+      default:
+        throw std::logic_error("Unimplemented Variant type in equals()");
+    }
+  }
+
 private:
   Type _type;
   long double _ld_val { 0.0l };
@@ -65,6 +81,10 @@ private:
 };
 
 std::ostream& operator<< (std::ostream&, const Variant&);
+
+inline bool operator== (const Variant& lhs, const Variant& rhs) {
+  return lhs.equals(rhs);
+}
 
 } // end of namespace flit
 

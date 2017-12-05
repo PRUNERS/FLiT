@@ -96,7 +96,7 @@ struct pair_hash {
 };
 
 /** Parse arguments */
-FlitOptions parseArguments(int argCount, char* argList[]);
+FlitOptions parseArguments(int argCount, char const* const argList[]);
 
 /** Returns the usage information as a string */
 std::string usage(std::string progName);
@@ -258,9 +258,15 @@ template <typename F>
 long double runComparison_impl(TestFactory* factory, const TestResult &gt,
                                const TestResult &res) {
   auto test = factory->get<F>();
-  assert(res.result().type() == gt.result().type());
+  if (res.result().type() != gt.result().type()) {
+    throw std::invalid_argument("Result and baseline comparison types do not"
+                                " match");
+  }
   if (!gt.resultfile().empty()) {
-    assert( gt.result().type() == Variant::Type::None);
+    if (gt.result().type() != Variant::Type::None) {
+      throw std::invalid_argument("baseline comparison type is not None when"
+                                  " the resultfile is defined");
+    }
     return test->compare(readFile(gt.resultfile()),
                          readFile(res.resultfile()));
   } else if (gt.result().type() == Variant::Type::LongDouble) {
@@ -289,7 +295,7 @@ std::vector<A> getKeys(std::map<A, B> map) {
   return keys;
 }
 
-class ParseException : std::exception {
+class ParseException : public std::exception {
 public:
   ParseException(const std::string& message) : _message(message) {}
   virtual const char* what() const noexcept { return _message.c_str(); }

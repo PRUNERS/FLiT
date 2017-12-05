@@ -1,6 +1,6 @@
 # Database Structure
 
-[Prev](writing-test-cases.md)
+[Prev](test-executable.md)
 |
 [Table of Contents](README.md)
 |
@@ -73,7 +73,7 @@ Only this value is stored in the database for storage space reasons.  It also
 contains timing information in the `nanosec` column which can be used to find
 the fastest runtime execution.
 
-[Prev](writing-test-cases.md)
+[Prev](test-executable.md)
 |
 [Table of Contents](README.md)
 |
