@@ -44,6 +44,7 @@ def main(arguments, prog=sys.argv[0]):
             'flit_path': os.path.join(conf.script_dir, 'flit.py'),
             'config_dir': conf.config_dir,
             'hostname': socket.gethostname(),
+            'flit_version': conf.version,
         },
         overwrite=args.overwrite)
 
