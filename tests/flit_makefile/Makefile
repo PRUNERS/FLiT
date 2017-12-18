@@ -2,7 +2,7 @@ RUNNER      := python3
 SRC         := $(wildcard tst_*.py)
 RUN_TARGETS := $(SRC:%.py=run_%)
 
-.PHONY: check help clean run_%
+.PHONY: check help clean build run_%
 check: $(TARGETS) $(RUN_TARGETS)
 
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  check    run tests and print results to the console"
 	@echo "  clean    remove all generated files"
 
+build:
 clean:
 
 run_% : %.py
