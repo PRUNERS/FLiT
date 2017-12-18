@@ -30,7 +30,17 @@ True
 >>> 'Print version and exit' in actual
 True
 
-TODO: check that an installed flit will also be able to handle the call to --version
+
+Check that an installed flit will also be able to handle the call to --version
+
+>>> with th.tempdir() as tmpdir:
+...     _ = subp.check_output(['make', 'install', 'PREFIX=' + tmpdir, '-C',
+...             os.path.dirname(th.config.lib_dir)])
+...     actual = subp.check_output([os.path.join(tmpdir, 'bin', 'flit'), '-v'])
+>>> actual = actual.decode('utf-8').strip()
+>>> expected = 'flit version ' + th.config.version
+>>> expected == actual
+True
 '''
 
 # Test setup before the docstring is run.

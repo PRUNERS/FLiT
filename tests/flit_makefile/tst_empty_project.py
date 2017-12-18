@@ -77,8 +77,6 @@ sys.path.append('..')
 import test_harness as th
 sys.path = before_path
 
-
-
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
