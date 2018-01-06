@@ -387,7 +387,11 @@ TARGETS         += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip 
 # TODO: use the variable $$(MAKECMDGOALS) to get the original make target
 #       or see if it is even necessary
 
-$$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): | $$(OBJ_DIR) $$(RESULTS_DIR)
+# Make the recursive target depend on $$(GT_TARGET), not because it actually
+# depends on that target, but we know that when $$(GT_TARGET) needs to be
+# rebuilt, so does each recursive target.
+
+$$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RESULTS_DIR)
 	-$$(MAKE) rec \
 	  R_IS_RECURSED=True \
 	  R_CUR_COMPILER=$(strip $1) \
