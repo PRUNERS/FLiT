@@ -62,11 +62,10 @@ DEV_CUOBJ       += $(addprefix $(OBJ_DIR)/,$(notdir $(CUSOURCE:%.cpp=%_cu_dev.o)
 VPATH           += $(dir $(CUSOURCE))
 
 NVCC_BIN        := nvcc
-NVCC            := $(shell which $(NVCC_BIN))
-CUDA_DIR        := $(dir $(NVCC))/..
-
 HAS_CUDA        := $(shell command -v $(NVCC_BIN) 2> /dev/null)
 ifdef HAS_CUDA
+NVCC            := $(shell which $(NVCC_BIN) 2>/dev/null)
+CUDA_DIR        := $(dir $(NVCC))/..
 NVCC_CFLAGS     += --std=c++11
 NVCC_CFLAGS     += -ccbin=g++
 NVCC_CFLAGS     += $(DEVCAP)
@@ -134,7 +133,8 @@ INTEL           := icpc
 GCC             := g++
 
 ifndef CUDA_ONLY
-COMPILERS       := $(foreach c, GCC INTEL CLANG, $(if $(shell which $($(c))), $c,))
+COMPILERS       := $(foreach c, GCC INTEL CLANG, \
+                       $(if $(shell which $($(c)) 2>/dev/null), $c,))
 endif
 
 ifdef CLANG_ONLY
@@ -147,7 +147,7 @@ RESULTS_DIR     := results
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
-GCC_TOOLCHAIN   := $(dir $(shell which $(GCC)))/..
+GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
 CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
 
 # Compiler setting targets
@@ -363,7 +363,7 @@ $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	  -DFLIT_FILENAME='"$(R_ID)"'
 
 # Otherwise, we're not in a recursion.
-else
+else # ifndef R_IS_RECURSED
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
