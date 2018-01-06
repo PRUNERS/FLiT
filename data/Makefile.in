@@ -488,6 +488,10 @@ $(TARGETS): $(FLIT_LIB_DIR)/libflit.so
 $(CUTARGETS): $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
+# include the build dependencies for gt and dev
+
+-include $(GT_DEPS)
+-include $(DEV_DEPS)
 
 #
 # Now for the compilation rules:
