@@ -1,7 +1,7 @@
 # FLiT video tutorial plan:
 
 1. Download and install
-    - Use without downloading
+    - Use without installing
     - Install in your home directory
     - Install on the system
         - in default location
