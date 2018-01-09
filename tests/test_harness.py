@@ -112,6 +112,14 @@ def tempdir(*args, **kwargs):
     yield new_dir
     shutil.rmtree(new_dir)
 
+def touch(filename):
+    '''
+    Create an emtpy file if it does not exist, otherwise updates the
+    modification time.
+    '''
+    from pathlib import Path
+    Path(filename).touch()
+
 flit = _path_import(_script_dir, 'flit')
 config = _path_import(_script_dir, 'flitconfig')
 
