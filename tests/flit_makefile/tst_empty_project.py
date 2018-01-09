@@ -50,6 +50,8 @@ True
 
 Let's actually now compile and run the empty test under different circumstances
 
+TODO: this takes too long to run.  Can we do something faster?
+
 >>> import subprocess as subp
 >>> with th.tempdir() as temp_dir:
 ...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
