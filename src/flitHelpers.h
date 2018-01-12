@@ -66,7 +66,7 @@ unsigned __int128 stouint128(const std::string &str);
 template <typename F, typename I>
 HOST_DEVICE
 F as_float_impl(I val) {
-  static_assert(sizeof(F) == sizeof(I));
+  static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
     I i;
     F f;
@@ -94,7 +94,7 @@ as_float(unsigned __int128 val) {
 template <typename F, typename I>
 HOST_DEVICE
 I as_int_impl(F val) {
-  static_assert(sizeof(F) == sizeof(I));
+  static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
     F f;
     I i;

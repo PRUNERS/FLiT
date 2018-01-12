@@ -70,7 +70,38 @@ void tst_as_float_64bit() {
 TH_REGISTER(tst_as_float_64bit);
 
 // TODO: add tst_as_float_80bit()
-// TODO: add tst_as_int_32bit()
-// TODO: add tst_as_int_64bit()
 // TODO: add tst_as_int_128bit()
 
+void tst_as_int_32bit() {
+  uint32_t expected = 1067316150;
+  float val= 1.234;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = 0;
+  val = 0.0;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = 1234;
+  val = 1.7292e-42;
+  TH_EQUAL(flit::as_int(val), expected);
+}
+TH_REGISTER(tst_as_int_32bit);
+
+void tst_as_int_64bit() {
+  uint64_t expected = 1067316150;
+  double val = 5.27324243e-315;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = 0x3ff3be76c8b43958;
+  val = 1.234;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = 0;
+  val = 0.0;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = 1234;
+  val = 6.097e-321;
+  TH_EQUAL(flit::as_int(val), expected);
+}
+TH_REGISTER(tst_as_int_64bit);
