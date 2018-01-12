@@ -10,6 +10,18 @@
 #include <vector>
 
 #include <cstdio>
+#include <cstring>  // for memcpy()
+
+namespace {
+
+unsigned __int128 combine_to_128(uint64_t left_half, uint64_t right_half) {
+  unsigned __int128 val = left_half;
+  val = val << 64;
+  val += right_half;
+  return val;
+}
+
+} // end of unnamed namespace
 
 template <typename T>
 void tst_setRandSeq() {
@@ -69,7 +81,49 @@ void tst_as_float_64bit() {
 }
 TH_REGISTER(tst_as_float_64bit);
 
-// TODO: add tst_as_float_80bit()
+void tst_as_float_80bit() {
+  auto val = combine_to_128(0x0000, 0x0000000000000000);
+  long double expected = 0.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x3fff, 0x8000000000000000);
+  expected = 1.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4000, 0x8000000000000000);
+  expected = 2.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4000, 0xc000000000000000);
+  expected = 3.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4001, 0x8000000000000000);
+  expected = 4.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4001, 0xa000000000000000);
+  expected = 5.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4001, 0xc000000000000000);
+  expected = 6.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4001, 0xe000000000000000);
+  expected = 7.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x4002, 0x8000000000000000);
+  expected = 8.0L;
+  TH_EQUAL(flit::as_float(val), expected);
+
+  val = combine_to_128(0x2b97, 0xaed3412a32403b66);
+  expected = 3.586714e-1573L;
+  TH_EQUAL(flit::as_float(val), expected);
+}
+TH_REGISTER(tst_as_float_80bit);
+
 // TODO: add tst_as_int_128bit()
 
 void tst_as_int_32bit() {
@@ -105,3 +159,46 @@ void tst_as_int_64bit() {
   TH_EQUAL(flit::as_int(val), expected);
 }
 TH_REGISTER(tst_as_int_64bit);
+
+void tst_as_int_128bit() {
+  auto expected = combine_to_128(0x0000, 0x0000000000000000);
+  long double val = 0.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x3fff, 0x8000000000000000);
+  val = 1.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4000, 0x8000000000000000);
+  val = 2.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4000, 0xc000000000000000);
+  val = 3.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4001, 0x8000000000000000);
+  val = 4.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4001, 0xa000000000000000);
+  val = 5.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4001, 0xc000000000000000);
+  val = 6.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4001, 0xe000000000000000);
+  val = 7.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x4002, 0x8000000000000000);
+  val = 8.0L;
+  TH_EQUAL(flit::as_int(val), expected);
+
+  expected = combine_to_128(0x2b97, 0xaed3412a32403b66);
+  val = 3.586714e-1573L;
+  TH_EQUAL(flit::as_int(val), expected);
+}
+TH_REGISTER(tst_as_int_128bit);
