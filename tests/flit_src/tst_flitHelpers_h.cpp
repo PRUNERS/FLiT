@@ -57,6 +57,7 @@ void tst_as_float_64bit() {
 
   val = 0x3ff3be76c8b43958;
   expected = 1.234;
+  TH_EQUAL(flit::as_float(val), expected);
 
   val = 0;
   expected = 0.0;
