@@ -121,20 +121,7 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
-// TODO: remove these - need to update a test
 // TODO: add an eps<T>() function?  Is it already in the standard?
-
-template <typename T>
-T
-get_tiny1(){
-  return (T)0.0;
-}
-
-template <typename T>
-T
-get_tiny2(){
-  return (T)0.0;
-}
 
 template<typename T>
 class Matrix;

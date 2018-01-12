@@ -17,44 +17,6 @@ getShuffleSeq(uint_fast32_t size){
   return retVal;
 }
 
-template <>
-float
-get_tiny1<float>(){
-  return 1.175494351-38;
-}
-
-template <>
-double
-get_tiny1<double>(){
-  return 2.2250738585072014e-308;
-}
-
-template <>
-long double
-get_tiny1<long double>(){
-  return 3.362103143112093506262e-4931L;
-}
-
-template <>
-float
-get_tiny2<float>(){
-  return 1.175494352-38;
-}
-
-template <>
-double
-get_tiny2<double>(){
-  return 2.2250738585072015e-308;
-}
-
-template <>
-long double
-get_tiny2<long double>(){
-  return 3.362103143112093506263e-4931L;
-}
-
-  //const std::vector<float> float_rands = setRandSequence<float>(RAND_VECT_SIZE);
-
 template<>
 const std::vector<float>&
 getRandSeq<float>(){return float_rands;}

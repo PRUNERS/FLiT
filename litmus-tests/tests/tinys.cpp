@@ -6,6 +6,45 @@
 #include <iomanip>
 #include <type_traits>
 
+namespace {
+
+  template <typename T>
+  T get_tiny1() { static_assert(false, "Unimplemented type"); }
+
+  template <typename T>
+  T get_tiny2() { static_assert(false, "Unimplemented type"); }
+
+  template <>
+  float get_tiny1<float>(){
+    return 1.175494351-38;
+  }
+
+  template <>
+  double get_tiny1<double>(){
+    return 2.2250738585072014e-308;
+  }
+
+  template <>
+  long double get_tiny1<long double>(){
+    return 3.362103143112093506262e-4931L;
+  }
+
+  template <>
+  float get_tiny2<float>(){
+    return 1.175494352-38;
+  }
+
+  template <>
+  double get_tiny2<double>(){
+    return 2.2250738585072015e-308;
+  }
+
+  template <>
+  long double get_tiny2<long double>(){
+    return 3.362103143112093506263e-4931L;
+  }
+
+} // end of unnamed namespace
 
 template <typename T>
 class FtoDecToF: public flit::TestBase<T> {
@@ -481,8 +520,8 @@ public:
   virtual std::vector<T> getDefaultInput() override {
     return {
       flit::getRandSeq<T>()[0],
-      flit::get_tiny1<T>(),
-      flit::get_tiny2<T>(),
+      get_tiny1<T>(),
+      get_tiny2<T>(),
     };
   }
 protected:
@@ -505,8 +544,8 @@ public:
   virtual std::vector<T> getDefaultInput() override {
     return {
       flit::getRandSeq<T>()[0],
-      flit::get_tiny1<T>(),
-      flit::get_tiny2<T>(),
+      get_tiny1<T>(),
+      get_tiny2<T>(),
     };
   }
 protected:
