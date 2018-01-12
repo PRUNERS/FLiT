@@ -80,12 +80,12 @@ public:
   langDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -115,12 +115,12 @@ public:
   langCompDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -153,12 +153,12 @@ public:
   langCompDot(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;

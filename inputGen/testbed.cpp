@@ -10,13 +10,10 @@ namespace {
   runTestbed_impl(const std::string &testName,
                   const std::vector<T> &inputvals)
   {
-    using flit::TestInput;
     using flit::Vector;
 
     auto test = flit::getTests()[testName]->get<T>();
-    TestInput<T> input = test->getDefaultInput();
-    input.vals = inputvals;
-    auto scores = test->run(input);
+    auto scores = test->run(inputvals);
 
     // Return only the first score.  Ignore the key
     return std::get<0>(scores.begin()->second);

@@ -8,16 +8,15 @@ namespace {
   runGroundtruth_impl(std::string testName,
                       std::function<T()> randGen)
   {
-    using flit::TestInput;
     using flit::Vector;
 
     auto test = flit::getTests()[testName]->get<T>();
-    TestInput<T> input = test->getDefaultInput();
-    input.vals = Vector<T>(test->getInputsPerRun(), randGen).getData();
+    auto input = test->getDefaultInput();
+    input = Vector<T>(test->getInputsPerRun(), randGen).getData();
     auto scores = test->run(input);
 
     // Return only the first score.  Ignore the key
-    return { input.vals, std::get<0>(scores.begin()->second) };
+    return { input, std::get<0>(scores.begin()->second) };
   }
 } // end of unnamed namespace
 

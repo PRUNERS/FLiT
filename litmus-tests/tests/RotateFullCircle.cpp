@@ -30,23 +30,17 @@ public:
   RotateFullCircle(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() override { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.min = -6;
-    ti.max = 6;
-    ti.iters = 200;
+    virtual std::vector<T> getDefaultInput() override {
     auto n = getInputsPerRun();
-    ti.highestDim = n;
-    ti.vals = flit::Vector<T>::getRandomVector(n).getData();
-    return ti;
+    return flit::Vector<T>::getRandomVector(n).getData();
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override {return RFCKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    auto n = ti.iters;
-    flit::Vector<T> A = flit::Vector<T>(ti.vals);
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    auto n = 200;
+    flit::Vector<T> A = flit::Vector<T>(ti);
     auto orig = A;
     T theta = 2 * M_PI / n;
     flit::info_stream << "Rotate full circle in " << n << " increments, A is: " << A << std::endl;

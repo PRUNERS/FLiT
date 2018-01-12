@@ -5,10 +5,15 @@
 
 #include <cmath>
 
+namespace {
+  const int iters = 200;
+  const int ulp_inc = 1;
+}
+
 template <typename T>
 GLOBAL
 void
-DoOPTKernel(const flit::CuTestInput<T>* tiList, double* results){
+DoOPTKernel(const T* const* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -16,14 +21,12 @@ DoOPTKernel(const flit::CuTestInput<T>* tiList, double* results){
 #endif
 
   auto ti = tiList[idx];
-  auto iters = ti.iters;
-  auto dim = ti.highestDim;
   double score = 0.0;
   cuvector<unsigned> orthoCount(dim, 0.0);
   // we use a double literal above as a workaround for Intel 15-16 compiler
   // bug:
   // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-  flit::VectorCU<T> a(ti.vals, ti.length);
+  flit::VectorCU<T> a(ti, ti.size());
   flit::VectorCU<T> b = a.genOrthoVector();
 
   T backup;
@@ -59,34 +62,26 @@ public:
   DoOrthoPerturbTest(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 16; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.iters = 200;
-    ti.ulp_inc = 1;
-
+  virtual std::vector<T> getDefaultInput() override {
     auto dim = getInputsPerRun();
-    ti.highestDim = dim;
-    ti.vals = std::vector<T>(dim);
-    for(decltype(dim) x = 0; x < dim; ++x) ti.vals[x] = static_cast<T>(1 << x);
-
+    ti = std::vector<T>(dim);
+    for(decltype(dim) x = 0; x < dim; ++x) ti[x] = static_cast<T>(1 << x);
     return ti;
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return DoOPTKernel; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     using flit::operator<<;
 
-    auto iters = ti.iters;
     auto dim = getInputsPerRun();
-    auto ulp_inc = ti.ulp_inc;
     long double score = 0.0;
     std::vector<unsigned> orthoCount(dim, 0.0);
     // we use a double literal above as a workaround for Intel 15-16 compiler
     // bug:
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    flit::Vector<T> a(ti.vals);
+    flit::Vector<T> a(ti);
     flit::Vector<T> b = a.genOrthoVector();
 
     T backup;

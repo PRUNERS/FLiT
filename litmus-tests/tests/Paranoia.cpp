@@ -209,10 +209,10 @@ public:
   Paranoia(std::string id) : flit::TestBase<F>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<F> getDefaultInput() override { return {}; }
+  virtual std::vector<F> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<F>& ti) override;
+  virtual flit::Variant run_impl(const std::vector<F>& ti) override;
 
   void   setTimeout(long millis);  // starts the timer for checkTimeout()
   void   checkTimeout();          // throws TimeoutError if timer from setTimeout has expired
@@ -320,7 +320,7 @@ void sigfpe(int i)
 }
 
 template <typename F>
-flit::Variant Paranoia<F>::run_impl(const flit::TestInput<F>& ti)
+flit::Variant Paranoia<F>::run_impl(const std::vector<F>& ti)
 {
   FLIT_UNUSED(ti);
   int timeoutMillis = 1000;

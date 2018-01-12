@@ -4,7 +4,7 @@
 
 template <typename T>
 GLOBAL
-void Empty_kernel(const flit::CuTestInput<T>* tiList, double* results) {
+void Empty_kernel(const T* const* tiList, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -27,7 +27,7 @@ public:
   /** Specify how many floating-point inputs your algorithm takes.
    * 
    * Can be zero.  If it is zero, then getDefaultInput should return an empty
-   * TestInput object which is as simple as "return {};"
+   * std::vector, which is as simple as "return {};"
    */
   virtual size_t getInputsPerRun() override { return 1; }
 
@@ -38,12 +38,10 @@ public:
    * time with getInputsPerRun() elements in ti.vals.
    *
    * If your algorithm takes no inputs, then you can simply return an empty
-   * TestInput object.  It is as simple as "return {};".
+   * std::vector object.  It is as simple as "return {};".
    */
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.vals = { 1.0 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { 1.0 };
   }
 
   /** Custom comparison methods
@@ -108,7 +106,7 @@ protected:
    * The value returned by run_impl is the same value used in compare()
    * implemented above.
    */
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
     return flit::Variant();
   }
 

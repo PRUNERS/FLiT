@@ -8,7 +8,8 @@ import os
 # - input_count: how many inputs the test will take
 # - default_input: populate ti.vals vector.
 # - vars_initialize: initialize scope variable for the test using ti.vals
-# - cu_vars_initialize: initialize scope variables for the test in CUDA using tiList[idx].vals
+# - cu_vars_initialize: initialize scope variables for the test in CUDA using
+#   tiList[idx].vals
 # - func_body: test body that is shared between cuda and non-cuda.  Populate score
 template_string = '''
 #include "flit.h"
@@ -16,7 +17,7 @@ template_string = '''
 template <typename T>
 GLOBAL
 void
-{name}Kernel(const flit::CuTestInput<T>* tiList, double* results) {{
+{name}Kernel(const T* const* tiList, double* results) {{
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
@@ -40,8 +41,8 @@ public:
     : flit::TestBase<T>(std::move(id)) {{}}
 
   virtual size_t getInputsPerRun() override {{ return {input_count}; }}
-  virtual flit::TestInput<T> getDefaultInput() override {{
-    flit::TestInput<T> ti;
+  virtual std::vector<T> getDefaultInput() override {{
+    std::vector<T> ti;
 
     {default_input}
 
@@ -54,11 +55,11 @@ protected:
   }}
 
   virtual
-  flit::Variant run_impl(const flit::TestInput<T>& ti) override {{
+  flit::Variant run_impl(const std::vector<T>& ti) override {{
     T score = 0.0;
 
     flit::info_stream << id << ": Starting test with parameters" << std::endl;
-    for (T val : ti.vals) {{
+    for (T val : ti) {{
       flit::info_stream << id << ":   " << val << std::endl;
     }}
 
@@ -93,11 +94,11 @@ class TestCase(object):
 
     # setup the test
     self.default_input_lines = [
-        'ti.vals.push_back({0});'.format(x) for x in default_input_vals]
+        'ti.push_back({0});'.format(x) for x in default_input_vals]
     self.vars_initialize_lines = [
-        'T in_{0} = ti.vals[{0}];'.format(i+1) for i in range(self.input_count)]
+        'T in_{0} = ti[{0}];'.format(i+1) for i in range(self.input_count)]
     self.cu_vars_initialize_lines = [
-        'T in_{0} = tiList[idx].vals[{0}];'.format(i+1) for i in range(self.input_count)]
+        'T in_{0} = tiList[idx][{0}];'.format(i+1) for i in range(self.input_count)]
 
     # Create an environment for the function body
     env = Environment({
@@ -109,9 +110,11 @@ class TestCase(object):
     self.func_body_lines = []
     for i in range(10):
       var = Variable('e{0}'.format(i+1), 'T')
-      self.func_body_lines.append('{0} {1} = {2};'.format(var.type, var.name, random_expression(env, 3)))
+      self.func_body_lines.append('{0} {1} = {2};'.format(var.type, var.name,
+                                  random_expression(env, 3)))
       env[var.name] = var
-    self.func_body_lines.append('score = {0};'.format(random_expression(env, 4, vars_only=True)))
+    self.func_body_lines.append('score = {0};'.format(random_expression(env, 4,
+                                vars_only=True)))
 
   def write(self, directory='.'):
     '''

@@ -55,23 +55,21 @@ public:
   TrianglePSylv(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.iters = 200;
-    ti.vals = { 6.0 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { 6.0 };
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override {return TrianglePSKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    T maxval = ti.vals[0];
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    T maxval = ti[0];
+    auto iters = 200;
     // start as a right triangle
     T a = maxval;
     T b = maxval;
     T c = maxval * std::sqrt(2);
-    const T delta = maxval / (T)ti.iters;
+    const T delta = maxval / T(iters);
 
 
     // 1/2 b*h = A

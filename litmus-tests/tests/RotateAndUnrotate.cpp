@@ -1,6 +1,7 @@
 #include <flit.h>
 
 #include <typeinfo>
+#include <vector>
 
 #include <cmath>
 
@@ -28,20 +29,16 @@ public:
   RotateAndUnrotate(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.min = -6;
-    ti.max = 6;
-    ti.vals = flit::Vector<T>::getRandomVector(3).getData();
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return flit::Vector<T>::getRandomVector(3).getData();
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return RaUKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto theta = M_PI;
-    auto A = flit::Vector<T>(ti.vals);
+    auto A = flit::Vector<T>(ti);
     auto orig = A;
     flit::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);

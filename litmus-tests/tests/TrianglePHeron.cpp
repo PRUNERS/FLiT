@@ -4,6 +4,10 @@
 
 #include <cmath>
 
+namespace {
+  int g_iters = 200;
+}
+
 template <typename T>
 DEVICE
 T getCArea(const T a,
@@ -24,18 +28,18 @@ T getArea(const T a,
 template <typename T>
 GLOBAL
 void
-TrianglePHKern(const flit::CuTestInput<T>* tiList, double* results) {
+TrianglePHKern(const T* const* tiList, size_t n, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  auto ti = tiList[idx];
-  T maxval = tiList[idx].vals[0];
+  T* start = tiList + idx * n;
+  T maxval = start[0];
   T a = maxval;
   T b = maxval;
   T c = maxval * flit::csqrt((T)2.0);
-  const T delta = maxval / (T)ti.iters;
+  const T delta = maxval / T(g_iters);
   const T checkVal = (T)0.5 * b * a;
 
   double score = 0.0;
@@ -57,23 +61,20 @@ public:
   TrianglePHeron(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.iters = 200;
-    ti.vals = { 6.0 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { 6.0 };
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override {return TrianglePHKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    T maxval = ti.vals[0];
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    T maxval = ti[0];
     // start as a right triangle
     T a = maxval;
     T b = maxval;
     T c = maxval * std::sqrt(2);
-    const T delta = maxval / (T)ti.iters;
+    const T delta = maxval / T(g_iters);
 
     // 1/2 b*h = A
     // all perturbations will have the same base and height (plus some FP noise)

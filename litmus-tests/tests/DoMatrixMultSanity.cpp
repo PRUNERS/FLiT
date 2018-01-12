@@ -9,14 +9,14 @@
 template <typename T>
 GLOBAL
 void
-DoMatrixMultSanityKernel(const flit::CuTestInput<T>* tiList, double* results){
+DoMatrixMultSanityKernel(const T* const* tiList, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
   auto ti = tiList[idx];
-  auto b = flit::VectorCU<T>(ti.vals, ti.length);
+  auto b = flit::VectorCU<T>(ti, ti.length);
   auto c = flit::MatrixCU<T>::Identity(ti.length) * b;
   results[idx] = c.L1Distance(b);
 }
@@ -28,22 +28,18 @@ public:
 
   virtual size_t getInputsPerRun() override { return 16; }
 
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.highestDim = getInputsPerRun();
-    ti.min = -6;
-    ti.max = 6;
-    ti.vals = std::move(
-        flit::Vector<T>::getRandomVector(getInputsPerRun()).getData());
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return flit::Vector<T>::getRandomVector(getInputsPerRun()).getData();
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return DoMatrixMultSanityKernel; }
+  virtual flit::KernelFunction<T>* getKernel() override {
+    return DoMatrixMultSanityKernel;
+  }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    auto dim = ti.vals.size();
-    flit::Vector<T> b(ti.vals);
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    auto dim = ti.size();
+    flit::Vector<T> b(ti);
     auto c = flit::Matrix<T>::Identity(dim) * b;
     bool eq = (c == b);
     flit::info_stream << id << ": Product is: " << c << std::endl;
