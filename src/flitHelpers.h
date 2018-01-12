@@ -23,55 +23,27 @@
 #define FLIT_UNUSED(x) (void)x
 #endif
 
-// #ifdef __CUDA__
-// #define HOST_DEVICE __host__ __device__
-// #else
-// #define HOST_DEVICE
-// #endif
-
-
 namespace flit {
 
 const int RAND_SEED = 1;
 const int RAND_VECT_SIZE = 256;
 
-inline
-float
-get_next_type(long double x){
-  FLIT_UNUSED(x);
-  return 0.0f;
-}
-
-inline
-double
-get_next_type(float x){
-  FLIT_UNUSED(x);
-  return 0.0;
-}
-
-inline
-long double
-get_next_type(double x){
-  FLIT_UNUSED(x);
-  return 0.0l;
-}
-
-
 extern thread_local InfoStream info_stream;
-  //this section provides a pregenerated random
-  //sequence that can be used by tests, including
-  //CUDA
+
+// this section provides a pregenerated random
+// sequence that can be used by tests, including
+// CUDA
 
 template <typename T>
 const std::vector<T>
 setRandSeq(size_t size, int32_t seed = RAND_SEED){
-    //there may be a bug with float uniform_real_dist
-    //it is giving very different results than double or long double
+  // there may be a bug with float uniform_real_dist
+  // it is giving very different results than double or long double
   std::vector<T> ret(size);
   std::mt19937 gen;
   gen.seed(seed);
   std::uniform_real_distribution<double> dist(-6.0, 6.0);
-  for(auto& i: ret) i = (T)dist(gen);
+  for(auto& i: ret) i = T(dist(gen));
   return ret;
 }
   
@@ -91,41 +63,66 @@ getRandSeq();
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
+template <typename F, typename I>
+HOST_DEVICE
+F as_float_impl(I val) {
+  static_assert(sizeof(F) == sizeof(I));
+  union {
+    I i;
+    F f;
+  } u = { val };
+  return u.f;
+}
+
 HOST_DEVICE
 inline float
 as_float(uint32_t val) {
-  return *reinterpret_cast<float*>(&val);
+  return as_float_impl<float, uint32_t>(val);
 }
 
 HOST_DEVICE
 inline double
 as_float(uint64_t val) {
-   return *reinterpret_cast<double*>(&val);
+  return as_float_impl<double, uint64_t>(val);
 }
 
 inline long double
 as_float(unsigned __int128 val) {
-  return *reinterpret_cast<long double*>(&val);
+  return as_float_impl<long double, __int128>(val);
+}
+
+template <typename F, typename I>
+HOST_DEVICE
+I as_int_impl(F val) {
+  static_assert(sizeof(F) == sizeof(I));
+  union {
+    F f;
+    I i;
+  } u = { val };
+  return u.i;
 }
 
 HOST_DEVICE
 inline uint32_t
 as_int(float val) {
-  return *reinterpret_cast<uint32_t*>(&val);
+  return as_int_impl<float, uint32_t>(val);
 }
 
 HOST_DEVICE
 inline uint64_t
 as_int(double val) {
-  return *reinterpret_cast<uint64_t*>(&val);
+  return as_int_impl<double, uint64_t>(val);
 }
 
 inline unsigned __int128
 as_int(long double val) {
   const unsigned __int128 zero = 0;
-  const auto temp = *reinterpret_cast<unsigned __int128*>(&val);
+  const auto temp = as_int_impl<long double, __int128>(val);
   return temp & (~zero >> 48);
 }
+
+// TODO: remove these - need to update a test
+// TODO: add an eps<T>() function?  Is it already in the standard?
 
 template <typename T>
 T
