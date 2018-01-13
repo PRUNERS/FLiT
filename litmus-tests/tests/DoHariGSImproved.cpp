@@ -6,13 +6,13 @@
 template <typename T>
 GLOBAL
 void
-DoHGSITestKernel(const T* const* tiList, double* results){
+DoHGSITestKernel(const T* const* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  const T* vals = tiList[idx];
+  const T* vals = tiList[idx*n];
   flit::VectorCU<T> a(vals, 3);
   flit::VectorCU<T> b(vals + 3, 3);
   flit::VectorCU<T> c(vals + 6, 3);

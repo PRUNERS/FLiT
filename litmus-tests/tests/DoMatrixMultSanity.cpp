@@ -9,15 +9,15 @@
 template <typename T>
 GLOBAL
 void
-DoMatrixMultSanityKernel(const T* const* tiList, double* results){
+DoMatrixMultSanityKernel(const T* const* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  auto ti = tiList[idx];
-  auto b = flit::VectorCU<T>(ti, ti.length);
-  auto c = flit::MatrixCU<T>::Identity(ti.length) * b;
+  const T* ti = tiList[idx*n];
+  auto b = flit::VectorCU<T>(ti, n);
+  auto c = flit::MatrixCU<T>::Identity(n) * b;
   results[idx] = c.L1Distance(b);
 }
 

@@ -10,7 +10,7 @@ void Empty_kernel(const T* const* tiList, size_t n, double* results) {
 #else
   auto idx = 0;
 #endif
-  auto& ti = tiList[idx*n];
+  const T* ti = tiList[idx*n];
   results[idx] = ti[0];
 }
 
