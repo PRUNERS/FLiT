@@ -5,7 +5,9 @@
 #define FLIT_H 0
 
 #include "flitHelpers.h"
+#include "Matrix.h"
 #include "TestBase.h"
+#include "Vector.h"
 
 #ifdef __CUDA__
 //#include <cuda.h>
