@@ -4,14 +4,14 @@
 
 template <typename T>
 GLOBAL
-void Empty_kernel(const T* const* tiList, double* results) {
+void Empty_kernel(const T* const* tiList, size_t n, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  auto& ti = tiList[idx];
-  results[idx] = ti.vals[0];
+  auto& ti = tiList[idx*n];
+  results[idx] = ti[0];
 }
 
 /** An example test class to show how to make FLiT tests
@@ -107,6 +107,7 @@ protected:
    * implemented above.
    */
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
+    FLIT_UNUSED(ti);
     return flit::Variant();
   }
 
