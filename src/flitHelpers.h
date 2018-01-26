@@ -121,8 +121,6 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
-// TODO: add an eps<T>() function?  Is it already in the standard?
-
 } // end of namespace flit
 
 #endif // FLIT_HELPERS_HPP

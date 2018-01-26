@@ -124,8 +124,6 @@ void tst_as_float_80bit() {
 }
 TH_REGISTER(tst_as_float_80bit);
 
-// TODO: add tst_as_int_128bit()
-
 void tst_as_int_32bit() {
   uint32_t expected = 1067316150;
   float val= 1.234;
