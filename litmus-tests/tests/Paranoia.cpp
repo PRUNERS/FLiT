@@ -333,7 +333,7 @@ flit::Variant Paranoia<F>::run_impl(const std::vector<F>& ti)
     TimeoutStatus = 5,
     OverflowStatus = 6,
   };
-  auto status = ExitStatus::SuccessStatus;
+  //auto status = ExitStatus::SuccessStatus;
 
   /* First two assignments use integer right-hand sides. */
   zero = 0;
@@ -1839,32 +1839,32 @@ flit::Variant Paranoia<F>::run_impl(const std::vector<F>& ti)
   catch (const TimeoutError &e) {
     FLIT_UNUSED(e);
     info_stream << id << ": timeout error occurred" << endl;
-    status = ExitStatus::TimeoutStatus;
+    //status = ExitStatus::TimeoutStatus;
   }
   catch (const FailureError &e) {
     FLIT_UNUSED(e);
     info_stream << id << ": failure error occurred" << endl;
-    status = ExitStatus::FailureStatus;
+    //status = ExitStatus::FailureStatus;
   }
   catch (const SeriousError &e) {
     FLIT_UNUSED(e);
     info_stream << id << ": serious error occurred" << endl;
-    status = ExitStatus::SeriousStatus;
+    //status = ExitStatus::SeriousStatus;
   }
   catch (const DefectError &e) {
     FLIT_UNUSED(e);
     info_stream << id << ": defect error occurred" << endl;
-    status = ExitStatus::DefectStatus;
+    //status = ExitStatus::DefectStatus;
   }
   catch (const FlawError &e) {
     FLIT_UNUSED(e);
     info_stream << id << ": flaw error occurred" << endl;
-    status = ExitStatus::FlawStatus;
+    //status = ExitStatus::FlawStatus;
   }
   catch (const OverflowError &e) {
     FLIT_UNUSED(e);
     info_stream << id << ": overflow error occurred" << endl;
-    status = ExitStatus::OverflowStatus;
+    //status = ExitStatus::OverflowStatus;
   }
 
   return Milestone;

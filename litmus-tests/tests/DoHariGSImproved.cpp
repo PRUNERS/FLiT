@@ -1,4 +1,4 @@
-#include "flit.h"
+#include <flit.h>
 
 #include <cmath>
 #include <typeinfo>
