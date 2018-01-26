@@ -28,13 +28,13 @@ T getArea(const T a,
 template <typename T>
 GLOBAL
 void
-TrianglePHKern(const T* const* tiList, size_t n, double* results) {
+TrianglePHKern(const T* tiList, size_t n, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  T* start = tiList + idx * n;
+  auto start = tiList + (idx*n);
   T maxval = start[0];
   T a = maxval;
   T b = maxval;

@@ -17,8 +17,8 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    const T a = ti.vals[0];
-    const T b = ti.vals[1];
+    const T a = ti[0];
+    const T b = ti[1];
     const T c = a;
     const T d = -b;
 

@@ -7,14 +7,14 @@
 template <typename T>
 GLOBAL
 void
-DoSR90Kernel(const flit::CuTestInput<T>* tiList, double* results){
+DoSR90Kernel(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  auto ti = tiList[idx];
-  flit::VectorCU<T> A(ti.vals, ti.length);
+  const T* ti = tiList + (idx*n);
+  flit::VectorCU<T> A(ti, n);
 
   flit::VectorCU<T> expected(A.size());
   expected[0]=-A[1]; expected[1]=A[0]; expected[2]=A[2];

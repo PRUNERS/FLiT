@@ -7,13 +7,13 @@
 template <typename T>
 GLOBAL
 void
-DoSkewSCPRKernel(const flit::CuTestInput<T>* tiList, double* results){
+DoSkewSCPRKernel(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  const T* vals = tiList[idx].vals;
+  const T* vals = tiList + (idx*n);
   auto A = flit::VectorCU<T>(vals, 3).getUnitVector();
   auto B = flit::VectorCU<T>(vals + 3, 3).getUnitVector();
   auto cross = A.cross(B);
@@ -34,6 +34,7 @@ public:
 
   virtual size_t getInputsPerRun() override { return 6; }
   virtual std::vector<T> getDefaultInput() override {
+    auto n = getInputsPerRun();
     return flit::Vector<T>::getRandomVector(n).getData();
   }
 

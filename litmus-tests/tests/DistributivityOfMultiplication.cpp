@@ -13,13 +13,13 @@
 template <typename T>
 GLOBAL
 void
-DistOfMultKernel(const T* const* tiList, size_t n, double* results){
+DistOfMultKernel(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  const T* ti = tiList[idx*n];
+  const T* ti = tiList + (idx*n);
   T a = ti[0];
   T b = ti[1];
   T c = ti[2];

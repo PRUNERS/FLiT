@@ -8,15 +8,15 @@
 template <typename T>
 GLOBAL
 void
-RaUKern(const flit::CuTestInput<T>* tiList, double* results){
+RaUKern(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
   auto theta = M_PI;
-  auto ti = tiList[idx];
-  auto A = flit::VectorCU<T>(ti.vals, ti.length);
+  const T* ti = tiList + (idx*n);
+  auto A = flit::VectorCU<T>(ti, n);
   auto orig = A;
   A = A.rotateAboutZ_3d(theta);
   A = A.rotateAboutZ_3d(-theta);

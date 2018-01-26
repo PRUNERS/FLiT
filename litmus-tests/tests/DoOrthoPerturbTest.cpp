@@ -13,28 +13,28 @@ namespace {
 template <typename T>
 GLOBAL
 void
-DoOPTKernel(const T* const* tiList, double* results){
+DoOPTKernel(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
 
-  auto ti = tiList[idx];
+  const T* ti = tiList + (idx*n);
   double score = 0.0;
-  cuvector<unsigned> orthoCount(dim, 0.0);
+  cuvector<unsigned> orthoCount(n, 0.0);
   // we use a double literal above as a workaround for Intel 15-16 compiler
   // bug:
   // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-  flit::VectorCU<T> a(ti, ti.size());
+  flit::VectorCU<T> a(ti, n);
   flit::VectorCU<T> b = a.genOrthoVector();
 
   T backup;
 
-  for(decltype(dim) r = 0; r < dim; ++r){
+  for(decltype(n) r = 0; r < n; ++r){
     T &p = a[r];
     backup = p;
-    for(decltype(iters) i = 0; i < iters; ++i){
+    for(int i = 0; i < iters; ++i){
       auto tmp = flit::as_int(p);
       p = flit::as_float(++tmp); //yeah, this isn't perfect
       //p = std::nextafter(p, std::numeric_limits<T>::max());
@@ -64,8 +64,9 @@ public:
   virtual size_t getInputsPerRun() override { return 16; }
   virtual std::vector<T> getDefaultInput() override {
     auto dim = getInputsPerRun();
-    ti = std::vector<T>(dim);
-    for(decltype(dim) x = 0; x < dim; ++x) ti[x] = static_cast<T>(1 << x);
+    std::vector<T> ti(dim);
+    for(decltype(dim) x = 0; x < dim; ++x)
+      ti[x] = static_cast<T>(1 << x);
     return ti;
   }
 
@@ -89,7 +90,7 @@ protected:
     for(decltype(dim) r = 0; r < dim; ++r){
       T &p = a[r];
       backup = p;
-      for(decltype(iters) i = 0; i < iters; ++i){
+      for(int i = 0; i < iters; ++i){
         //cout << "r:" << r << ":i:" << i << std::std::endl;
 
         p = std::nextafter(p, std::numeric_limits<T>::max());

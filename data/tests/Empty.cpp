@@ -4,13 +4,13 @@
 
 template <typename T>
 GLOBAL
-void Empty_kernel(const T* const* tiList, size_t n, double* results) {
+void Empty_kernel(const T* tiList, size_t n, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  const T* ti = tiList[idx*n];
+  const T* ti = tiList + (idx*n);
   results[idx] = ti[0];
 }
 

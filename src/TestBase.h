@@ -73,12 +73,12 @@ std::ostream& operator<<(std::ostream& os, const TestResult& res);
 
 /** Definition of a kernel function used by CUDA tests
  *
- * @param arr: array of input arrays, already allocated and populated
- * @param n: length of the second dimension of arr
+ * @param arr: array of input arrays, flattened, already allocated and populated
+ * @param n: length of each input, it is the stride
  * @param results: array where to store results, already allocated
  */
 template <typename T>
-using KernelFunction = void (const T* const*, size_t, double*);
+using KernelFunction = void (const T*, size_t, double*);
 
 template <typename T>
 using CudaDeleter = void (T*);
