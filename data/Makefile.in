@@ -436,8 +436,8 @@ runbuild: $(TARGETS) $(CUTARGETS) groundtruth
 
 .PHONY: clean
 clean:
-	# Here we do it this way because we were running into the error of too many
-	# arguments given to rm.
+	@# Here we do it this way because we were running into the error of too many
+	@# arguments given to rm.
 	$(foreach obj,$(OBJ_CLEAN),rm -f $(obj);)
 	$(foreach obj,$(DEP_CLEAN),rm -f $(obj);)
 	-rmdir $(OBJ_DIR)

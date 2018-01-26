@@ -71,63 +71,14 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const TestResult& res);
 
-template <typename T>
-struct TestInput {
-  size_t iters;
-  size_t highestDim;
-  size_t ulp_inc;
-  T min;
-  T max;
-  std::vector<T> vals;
-};
-
-/** A simple structure used in CUDA tests.
- *
- * It stores some values and a pointer, but does not do dynamic allocation nor
- * deallocation.  The struct does not own the vals pointer at all, just holds
- * its value.
- *
- * The vals are intended to be read-only, because they are inputs.
- */
-template <typename T>
-struct CuTestInput {
-  size_t iters = 100;
-  size_t highestDim = 0;
-  size_t ulp_inc = 1;
-  T min = -6;
-  T max = 6;
-  const T* vals = nullptr; // values with size length
-  size_t length = 0;
-
-  /** Creates a CuTestInput object containing the same info as the TestInput
-   *
-   * This is in a separate function instead of constructor to still allow
-   * initializer lists to construct
-   *
-   * Note, the vals pointer will point to the internal data from the TestInput
-   * object.  It is unsafe for the CuTestInput object to outlive this TestInput
-   * object unless you set a new value for vals.
-   */
-  static CuTestInput<T> fromTestInput(const TestInput<T>& ti) {
-    CuTestInput<T> cti {};
-    cti.iters       = ti.iters;
-    cti.highestDim  = ti.highestDim;
-    cti.ulp_inc     = ti.ulp_inc;
-    cti.min         = ti.min;
-    cti.max         = ti.max;
-    cti.vals        = ti.vals.data();
-    cti.length      = ti.vals.size();
-    return cti;
-  }
-};
-
 /** Definition of a kernel function used by CUDA tests
  *
- * @param arr: array of test input objects, already allocated and populated
+ * @param arr: array of input arrays, flattened, already allocated and populated
+ * @param n: length of each input, it is the stride
  * @param results: array where to store results, already allocated
  */
 template <typename T>
-using KernelFunction = void (const CuTestInput<T>*, double*);
+using KernelFunction = void (const T*, size_t, double*);
 
 template <typename T>
 using CudaDeleter = void (T*);
@@ -182,37 +133,25 @@ public:
  */
 template <typename T>
 std::vector<double>
-runKernel(KernelFunction<T>* kernel, const TestInput<T>& ti, size_t stride) {
+runKernel(KernelFunction<T>* kernel, const std::vector<T>& ti, size_t stride) {
 #ifdef __CUDA__
   size_t runCount;
   if (stride < 1) { // the test takes no inputs
     runCount = 1;
   } else {
-    runCount = ti.vals.size() / stride;
+    runCount = ti.size() / stride;
   }
 
-  std::unique_ptr<CuTestInput<T>[]> ctiList(new CuTestInput<T>[runCount]);
-  for (size_t i = 0; i < runCount; i++) {
-    ctiList[i] = CuTestInput<T>::fromTestInput(ti);
-    // just point to a place in the array, like a slice
-    ctiList[i].vals = ti.vals.data() + i * stride;
-    ctiList[i].length = stride;
-  }
   std::unique_ptr<double[]> cuResults(new double[runCount]);
   // Note: __CPUKERNEL__ mode is broken by the change to run the kernel in
   // multithreaded mode.  Its compilation is broken.
   // TODO: fix __CPUKERNEL__ mode for testing.
 # ifdef __CPUKERNEL__
-  kernel(ctiList, cuResults);
+  kernel(ti.data(), stride, cuResults);
 # else  // not __CPUKERNEL__
-  auto deviceVals = makeCudaArr(ti.vals.data(), ti.vals.size());
-  // Reset the pointer value to device addresses
-  for (size_t i = 0; i < runCount; i++) {
-    ctiList[i].vals = deviceVals.get() + i * stride;
-  }
-  auto deviceInput = makeCudaArr(ctiList.get(), runCount);
+  auto deviceVals = makeCudaArr(ti.data(), ti.size());
   auto deviceResult = makeCudaArr<double>(nullptr, runCount);
-  kernel<<<runCount,1>>>(deviceInput.get(), deviceResult.get());
+  kernel<<<runCount,1>>>(deviceVals.get(), stride, deviceResult.get());
   auto resultSize = sizeof(double) * runCount;
   checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult.get(), resultSize,
                              cudaMemcpyDeviceToHost));
@@ -241,11 +180,11 @@ public:
    *
    * @note This method is virtual, so it can be overridden by the test class if
    *   the test is such that it needs to change the notion of running the test
-   *   from only a TestInput object for each result pair.
+   *   from only a std::vector of inputs for each result pair.
    *
    * @see getInputsPerRun
    */
-  virtual std::vector<TestResult> run(const TestInput<T>& ti,
+  virtual std::vector<TestResult> run(const std::vector<T>& ti,
                                       const std::string &filebase,
                                       const bool shouldTime,
                                       const int timingLoops,
@@ -255,31 +194,27 @@ public:
     using std::chrono::duration;
     using std::chrono::duration_cast;
     std::vector<TestResult> results;
-    TestInput<T> emptyInput {
-      ti.iters, ti.highestDim, ti.ulp_inc, ti.min, ti.max, {}
-    };
+    std::vector<T> emptyInput;
     auto stride = getInputsPerRun();
-    std::vector<TestInput<T>> inputSequence;
+    std::vector<std::vector<T>> inputSequence;
 
     if (stride < 1) { // the test does not take any inputs
       inputSequence.push_back(ti);
     } else {
       // Split up the input.  One for each run
-      auto begin = ti.vals.begin();
-      auto runCount = ti.vals.size() / stride;
+      auto begin = ti.begin();
+      auto runCount = ti.size() / stride;
       for (decltype(runCount) i = 0; i < runCount; i++) {
         auto end = begin + stride;
-        TestInput<T> testRunInput = emptyInput;
-        testRunInput.vals = std::vector<T>(begin, end);
-        inputSequence.push_back(testRunInput);
+        inputSequence.emplace_back(std::vector<T>(begin, end));
         begin = end;
       }
     }
 
     // By default, the function to be timed is run_impl
-    std::function<Variant(const TestInput<T>&)> runner;
+    std::function<Variant(const std::vector<T>&)> runner;
     int runcount = 0;
-    runner = [this,&runcount] (const TestInput<T>& runInput) {
+    runner = [this,&runcount] (const std::vector<T>& runInput) {
       runcount++;
       return this->run_impl(runInput);
     };
@@ -287,7 +222,7 @@ public:
     // Use the cuda kernel if it is available by replacing runner
     auto kernel = getKernel();
     if (kernel != nullptr) {
-      runner = [kernel, stride, &runcount] (const TestInput<T>& ti) {
+      runner = [kernel, stride, &runcount] (const std::vector<T>& ti) {
         // TODO: implement this timer better.
         runcount++;
         auto scorelist = runKernel(kernel, ti, stride);
@@ -386,7 +321,7 @@ public:
    * in the following way:
    *   test->run(test->getDefaultInput());
    */
-  virtual TestInput<T> getDefaultInput() = 0;
+  virtual std::vector<T> getDefaultInput() = 0;
 
   /** The number of inputs per test run
    *
@@ -459,7 +394,7 @@ protected:
    * The returned value (whichever type is chosen) will be used by the public
    * virtual compare() method.
    */
-  virtual Variant run_impl(const TestInput<T>& ti) = 0;
+  virtual Variant run_impl(const std::vector<T>& ti) = 0;
 
 protected:
   const std::string id;
@@ -470,13 +405,13 @@ template <typename T>
 class NullTest : public TestBase<T> {
 public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
-  virtual TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
   virtual size_t getInputsPerRun() override { return 0; }
   virtual std::vector<TestResult> run(
-      const TestInput<T>&, const bool, const size_t) override { return {}; }
+      const std::vector<T>&, const bool, const size_t) override { return {}; }
 protected:
   virtual KernelFunction<T>* getKernel() override { return nullptr; }
-  virtual Variant run_impl(const TestInput<T>&) override { return {}; }
+  virtual Variant run_impl(const std::vector<T>&) override { return {}; }
 };
 
 class TestFactory {

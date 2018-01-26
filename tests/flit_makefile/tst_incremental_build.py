@@ -33,7 +33,7 @@ test that the correct files are updated.
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_dev(temp_dir)
 ...     # touch the header file and make sure it recompiles again
-...     time.sleep(0.001) # give some time before touching again
+...     time.sleep(0.01) # give some time before touching again
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_touch = compile_dev(temp_dir)
 Creating ...
@@ -75,7 +75,7 @@ Now, let's test the same thing with the "gt" target
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_gt(temp_dir)
 ...     # touch the header file and make sure it recompiles again
-...     time.sleep(0.001) # give some time before touching again
+...     time.sleep(0.01) # give some time before touching again
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_touch = compile_gt(temp_dir)
 Creating ...
@@ -103,5 +103,6 @@ import test_harness as th
 sys.path = before_path
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
+    from doctest import testmod
+    failures, tests = testmod()
+    sys.exit(failures)

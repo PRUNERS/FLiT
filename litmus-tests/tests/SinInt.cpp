@@ -13,17 +13,15 @@ public:
 
   virtual size_t getInputsPerRun() override { return 1; }
 
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
+  virtual std::vector<T> getDefaultInput() override {
     const T pi = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998L;
-    ti.vals = { pi };
-    return ti;
+    return { pi };
   }
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     const int zero = (rand() % 10) / 99;
-    const T val = ti.vals[0];
+    const T val = ti[0];
     const T score = std::sin(val + zero) / std::sin(val);
     flit::info_stream << id << ": score       = " << score       << std::endl;
     flit::info_stream << id << ": score - 1.0 = " << score - 1.0 << std::endl;

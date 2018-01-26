@@ -39,7 +39,7 @@ empty `run_impl()` function like the following:
 
 ```c++
 // Default implementation does nothing
-virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+virtual flit::Variant run_impl(const std::vector<T>& ti) override {
   FLIT_UNUSED(ti);
   return flit::Variant();
 }
@@ -53,7 +53,7 @@ meaningful:
 
 ```c++
 template<>
-flit::Variant MyTestClass<double>::run_impl(const flit::TestInput<double>& ti) {
+flit::Variant MyTestClass<double>::run_impl(const std::vector<double>& ti) {
    // test logic here ...
    return something_meaningful;
 }

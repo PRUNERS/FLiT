@@ -13,15 +13,16 @@
 template <typename T>
 GLOBAL
 void
-DistOfMultKernel(const flit::CuTestInput<T>* tiList, double* results){
+DistOfMultKernel(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  T a = tiList[idx].vals[0];
-  T b = tiList[idx].vals[1];
-  T c = tiList[idx].vals[2];
+  const T* ti = tiList + (idx*n);
+  T a = ti[0];
+  T b = ti[1];
+  T c = ti[2];
 
   auto distributed = (a * c) + (b * c);
   results[idx] = distributed;
@@ -34,17 +35,17 @@ public:
     : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 3; }
-  virtual flit::TestInput<T> getDefaultInput() override;
+  virtual std::vector<T> getDefaultInput() override;
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override {
     return DistOfMultKernel;
   }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    T a = ti.vals[0];
-    T b = ti.vals[1];
-    T c = ti.vals[2];
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    T a = ti[0];
+    T b = ti[1];
+    T c = ti[2];
 
     auto distributed = (a * c) + (b * c);
 
@@ -63,18 +64,16 @@ protected:
 
 // Define the inputs
 template<>
-inline flit::TestInput<float>
+inline std::vector<float>
 DistributivityOfMultiplication<float>::getDefaultInput() {
   auto convert = [](uint32_t x) {
     return flit::as_float(x);
   };
 
-  flit::TestInput<float> ti;
-
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
   // to specify enough decimal digits to get the same floating-point value
-  ti.vals = {
+  std::vector<float> ti = {
     convert(0x6b8b4567),
     convert(0x65ba0c1e),
     convert(0x49e753d2),
@@ -124,18 +123,16 @@ DistributivityOfMultiplication<float>::getDefaultInput() {
 }
 
 template<>
-inline flit::TestInput<double>
+inline std::vector<double>
 DistributivityOfMultiplication<double>::getDefaultInput() {
   auto convert = [](uint64_t x) {
     return flit::as_float(x);
   };
 
-  flit::TestInput<double> ti;
-
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
   // to specify enough decimal digits to get the same floating-point value
-  ti.vals = {
+  std::vector<double> ti = {
     convert(0x7712d691ff8158c1),
     convert(0x7a71b704fdd6a840),
     convert(0x019b84dddaba0d31),
@@ -181,7 +178,7 @@ DistributivityOfMultiplication<double>::getDefaultInput() {
 }
 
 template<>
-inline flit::TestInput<long double>
+inline std::vector<long double>
 DistributivityOfMultiplication<long double>::getDefaultInput() {
   // Here we are assuming that long double represents 80 bits
   auto convert = [](uint64_t left_half, uint64_t right_half) {
@@ -191,12 +188,10 @@ DistributivityOfMultiplication<long double>::getDefaultInput() {
     return flit::as_float(val);
   };
 
-  flit::TestInput<long double> ti;
-
   // Put in canned values of previously found diverging inputs
   // These are entered as hex values to maintain the exact value instead of trying
   // to specify enough decimal digits to get the same floating-point value
-  ti.vals = {
+  std::vector<long double> ti = {
       convert(0x2b99, 0x2bb4d082ca2e7ec7),  //  3.586714e-1573
       convert(0x725a, 0x14c0a0cd445b52d5),  //  6.131032e+3879
       convert(0x075d, 0x0bc91b713fc2fba5),  //  4.278225e-4366

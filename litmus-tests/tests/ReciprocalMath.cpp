@@ -11,19 +11,17 @@ public:
 
   virtual size_t getInputsPerRun() override { return 5; }
 
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.vals = { .1, 1.1e3, -.1, -1.1e3, 1/3 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { .1, 1.1e3, -.1, -1.1e3, 1/3 };
   }
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    T a = ti.vals[0];
-    T b = ti.vals[1];
-    T c = ti.vals[2];
-    T d = ti.vals[3];
-    T m = ti.vals[4];
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    T a = ti[0];
+    T b = ti[1];
+    T c = ti[2];
+    T d = ti[3];
+    T m = ti[4];
 
     a = a/m;
     b = b/m;

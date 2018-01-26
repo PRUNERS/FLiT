@@ -31,7 +31,7 @@ def main(arguments, prog=sys.argv[0]):
     parser.add_argument('--exec-jobs', type=int, default=1,
                         help='''
                             The number of parallel jobs to use for the call to
-                            CNU make when performing the test executtion after
+                            GNU make when performing the test executtion after
                             the full compilation has finished.  The default is
                             to only run one test at a time in order to allow
                             them to not conflict and to generate accurate
