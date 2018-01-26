@@ -6,46 +6,6 @@
 #include <iomanip>
 #include <type_traits>
 
-namespace {
-
-  template <typename T>
-  T get_tiny1() { static_assert(false, "Unimplemented type"); }
-
-  template <typename T>
-  T get_tiny2() { static_assert(false, "Unimplemented type"); }
-
-  template <>
-  float get_tiny1<float>(){
-    return 1.175494351-38;
-  }
-
-  template <>
-  double get_tiny1<double>(){
-    return 2.2250738585072014e-308;
-  }
-
-  template <>
-  long double get_tiny1<long double>(){
-    return 3.362103143112093506262e-4931L;
-  }
-
-  template <>
-  float get_tiny2<float>(){
-    return 1.175494352-38;
-  }
-
-  template <>
-  double get_tiny2<double>(){
-    return 2.2250738585072015e-308;
-  }
-
-  template <>
-  long double get_tiny2<long double>(){
-    return 3.362103143112093506263e-4931L;
-  }
-
-} // end of unnamed namespace
-
 template <typename T>
 class FtoDecToF: public flit::TestBase<T> {
 public:
@@ -53,7 +13,7 @@ public:
 
   virtual size_t getInputsPerRun() override { return 1; }
   virtual std::vector<T> getDefaultInput() override {
-    return {std::nextafter(T(0.0), T(1.0))};
+    return { std::numeric_limits<T>::min() };
   }
 
 protected:
@@ -64,12 +24,12 @@ protected:
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
     uint16_t ddigs = nlim.digits * std::log10(2) + 1;
     std::ostringstream res;
-    res << std::setprecision(ddigs) << ti.vals[0];
+    res << std::setprecision(ddigs) << ti[0];
     std::string dstr;
     dstr = res.str();
     T backAgain;
     std::istringstream(dstr) >> backAgain;
-    return ti.vals[0] - backAgain;
+    return ti[0] - backAgain;
   }
 
   using flit::TestBase<T>::id;
@@ -83,13 +43,13 @@ public:
 
   virtual size_t getInputsPerRun() override { return 1; }
   virtual std::vector<T> getDefaultInput() override {
-    return {std::nextafter(T(0.0), T(1.0))};
+    return { std::numeric_limits<T>::min() };
   }
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    return ti.vals[0] - ti.vals[0] / 2;
+    return ti[0] - ti[0] / 2;
   }
   using flit::TestBase<T>::id;
 };
@@ -302,7 +262,7 @@ protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    auto res = (T)0.0 / ti.vals[0];
+    auto res = (T)0.0 / ti[0];
     return res;
   }
   using flit::TestBase<T>::id;
@@ -518,10 +478,12 @@ public:
 
   virtual size_t getInputsPerRun() override { return 3; }
   virtual std::vector<T> getDefaultInput() override {
+    const T eps = std::numeric_limits<T>::min();
+    const T next = std::nextafter(eps, std::numeric_limits<T>::infinity());
     return {
       flit::getRandSeq<T>()[0],
-      get_tiny1<T>(),
-      get_tiny2<T>(),
+      eps,
+      next,
     };
   }
 protected:
@@ -542,10 +504,12 @@ public:
 
   virtual size_t getInputsPerRun() override { return 3; }
   virtual std::vector<T> getDefaultInput() override {
+    const T eps = std::numeric_limits<T>::min();
+    const T next = std::nextafter(eps, std::numeric_limits<T>::infinity());
     return {
       flit::getRandSeq<T>()[0],
-      get_tiny1<T>(),
-      get_tiny2<T>(),
+      eps,
+      next,
     };
   }
 protected:
