@@ -1,5 +1,5 @@
-#ifndef CU_VECTOR_HPP
-#define CU_VECTOR_HPP
+#ifndef CUVECTOR_H
+#define CUVECTOR_H
 
 #include "CUHelpers.h"
 
@@ -89,45 +89,6 @@ public:
   // reuse the move assignment operator and copy constructor
   HOST_DEVICE cuvector& operator=(const cuvector& rhs) { *this = cuvector<T>(rhs); return *this; }
   HOST cuvector& operator=(const std::vector<T>& rhs) { *this = cuvector<T>(rhs); return *this; }
-//  HOST_DEVICE
-//  cuvector&
-//  operator=(const cuvector& rhs){
-//    if (tsize > 0) delete[] _data;
-//    tsize = 0;
-//    vsize = rhs.vsize;
-//    if (vsize > 0) {
-//      _data = new T[vsize];
-//      invalid = _data == nullptr;
-//      if (!invalid) {
-//        for (cvs_t x = 0; x < vsize; ++x) {
-//          _data[x] = rhs[x];
-//        }
-//        tsize=vsize;
-//      }
-//    }
-//    return *this;
-//  }
-//
-//  HOST
-//  cuvector&
-//  operator=(const std::vector<T>& rhs){
-//    // Reuse the move assignment operator and copy constructor
-//    *this = cuvector<T>(rhs);
-//    return *this;
-//    if (tsize > 0) delete[] _data;
-//    vsize = rhs.size();
-//    if (vsize > 0) {
-//      _data = new T[vsize];
-//      invalid = _data == nullptr;
-//      if(!invalid){
-//        for(cvs_t x = 0; x < vsize; ++x){
-//          _data[x] = rhs[x];
-//        }
-//        tsize=vsize;
-//      }
-//    }
-//    return *this;
-//  }
 
   // move support
   // Unfortunately, we cannot provide moves from std::vector
@@ -189,13 +150,10 @@ public:
   HOST_DEVICE
   inline void
   emplace_back(Args&&... args){
-    printf("hi from emplace\n");
     if(vsize == tsize) grow();
-    printf("emp2\n");
     if(!invalid){
       _data[vsize++] = T(std::forward<Args>(args)...);
     }
-    printf("emp3\n");
   }
 
   HOST_DEVICE
@@ -223,4 +181,4 @@ public:
   size() const noexcept {return vsize;}
 };
 
-#endif // CU_VECTOR_HPP
+#endif // CUVECTOR_H

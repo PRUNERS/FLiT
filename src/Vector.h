@@ -1,6 +1,8 @@
 #ifndef FLIT_VECTOR_H
 #define FLIT_VECTOR_H
 
+#include "flitHelpers.h"
+
 #include <algorithm>        // for std::generate
 #include <cmath>            // for std::sqrt
 #include <cstdlib>          // for std::abs

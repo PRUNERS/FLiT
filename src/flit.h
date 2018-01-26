@@ -4,10 +4,12 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
-#include "flitHelpers.h"
 #include "Matrix.h"
+#include "MatrixCU.h"
 #include "TestBase.h"
 #include "Vector.h"
+#include "VectorCU.h"
+#include "flitHelpers.h"
 
 #ifdef __CUDA__
 //#include <cuda.h>
