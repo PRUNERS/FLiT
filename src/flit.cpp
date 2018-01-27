@@ -8,7 +8,6 @@
 #include <type_traits>
 #include <typeinfo>
 
-#include <cassert>
 #include <cstring>
 
 #include "flit.h"
@@ -24,11 +23,17 @@ namespace {
  */
 class CsvRow : public std::vector<std::string> {
 public:
+  // Inherit base class constructors
+  using std::vector<std::string>::vector;
+
   const CsvRow* header() const { return m_header; }
   void setHeader(CsvRow* head) { m_header = head; }
 
   using std::vector<std::string>::operator[];
   std::string const& operator[](std::string col) const {
+    if (m_header == nullptr) {
+      throw std::logic_error("No header defined");
+    }
     auto iter = std::find(m_header->begin(), m_header->end(), col);
     if (iter == m_header->end()) {
       std::stringstream message;
@@ -36,7 +41,7 @@ public:
       throw std::invalid_argument(message.str());
     }
     auto idx = iter - m_header->begin();
-    return this->operator[](idx);
+    return this->at(idx);
   }
 
 private:
@@ -85,22 +90,29 @@ private:
   std::istream &m_in;
 };
 
+/** Returns true if the element is in the container */
+template<typename Container, typename Element>
+bool isIn(Container c, Element e) {
+  return std::find(std::begin(c), std::end(c), e) != std::end(c);
+}
+
 } // end of unnamed namespace
 
 namespace flit {
 
-std::string FlitOptions::toString() {
+std::string FlitOptions::toString() const {
   std::ostringstream messanger;
   messanger
     << "Options:\n"
-    << "  help:         " << boolToString(this->help) << "\n"
-    << "  verbose:      " << boolToString(this->verbose) << "\n"
-    << "  timing:       " << boolToString(this->timing) << "\n"
-    << "  timingLoops:  " << this->timingLoops << "\n"
-    << "  listTests:    " << boolToString(this->listTests) << "\n"
-    << "  precision:    " << this->precision << "\n"
-    << "  output:       " << this->output << "\n"
-    << "  compareMode:  " << boolToString(this->compareMode) << "\n"
+    << "  help:           " << boolToString(this->help) << "\n"
+    << "  verbose:        " << boolToString(this->verbose) << "\n"
+    << "  timing:         " << boolToString(this->timing) << "\n"
+    << "  timingLoops:    " << this->timingLoops << "\n"
+    << "  timingRepeats:  " << this->timingRepeats << "\n"
+    << "  listTests:      " << boolToString(this->listTests) << "\n"
+    << "  precision:      " << this->precision << "\n"
+    << "  output:         " << this->output << "\n"
+    << "  compareMode:    " << boolToString(this->compareMode) << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
@@ -113,13 +125,14 @@ std::string FlitOptions::toString() {
   return messanger.str();
 }
 
-FlitOptions parseArguments(int argCount, char* argList[]) {
+FlitOptions parseArguments(int argCount, char const* const* argList) {
   FlitOptions options;
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };
   std::vector<std::string> verboseOpts       = { "-v", "--verbose" };
   std::vector<std::string> timingOpts        = { "-t", "--timing" };
   std::vector<std::string> loopsOpts         = { "-l", "--timing-loops" };
+  std::vector<std::string> repeatsOpts       = { "-r", "--timing-repeats" };
   std::vector<std::string> listTestsOpts     = { "-L", "--list-tests" };
   std::vector<std::string> precisionOpts     = { "-p", "--precision" };
   std::vector<std::string> outputOpts        = { "-o", "--output" };
@@ -145,6 +158,15 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
       }
       try {
         options.timingLoops = std::stoi(argList[++i]);
+      } catch (std::invalid_argument &) {
+        throw ParseException(std::string(argList[i]) + " is not an integer\n");
+      }
+    } else if (isIn(repeatsOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      try {
+        options.timingRepeats = std::stoi(argList[++i]);
       } catch (std::invalid_argument &) {
         throw ParseException(std::string(argList[i]) + " is not an integer\n");
       }
@@ -178,7 +200,8 @@ FlitOptions parseArguments(int argCount, char* argList[]) {
     options.tests.swap(options.compareFiles);
     options.tests.emplace_back("all");
     if (options.compareFiles.size() == 0) {
-      throw ParseException("You must pass in some test results in compare mode");
+      throw ParseException("You must pass in some test results in compare"
+                           " mode");
     }
   }
 
@@ -217,11 +240,23 @@ std::string usage(std::string progName) {
        "\n"
        "  -l LOOPS, --timing-loops LOOPS\n"
        "                  The number of loops to run with the timing.  The\n"
-       "                  default is to simply run one loop so that the timing\n"
-       "                  does not slow down execution by a significant\n"
-       "                  amount.  If you set it to 0 or a negative number,\n"
-       "                  then the number of loops will be determined\n"
-       "                  automatically and tuned for each individual test.\n"
+       "                  default is to determine automatically the number\n"
+       "                  of loops to run, specifically tuned for each\n"
+       "                  individual test.  This means each test will be run\n"
+       "                  multiple times by default.\n"
+       "\n"
+       "  -r REPEATS, --timing-repeats REPEATS\n"
+       "                  How many times to repeat the timing.  The default\n"
+       "                  is to repeat timing 3 times.  The timing reported\n"
+       "                  is the one that ran the fastest of all of the\n"
+       "                  repeats.\n"
+       "\n"
+       "                  Note: since repeats defaults to 3 and loops\n"
+       "                  default to be automatically determine, executing\n"
+       "                  a set of tests may take much longer than the user\n"
+       "                  anticipates, unless loops and repeats are set by\n"
+       "                  the user to a smaller value.  Or you could turn\n"
+       "                  off the timing with --no-timing.\n"
        "\n"
        "  -o OUTFILE, --output OUTFILE\n"
        "                  Output test results to the given file.  All other\n"
@@ -251,7 +286,9 @@ std::string usage(std::string progName) {
 }
 
 std::string readFile(const std::string &filename) {
-  std::ifstream filein(filename);
+  std::ifstream filein;
+  filein.exceptions(std::ios::failbit);
+  filein.open(filename);
   std::stringstream buffer;
   buffer << filein.rdbuf();
   return buffer.str();
@@ -271,7 +308,9 @@ std::vector<TestResult> parseResults(std::istream &in) {
       value = as_float(flit::stouint128(row["score"]));
     } else {
       // Read string from the resultfile
-      assert(row["resultfile"] != "NULL");
+      if (row["resultfile"] == "NULL") {
+        throw std::invalid_argument("must give score or resultfile");
+      }
       resultfile = row["resultfile"];
     }
 
@@ -308,11 +347,15 @@ std::string removeIdxFromName(const std::string &name) {
   std::string pattern("_idx"); // followed by 1 or more digits
   auto it = std::find_end(name.begin(), name.end(),
                           pattern.begin(), pattern.end());
-  // assert that after the pattern, all the remaining chars are digits.
-  assert(it == name.end() ||
-         std::all_of(it + pattern.size(), name.end(), [](char c) {
+  // make sure after the pattern, all the remaining chars are digits.
+  bool is_integer_idx = \
+        it == name.end() ||
+        std::all_of(it + pattern.size(), name.end(), [](char c) {
            return '0' <= c && c <= '9';
-         }));
+        });
+  if (!is_integer_idx) {
+    throw std::invalid_argument("in removeIdxFromName, non-integer idx");
+  }
   return std::string(name.begin(), it);
 }
 

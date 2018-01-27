@@ -51,6 +51,7 @@ Contents:
 * [FLiT Configuration File](documentation/flit-configuration-file.md)
   * [Available Compiler Flags](documentation/available-compiler-flags.md)
 * [Writing Test Cases](documentation/writing-test-cases.md)
+* [Test Executable](documentation/test-executable.md)
 * [Database Structure](documentation/database-structure.md)
 * [Analyze Results](documentation/analyze-results.md)
 * **Extra Tools**

@@ -4,14 +4,14 @@
 
 template <typename T>
 GLOBAL
-void Empty_kernel(const flit::CuTestInput<T>* tiList, double* results) {
+void Empty_kernel(const T* tiList, size_t n, double* results) {
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  auto& ti = tiList[idx];
-  results[idx] = ti.vals[0];
+  const T* ti = tiList + (idx*n);
+  results[idx] = ti[0];
 }
 
 /** An example test class to show how to make FLiT tests
@@ -27,7 +27,7 @@ public:
   /** Specify how many floating-point inputs your algorithm takes.
    * 
    * Can be zero.  If it is zero, then getDefaultInput should return an empty
-   * TestInput object which is as simple as "return {};"
+   * std::vector, which is as simple as "return {};"
    */
   virtual size_t getInputsPerRun() override { return 1; }
 
@@ -38,12 +38,10 @@ public:
    * time with getInputsPerRun() elements in ti.vals.
    *
    * If your algorithm takes no inputs, then you can simply return an empty
-   * TestInput object.  It is as simple as "return {};".
+   * std::vector object.  It is as simple as "return {};".
    */
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.vals = { 1.0 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { 1.0 };
   }
 
   /** Custom comparison methods
@@ -95,15 +93,22 @@ protected:
 
   /** Call or implement the algorithm here.
    *
-   * You need to return two scores, each are of type long double.  Usually the
-   * first value is used in analysis and the second score is ignored, so feel
-   * free to return 0.0 as the second value if you only need one metric.
+   * You return a flit::Variant which can represent one of a number of
+   * different types.  See the flit::Variant class for more details.  In short,
+   * it can represent a long double, a std::string, or an empty nothing (at
+   * least as of this writing.  See the flit::Variant documentation for more
+   * up-to-date information).  If you return an empty flit::Variant, then that
+   * result will not show up in the output (meaning that test is disabled).
+   * This is desirable for example if you only have functionality with double
+   * precision and want to disable the float and long double test
+   * implementations (simply have those return an empty flit::Variant).
    *
-   * You are guarenteed that ti will have exactly getInputsPerRun() inputs in
-   * it.  If getInputsPerRun() returns zero, then ti.vals will be empty.
+   * The value returned by run_impl is the same value used in compare()
+   * implemented above.
    */
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    return ti.vals[0];
+  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
+    FLIT_UNUSED(ti);
+    return flit::Variant();
   }
 
 protected:

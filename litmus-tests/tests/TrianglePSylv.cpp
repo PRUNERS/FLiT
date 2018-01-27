@@ -4,45 +4,53 @@
 
 #include <cmath>
 
+namespace {
+  const int iters = 200;
+} // end of unnamed namespace
+
 template <typename T>
 DEVICE
-T getCArea(const T a,
-          const T b,
-          const T c){
-  return (flit::cpow((T)2.0, (T)-2)*flit::csqrt((T)(a+(b+c))*(a+(b-c))*(c+(a-b))*(c-(a-b))));
+T getCArea(const T a, const T b, const T c) {
+  return flit::cpow(T(2.0), T(-2)) *
+         flit::csqrt(T((a + (b + c)) *
+                       (a + (b - c)) * 
+                       (c + (a - b)) *
+                       (c - (a - b))));
 }
 
 template <typename T>
-T getArea(const T a,
-          const T b,
-          const T c){
-  return (pow((T)2.0, -2)*sqrt((T)(a+(b+c))*(a+(b-c))*(c+(a-b))*(c-(a-b))));
+T getArea(const T a, const T b, const T c) {
+  return pow(T(2.0), T(-2)) *
+         sqrt(T((a + (b + c)) *
+                (a + (b - c)) * 
+                (c + (a - b)) *
+                (c - (a - b))));
 }
 
 template <typename T>
 GLOBAL
 void
-TrianglePSKern(const flit::CuTestInput<T>* tiList, double* results){
+TrianglePSKern(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  auto ti = tiList[idx];
-  T maxval = tiList[idx].vals[0];
+  const T* ti = tiList + (idx*n);
+  T maxval = ti[0];
   T a = maxval;
   T b = maxval;
-  T c = maxval * flit::csqrt((T)2.0);
-  const T delta = maxval / (T)ti.iters;
-  const T checkVal = (T)0.5 * b * a;
+  T c = maxval * flit::csqrt(T(2.0));
+  const T delta = maxval / T(iters);
+  const T checkVal = T(0.5) * b * a;
 
   double score = 0.0;
 
   for(T pos = 0; pos <= a; pos += delta){
-    b = flit::csqrt(flit::cpow(pos, (T)2.0) +
-	      flit::cpow(maxval, (T)2.0));
-    c = flit::csqrt(flit::cpow(a - pos, (T)2.0) +
-	      flit::cpow(maxval, (T)2.0));
+    b = flit::csqrt(flit::cpow(pos, T(2.0)) +
+	      flit::cpow(maxval, T(2.0)));
+    c = flit::csqrt(flit::cpow(a - pos, T(2.0)) +
+	      flit::cpow(maxval, T(2.0)));
     auto crit = getCArea(a,b,c);
     score += std::abs(crit - checkVal);
   }
@@ -55,23 +63,20 @@ public:
   TrianglePSylv(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 1; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.iters = 200;
-    ti.vals = { 6.0 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { 6.0 };
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override {return TrianglePSKern; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    T maxval = ti.vals[0];
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    T maxval = ti[0];
     // start as a right triangle
     T a = maxval;
     T b = maxval;
     T c = maxval * std::sqrt(2);
-    const T delta = maxval / (T)ti.iters;
+    const T delta = maxval / T(iters);
 
 
     // 1/2 b*h = A

@@ -8,6 +8,7 @@ file will replace this version when an installation takes place.
 import os
 
 all = [
+    'version',
     'script_dir',
     'doc_dir',
     'lib_dir',
@@ -31,6 +32,9 @@ include_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src'))
 
 # default configuration for flit init
 config_dir = os.path.join(script_dir, 'config')
+
+with open(os.path.join(config_dir, 'version.txt'), 'r') as version_file:
+    version = version_file.read().strip()
 
 # default data files such as Makefiles
 data_dir = os.path.join(script_dir, '..', '..', 'data')

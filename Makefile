@@ -30,14 +30,17 @@ DEPS           := $(SOURCE:.cpp=.d)
 
 # Install variables
 
-SCRIPT_DIR      = scripts/flitcli
-DATA_DIR        = data
-CONFIG_DIR      = $(SCRIPT_DIR)/config
-DOC_DIR         = documentation
+SCRIPT_DIR     := scripts/flitcli
+DATA_DIR       := data
+CONFIG_DIR     := $(SCRIPT_DIR)/config
+DOC_DIR        := documentation
 LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.cpp)
 LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.h)
 
 INSTALL_FLIT_CONFIG = $(PREFIX)/share/flit/scripts/flitconfig.py
+
+CAT            := $(if $(filter $(OS),Windows_NT),type,cat)
+VERSION        := $(shell $(CAT) $(CONFIG_DIR)/version.txt)
 
 .PHONY : all
 all: $(TARGET)
@@ -56,6 +59,7 @@ help:
 	@echo "              to install to a different directory.  The default"
 	@echo "              PREFIX value is /usr."
 	@echo '                exe: "make install PREFIX=$$HOME/installs/usr"'
+	@echo "  check       Run tests for FLiT framework (requires $(TARGET))"
 	@echo "  clean       Clean the intermediate build artifacts from building"
 	@echo "              $(TARGET)"
 	@echo "  distclean   Run clean and then also remove $(TARGET)"
@@ -72,10 +76,14 @@ $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
 .PRECIOUS: src/%.d
 -include $(SOURCE:%.cpp=%.d)
 
+check: $(TARGET)
+	$(MAKE) check --directory tests
+
 .PHONY: clean
 clean:
 	rm -f $(OBJ)
 	rm -f $(DEPS)
+	$(MAKE) clean --directory tests
 
 .PHONY: veryclean distclean
 veryclean: distclean
@@ -106,6 +114,7 @@ install: $(TARGET)
 	install -m 0644 $(DATA_DIR)/main.cpp $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/tests/Empty.cpp $(PREFIX)/share/flit/data/tests/
 	install -m 0644 $(DATA_DIR)/db/tables-psql.sql $(PREFIX)/share/flit/data/db/
+	install -m 0644 $(CONFIG_DIR)/version.txt $(PREFIX)/share/flit/config/
 	install -m 0644 $(CONFIG_DIR)/flit-default.toml.in $(PREFIX)/share/flit/config/
 	install -m 0644 $(LITMUS_TESTS) $(PREFIX)/share/flit/litmus-tests/
 	@echo "Generating $(INSTALL_FLIT_CONFIG)"
@@ -119,6 +128,7 @@ install: $(TARGET)
 	@echo "import os"                                                           >> $(INSTALL_FLIT_CONFIG)
 	@echo                                                                       >> $(INSTALL_FLIT_CONFIG)
 	@echo "all = ["                                                             >> $(INSTALL_FLIT_CONFIG)
+	@echo "    'version',"                                                      >> $(INSTALL_FLIT_CONFIG)
 	@echo "    'script_dir',"                                                   >> $(INSTALL_FLIT_CONFIG)
 	@echo "    'doc_dir',"                                                      >> $(INSTALL_FLIT_CONFIG)
 	@echo "    'lib_dir',"                                                      >> $(INSTALL_FLIT_CONFIG)
@@ -142,6 +152,10 @@ install: $(TARGET)
 	@echo                                                                       >> $(INSTALL_FLIT_CONFIG)
 	@echo "# default configuration for flit init"                               >> $(INSTALL_FLIT_CONFIG)
 	@echo "config_dir = '$(abspath $(PREFIX))/share/flit/config'"               >> $(INSTALL_FLIT_CONFIG)
+	@echo                                                                       >> $(INSTALL_FLIT_CONFIG)
+	@echo "# current version"                                                   >> $(INSTALL_FLIT_CONFIG)
+	@echo "with open(os.path.join(config_dir, 'version.txt'), 'r') as version_file:" >> $(INSTALL_FLIT_CONFIG)
+	@echo "    version = version_file.read().strip()"                           >> $(INSTALL_FLIT_CONFIG)
 	@echo                                                                       >> $(INSTALL_FLIT_CONFIG)
 	@echo "# default data files such as Makefile.in and main.cpp"               >> $(INSTALL_FLIT_CONFIG)
 	@echo "data_dir = '$(abspath $(PREFIX))/share/flit/data'"                   >> $(INSTALL_FLIT_CONFIG)

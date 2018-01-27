@@ -16,14 +16,14 @@ public:
   KahanSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 10000; }
-  virtual flit::TestInput<T> getDefaultInput() override;
+  virtual std::vector<T> getDefaultInput() override;
 
 protected:
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     Kahan<T> kahan;
     Shewchuk<T> chuk;
     T naive = 0.0;
-    for (auto val : ti.vals) {
+    for (auto val : ti) {
       chuk.add(val);
       kahan.add(val);
       naive += val;
@@ -54,16 +54,15 @@ namespace {
 } // end of unnamed namespace
 
 template <typename T>
-flit::TestInput<T> KahanSum<T>::getDefaultInput() {
-  flit::TestInput<T> ti;
+std::vector<T> KahanSum<T>::getDefaultInput() {
   auto dim = getInputsPerRun();
-  ti.highestDim = dim;
-  ti.vals = std::vector<T>(dim);
+  std::vector<T> ti(dim);
   auto toRepeat = getToRepeat<T>();
   for (decltype(dim) i = 0, j = 0;
        i < dim;
-       i++, j = (j+1) % toRepeat.size()) {
-    ti.vals[i] = toRepeat[j];
+       i++, j = (j+1) % toRepeat.size())
+  {
+    ti[i] = toRepeat[j];
   }
   return ti;
 }

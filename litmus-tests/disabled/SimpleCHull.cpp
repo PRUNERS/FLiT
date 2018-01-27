@@ -12,12 +12,12 @@ public:
   SimpleCHull(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun(){ return 0; }
-  virtual flit::TestInput<T> getDefaultInput(){ return {}; }
+  virtual std::vector<T> getDefaultInput(){ return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) {
     FLIT_UNUSED(ti);
     CHullEdges.clear();
     PointList.clear();

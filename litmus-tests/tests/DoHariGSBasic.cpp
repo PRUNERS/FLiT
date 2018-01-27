@@ -7,14 +7,15 @@
 template <typename T>
 GLOBAL
 void
-DoHGSBTestKernel(const flit::CuTestInput<T>* tiList, double* result){
+DoHGSBTestKernel(const T* tiList, size_t n, double* result){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
 
-  const T* vals = tiList[idx].vals;
+  const T* vals = tiList + (idx*n);
+
   flit::VectorCU<T> a(vals, 3);
   flit::VectorCU<T> b(vals + 3, 3);
   flit::VectorCU<T> c(vals + 6, 3);
@@ -39,20 +40,20 @@ public:
   DoHariGSBasic(std::string id) : flit::TestBase<T>(std::move(id)){}
 
   virtual size_t getInputsPerRun() override { return 9; }
-  virtual flit::TestInput<T> getDefaultInput() override;
+  virtual std::vector<T> getDefaultInput() override;
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return DoHGSBTestKernel; } 
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     using flit::operator<<;
 
     long double score = 0.0;
 
     //matrix = {a, b, c};
-    flit::Vector<T> a = {ti.vals[0], ti.vals[1], ti.vals[2]};
-    flit::Vector<T> b = {ti.vals[3], ti.vals[4], ti.vals[5]};
-    flit::Vector<T> c = {ti.vals[6], ti.vals[7], ti.vals[8]};
+    flit::Vector<T> a = {ti[0], ti[1], ti[2]};
+    flit::Vector<T> b = {ti[3], ti[4], ti[5]};
+    flit::Vector<T> c = {ti[6], ti[7], ti[8]};
 
     auto r1 = a.getUnitVector();
     //crit = r1[0];
@@ -99,13 +100,11 @@ namespace {
 } // end of unnamed namespace
 
 template <typename T>
-flit::TestInput<T> DoHariGSBasic<T>::getDefaultInput() {
+std::vector<T> DoHariGSBasic<T>::getDefaultInput() {
   T e = getSmallValue<T>();
 
-  flit::TestInput<T> ti;
-
   // Just one test
-  ti.vals = {
+  std::vector<T> ti = {
     1, e, e,  // vec a
     1, e, 0,  // vec b
     1, 0, e,  // vec c

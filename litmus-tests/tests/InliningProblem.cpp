@@ -11,10 +11,8 @@ public:
 
   virtual size_t getInputsPerRun() override { return 1; }
 
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.vals = { .1, 1.1e3, -.1, -1.1e3, 1/3 };
-    return ti;
+  virtual std::vector<T> getDefaultInput() override {
+    return { .1, 1.1e3, -.1, -1.1e3, 1/3 };
   }
 
 protected:
@@ -23,8 +21,8 @@ protected:
     const T x_again = -nx;
     return x_again;
   }
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
-    T a = ti.vals[0];
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
+    T a = ti[0];
     T also_a = identity(a);
 
     const T score = std::sqrt(a) * std::sqrt(also_a);

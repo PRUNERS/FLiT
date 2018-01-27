@@ -8,39 +8,6 @@
 
 #include <cmath>
 
-//this is a dummy -- needs to be implemented
-//the body of a different algo in CUDA is left
-//for instructional purposes
-// template <typename T>
-// GLOBAL
-// void
-// addNameHere(const flit::CuTestInput<T>* tiList, double* results){
-// #ifdef __CUDA__
-//   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-// #else
-//   auto idx = 0;
-// #endif
-//   auto ti = tiList[idx];
-//   T maxval = tiList[idx].vals[0];
-//   T a = maxval;
-//   T b = maxval;
-//   T c = maxval * flit::csqrt((T)2.0);
-//   const T delta = maxval / (T)ti.iters;
-//   const T checkVal = (T)0.5 * b * a;
-
-//   double score = 0.0;
-
-//   for(T pos = 0; pos <= a; pos += delta){
-//     b = flit::csqrt(flit::cpow(pos, (T)2.0) +
-// 	      flit::cpow(maxval, (T)2.0));
-//     c = flit::csqrt(flit::cpow(a - pos, (T)2.0) +
-// 	      flit::cpow(maxval, (T)2.0));
-//     auto crit = getCArea(a,b,c);
-//     score += std::abs(crit - checkVal);
-//   }
-//   results[idx] = score;
-// }
-
 //these are the helpers for the langois compensating algos
 //will be executed in their own right as well as supporting
 //other tests in this file
@@ -80,12 +47,12 @@ public:
   langDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -115,12 +82,12 @@ public:
   langCompDotFMA(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
@@ -153,12 +120,12 @@ public:
   langCompDot(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual flit::TestInput<T> getDefaultInput() override { return {}; }
+  virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;

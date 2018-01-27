@@ -7,13 +7,13 @@
 template <typename T>
 GLOBAL
 void
-DoSkewSCPRKernel(const flit::CuTestInput<T>* tiList, double* results){
+DoSkewSCPRKernel(const T* tiList, size_t n, double* results){
 #ifdef __CUDA__
   auto idx = blockIdx.x * blockDim.x + threadIdx.x;
 #else
   auto idx = 0;
 #endif
-  const T* vals = tiList[idx].vals;
+  const T* vals = tiList + (idx*n);
   auto A = flit::VectorCU<T>(vals, 3).getUnitVector();
   auto B = flit::VectorCU<T>(vals + 3, 3).getUnitVector();
   auto cross = A.cross(B);
@@ -33,24 +33,19 @@ public:
     : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 6; }
-  virtual flit::TestInput<T> getDefaultInput() override {
-    flit::TestInput<T> ti;
-    ti.min = -6;
-    ti.max = 6;
+  virtual std::vector<T> getDefaultInput() override {
     auto n = getInputsPerRun();
-    ti.highestDim = n;
-    ti.vals = flit::Vector<T>::getRandomVector(n).getData();
-    return ti;
+    return flit::Vector<T>::getRandomVector(n).getData();
   }
 
 protected:
   virtual flit::KernelFunction<T>* getKernel() override { return DoSkewSCPRKernel;}
 
-  virtual flit::Variant run_impl(const flit::TestInput<T>& ti) override {
+  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     flit::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
-    flit::Vector<T> A = { ti.vals[0], ti.vals[1], ti.vals[2] };
-    flit::Vector<T> B = { ti.vals[3], ti.vals[4], ti.vals[5] };
+    flit::Vector<T> A = { ti[0], ti[1], ti[2] };
+    flit::Vector<T> B = { ti[3], ti[4], ti[5] };
     A = A.getUnitVector();
     B = B.getUnitVector();
     flit::info_stream << "A (unit) is: " << std::endl << A << std::endl;
