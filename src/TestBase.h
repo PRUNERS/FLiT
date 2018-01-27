@@ -330,7 +330,7 @@ public:
    *
    * If the test input has many more inputs than this, then the run() function
    * will run the test as many times as it can with the amount of values given.
-   * For example, if the test requires 5 inputs, and the TestInput object
+   * For example, if the test requires 5 inputs, and the vector of test inputs
    * passed in has 27 inputs, then the test will be run 5 times, and the last
    * two inputs will be unused.
    */
