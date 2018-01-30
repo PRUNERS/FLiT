@@ -113,7 +113,7 @@ install: $(TARGET)
 	install -m 0644 $(DATA_DIR)/custom.mk $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/main.cpp $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/tests/Empty.cpp $(PREFIX)/share/flit/data/tests/
-	install -m 0644 $(DATA_DIR)/db/tables-psql.sql $(PREFIX)/share/flit/data/db/
+	install -m 0644 $(DATA_DIR)/db/tables-sqlite.sql $(PREFIX)/share/flit/data/db/
 	install -m 0644 $(CONFIG_DIR)/version.txt $(PREFIX)/share/flit/config/
 	install -m 0644 $(CONFIG_DIR)/flit-default.toml.in $(PREFIX)/share/flit/config/
 	install -m 0644 $(LITMUS_TESTS) $(PREFIX)/share/flit/litmus-tests/
