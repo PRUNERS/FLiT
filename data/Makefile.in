@@ -478,14 +478,14 @@ cleanlibflit:
 	rm -rf lib
 
 $(DEV_TARGET): lib/libflit.so
-$(GT_TARGET): lib/libflit.so
-$(TARGETS): lib/libflit.so
-$(CUTARGETS): lib/libflit.so
+$(GT_TARGET):  lib/libflit.so
+$(TARGETS):    lib/libflit.so
+$(CUTARGETS):  lib/libflit.so
 else
 $(DEV_TARGET): $(FLIT_LIB_DIR)/libflit.so
-$(GT_TARGET): $(FLIT_LIB_DIR)/libflit.so
-$(TARGETS): $(FLIT_LIB_DIR)/libflit.so
-$(CUTARGETS): $(FLIT_LIB_DIR)/libflit.so
+$(GT_TARGET):  $(FLIT_LIB_DIR)/libflit.so
+$(TARGETS):    $(FLIT_LIB_DIR)/libflit.so
+$(CUTARGETS):  $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 # include the build dependencies for gt and dev
