@@ -66,7 +66,7 @@ def is_sqlite(filename):
 
     return header[:16] == b'SQLite format 3\000'
 
-def extract_make_var(var, makefile='Makefile'):
+def extract_make_var(var, makefile='Makefile', directory='.'):
     '''
     Extracts the value of a particular variable within a particular Makefile.
 
@@ -94,8 +94,10 @@ def extract_make_var(var, makefile='Makefile'):
     with tempfile.NamedTemporaryFile(mode='w+') as fout:
         print('print-%:\n'
               "\t@echo '$*=$($*)'\n", file=fout, flush=True)
-        output = subp.check_output(['make', '-f', makefile, '-f', fout.name,
-                                    'print-' + var], stderr=subp.STDOUT)
+        output = subp.check_output(
+            ['make', '-f', makefile, '-f', fout.name, 'print-' + var,
+             '--directory', directory, '--no-print-directory'],
+            stderr=subp.STDOUT)
     output = output.strip().decode('utf-8')
     var_values = output.split('=', maxsplit=1)[1].split()
     return var_values
