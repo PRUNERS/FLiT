@@ -90,8 +90,19 @@ def bisect_search(is_bad, elements):
     @return minimal bad list of all elements that cause is_bad() to return True
 
     Here's an example of finding all negative numbers in a list
-    >>> sorted(bisect_search(lambda x,y: min(x) < 0, [1, 3, 4, 5, 10, -1, 0, -15]))
+    >>> call_count = 0
+    >>> def is_bad(x,y):
+    ...     global call_count
+    ...     call_count += 1
+    ...     return min(x) < 0
+    >>> x = bisect_search(is_bad, [1, 3, 4, 5, 10, -1, 0, -15])
+    >>> sorted(x)
     [-15, -1]
+
+    as a rough performance metric, we want to be sure our call count remains
+    low for the is_bad() function.
+    >>> call_count
+    6
     '''
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
@@ -99,12 +110,11 @@ def bisect_search(is_bad, elements):
 
     # TODO: since it is single tail recursion, convert to an iterative form
     bad_list = []
-    while is_bad(quest_list, known_list):
+    while len(quest_list) > 0 and is_bad(quest_list, known_list):
 
         # find one bad element
         Q = quest_list
         no_test = list(known_list)
-        bad_idx = 0
         while len(Q) > 1:
             # split the questionable list into two lists
             Q1 = Q[:len(Q) // 2]
@@ -117,19 +127,17 @@ def bisect_search(is_bad, elements):
                 #       and if that returns False, then mark Q2 as known so
                 #       that we don't need to search it again.
             else:
+                # optimization: mark Q1 as known, so that we don't need to
+                # search it again
+                quest_list = quest_list[len(Q1):]
+                known_list.extend(Q1)
                 # update the local search
-                bad_idx += len(Q1)
                 Q = Q2
                 no_test.extend(Q1)
-                # TODO: optimization: mark Q1 as known, so that we don't need
-                #       to search it again
 
-        bad_element = quest_list.pop(bad_idx)
+        bad_element = quest_list.pop(0)
         bad_list.append(bad_element)
         known_list.append(bad_element)
-        #print('known_list: ', known_list)
-        #print('bad_list:   ', bad_list)
-        #print('quest_list: ', quest_list)
 
         # double check that we found a bad element
         #assert is_bad([bad_element], known_list + quest_list)
