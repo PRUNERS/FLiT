@@ -13,6 +13,7 @@ import csv
 import datetime
 import hashlib
 import logging
+import multiprocessing
 import os
 import sqlite3
 import subprocess as subp
@@ -20,6 +21,120 @@ import sys
 import tempfile
 
 brief_description = 'Bisect compilation to identify problematic source code'
+
+def create_bisect_makefile(replacements, gt_src, trouble_src):
+    '''
+    Returns a tempfile.NamedTemporaryFile instance populated with the
+    replacements, gt_src, and trouble_src.  It is then ready to be executed by
+    'make bisect' from the correct directory.
+
+    @param replacements: (dict) key -> value.  The key is found in the
+        Makefile_bisect_binary.in and replaced with the corresponding value.
+    @param gt_src: (list) which source files would be compiled with the
+        ground-truth compilation within the resulting binary. 
+    @param trouble_src: (list) which source files would be compiled with the
+        trouble compilation within the resulting binary.
+
+    @return (tempfile.NamedTemporaryFile) a temporary makefile that is
+        populated to be able to compile the gt_src and the trouble_src into a
+        single executable.
+    '''
+    repl_copy = dict(replacements)
+    repl_copy['TROUBLE_SRC'] = '\n'.join(['TROUBLE_SRC      := {0}'.format(x)
+                                          for x in trouble_src]),
+    repl_copy['BISECT_GT_SRC'] = '\n'.join(['BISECT_GT_SRC    := {0}'.format(x)
+                                            for x in gt_src]),
+    # TODO: remove delete=False after done testing
+    makefile = tempfile.NamedTemporaryFile(prefix='flit-bisect-', suffix='.mk',
+                                           delete=False)
+    logging.info('Creating makefile: ' + makefile.name)
+    util.process_in_file(
+        os.path.join(conf.data_dir, 'Makefile_bisect_binary.in'),
+        makefile.name,
+        repl_copy,
+        overwrite=True)
+    return makefile
+
+def build_bisect(makefilename, directory, jobs=None):
+    '''
+    Creates the bisect executable by executing a parallel make.
+
+    @param makefilename: the filepath to the makefile
+    @param directory: where to execute make
+    @param jobs: number of parallel jobs.  Defaults to #cpus
+
+    @return None
+    '''
+    logging.info('Building the bisect executable')
+    if jobs is None:
+        jobs = multiprocessing.cpu_count()
+    subp.check_call(
+        [make, '-C', directory, '-f', makefilename, '-j', jobs, 'bisect'],
+        stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+
+def bisect_search(is_bad, elements):
+    '''
+    Performs the bisect search, attempting to minimize the bad list.  We could
+    go through the list one at a time, but that would cause us to call is_bad()
+    more than necessary.  Here we assume that calling is_bad() is expensive, so
+    we want to minimize calls to is_bad().  This function has
+      O(k*log(n))*O(is_bad)
+    where n is the size of the questionable_list and k is
+    the number of bad elements in questionable_list.
+
+    @param is_bad: a function that takes two arguments (maybe_bad_list,
+        maybe_good_list) and returns True if the maybe_bad_list has a bad
+        element
+    @param elements: contains bad elements, but potentially good elements too
+
+    @return minimal bad list of all elements that cause is_bad() to return True
+
+    Here's an example of finding all negative numbers in a list
+    >>> sorted(bisect_search(lambda x,y: min(x) < 0, [1, 3, 4, 5, 10, -1, 0, -15]))
+    [-15, -1]
+    '''
+    # copy the incoming list so that we don't modify it
+    quest_list = list(elements)
+    known_list = []
+
+    # TODO: since it is single tail recursion, convert to an iterative form
+    bad_list = []
+    while is_bad(quest_list, known_list):
+
+        # find one bad element
+        Q = quest_list
+        no_test = list(known_list)
+        bad_idx = 0
+        while len(Q) > 1:
+            # split the questionable list into two lists
+            Q1 = Q[:len(Q) // 2]
+            Q2 = Q[len(Q) // 2:]
+            if is_bad(Q1, no_test + Q2):
+                Q = Q1
+                no_test.extend(Q2)
+                # TODO: if the length of Q2 is big enough, test
+                #         is_bad(Q2, no_test + Q1)
+                #       and if that returns False, then mark Q2 as known so
+                #       that we don't need to search it again.
+            else:
+                # update the local search
+                bad_idx += len(Q1)
+                Q = Q2
+                no_test.extend(Q1)
+                # TODO: optimization: mark Q1 as known, so that we don't need
+                #       to search it again
+
+        bad_element = quest_list.pop(bad_idx)
+        bad_list.append(bad_element)
+        known_list.append(bad_element)
+        #print('known_list: ', known_list)
+        #print('bad_list:   ', bad_list)
+        #print('quest_list: ', quest_list)
+
+        # double check that we found a bad element
+        #assert is_bad([bad_element], known_list + quest_list)
+
+    return bad_list
 
 def main(arguments, prog=sys.argv[0]):
     parser = argparse.ArgumentParser(
@@ -132,34 +247,19 @@ def main(arguments, prog=sys.argv[0]):
     gt_src = sources[0:1]
     trouble_src = sources[1:]
 
-    with tempfile.NamedTemporaryFile(prefix='flit-bisect-', suffix='.mk',
-                                     delete=False) as makefile:
-        logging.info('Creating makefile: ' + makefile.name)
-        util.process_in_file(
-            os.path.join(conf.data_dir, 'Makefile_bisect_binary.in'),
-            makefile.name,
-            {
-                'Makefile': makefile.name,
-                'datetime': datetime.date.today().strftime("%B %d, %Y"),
-                'flit_version': conf.version,
-                'trouble_cc': compiler,
-                'trouble_optl': optl,
-                'trouble_switches': switches,
-                'trouble_id': trouble_hash,
-                'TROUBLE_SRC': '\n'.join(['TROUBLE_SRC      := {0}'.format(x)
-                                          for x in trouble_src]),
-                'BISECT_GT_SRC': '\n'.join(['BISECT_GT_SRC    := {0}'.format(x)
-                                            for x in gt_src]),
-            },
-            overwrite=True)
-        logging.debug(
-            'BISECT_TARGET = ' +
-            ', '.join(util.extract_make_var('BISECT_TARGET', makefile.name,
-                                            directory=args.directory)))
-        logging.debug(
-            'SOURCE = ' +
-            ', '.join(util.extract_make_var('SOURCE', makefile.name,
-                                            directory=args.directory)))
+    replacements = {
+        'Makefile': makefile.name,
+        'datetime': datetime.date.today().strftime("%B %d, %Y"),
+        'flit_version': conf.version,
+        'trouble_cc': compiler,
+        'trouble_optl': optl,
+        'trouble_switches': switches,
+        'trouble_id': trouble_hash,
+        };
+
+    makefile = create_bisect_makefile(replacements, gt_src, trouble_src)
+    build_bisect(makefile, args.directory)
+
     # TODO: should we delete these Makefiles?  I think so...
     #logging.info('Deleted makefile: ' + makefile.name)
 
