@@ -89,7 +89,8 @@ def bisect_search(is_bad, elements):
 
     @return minimal bad list of all elements that cause is_bad() to return True
 
-    Here's an example of finding all negative numbers in a list
+    Here's an example of finding all negative numbers in a list.  Not very
+    useful for this particular task, but it is demonstrative of how to use it.
     >>> call_count = 0
     >>> def is_bad(x,y):
     ...     global call_count
@@ -108,7 +109,6 @@ def bisect_search(is_bad, elements):
     quest_list = list(elements)
     known_list = []
 
-    # TODO: since it is single tail recursion, convert to an iterative form
     bad_list = []
     while len(quest_list) > 0 and is_bad(quest_list, known_list):
 
