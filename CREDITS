@@ -1,0 +1,24 @@
+This file is a partial list of people who have contributed to FLiT.
+If you have contributed a patch or made some other contribution to
+FLiT, please submit a patch or a pull request to this file to add
+yourself, and it will be done!
+
+The list is sorted by surname and formatted to allow easy grepping and
+beautification by scripts. The fields are: name (N), email (E), web-address
+(W), PGP key ID and fingerprint (P), description (D), and snail-mail address
+(S).
+
+N: Michael Bentley
+E: mikebentley15@gmail.com
+D: Co-founder
+D: Ph.D. Student at University of Utah
+
+N: Ian Briggs
+E: ianbriggsutah@gmail.com
+D: Creator of some litmus tests
+D: Research staff at the University of Utah
+
+N: Goef Sawaya
+E: fredricflinstone@gmail.com
+D: Co-founder
+D: Research Staff at the University of Utah
