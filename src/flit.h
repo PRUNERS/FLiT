@@ -143,17 +143,18 @@ namespace flit {
 
 /** Command-line options */
 struct FlitOptions {
-  bool help = false;        // show usage and exit
-  bool listTests = false;   // list available tests and exit
-  bool verbose = false;     // show debug verbose messages
+  bool help = false;         // show usage and exit
+  bool listTests = false;    // list available tests and exit
+  bool verbose = false;      // show debug verbose messages
   std::vector<std::string> tests; // which tests to run
   std::string precision = "all";  // which precision to use
   std::string output = "";        // output file for results.  default stdout
-  bool timing = true;       // should we run timing?
-  int timingLoops = -1;     // < 1 means to auto-determine the timing loops
-  int timingRepeats = 3;    // return best of this many timings
+  bool timing = true;        // should we run timing?
+  int timingLoops = -1;      // < 1 means to auto-determine the timing loops
+  int timingRepeats = 3;     // return best of this many timings
   
-  bool compareMode = false; // compare results after running the test
+  bool compareMode = false;  // compare results after running the test
+  std::string compareGtFile; // ground truth results to use in compareMode
   std::vector<std::string> compareFiles; // files for compareMode
 
   /** Give a string representation of this struct for printing purposes */
@@ -466,6 +467,12 @@ inline int runFlitTests(int argc, char* argv[]) {
     }
   };
   std::sort(results.begin(), results.end(), testComparator);
+
+  // TODO: if we are in comparison mode, then don't simply run all tests - BAD
+  // TODO: find the full list of tests that need comparison - only require
+  //       those results
+  // TODO: load the results from options.comparisonGtFile before deciding to
+  //       run the tests for comparison
 
   // Let's now run the ground-truth comparisons
   if (options.compareMode) {

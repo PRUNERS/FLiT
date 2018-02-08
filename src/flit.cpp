@@ -196,6 +196,7 @@ std::string FlitOptions::toString() const {
     << "  precision:      " << this->precision << "\n"
     << "  output:         " << this->output << "\n"
     << "  compareMode:    " << boolToString(this->compareMode) << "\n"
+    << "  compareGtFile:  " << this->compareGtFile << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
@@ -220,6 +221,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   std::vector<std::string> precisionOpts     = { "-p", "--precision" };
   std::vector<std::string> outputOpts        = { "-o", "--output" };
   std::vector<std::string> compareMode       = { "-c", "--compare-mode" };
+  std::vector<std::string> compareGtFileOpts = { "-g", "--compare-gt" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
@@ -270,6 +272,11 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
       options.output = argList[++i];
     } else if (isIn(compareMode, current)) {
       options.compareMode = true;
+    } else if (isIn(compareGtFileOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.compareGtFile = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!options.compareMode && !isIn(allowedTests, current)) {
@@ -359,6 +366,20 @@ std::string usage(std::string progName) {
        "                  will want to make sure to call this option in the\n"
        "                  same directory used when executing the test\n"
        "                  executable.\n"
+       "\n"
+       "  -g GT_RESULTS, --compare-gt GT_RESULTS\n"
+       "                  Only applicable with --compare-mode on.\n"
+       "\n"
+       "                  Specify the csv file to use for the ground-truth\n"
+       "                  results.  If this is not specified, then the\n"
+       "                  associated tests will be executed in order to\n"
+       "                  compare.  If there are tests not in this results\n"
+       "                  file, but needing comparison, then those tests\n"
+       "                  will be executed to be able to compare.\n"
+       "\n"
+       "                  If the --output option is specified as well, then\n"
+       "                  only the extra tests that were executed and not\n"
+       "                  found in this results file will be output.\n"
        "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"

@@ -186,6 +186,7 @@ void tst_FlitOptions_toString() {
   opt.timingLoops = 100;
   opt.timingRepeats = 2;
   opt.compareMode = true;
+  opt.compareGtFile = "MY-GTFILE";
   opt.compareFiles = {"A", "B", "C", "D"};
 
   TH_EQUAL(opt.toString(),
@@ -199,6 +200,7 @@ void tst_FlitOptions_toString() {
       "  precision:      my precision\n"
       "  output:         my output\n"
       "  compareMode:    true\n"
+      "  compareGtFile:  MY-GTFILE\n"
       "  tests:\n"
       "    one\n"
       "    two\n"
