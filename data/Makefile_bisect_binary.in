@@ -104,7 +104,7 @@ TROUBLE_ID       := {trouble_id}
 
 MAKEFILE         := {Makefile}
 BISECT_TARGET    := run-$(notdir $(MAKEFILE:%.mk=%))
-TROUBLE_TARGET   := runbisect-trouble_$(TROUBLE_ID)
+TROUBLE_TARGET   := runbisect-trouble-$(TROUBLE_ID)
 
 TROUBLE_SRC      :=
 BISECT_GT_SRC    :=
@@ -158,5 +158,5 @@ $(OBJ_DIR)/%_bisect_$(TROUBLE_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	  -DFLIT_COMPILER='"$(TROUBLE_CC)"' \
 	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
-	  -DFLIT_FILENAME='"bisect-out"'
+	  -DFLIT_FILENAME='"bisect-default-out"'
 
