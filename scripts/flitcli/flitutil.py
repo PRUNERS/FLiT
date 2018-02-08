@@ -90,7 +90,7 @@ import os
 import sqlite3
 import sys
 
-def process_in_file(infile, dest, vals, overwrite=False):
+def process_in_file(infile, dest, vals, overwrite=False, remove_license=True):
     '''
     Process a file such as 'Makefile.in' where there are variables to
     replace.
@@ -101,14 +101,80 @@ def process_in_file(infile, dest, vals, overwrite=False):
         done.
     @param vals: dictionary of key -> val where we search and replace {key}
         with val everywhere in the infile.
+    @param overwrite: (default False) True means overwrite the destination.  If
+        False, then a warning will be printed to the console and this function
+        will return without doing anything.
+    @param remove_license: (default True) True means remove the License
+        declaration at the top of the file that has "-- LICENSE BEGIN --" at
+        the beginning and "-- LICENSE END --" at the end.  All lines between
+        including those lines will be removed.  False means ignore the license
+        section.  If the license section is not there, then this will have no
+        effect (except for a slight slowdown for searching)
+    @return None
     '''
     if not overwrite and os.path.exists(dest):
         print('Warning: {0} already exists, not overwriting'.format(dest),
               file=sys.stderr)
         return
     with open(infile, 'r') as fin:
+        if remove_license:
+            fin_content = ''.join(remove_license_lines(fin))
+        else:
+            fin_content = fin.read()
         with open(dest, 'w') as fout:
-            fout.write(fin.read().format(**vals))
+            fout.write(fin_content.format(**vals))
+
+def remove_license_lines(lines):
+    '''
+    Removes the license lines from the iterable of lines.  The license lines
+    section will start with a line containing "-- LICENSE BEGIN --" and will
+    end with a line containing "-- LICENSE END --".  All lines between the two
+    including those two lines will be removed.
+
+    @param lines: the iterable of lines to filter
+    @return lines
+
+    >>> remove_license_lines([
+    ...     '-- something here --',
+    ...     'bla bla bla -- LICENSE BEGIN --',
+    ...     'my name is part of the license!',
+    ...     '# -- LICENSE END -- **/',
+    ...     'hello',
+    ...     ])
+    ['-- something here --', 'hello']
+
+    >>> remove_license_lines([])
+    []
+
+    >>> remove_license_lines(['-- LICENSE BEGIN --', 'bla bla bla'])
+    []
+
+    >>> remove_license_lines(['bla bla bla', '-- LICENSE END --'])
+    ['bla bla bla', '-- LICENSE END --']
+
+    >>> lines = ['hello', '-- LICENSE BEGIN --', '-- LICENSE END --']
+    >>> remove_license_lines(lines)
+    ['hello']
+    '''
+    BEFORE = 0
+    IN_LICENSE = 1
+    AFTER = 2
+
+    state = BEFORE
+    filtered = []
+    for line in lines:
+        # state transitions
+        if state == BEFORE and '-- LICENSE BEGIN --' in line:
+            state = IN_LICENSE
+            continue
+        if state == IN_LICENSE and '-- LICENSE END --' in line:
+            state = AFTER
+            continue
+
+        if state != IN_LICENSE:
+            filtered.append(line)
+
+    return filtered
 
 def sqlite_open(filepath):
     '''

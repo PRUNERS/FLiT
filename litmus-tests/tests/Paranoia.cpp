@@ -78,9 +78,7 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
-
+ * -- LICENSE END -- */
 #undef V9
 /*  A C/C++ version of Kahan's Floating Point Test "Paranoia"
 

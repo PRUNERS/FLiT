@@ -78,9 +78,7 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
-
+ * -- LICENSE END -- */
 // These are compensating algorithms that use FMA to calculate
 // an EFT (error-free transformation)
 // see http://perso.ens-lyon.fr/nicolas.louvet/LaLo07b.pdf

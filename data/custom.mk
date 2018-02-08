@@ -79,7 +79,6 @@
 #    purposes.
 #
 # -- LICENSE END --
-
 # This file is included at the end of the copied Makefile.  If you have some
 # things you want to change about the Makefile, it is best to do it here.
 

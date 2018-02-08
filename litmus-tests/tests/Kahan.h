@@ -78,9 +78,7 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
-
+ * -- LICENSE END -- */
 #ifndef KAHAN_H
 #define KAHAN_H
 

@@ -78,9 +78,7 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
-
+ * -- LICENSE END -- */
 #include "Shewchuk.h"
 
 #include <flit.h>

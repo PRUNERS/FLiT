@@ -130,6 +130,28 @@ def main(arguments, prog=sys.argv[0]):
         },
         overwrite=args.overwrite)
 
+    def copy_files(dest_to_src, remove_license=True):
+        '''
+        @param dest_to_src: dictionary of dest -> src for copies
+        @param remove_license: (default True) True means remove the license
+            declaration at the top of each file copied.
+        @return None
+        '''
+        for dest, src in dest_to_src.items():
+            realdest = os.path.join(args.directory, dest)
+            print('Creating {0}'.format(realdest))
+            if not args.overwrite and os.path.exists(realdest):
+                print('Warning: {0} already exists, not overwriting'.format(realdest),
+                      file=sys.stderr)
+                continue
+            os.makedirs(os.path.dirname(os.path.realpath(realdest)), exist_ok=True)
+            if remove_license:
+                with open(src, 'r') as fin:
+                    with open(realdest, 'w') as fout:
+                        fout.writelines(flitutil.remove_license_lines(fin))
+            else:
+                shutil.copy(src, realdest)
+
     # Copy the remaining files over
     to_copy = {
         'custom.mk': os.path.join(conf.data_dir, 'custom.mk'),
@@ -137,22 +159,16 @@ def main(arguments, prog=sys.argv[0]):
         'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
         }
 
+    copy_files(to_copy, remove_license=True)
+
     # Add litmus tests too
     if args.litmus_tests:
+        litmus_to_copy = {}
         for srcfile in os.listdir(conf.litmus_test_dir):
             if os.path.splitext(srcfile)[1] in ('.cpp', '.h'):
                 srcpath = os.path.join(conf.litmus_test_dir, srcfile)
-                to_copy[os.path.join('tests', srcfile)] = srcpath
-
-    for dest, src in to_copy.items():
-        realdest = os.path.join(args.directory, dest)
-        print('Creating {0}'.format(realdest))
-        if not args.overwrite and os.path.exists(realdest):
-            print('Warning: {0} already exists, not overwriting'.format(realdest),
-                  file=sys.stderr)
-            continue
-        os.makedirs(os.path.dirname(os.path.realpath(realdest)), exist_ok=True)
-        shutil.copy(src, realdest)
+                litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
+        copy_files(litmus_to_copy)
 
     flit_update.main(['--directory', args.directory])
 
