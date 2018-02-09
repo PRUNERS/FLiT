@@ -359,7 +359,7 @@ public:
       std::string resultfile;
       if (testResult.type() == Variant::Type::String) {
         resultfile = filebase + "_" + name + "_" + typeid(T).name() + ".dat";
-        std::ofstream resultout(resultfile);
+        std::ofstream resultout = ofopen(resultfile);
         resultout << testResult.string();
         testResult = Variant(); // empty the result to release memory
       }

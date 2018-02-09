@@ -209,10 +209,7 @@ public:
   using key_type = std::pair<std::string, std::string>;
 
   void loadfile(const std::string &filename) {
-    std::ifstream resultfile;
-    resultfile.exceptions(std::ios::failbit);
-    resultfile.open(filename);
-    resultfile.exceptions(std::ios::goodbit);
+    std::ifstream resultfile = ifopen(filename);
     auto parsed = parseResults(resultfile);
     this->extend(parsed, filename);
   }
@@ -430,17 +427,14 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::ostream *outstream = &std::cout;
   std::string test_result_filebase(FLIT_FILENAME);
   if (!options.output.empty()) {
-    std::ofstream outputstream;
+    stream_deleter.reset(new std::ofstream());
+    outstream = stream_deleter.get();
     try {
-      outputstream.exceptions(std::ios::failbit);
-      outputstream.open(options.output);
+      static_cast<std::ofstream&>(*outstream) = ofopen(options.output);
     } catch (std::ios::failure &ex) {
       std::cerr << "Error: failed to open " << options.output << std::endl;
       return 1;
     }
-    outputstream.exceptions(std::ios::goodbit);
-    stream_deleter.reset(new std::ofstream(options.output));
-    outstream = stream_deleter.get();
     test_result_filebase = options.output;
   }
 
@@ -452,14 +446,12 @@ inline int runFlitTests(int argc, char* argv[]) {
     if (!options.compareGtFile.empty()) {
       std::ifstream fin;
       try {
-        fin.exceptions(std::ios::failbit);
-        fin.open(options.compareGtFile);
+        fin = ifopen(options.compareGtFile);
       } catch (std::ios::failure &ex) {
         std::cerr << "Error: file does not exist: " << options.compareGtFile
                   << std::endl;
         return 1;
       }
-      fin.exceptions(std::ios::goodbit);
       results = parseResults(fin);
     }
   }
@@ -535,13 +527,11 @@ inline int runFlitTests(int argc, char* argv[]) {
       {
         std::ifstream fin;
         try {
-          fin.exceptions(std::ios::failbit);
-          fin.open(fname);
+          fin = ifopen(fname);
         } catch (std::ios_base::failure &ex) {
           std::cerr << "Error: file does not exist: " << fname << std::endl;
           return 1;
         }
-        fin.exceptions(std::ios::goodbit);
         metadata = parseMetadata(fin);
       }
 
@@ -559,13 +549,11 @@ inline int runFlitTests(int argc, char* argv[]) {
       {
         std::ofstream fout;
         try {
-          fout.exceptions(std::ios::failbit);
-          fout.open(fname);
+          fout = ofopen(fname);
         } catch (std::ios::failure &ex) {
           std::cerr << "Error: could not write to " << fname << std::endl;
           return 1;
         }
-        fout.exceptions(std::ios::goodbit);
         outputResults(
             fileresults,
             fout,

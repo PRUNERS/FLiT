@@ -92,6 +92,7 @@
 #include "CUHelpers.h"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <ostream>
@@ -202,6 +203,37 @@ as_int(long double val) {
   const unsigned __int128 zero = 0;
   const auto temp = as_int_impl<long double, __int128>(val);
   return temp & (~zero >> 48);
+}
+
+/// Opens a file, but on failure, throws std::ios::failure
+/// T must be one of {fstream, ifstream, ofstream}
+template <typename T>
+T _openfile_check(const std::string &filename) {
+  T filestream;
+
+  // turn on exceptions on failure
+  filestream.exceptions(std::ios::failbit);
+
+  // opening will throw if the file does not exist or is not readable
+  filestream.open(filename);
+
+  // turn off all exceptions (back to the default behavior)
+  filestream.exceptions(std::ios::goodbit);
+
+  // This is okay because move constructor and move assignment are implemented
+  return filestream;
+}
+
+/// Opens a file for reading, but on failure, throws std::ios::failure
+inline std::ifstream ifopen(const std::string &filename) {
+  return _openfile_check<std::ifstream>(filename);
+}
+
+/// Opens a file for writing, but on failure, throws std::ios::failure
+inline std::ofstream ofopen(const std::string &filename) {
+  std::ofstream out = _openfile_check<std::ofstream>(filename);
+  out.precision(1000);  // lots of digits of precision
+  return out;
 }
 
 } // end of namespace flit
