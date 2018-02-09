@@ -87,6 +87,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <type_traits>
 #include <typeinfo>
@@ -288,14 +289,12 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   // names passed on the command line in compareMode are compareFiles not tests
   if (options.compareMode) {
     options.tests.swap(options.compareFiles);
-    options.tests.emplace_back("all");
     if (options.compareFiles.size() == 0) {
       throw ParseException("You must pass in some test results in compare"
                            " mode");
     }
-  }
-
-  if (options.tests.size() == 0 || isIn(options.tests, std::string("all"))) {
+  } else if (options.tests.size() == 0
+          || isIn(options.tests, std::string("all"))) {
     options.tests = getKeys(getTests());
   }
 
@@ -461,6 +460,32 @@ std::string removeIdxFromName(const std::string &name) {
     throw std::invalid_argument("in removeIdxFromName, non-integer idx");
   }
   return std::string(name.begin(), it);
+}
+
+std::vector<std::string> calculateMissingComparisons(const FlitOptions &opt) {
+  // We don't want to run the tests that are specified in the gt test file
+  std::set<std::string> gtTestNames;
+  if (!opt.compareGtFile.empty()) {
+    std::ifstream gtresultfile(opt.compareGtFile);
+    for (auto &result : parseResults(gtresultfile)) {
+      gtTestNames.emplace(result.name());
+    }
+  }
+
+  // TODO: double check that we have {testname, precision} pairings in there
+  // parse the incoming files to determine which tests need to be run
+  std::set<std::string> testNames;
+  for (auto fname : opt.compareFiles) {
+    std::ifstream resultfile(fname);
+    for (auto &result : parseResults(resultfile)) {
+      if (gtTestNames.end() == gtTestNames.find(result.name())) {
+        testNames.emplace(result.name());
+      }
+    }
+  }
+
+  std::vector<std::string> missingTests(testNames.begin(), testNames.end());
+  return missingTests;
 }
 
 } // end of namespace flit

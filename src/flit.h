@@ -189,17 +189,20 @@ FlitOptions parseArguments(int argCount, char const* const argList[]);
 /** Returns the usage information as a string */
 std::string usage(std::string progName);
 
-/** Read file contents entirely into a string */
+/// Read file contents entirely into a string
 std::string readFile(const std::string &filename);
 
-/** Parse the results file into a vector of results */
+/// Parse the results file into a vector of results
 std::vector<TestResult> parseResults(std::istream &in);
 
-/** Parse the result file to get metadata from the first row */
+/// Parse the result file to get metadata from the first row
 std::unordered_map<std::string, std::string> parseMetadata(std::istream &in);
 
-/** Test names sometimes are postfixed with "_idx" + <num>.  Remove that postfix */
+/// Test names sometimes are postfixed with "_idx" + <num>.  Remove that postfix
 std::string removeIdxFromName(const std::string &name);
+
+/// Returns the tests that need to be run for comparisons
+std::vector<std::string> calculateMissingComparisons(const FlitOptions &opt);
 
 class TestResultMap {
 public:
@@ -252,7 +255,9 @@ private:
     TestResult*,
     pair_hash<std::string, std::string>
     > m_testmap;   // (testname, precision) -> TestResult*
-  std::unordered_multimap<std::string, TestResult> m_filemap; // filename -> TestResult
+
+  // filename -> TestResult
+  std::unordered_multimap<std::string, TestResult> m_filemap;
 };
 
 inline void outputResults (
@@ -427,6 +432,17 @@ inline int runFlitTests(int argc, char* argv[]) {
     test_result_filebase = options.output;
   }
 
+  std::vector<TestResult> results;
+
+  // if comparison mode, then find out which tests we need to run
+  if (options.compareMode) {
+    options.tests = calculateMissingComparisons(options);
+    if (!options.compareGtFile.empty()) {
+      std::ifstream fin(options.compareGtFile);
+      results = parseResults(fin);
+    }
+  }
+
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
 
@@ -434,7 +450,6 @@ inline int runFlitTests(int argc, char* argv[]) {
   initDeviceData();
 #endif
 
-  std::vector<TestResult> results;
   auto testMap = getTests();
   for (auto& testName : options.tests) {
     auto factory = testMap[testName];
@@ -468,11 +483,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   };
   std::sort(results.begin(), results.end(), testComparator);
 
-  // TODO: if we are in comparison mode, then don't simply run all tests - BAD
-  // TODO: find the full list of tests that need comparison - only require
-  //       those results
-  // TODO: load the results from options.comparisonGtFile before deciding to
-  //       run the tests for comparison
+  // TODO: comparison mode should imply --no-timing
 
   // Let's now run the ground-truth comparisons
   if (options.compareMode) {

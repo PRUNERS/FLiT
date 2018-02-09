@@ -181,7 +181,8 @@ std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
 
   // Copy over the vals array from hist into the device
   if (vals != nullptr) {
-    checkCudaErrors(cudaMemcpy(ptr.get(), vals, arrSize, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaMemcpy(ptr.get(), vals, arrSize,
+                               cudaMemcpyHostToDevice));
   }
 
   return ptr;
@@ -472,7 +473,8 @@ protected:
    *   test inputs required according to the implemented getInputsPerRun().  So
    *   if that function returns 9, then the vector will have exactly 9
    *   elements.
-   * @return a single result.  You can return any type supported by flit::Variant.
+   * @return a single result.  You can return any type supported by
+   *   flit::Variant.
    *
    * The returned value (whichever type is chosen) will be used by the public
    * virtual compare() method.

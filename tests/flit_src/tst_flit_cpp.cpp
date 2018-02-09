@@ -90,10 +90,45 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <sstream>
 #include <vector>
 
 #include <cstdio>
+
+namespace {
+struct TempFile {
+public:
+  std::string name;
+  std::ofstream out;
+  TempFile() {
+    char fname_buf[L_tmpnam];
+    std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
+
+    name = fname_buf;
+    name += "-tst_flit.in";    // this makes the danger much less likely
+    out.exceptions(std::ios::failbit);
+    out.open(name);
+  }
+  ~TempFile() {
+    out.close();
+    std::remove(name.c_str());
+  }
+};
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T> &v) {
+  out << "[";
+  if (v.size() > 0) {
+    out << v[0];
+  }
+  for (int i = 1; i < v.size(); i++) {
+    out << ", " << v[i];
+  }
+  out << "]";
+  return out;
+}
+} // end of unnamed namespace
 
 namespace tst_CsvRow {
 void tst_CsvRow_header() {
@@ -308,6 +343,23 @@ void tst_parseArguments_long_flags() {
 }
 TH_REGISTER(tst_parseArguments_long_flags);
 
+void tst_parseArguments_compare_test_names() {
+  // tests that the parseArguments does not read the files - keep it simple
+  TempFile tmpf;
+  tmpf.out << "name,precision,score,resultfile,nanosec\n"
+           << "test1,d,0x0,NULL,0\n"
+           << "test2,d,0x0,NULL,0\n"
+           << "test3,d,0x0,NULL,0";
+  tmpf.out.flush();
+  const char* argList[3] = {"progName", "--compare-mode", tmpf.name.c_str()};
+  flit::FlitOptions expected;
+  expected.compareMode = true;
+  expected.compareFiles = {tmpf.name};
+  auto actual = flit::parseArguments(3, argList);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_parseArguments_compare_test_names);
+
 void tst_parseArguments_unrecognized_flag() {
   const char* argList[2] = {"progName", "-T"};
   TH_THROWS(flit::parseArguments(2, argList), flit::ParseException);
@@ -460,6 +512,7 @@ void tst_usage() {
   TH_VERIFY(usage_contains("-r REPEATS, --timing-repeats REPEATS"));
   TH_VERIFY(usage_contains("-o OUTFILE, --output OUTFILE"));
   TH_VERIFY(usage_contains("-c, --compare-mode"));
+  TH_VERIFY(usage_contains("-g GT_RESULTS, --compare-gt GT_RESULTS"));
   TH_VERIFY(usage_contains("-p PRECISION, --precision PRECISION"));
   TH_VERIFY(usage_contains("'float'"));
   TH_VERIFY(usage_contains("'double'"));
@@ -469,26 +522,7 @@ void tst_usage() {
 TH_REGISTER(tst_usage);
 
 void tst_readFile_exists() {
-  struct TmpFile {
-    std::ofstream out;
-    std::string fname;
-
-    TmpFile() {
-      char fname_buf[L_tmpnam];
-      auto ptr = std::tmpnam(fname_buf); // gives a warning, but I'm not worried
-
-      fname = fname_buf;
-      fname += "-tst_flit.in";           // this makes the danger much less likely
-      out.exceptions(std::ios::failbit);
-      out.open(fname);
-    }
-
-    ~TmpFile() {
-      out.close();
-      std::remove(fname.c_str());
-    }
-  };
-  TmpFile tmp;
+  TempFile tmpf;
   std::string contents =
     "This is the sequence of characters and lines\n"
     "that I want to check that the readFile()\n"
@@ -496,10 +530,10 @@ void tst_readFile_exists() {
     "\n"
     "\n"
     "You okay with that?";
-  tmp.out << contents;
-  tmp.out.flush();
+  tmpf.out << contents;
+  tmpf.out.flush();
 
-  TH_EQUAL(contents, flit::readFile(tmp.fname));
+  TH_EQUAL(contents, flit::readFile(tmpf.name));
 }
 TH_REGISTER(tst_readFile_exists);
 
@@ -622,3 +656,56 @@ void tst_removeIdxFromName() {
   TH_THROWS(flit::removeIdxFromName("hello there_idxa"), std::invalid_argument);
 }
 TH_REGISTER(tst_removeIdxFromName);
+
+void tst_calculateMissingComparisons_empty() {
+  flit::FlitOptions options;
+  std::vector<std::string> expected;
+  auto actual = calculateMissingComparisons(options);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_calculateMissingComparisons_empty);
+
+void tst_calculateMissingComparisons_noGtFile() {
+  flit::FlitOptions options;
+  options.compareMode = true;
+  TempFile tmpf;
+  tmpf.out << "name,precision,score,resultfile,nanosec\n"
+           << "test1,d,0x0,NULL,0\n"
+           << "test2,d,0x0,NULL,0\n"
+           << "test3,d,0x0,NULL,0";
+  tmpf.out.flush();
+  options.compareFiles = {tmpf.name};
+  std::vector<std::string> expected = {"test1", "test2", "test3"};
+  auto actual = calculateMissingComparisons(options);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_calculateMissingComparisons_noGtFile);
+
+void tst_calculateMissingComparisons_withGtFile() {
+  TempFile compf1;
+  compf1.out << "name,precision,score,resultfile,nanosec\n"
+             << "test1,d,0x0,NULL,0\n"
+             << "test2,d,0x0,NULL,0\n"
+             << "test3,d,0x0,NULL,0\n";
+  compf1.out.flush();
+  TempFile compf2;
+  compf2.out << "name,precision,score,resultfile,nanosec\n"
+             << "test2,d,0x0,NULL,0\n"
+             << "test4,d,0x0,NULL,0\n"
+             << "test6,d,0x0,NULL,0\n";
+  compf2.out.flush();
+  TempFile gtf;
+  gtf.out << "name,precision,score,resultfile,nanosec\n"
+          << "test1,d,0x0,NULL,0\n"
+          << "test2,d,0x0,NULL,0\n"
+          << "test5,d,0x0,NULL,0\n";
+  gtf.out.flush();
+  flit::FlitOptions options;
+  options.compareMode = true;
+  options.compareFiles = {compf1.name, compf2.name};
+  options.compareGtFile = gtf.name;
+  std::vector<std::string> expected = {"test3", "test4", "test6"};
+  auto actual = calculateMissingComparisons(options);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_calculateMissingComparisons_withGtFile);
