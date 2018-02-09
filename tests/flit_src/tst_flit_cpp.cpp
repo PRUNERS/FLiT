@@ -305,7 +305,7 @@ void tst_parseArguments_short_flags() {
   flit::FlitOptions expected;
   expected.help = true;
   expected.verbose = true;
-  expected.timing = true;
+  expected.timing = false;
   expected.listTests = true;
   expected.compareMode = true;
   expected.timingLoops = 323;
@@ -320,7 +320,7 @@ TH_REGISTER(tst_parseArguments_short_flags);
 
 void tst_parseArguments_long_flags() {
   const char* argList[17] = {"progName",
-    "--help", "--verbose", "--timing", "--list-tests", "--compare-mode",
+    "--help", "--verbose", "--list-tests", "--compare-mode", "--timing",
     "--timing-loops", "323",
     "--timing-repeats", "21",
     "--precision", "double",
@@ -354,6 +354,7 @@ void tst_parseArguments_compare_test_names() {
   const char* argList[3] = {"progName", "--compare-mode", tmpf.name.c_str()};
   flit::FlitOptions expected;
   expected.compareMode = true;
+  expected.timing = false;
   expected.compareFiles = {tmpf.name};
   auto actual = flit::parseArguments(3, argList);
   TH_EQUAL(expected, actual);

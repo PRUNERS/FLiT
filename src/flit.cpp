@@ -273,6 +273,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
       options.output = argList[++i];
     } else if (isIn(compareMode, current)) {
       options.compareMode = true;
+      options.timing = false;
     } else if (isIn(compareGtFileOpts, current)) {
       if (i+1 == argCount) {
         throw ParseException(current + " requires an argument");
@@ -358,6 +359,8 @@ std::string usage(std::string progName) {
        "                  pass in particular tests to execute because the\n"
        "                  arguments are interpreted as the results files to\n"
        "                  use in the comparison.\n"
+       "\n"
+       "                  This option implies --no-timing\n"
        "\n"
        "                  Note: for tests returning a string, the results\n"
        "                  file will contain a relative path to the file that\n"

@@ -209,7 +209,10 @@ public:
   using key_type = std::pair<std::string, std::string>;
 
   void loadfile(const std::string &filename) {
-    std::ifstream resultfile(filename);
+    std::ifstream resultfile;
+    resultfile.exceptions(std::ios::failbit);
+    resultfile.open(filename);
+    resultfile.exceptions(std::ios::goodbit);
     auto parsed = parseResults(resultfile);
     this->extend(parsed, filename);
   }
@@ -427,7 +430,16 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::ostream *outstream = &std::cout;
   std::string test_result_filebase(FLIT_FILENAME);
   if (!options.output.empty()) {
-    stream_deleter.reset(new std::ofstream(options.output.c_str()));
+    std::ofstream outputstream;
+    try {
+      outputstream.exceptions(std::ios::failbit);
+      outputstream.open(options.output);
+    } catch (std::ios::failure &ex) {
+      std::cerr << "Error: failed to open " << options.output << std::endl;
+      return 1;
+    }
+    outputstream.exceptions(std::ios::goodbit);
+    stream_deleter.reset(new std::ofstream(options.output));
     outstream = stream_deleter.get();
     test_result_filebase = options.output;
   }
@@ -438,7 +450,16 @@ inline int runFlitTests(int argc, char* argv[]) {
   if (options.compareMode) {
     options.tests = calculateMissingComparisons(options);
     if (!options.compareGtFile.empty()) {
-      std::ifstream fin(options.compareGtFile);
+      std::ifstream fin;
+      try {
+        fin.exceptions(std::ios::failbit);
+        fin.open(options.compareGtFile);
+      } catch (std::ios::failure &ex) {
+        std::cerr << "Error: file does not exist: " << options.compareGtFile
+                  << std::endl;
+        return 1;
+      }
+      fin.exceptions(std::ios::goodbit);
       results = parseResults(fin);
     }
   }
@@ -483,14 +504,17 @@ inline int runFlitTests(int argc, char* argv[]) {
   };
   std::sort(results.begin(), results.end(), testComparator);
 
-  // TODO: comparison mode should imply --no-timing
-
   // Let's now run the ground-truth comparisons
   if (options.compareMode) {
     TestResultMap comparisonResults;
   
     for (auto fname : options.compareFiles) {
-      comparisonResults.loadfile(fname);
+      try {
+        comparisonResults.loadfile(fname);
+      } catch (std::ios::failure &ex) {
+        std::cerr << "Error: failed to open file " << fname << std::endl;
+        return 1;
+      }
     }
 
     // compare mode is only done in the ground truth compilation
@@ -509,7 +533,15 @@ inline int runFlitTests(int argc, char* argv[]) {
       // read in the metadata to use in creating the file again
       std::unordered_map<std::string, std::string> metadata;
       {
-        std::ifstream fin(fname);
+        std::ifstream fin;
+        try {
+          fin.exceptions(std::ios::failbit);
+          fin.open(fname);
+        } catch (std::ios_base::failure &ex) {
+          std::cerr << "Error: file does not exist: " << fname << std::endl;
+          return 1;
+        }
+        fin.exceptions(std::ios::goodbit);
         metadata = parseMetadata(fin);
       }
 
@@ -525,7 +557,15 @@ inline int runFlitTests(int argc, char* argv[]) {
 
       // output back to a file
       {
-        std::ofstream fout(fname);
+        std::ofstream fout;
+        try {
+          fout.exceptions(std::ios::failbit);
+          fout.open(fname);
+        } catch (std::ios::failure &ex) {
+          std::cerr << "Error: could not write to " << fname << std::endl;
+          return 1;
+        }
+        fout.exceptions(std::ios::goodbit);
         outputResults(
             fileresults,
             fout,
