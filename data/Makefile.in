@@ -599,6 +599,9 @@ $(OBJ_DIR)/%_cu_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(NVCC) -c $(NVCC_CFLAGS) $(DEV_NVCC_CC) $< -o $@
 endif # ifdef HAS_CUDA
 
+# TODO: use the new --compare-gt flag and split this up into multiple executions
+# TODO: change the output from in-place to a new file for results
+# TODO: maybe precomapre results will be *.csv.partial or something...
 # Ground truth compilation rules
 $(GT_OUT): $(GT_TARGET) $(TARGET_OUTS) $(CUTARGET_OUTS)
 	./$(GT_TARGET) --output $(GT_OUT) \

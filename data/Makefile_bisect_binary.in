@@ -111,7 +111,6 @@ BISECT_GT_SRC    :=
 {TROUBLE_SRC}
 {BISECT_GT_SRC}
 
-# TODO: fill in TROUBLE_SRC and BISECT_GT_SRC
 TROUBLE_TARGET_OBJ := $(addprefix \
 		$(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 TROUBLE_OBJ      := $(addprefix \
