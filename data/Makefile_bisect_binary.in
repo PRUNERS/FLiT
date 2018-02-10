@@ -103,10 +103,11 @@ BISECT_LINK      := $(GT_CC)
 
 TROUBLE_ID       := {trouble_id}
 
-MAKEFILE         := {Makefile}
-BISECT_DIR       := bisect-01
-BISECT_TARGET    := $(BISECT_DIR)/run-$(notdir $(MAKEFILE:%.mk=%))
-TROUBLE_TARGET   := $(BISECT_DIR)/runbisect-trouble-$(TROUBLE_ID)
+MAKEFILE         := {makefile}
+NUMBER           := {number}
+BISECT_DIR       := {bisect_dir}
+BISECT_TARGET    := $(BISECT_DIR)/runbisect-$(NUMBER)
+TROUBLE_TARGET   := $(BISECT_DIR)/runtrouble-$(TROUBLE_ID)
 
 BISECT_GT_SRC    :=
 {BISECT_GT_SRC}
@@ -124,7 +125,7 @@ BISECT_OBJ       := $(BISECT_GT_OBJ)
 BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 
-TROUBLE_TARGET_OUT := $(TROUBBLE_TARGET:%=%-out)
+TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
 BISECT_OUT         := $(BISECT_TARGET:%=%-out)
 BISECT_RESULT      := $(BISECT_OUT:%=%-comparison.csv)
@@ -160,7 +161,7 @@ $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
 
 .PHONY: trouble
 trouble: $(TROUBLE_TARGET) $(GT_TARGET)
-trouble: $(TROUBLE_RESULT) $(TROUBLE_OUT)
+trouble: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
 
 .PHONY: bisect
 bisect: $(BISECT_TARGET) $(GT_TARGET)

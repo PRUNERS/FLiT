@@ -104,12 +104,62 @@ import tempfile
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
-def create_bisect_makefile(replacements, gt_src, trouble_src):
+def create_bisect_dir(parent):
     '''
-    Returns a tempfile.NamedTemporaryFile instance populated with the
-    replacements, gt_src, and trouble_src.  It is then ready to be executed by
-    'make bisect' from the correct directory.
+    Create a unique bisect directory named bisect-## where ## is the lowest
+    integer that doesn't collide with an already existing file or directory.
 
+    @param parent: the parent directory of where to create the bisect dir
+    @return the bisect directory name without parent prepended to it
+
+    >>> import tempfile
+    >>> import shutil
+    >>> import os
+
+    >>> tmpdir = tempfile.mkdtemp()
+    >>> create_bisect_dir(tmpdir)
+    'bisect-01'
+    >>> os.listdir(tmpdir)
+    ['bisect-01']
+
+    >>> create_bisect_dir(tmpdir)
+    'bisect-02'
+    >>> sorted(os.listdir(tmpdir))
+    ['bisect-01', 'bisect-02']
+
+    >>> create_bisect_dir(tmpdir)
+    'bisect-03'
+    >>> sorted(os.listdir(tmpdir))
+    ['bisect-01', 'bisect-02', 'bisect-03']
+
+    >>> create_bisect_dir(os.path.join(tmpdir, 'bisect-01'))
+    'bisect-01'
+    >>> sorted(os.listdir(tmpdir))
+    ['bisect-01', 'bisect-02', 'bisect-03']
+    >>> os.listdir(os.path.join(tmpdir, 'bisect-01'))
+    ['bisect-01']
+
+    >>> shutil.rmtree(tmpdir)
+    '''
+    num = 0
+    while True:
+        num += 1
+        bisect_dir = 'bisect-{0:02d}'.format(num)
+        try:
+            os.mkdir(os.path.join(parent, bisect_dir))
+        except FileExistsError:
+            pass # repeat the while loop and try again
+        else:
+            return bisect_dir
+
+def create_bisect_makefile(directory, replacements, gt_src, trouble_src):
+    '''
+    Returns the name of the created Makefile within the given directory, having
+    been populated with the replacements, gt_src, and trouble_src.  It is then
+    ready to be executed by 'make bisect' from the top-level directory of the
+    user's flit tests.
+
+    @param directory: (str) path where to put the created Makefil
     @param replacements: (dict) key -> value.  The key is found in the
         Makefile_bisect_binary.in and replaced with the corresponding value.
     @param gt_src: (list) which source files would be compiled with the
@@ -117,23 +167,34 @@ def create_bisect_makefile(replacements, gt_src, trouble_src):
     @param trouble_src: (list) which source files would be compiled with the
         trouble compilation within the resulting binary.
 
-    @return (tempfile.NamedTemporaryFile) a temporary makefile that is
-        populated to be able to compile the gt_src and the trouble_src into a
-        single executable.
+    @return the bisect makefile name without directory prepended to it
     '''
     repl_copy = dict(replacements)
     repl_copy['TROUBLE_SRC'] = '\n'.join(['TROUBLE_SRC      += {0}'.format(x)
                                           for x in trouble_src])
     repl_copy['BISECT_GT_SRC'] = '\n'.join(['BISECT_GT_SRC    += {0}'.format(x)
                                             for x in gt_src])
-    # TODO: remove delete=False after done testing
-    makefile = tempfile.NamedTemporaryFile(prefix='flit-bisect-', suffix='.mk',
-                                           delete=False)
-    repl_copy['Makefile'] = makefile.name
-    logging.info('Creating makefile: ' + makefile.name)
+
+    # Find the next unique file name available in directory
+    num = 0
+    while True:
+        num += 1
+        makefile = 'bisect-make-{0:02d}.mk'.format(num)
+        makepath = os.path.join(directory, makefile)
+        try:
+            with open(makepath, 'x'):
+                pass  # we just want to create the empty file
+        except FileExistsError:
+            pass
+        else:
+            break
+
+    repl_copy['makefile'] = makepath
+    repl_copy['number'] = '{0:02d}'.format(num)
+    logging.info('Creating makefile: ' + makepath)
     util.process_in_file(
         os.path.join(conf.data_dir, 'Makefile_bisect_binary.in'),
-        makefile.name,
+        makepath,
         repl_copy,
         overwrite=True)
     return makefile
@@ -304,9 +365,13 @@ def main(arguments, prog=sys.argv[0]):
     subp.check_call(['make', '-C', args.directory, 'Makefile'],
                     stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 
+    # create a unique directory for this bisect run
+    bisect_dir = create_bisect_dir(args.directory)
+    bisect_path = os.path.join(args.directory, bisect_dir)
+
     # keep a bisect.log of what was done
     logging.basicConfig(
-        filename=os.path.join(args.directory, 'bisect.log'),
+        filename=os.path.join(bisect_path, 'bisect.log'),
         filemode='w',
         format='%(asctime)s bisect: %(message)s',
         #level=logging.INFO)
@@ -330,6 +395,7 @@ def main(arguments, prog=sys.argv[0]):
     trouble_src = sources[1:]
 
     replacements = {
+        'bisect_dir': bisect_dir,
         'datetime': datetime.date.today().strftime("%B %d, %Y"),
         'flit_version': conf.version,
         'test_case': args.testcase,
@@ -343,11 +409,10 @@ def main(arguments, prog=sys.argv[0]):
     #       It is quite annoying as a user to simply issue a command and wait
     #       with no feedback for a long time.
 
-    makefile = create_bisect_makefile(replacements, gt_src, trouble_src)
-    build_bisect(makefile.name, args.directory)
+    makefile = create_bisect_makefile(bisect_path, replacements, gt_src, trouble_src)
+    makepath = os.path.join(bisect_path, makefile)
 
-    # TODO: should we delete these Makefiles?  I think so...
-    #logging.info('Deleted makefile: ' + makefile.name)
+    build_bisect(makepath, args.directory)
 
     # TODO: determine if the problem is on the linker's side
     #       I'm not yet sure the best way to do that
