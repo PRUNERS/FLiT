@@ -94,6 +94,7 @@
 #       include it here.
 -include Makefile
 
+PRECISION        := {precision}
 TEST_CASE        := {test_case}
 
 TROUBLE_CC       := {trouble_cc}
@@ -142,9 +143,9 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 -include $(TROUBLE_TARGET_DEPS)
 
 $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
-	./$< --output $@ $(TEST_CASE)
+	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE)
 $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
-	./$< --output $@ $(TEST_CASE)
+	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE)
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(LD_REQUIRED)

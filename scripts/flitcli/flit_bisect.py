@@ -336,6 +336,16 @@ def main(arguments, prog=sys.argv[0]):
                         #    ''')
     parser.add_argument('-C', '--directory', default='.',
                         help='The flit test directory to run the bisect tool')
+    parser.add_argument('-p', '--precision', action='store', required=True,
+                        choices=['float', 'double', 'long double'],
+                        help='''
+                            Which precision to use for the test.  This is a
+                            required argument, since it becomes difficult to
+                            know when a difference happens with multiple
+                            precision runs.  The choices are 'float', 'double',
+                            and 'long double'.
+                            ''')
+
     args = parser.parse_args(arguments)
 
     tomlfile = os.path.join(args.directory, 'flit-config.toml')
@@ -398,6 +408,7 @@ def main(arguments, prog=sys.argv[0]):
         'bisect_dir': bisect_dir,
         'datetime': datetime.date.today().strftime("%B %d, %Y"),
         'flit_version': conf.version,
+        'precision': args.precision,
         'test_case': args.testcase,
         'trouble_cc': compiler,
         'trouble_optl': optl,
