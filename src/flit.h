@@ -156,6 +156,7 @@ struct FlitOptions {
   bool compareMode = false;  // compare results after running the test
   std::string compareGtFile; // ground truth results to use in compareMode
   std::vector<std::string> compareFiles; // files for compareMode
+  std::string compareSuffix; // suffix to add when writing back compareFiles
 
   /** Give a string representation of this struct for printing purposes */
   std::string toString() const;
@@ -549,7 +550,7 @@ inline int runFlitTests(int argc, char* argv[]) {
       {
         std::ofstream fout;
         try {
-          fout = ofopen(fname);
+          fout = ofopen(fname + options.compareSuffix);
         } catch (std::ios::failure &ex) {
           std::cerr << "Error: could not write to " << fname << std::endl;
           return 1;

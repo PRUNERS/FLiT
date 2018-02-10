@@ -198,6 +198,7 @@ std::string FlitOptions::toString() const {
     << "  output:         " << this->output << "\n"
     << "  compareMode:    " << boolToString(this->compareMode) << "\n"
     << "  compareGtFile:  " << this->compareGtFile << "\n"
+    << "  compareSuffix:  " << this->compareSuffix << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
@@ -223,6 +224,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   std::vector<std::string> outputOpts        = { "-o", "--output" };
   std::vector<std::string> compareMode       = { "-c", "--compare-mode" };
   std::vector<std::string> compareGtFileOpts = { "-g", "--compare-gt" };
+  std::vector<std::string> compareSuffixOpts = { "-s", "--suffix" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
@@ -279,6 +281,11 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
         throw ParseException(current + " requires an argument");
       }
       options.compareGtFile = argList[++i];
+    } else if (isIn(compareSuffixOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.compareSuffix = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!options.compareMode && !isIn(allowedTests, current)) {
@@ -382,6 +389,20 @@ std::string usage(std::string progName) {
        "                  If the --output option is specified as well, then\n"
        "                  only the extra tests that were executed and not\n"
        "                  found in this results file will be output.\n"
+       "\n"
+       "  -s SUFFIX, --suffix SUFFIX\n"
+       "                  Only applicable with --compare-mode on.\n"
+       "\n"
+       "                  Typically in compare mode, each compare file is\n"
+       "                  read in, compared, and then rewritten over the top\n"
+       "                  of that compare file.  If you want to keep the\n"
+       "                  compare file untouched and instead output to a\n"
+       "                  different file, you can use this option to add a\n"
+       "                  suffix to the compared filename.\n"
+       "\n"
+       "                  In other words, the default value for this option\n"
+       "                  is the empty string, causing the filenames to\n"
+       "                  match.\n"
        "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"
