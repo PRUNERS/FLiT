@@ -143,22 +143,15 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 -include $(TROUBLE_TARGET_DEPS)
 
 $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
-	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE)
+	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
-	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE)
+	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(LD_REQUIRED)
 
 $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(TROUBLE_CC) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED)
-
-# TODO: create TROUBLE_OUT
-# TODO: create BISECT_OUT
-# TODO: create job for comparing BISECT_OUT with GT_OUT via gtrun
-# TODO: create job for compiling the BISECT_OUT or the comparison target
-
-# TODO: reminder: run everything with --no-timing
 
 .PHONY: trouble
 trouble: $(TROUBLE_TARGET) $(GT_TARGET)
@@ -167,7 +160,6 @@ trouble: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
 .PHONY: bisect
 bisect: $(BISECT_TARGET) $(GT_TARGET)
 bisect: $(BISECT_RESULT) $(BISECT_OUT)
-#bisect: $(GT_OUT) $(BISECT_OUT) $(TROUBLE_OUT)
 
 $(BISECT_DIR):
 	mkdir -p $(BISECT_DIR)
