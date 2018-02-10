@@ -332,6 +332,7 @@ def main(arguments, prog=sys.argv[0]):
     replacements = {
         'datetime': datetime.date.today().strftime("%B %d, %Y"),
         'flit_version': conf.version,
+        'test_case': args.testcase,
         'trouble_cc': compiler,
         'trouble_optl': optl,
         'trouble_switches': switches,

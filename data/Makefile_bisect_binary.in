@@ -94,6 +94,7 @@
 #       include it here.
 -include Makefile
 
+TEST_CASE        := {test_case}
 
 TROUBLE_CC       := {trouble_cc}
 TROUBLE_OPTL     := {trouble_optl}
@@ -103,24 +104,32 @@ BISECT_LINK      := $(GT_CC)
 TROUBLE_ID       := {trouble_id}
 
 MAKEFILE         := {Makefile}
-BISECT_TARGET    := run-$(notdir $(MAKEFILE:%.mk=%))
-TROUBLE_TARGET   := runbisect-trouble-$(TROUBLE_ID)
+BISECT_DIR       := bisect-01
+BISECT_TARGET    := $(BISECT_DIR)/run-$(notdir $(MAKEFILE:%.mk=%))
+TROUBLE_TARGET   := $(BISECT_DIR)/runbisect-trouble-$(TROUBLE_ID)
+
+BISECT_GT_SRC    :=
+{BISECT_GT_SRC}
 
 TROUBLE_SRC      :=
-BISECT_GT_SRC    :=
 {TROUBLE_SRC}
-{BISECT_GT_SRC}
 
 TROUBLE_TARGET_OBJ := $(addprefix \
 		$(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
-TROUBLE_OBJ      := $(addprefix \
-		$(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_GT_OBJ    := $(addprefix \
 		$(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%.cpp=%_gt.o)))
+TROUBLE_OBJ      := $(addprefix \
+		$(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_OBJ       := $(BISECT_GT_OBJ)
 BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 
+TROUBLE_TARGET_OUT := $(TROUBBLE_TARGET:%=%-out)
+TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
+BISECT_OUT         := $(BISECT_TARGET:%=%-out)
+BISECT_RESULT      := $(BISECT_OUT:%=%-comparison.csv)
+
+# TODO: test this on a mac
 ifeq ($(UNAME_S),Darwin)
 $(BISECT_TARGET):  lib/libflit.so
 $(TROUBLE_TARGET): lib/libflit.so
@@ -131,10 +140,15 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 -include $(TROUBLE_TARGET_DEPS)
 
-$(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk
+$(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
+	./$< --output $@ $(TEST_CASE)
+$(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
+	./$< --output $@ $(TEST_CASE)
+
+$(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(LD_REQUIRED)
 
-$(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk
+$(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(TROUBLE_CC) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED)
 
 # TODO: create TROUBLE_OUT
@@ -144,9 +158,17 @@ $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk
 
 # TODO: reminder: run everything with --no-timing
 
+.PHONY: trouble
+trouble: $(TROUBLE_TARGET) $(GT_TARGET)
+trouble: $(TROUBLE_RESULT) $(TROUBLE_OUT)
+
 .PHONY: bisect
-bisect: $(BISECT_TARGET) $(TROUBLE_TARGET) $(GT_TARGET)
+bisect: $(BISECT_TARGET) $(GT_TARGET)
+bisect: $(BISECT_RESULT) $(BISECT_OUT)
 #bisect: $(GT_OUT) $(BISECT_OUT) $(TROUBLE_OUT)
+
+$(BISECT_DIR):
+	mkdir -p $(BISECT_DIR)
 
 # ground-truth files are already specified in Makefile
 
