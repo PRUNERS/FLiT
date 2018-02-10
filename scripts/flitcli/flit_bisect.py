@@ -214,7 +214,22 @@ def build_bisect(makefilename, directory, jobs=None):
         jobs = multiprocessing.cpu_count()
     subp.check_call(
         ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), 'bisect'],
-        stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+        )#stdout=subp.DEVNULL)#, stderr=subp.DEVNULL)
+
+def is_result_bad(resultfile):
+    '''
+    Returns True if the results from the resultfile is considered 'bad',
+    meaning it is a different answer from the ground-truth.
+
+    @param resultfile: path to the results csv file after comparison
+    @return True if the result is different from ground-truth
+    '''
+    with open(resultfile, 'r') as fin:
+        parser = csv.DictReader(fin)
+        # should only have one row
+        for row in parser:
+            # identical to ground truth means comparison is zero
+            return float(row['comparison_d']) != 0.0
 
 def bisect_search(is_bad, elements):
     '''
@@ -401,9 +416,6 @@ def main(arguments, prog=sys.argv[0]):
     for source in sources:
         logging.debug('  ' + source)
 
-    gt_src = sources[0:1]
-    trouble_src = sources[1:]
-
     replacements = {
         'bisect_dir': bisect_dir,
         'datetime': datetime.date.today().strftime("%B %d, %Y"),
@@ -420,10 +432,33 @@ def main(arguments, prog=sys.argv[0]):
     #       It is quite annoying as a user to simply issue a command and wait
     #       with no feedback for a long time.
 
-    makefile = create_bisect_makefile(bisect_path, replacements, gt_src, trouble_src)
-    makepath = os.path.join(bisect_path, makefile)
+    def bisect_build_and_check(trouble_src, gt_src):
+        '''
+        Compiles the compilation with trouble_src compiled with the trouble
+        compilation and with gt_src compiled with the ground truth compilation.
 
-    build_bisect(makepath, args.directory)
+        @param trouble_src: source files to compile with trouble compilation
+        @param gt_src: source files to compile with ground truth compilation
+
+        @return True if the compilation has a non-zero comparison between this
+            mixed compilation and the full ground truth compilation.
+        '''
+        # TODO: log the trouble list
+        # TODO: log the result
+        # TODO: print feedback to the console
+        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
+                                          trouble_src)
+        makepath = os.path.join(bisect_path, makefile)
+
+        build_bisect(makepath, args.directory)
+        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                           args.directory)[0]
+        resultpath = os.path.join(args.directory, resultfile)
+        result_is_bad = is_result_bad(resultpath)
+        return result_is_bad
+
+    bad_sources = bisect_search(bisect_build_and_check, sources)
+    print("bad sources: ", bad_sources)
 
     # TODO: determine if the problem is on the linker's side
     #       I'm not yet sure the best way to do that
