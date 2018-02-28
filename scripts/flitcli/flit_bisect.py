@@ -243,7 +243,7 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
     if jobs is None:
         jobs = multiprocessing.cpu_count()
     kwargs = dict()
-    if verbose:
+    if not verbose:
         kwargs['stdout'] = subp.DEVNULL
         kwargs['stderr'] = subp.DEVNULL
     subp.check_call(
@@ -394,6 +394,12 @@ def main(arguments, prog=sys.argv[0]):
                             precision runs.  The choices are 'float', 'double',
                             and 'long double'.
                             ''')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='''
+                            Give verbose output including the output from the
+                            Makefiles.  The default is to be quiet and to only
+                            output short updates.
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -466,7 +472,7 @@ def main(arguments, prog=sys.argv[0]):
     #       It is quite annoying as a user to simply issue a command and wait
     #       with no feedback for a long time.
 
-    def bisect_build_and_check(trouble_src, gt_src, verbose=False):
+    def bisect_build_and_check(trouble_src, gt_src):
         '''
         Compiles the compilation with trouble_src compiled with the trouble
         compilation and with gt_src compiled with the ground truth compilation.
@@ -484,7 +490,7 @@ def main(arguments, prog=sys.argv[0]):
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
 
-        build_bisect(makepath, args.directory, verbose)
+        build_bisect(makepath, args.directory, verbose=args.verbose)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
