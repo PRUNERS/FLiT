@@ -490,11 +490,23 @@ def main(arguments, prog=sys.argv[0]):
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
 
+        sys.stdout.write('Created {0} - compiling and running'.format(makepath))
+        sys.stdout.flush()
+        logging.info('Created {0}'.format(makepath))
+        logging.info('Checking:')
+        for src in trouble_src:
+            logging.info('  ' + src)
+
         build_bisect(makepath, args.directory, verbose=args.verbose)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
         result_is_bad = is_result_bad(resultpath)
+
+        result_str = 'bad' if result_is_bad else 'good'
+        sys.stdout.write(' - {0}\n'.format(result_str))
+        logging.info('Result was {0}'.format(result_str))
+
         return result_is_bad
 
     bad_sources = bisect_search(bisect_build_and_check, sources)
