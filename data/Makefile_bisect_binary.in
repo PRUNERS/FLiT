@@ -133,7 +133,7 @@ SPLIT_OBJ        := $(addprefix \
 		$(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
 SPLIT_OBJ        += $(addprefix \
 		$(BISECT_OBJ_DIR)/,$(notdir \
-			$(SPLIT_SRC:%.cpp=%_bisect_$(TROUBLE_ID)_split_$(NUMBER).o)))
+			$(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
 TROUBLE_SYMBOLS  := $(addprefix \
 		$(BISECT_OBJ_DIR)/,$(notdir \
 			$(SPLIT_SRC:%.cpp=%_trouble_symbols_$(NUMBER).txt)))
@@ -218,19 +218,31 @@ $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(OBJ_DIR)/$1_gt_fPIC.o
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
-	objcopy \
-		--weaken-symbols=$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
-		$$(OBJ_DIR)/$1_gt_fPIC.o \
-		$$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o
+	if [ -s "$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
+		objcopy \
+			--weaken-symbols=$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
+			$$(OBJ_DIR)/$1_gt_fPIC.o \
+			$$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	else \
+		cp \
+			$$(OBJ_DIR)/$1_gt_fPIC.o \
+			$$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	fi
 
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
-$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt
+$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
-	objcopy \
-		--weaken-symbols=$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
-		$$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
-		$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o
+	if [ -s "$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
+		objcopy \
+			--weaken-symbols=$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
+			$$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
+			$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
+	else \
+		cp \
+			$$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
+			$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
+	fi
 
 endef
 

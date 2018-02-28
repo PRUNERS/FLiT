@@ -168,7 +168,7 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
     @param trouble_src: (list) which source files would be compiled with the
         trouble compilation within the resulting binary.
     @param split_symbol_map:
-        (dict fname -> tuple (list good symbols, list bad symbols))
+        (dict fname -> list [list good symbols, list bad symbols])
         Files to compile as a split between good and bad, specifying good and
         bad symbols for each file.
 
@@ -399,12 +399,12 @@ def main(arguments, prog=sys.argv[0]):
                         # TODO: get the default case to work
                         #help='''
                         #    The testcase to use.  If there is only one test
-                        #    case, then the default behavior is to use that test
-                        #    case.  If there are more than one test case, then
-                        #    you will need to specify one of them.  You can find
-                        #    the list of test cases by calling 'make dev' and
-                        #    then calling the created executable './devrun
-                        #    --list-tests'.
+                        #    case, then the default behavior is to use that
+                        #    test case.  If there are more than one test case,
+                        #    then you will need to specify one of them.  You
+                        #    can find the list of test cases by calling 'make
+                        #    dev' and then calling the created executable
+                        #    './devrun --list-tests'.
                         #    ''')
     parser.add_argument('-C', '--directory', default='.',
                         help='The flit test directory to run the bisect tool')
@@ -510,7 +510,8 @@ def main(arguments, prog=sys.argv[0]):
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
 
-        sys.stdout.write('Created {0} - compiling and running'.format(makepath))
+        sys.stdout.write('  Created {0} - compiling and running' \
+                         .format(makepath))
         sys.stdout.flush()
         logging.info('Created {0}'.format(makepath))
         logging.info('Checking:')
@@ -532,16 +533,103 @@ def main(arguments, prog=sys.argv[0]):
     update_gt_results(args.directory, verbose=args.verbose)
 
     print('Searching for bad source files:')
-    logging.info('Searching for bad source files under the trouble compilation')
+    logging.info('Searching for bad source files under the trouble'
+                 ' compilation')
     bad_sources = bisect_search(bisect_build_and_check, sources)
     print('  bad sources: ', bad_sources)
 
+    symbol_tuples = []
     for bad_src in bad_sources:
-        pass
-        #bad_obj = 
-        #symbols = 
-    #print('Searching for bad symbols in the bad sources:')
-    #logging.info('Searching for bad symbols in the bad sources')
+        bad_base = os.path.splitext(os.path.basename(bad_src))[0]
+        good_obj = os.path.join(args.directory, 'obj', bad_base + '_gt.o')
+        symbol_strings = subp.check_output([
+            'nm',
+            '--extern-only',
+            '--defined-only',
+            good_obj,
+            ]).splitlines()
+        demangled_symbol_strings = subp.check_output([
+            'nm',
+            '--extern-only',
+            '--defined-only',
+            '--demangle',
+            good_obj,
+            ]).splitlines()
+        for i in range(len(symbol_strings)):
+            symbol = symbol_strings[i].split(maxsplit=2)[2].decode('utf-8')
+            demangled = demangled_symbol_strings[i].split(maxsplit=2)[2] \
+                        .decode('utf-8')
+            symtype = symbol_strings[i].split()[1]
+            # We need to do all defined global symbols or we will get duplicate
+            # symbol linker error
+            #if symtype == b'T':
+            symbol_tuples.append((bad_src, symbol, demangled))
+
+    print('Searching for bad symbols in the bad sources:')
+    logging.info('Searching for bad symbols in the bad sources')
+    logging.info('Note: inlining disabled to isolate functions')
+    logging.info('Note: only searching over globally exported functions')
+    logging.debug('Symbols:')
+    for src, symbol, demangled in symbol_tuples:
+        logging.debug('  {0}: {1} -- {2}'.format(src, symbol, demangled))
+
+    def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
+        '''
+        Compiles the compilation with all files compiled under the ground truth
+        compilation except for the given symbols for the given files.
+
+        In order to be able to isolate these symbols, the files will need to be
+        compiled with -fPIC, but that is handled by the generated Makefile.
+
+        @param trouble_symbols: (tuple (src, symbol, demangled)) symbols to use
+            from the trouble compilation
+        @param gt_symbols: (tuple (src, symbol, demangled)) symbols to use from
+            the ground truth compilation
+
+        @return True if the compilation has a non-zero comparison between this
+            mixed compilation and the full ground truth compilation.
+        '''
+        all_sources = list(sources)  # copy the list of all source files
+        symbol_sources = [x[0] for x in trouble_symbols + gt_symbols]
+        trouble_src = []
+        gt_src = list(set(all_sources).difference(symbol_sources))
+        symbol_map = { x: [
+                            [y[1] for y in gt_symbols if y[0] == x],
+                            [z[1] for z in trouble_symbols if z[0] == x],
+                          ]
+                       for x in symbol_sources }
+
+        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
+                                          trouble_src, symbol_map)
+        makepath = os.path.join(bisect_path, makefile)
+
+        sys.stdout.write('  Created {0} - compiling and running' \
+                         .format(makepath))
+        sys.stdout.flush()
+        logging.info('Created {0}'.format(makepath))
+        logging.info('Checking:')
+        for src, symbol, demangled in trouble_symbols:
+            logging.info('  {0}: {1} -- {2}'.format(src, symbol, demangled))
+
+        build_bisect(makepath, args.directory, verbose=args.verbose)
+        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                           args.directory)[0]
+        resultpath = os.path.join(args.directory, resultfile)
+        result_is_bad = is_result_bad(resultpath)
+
+        result_str = 'bad' if result_is_bad else 'good'
+        sys.stdout.write(' - {0}\n'.format(result_str))
+        logging.info('Result was {0}'.format(result_str))
+
+        return result_is_bad
+
+    bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
+    print('  bad symbols:')
+    logging.info('BAD SYMBOLS:')
+    for src, symbol, demangled in bad_symbols:
+        print('    {0}: {1} -- {2}'.format(src, symbol, demangled))
+        logging.info('    {0}: {1} -- {2}'.format(src, symbol, demangled))
+
 
     # TODO: determine if the problem is on the linker's side
     #       I'm not yet sure the best way to do that
