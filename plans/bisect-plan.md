@@ -166,10 +166,16 @@ This approach has a few downsides:
 3. May not even be possible without writing my own tool.
 
 <span style="color: red">
-TODO: make tests that check this functionality with (1) both shared, (2) gt shared only, (3) trouble shared only, and (4) inlining.
+TODO: make tests that check this functionality with
+(1) both shared,
+(2) gt shared only,
+(3) trouble shared only, and
+(4) inlining.
 </span>
 
-I have actually found a way that works, but may have additional drawbacks.  Let me describe first the approach that was able to correctly identify the dot product within the `Vector` class in MFEM for `Example08`.
+I have actually found a way that works, but may have additional drawbacks.  Let
+me describe first the approach that was able to correctly identify the dot
+product within the `Vector` class in MFEM for `Example08`.
 
 1. Recompile both the good object file and the bad object file with `-fPIC`
 2. Create a list of all symbols in the bad object file:
@@ -197,7 +203,7 @@ ensure that certain functions won't get overridden with something like
 Quoted from Thiago Macieira [here](https://www.macieira.org/blog/2012/01/sorry-state-of-dynamic-libraries-on-linux/)
 
  > The `-fPIC` option doesn't enable only position-independent code. It also
- > enables ELF symbol interposition, which is when another module “steals” the
+ > enables ELF symbol interposition, which is when another module "steals" the
  > symbol. That happens normally by way of the copy relocations, but can also
  > happen if an `LD_PRELOAD`'ed module were to override those symbols. So the
  > compiler and linker must produce code that deals with that possibility.
