@@ -235,6 +235,7 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
 
     @param makefilename: the filepath to the makefile
     @param directory: where to execute make
+    @param verbose: False means block output from GNU make and running
     @param jobs: number of parallel jobs.  Defaults to #cpus
 
     @return None
@@ -249,6 +250,28 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
     subp.check_call(
         ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), 'bisect'],
         **kwargs)
+
+def update_gt_results(directory, verbose=False):
+    '''
+    Update the ground-truth.csv results file for FLiT tests within the given
+    directory.
+
+    @param directory: where to execute make
+    @param verbose: False means block output from GNU make and running
+    '''
+    sys.stdout.flush()
+    kwargs = dict()
+    if not verbose:
+        kwargs['stdout'] = subp.DEVNULL
+        kwargs['stderr'] = subp.DEVNULL
+    gt_resultfile = util.extract_make_var(
+        'GT_OUT', os.path.join(directory, 'Makefile'))[0]
+    logging.info('Updating ground-truth results - {0}'.format(gt_resultfile))
+    print('Updating ground-truth results -', gt_resultfile, end='')
+    subp.check_call(
+        ['make', '-C', directory, gt_resultfile], **kwargs)
+    print(' - done')
+    logging.info('Finished Updating ground-truth results')
 
 def is_result_bad(resultfile):
     '''
@@ -483,9 +506,6 @@ def main(arguments, prog=sys.argv[0]):
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
         '''
-        # TODO: log the trouble list
-        # TODO: log the result
-        # TODO: print feedback to the console
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
@@ -509,24 +529,23 @@ def main(arguments, prog=sys.argv[0]):
 
         return result_is_bad
 
+    update_gt_results(args.directory, verbose=args.verbose)
+
+    print('Searching for bad source files:')
+    logging.info('Searching for bad source files under the trouble compilation')
     bad_sources = bisect_search(bisect_build_and_check, sources)
-    print("bad sources: ", bad_sources)
+    print('  bad sources: ', bad_sources)
+
+    for bad_src in bad_sources:
+        pass
+        #bad_obj = 
+        #symbols = 
+    #print('Searching for bad symbols in the bad sources:')
+    #logging.info('Searching for bad symbols in the bad sources')
 
     # TODO: determine if the problem is on the linker's side
     #       I'm not yet sure the best way to do that
-    #       This is to be done later - first get for compilation problems
-
-    # TODO: Perform (in parallel?) binary search from ground-truth and from
-    #       problematic
-    # - create extra Makefile
-    # - run extra Makefile to determine if the problem is still there
-    # -
-
-    # TODO: Use the custom comparison function in the test class when
-    #       performing the binary search.
-
-    # TODO: autogenerate Makefiles in the /tmp directly, preferrably with the
-    #       tempfile module.
+    #       This is to be done later - first go for compilation problems
 
 
 if __name__ == '__main__':
