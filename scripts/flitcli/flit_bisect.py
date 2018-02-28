@@ -152,7 +152,8 @@ def create_bisect_dir(parent):
         else:
             return bisect_dir
 
-def create_bisect_makefile(directory, replacements, gt_src, trouble_src):
+def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
+                           split_symbol_map):
     '''
     Returns the name of the created Makefile within the given directory, having
     been populated with the replacements, gt_src, and trouble_src.  It is then
@@ -163,9 +164,13 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src):
     @param replacements: (dict) key -> value.  The key is found in the
         Makefile_bisect_binary.in and replaced with the corresponding value.
     @param gt_src: (list) which source files would be compiled with the
-        ground-truth compilation within the resulting binary. 
+        ground-truth compilation within the resulting binary.
     @param trouble_src: (list) which source files would be compiled with the
         trouble compilation within the resulting binary.
+    @param split_symbol_map:
+        (dict fname -> tuple (list good symbols, list bad symbols))
+        Files to compile as a split between good and bad, specifying good and
+        bad symbols for each file.
 
     @return the bisect makefile name without directory prepended to it
     '''
@@ -174,6 +179,8 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src):
                                           for x in trouble_src])
     repl_copy['BISECT_GT_SRC'] = '\n'.join(['BISECT_GT_SRC    += {0}'.format(x)
                                             for x in gt_src])
+    repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
+                                        for x in split_symbol_map])
 
     # Find the next unique file name available in directory
     num = 0
@@ -197,9 +204,32 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src):
         makepath,
         repl_copy,
         overwrite=True)
+
+    # Create the obj directory
+    if len(split_symbol_map) > 0:
+        try:
+            os.mkdir(os.path.join(directory, 'obj'))
+        except FileExistsError:
+            pass # ignore if the directory already exists
+
+    # Create the txt files containing symbol lists within the obj directory
+    for split_srcfile, split_symbols in split_symbol_map.items():
+        split_basename = os.path.splitext(os.path.basename(split_srcfile))[0]
+        split_base = os.path.join(directory, 'obj', split_basename)
+        trouble_symbols_fname = split_base + '_trouble_symbols_' \
+                + repl_copy['number'] + '.txt'
+        gt_symbols_fname = split_base + '_gt_symbols_' \
+                + repl_copy['number'] + '.txt'
+        gt_symbols, trouble_symbols = split_symbols
+
+        with open(gt_symbols_fname, 'w') as gt_fout:
+            gt_fout.writelines('\n'.join(str(x) for x in gt_symbols))
+        with open(trouble_symbols_fname, 'w') as trouble_fout:
+            trouble_fout.writelines('\n'.join(str(x) for x in trouble_symbols))
+
     return makefile
 
-def build_bisect(makefilename, directory, jobs=None):
+def build_bisect(makefilename, directory, verbose=False, jobs=None):
     '''
     Creates the bisect executable by executing a parallel make.
 
@@ -212,9 +242,13 @@ def build_bisect(makefilename, directory, jobs=None):
     logging.info('Building the bisect executable')
     if jobs is None:
         jobs = multiprocessing.cpu_count()
+    kwargs = dict()
+    if verbose:
+        kwargs['stdout'] = subp.DEVNULL
+        kwargs['stderr'] = subp.DEVNULL
     subp.check_call(
         ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), 'bisect'],
-        )#stdout=subp.DEVNULL)#, stderr=subp.DEVNULL)
+        **kwargs)
 
 def is_result_bad(resultfile):
     '''
@@ -432,7 +466,7 @@ def main(arguments, prog=sys.argv[0]):
     #       It is quite annoying as a user to simply issue a command and wait
     #       with no feedback for a long time.
 
-    def bisect_build_and_check(trouble_src, gt_src):
+    def bisect_build_and_check(trouble_src, gt_src, verbose=False):
         '''
         Compiles the compilation with trouble_src compiled with the trouble
         compilation and with gt_src compiled with the ground truth compilation.
@@ -447,10 +481,10 @@ def main(arguments, prog=sys.argv[0]):
         # TODO: log the result
         # TODO: print feedback to the console
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
-                                          trouble_src)
+                                          trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
 
-        build_bisect(makepath, args.directory)
+        build_bisect(makepath, args.directory, verbose)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -468,7 +502,7 @@ def main(arguments, prog=sys.argv[0]):
     #       problematic
     # - create extra Makefile
     # - run extra Makefile to determine if the problem is still there
-    # - 
+    # -
 
     # TODO: Use the custom comparison function in the test class when
     #       performing the binary search.

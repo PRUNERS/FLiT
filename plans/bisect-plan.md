@@ -177,7 +177,7 @@ I have actually found a way that works, but may have additional drawbacks.  Let 
 3. Split those symbols into the test set (`trouble-symbols.txt`) and the
    alternative set (`good-symbols.txt`)
 4. Mark all symbols in the test set as local within the good object file:
-   `objcopy --local-symbols=trouble-symbols.txt <good-obj-file>.o <good-obj-file>-copy.o`
+   `objcopy --localize-symbols=trouble-symbols.txt <good-obj-file>.o <good-obj-file>-copy.o`
 5. Only keep symbols in the test set as local within the bad object file:
    `objcopy --strip-all --keep-symbols=trouble-symbols.txt <bad-obj-file>.o <bad-obj-file>-copy.o`
 6. Create a shared library with the one bad object file:
