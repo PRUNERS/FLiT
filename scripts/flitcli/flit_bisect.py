@@ -360,7 +360,13 @@ def bisect_search(is_bad, elements):
 
     return bad_list
 
-def main(arguments, prog=sys.argv[0]):
+def parse_args(arguments, prog=sys.argv[0]):
+    '''
+    Builds a parser, parses the arguments, and returns the parsed arguments.
+
+    @param arguments: (list of str) arguments given to the program
+    @param prog: (str) name of the program
+    '''
     parser = argparse.ArgumentParser(
             prog=prog,
             description='''
@@ -425,6 +431,10 @@ def main(arguments, prog=sys.argv[0]):
                             ''')
 
     args = parser.parse_args(arguments)
+    return args
+
+def main(arguments, prog=sys.argv[0]):
+    args = parse_args(arguments, prog)
 
     tomlfile = os.path.join(args.directory, 'flit-config.toml')
     try:
