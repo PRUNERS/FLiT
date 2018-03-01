@@ -436,14 +436,6 @@ def parse_args(arguments, prog=sys.argv[0]):
 def main(arguments, prog=sys.argv[0]):
     args = parse_args(arguments, prog)
 
-    tomlfile = os.path.join(args.directory, 'flit-config.toml')
-    try:
-        projconf = toml.load(tomlfile)
-    except FileNotFoundError:
-        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
-              file=sys.stderr)
-        return 1
-
     # Split the compilation into the separate components
     split_compilation = args.compilation.strip().split(maxsplit=2)
     compiler = split_compilation[0]
