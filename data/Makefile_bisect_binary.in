@@ -121,22 +121,22 @@ SPLIT_SRC        :=
 {SPLIT_SRC}
 
 TROUBLE_TARGET_OBJ := $(addprefix \
-		$(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
+	  $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_GT_OBJ    := $(addprefix \
-		$(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%.cpp=%_gt.o)))
+	  $(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%.cpp=%_gt.o)))
 TROUBLE_OBJ      := $(addprefix \
-		$(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
+	  $(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_OBJ       := $(BISECT_GT_OBJ)
 BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 SPLIT_OBJ        := $(addprefix \
-		$(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
+	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
 SPLIT_OBJ        += $(addprefix \
-		$(BISECT_OBJ_DIR)/,$(notdir \
-			$(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
+	  $(BISECT_OBJ_DIR)/,$(notdir \
+	    $(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
 TROUBLE_SYMBOLS  := $(addprefix \
-		$(BISECT_OBJ_DIR)/,$(notdir \
-			$(SPLIT_SRC:%.cpp=%_trouble_symbols_$(NUMBER).txt)))
+	  $(BISECT_OBJ_DIR)/,$(notdir \
+	    $(SPLIT_SRC:%.cpp=%_trouble_symbols_$(NUMBER).txt)))
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
@@ -219,14 +219,14 @@ $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_trouble_symbo
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
 	if [ -s "$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
-		objcopy \
-			--weaken-symbols=$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
-			$$(OBJ_DIR)/$1_gt_fPIC.o \
-			$$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	  objcopy \
+	    --weaken-symbols=$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
+	    $$(OBJ_DIR)/$1_gt_fPIC.o \
+	    $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
 	else \
-		cp \
-			$$(OBJ_DIR)/$1_gt_fPIC.o \
-			$$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	  cp \
+	    $$(OBJ_DIR)/$1_gt_fPIC.o \
+	    $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
 	fi
 
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o
@@ -234,14 +234,14 @@ $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
 	if [ -s "$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
-		objcopy \
-			--weaken-symbols=$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
-			$$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
-			$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
+	  objcopy \
+	    --weaken-symbols=$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
+	    $$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
+	    $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
 	else \
-		cp \
-			$$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
-			$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
+	  cp \
+	    $$(OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
+	    $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
 	fi
 
 endef
