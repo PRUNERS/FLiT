@@ -90,6 +90,7 @@ import flitutil as util
 
 import toml
 
+from collections import namedtuple
 import argparse
 import csv
 import datetime
@@ -97,6 +98,7 @@ import hashlib
 import logging
 import multiprocessing
 import os
+import re
 import sqlite3
 import subprocess as subp
 import sys
@@ -268,6 +270,7 @@ def update_gt_results(directory, verbose=False):
         'GT_OUT', os.path.join(directory, 'Makefile'))[0]
     logging.info('Updating ground-truth results - {0}'.format(gt_resultfile))
     print('Updating ground-truth results -', gt_resultfile, end='')
+    sys.stdout.flush()
     subp.check_call(
         ['make', '-C', directory, gt_resultfile], **kwargs)
     print(' - done')
@@ -287,6 +290,96 @@ def is_result_bad(resultfile):
         for row in parser:
             # identical to ground truth means comparison is zero
             return float(row['comparison_d']) != 0.0
+
+SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
+SymbolTuple.__doc__ = '''
+Tuple containing information about the symbols in a file.  Has the following attributes:
+    src:        source file that was compiled
+    symbol:     mangled symbol in the compiled version
+    demangled:  demangled version of symbol
+    fname:      filename where the symbol is actually defined.  This usually
+                will be equal to src, but may not be in some situations.
+    lineno:     line number of definition within fname.
+'''
+
+def extract_symbols(file_or_filelist, objdir):
+    '''
+    Extracts symbols for the given file(s) given.  The corresponding object is
+    assumed to be in the objdir with the filename replaced with the GNU Make
+    pattern %.cpp=%_gt.o.
+    
+    @param file_or_filelist: (str or list(str)) source file(s) for which to get
+        symbols.
+    @param objdir: (str) directory where object files are compiled for the
+        given files.
+
+    @return a list of SymbolTuple objects
+    '''
+    symbol_tuples = []
+
+    # if it is not a string, then assume it is a list of strings
+    if not isinstance(file_or_filelist, str):
+        for fname in file_or_filelist:
+            symbol_tuples.extend(extract_symbols(fname, objdir))
+        return symbol_tuples
+
+    # now we know it is a string, so assume it is a filename
+    fname = file_or_filelist
+    fbase = os.path.splitext(os.path.basename(fname))[0]
+    fobj = os.path.join(objdir, fbase + '_gt.o')
+
+    # use nm and objdump to get the binary information we need
+    symbol_strings = subp.check_output([
+        'nm',
+        '--extern-only',
+        '--defined-only',
+        fobj,
+        ]).decode('utf-8').splitlines()
+    demangled_symbol_strings = subp.check_output([
+        'nm',
+        '--extern-only',
+        '--defined-only',
+        '--demangle',
+        fobj,
+        ]).decode('utf-8').splitlines()
+    objdump_strings = subp.check_output([
+        'objdump', '--disassemble-all', '--line-numbers', fobj,
+        ]).decode('utf-8').splitlines()
+
+    # create the symbol -> (fname, lineno) map
+    symbol_line_mapping = dict()
+    symbol = None
+    for line in objdump_strings:
+        if len(line.strip()) == 0:        # skip empty lines
+            continue
+        if line[0].isdigit():             # we are at a symbol
+            symbol = line.split()[1][1:-2]
+            continue
+        if symbol is None:                # if we don't have an active symbol
+            continue                      # then skip
+        srcmatch = re.search(':[0-9]+$', line)
+        if srcmatch is not None:
+            deffile = line[:srcmatch.start()]
+            defline = int(line[srcmatch.start()+1:])
+            symbol_line_mapping[symbol] = (deffile, defline)
+            symbol = None                 # deactivate the symbol to not overwrite
+            
+
+    # generate the symbol tuples
+    for i in range(len(symbol_strings)):
+        symtype, symbol = symbol_strings[i].split(maxsplit=2)[1:3]
+        demangled = demangled_symbol_strings[i].split(maxsplit=2)[2]
+        try:
+            deffile, defline = symbol_line_mapping[symbol]
+        except KeyError:
+            deffile, defline = None, None
+        # We need to do all defined global symbols or we will get duplicate
+        # symbol linker error
+        #if symtype == 'T':
+        symbol_tuples.append(
+                SymbolTuple(fname, symbol, demangled, deffile, defline))
+
+    return symbol_tuples
 
 def bisect_search(is_bad, elements):
     '''
@@ -360,7 +453,13 @@ def bisect_search(is_bad, elements):
 
     return bad_list
 
-def main(arguments, prog=sys.argv[0]):
+def parse_args(arguments, prog=sys.argv[0]):
+    '''
+    Builds a parser, parses the arguments, and returns the parsed arguments.
+
+    @param arguments: (list of str) arguments given to the program
+    @param prog: (str) name of the program
+    '''
     parser = argparse.ArgumentParser(
             prog=prog,
             description='''
@@ -426,27 +525,24 @@ def main(arguments, prog=sys.argv[0]):
 
     args = parser.parse_args(arguments)
 
-    tomlfile = os.path.join(args.directory, 'flit-config.toml')
-    try:
-        projconf = toml.load(tomlfile)
-    except FileNotFoundError:
-        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
-              file=sys.stderr)
-        return 1
-
-    # Split the compilation into the separate components
+    # Split the compilation into separate components
     split_compilation = args.compilation.strip().split(maxsplit=2)
-    compiler = split_compilation[0]
-    optl = ''
-    switches = ''
+    args.compiler = split_compilation[0]
+    args.optl = ''
+    args.switches = ''
     if len(split_compilation) > 1:
-        optl = split_compilation[1]
+        args.optl = split_compilation[1]
     if len(split_compilation) > 2:
-        switches = split_compilation[2]
+        args.switches = split_compilation[2]
+
+    return args
+
+def main(arguments, prog=sys.argv[0]):
+    args = parse_args(arguments, prog)
 
     # our hash is the first 10 digits of a sha1 sum
     trouble_hash = hashlib.sha1(
-        (compiler + optl + switches).encode()).hexdigest()[:10]
+        (args.compiler + args.optl + args.switches).encode()).hexdigest()[:10]
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
@@ -466,9 +562,9 @@ def main(arguments, prog=sys.argv[0]):
         level=logging.DEBUG)
 
     logging.info('Starting the bisect procedure')
-    logging.debug('  trouble compiler:           "{0}"'.format(compiler))
-    logging.debug('  trouble optimization level: "{0}"'.format(optl))
-    logging.debug('  trouble switches:           "{0}"'.format(switches))
+    logging.debug('  trouble compiler:           "{0}"'.format(args.compiler))
+    logging.debug('  trouble optimization level: "{0}"'.format(args.optl))
+    logging.debug('  trouble switches:           "{0}"'.format(args.switches))
     logging.debug('  trouble testcase:           "{0}"'.format(args.testcase))
     logging.debug('  trouble hash:               "{0}"'.format(trouble_hash))
 
@@ -485,9 +581,9 @@ def main(arguments, prog=sys.argv[0]):
         'flit_version': conf.version,
         'precision': args.precision,
         'test_case': args.testcase,
-        'trouble_cc': compiler,
-        'trouble_optl': optl,
-        'trouble_switches': switches,
+        'trouble_cc': args.compiler,
+        'trouble_optl': args.optl,
+        'trouble_switches': args.switches,
         'trouble_id': trouble_hash,
         };
 
@@ -536,42 +632,10 @@ def main(arguments, prog=sys.argv[0]):
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
     bad_sources = bisect_search(bisect_build_and_check, sources)
-    print('  bad sources: ', bad_sources)
+    print('  bad sources:')
+    for src in bad_sources:
+        print('    ' + src)
 
-    symbol_tuples = []
-    for bad_src in bad_sources:
-        bad_base = os.path.splitext(os.path.basename(bad_src))[0]
-        good_obj = os.path.join(args.directory, 'obj', bad_base + '_gt.o')
-        symbol_strings = subp.check_output([
-            'nm',
-            '--extern-only',
-            '--defined-only',
-            good_obj,
-            ]).splitlines()
-        demangled_symbol_strings = subp.check_output([
-            'nm',
-            '--extern-only',
-            '--defined-only',
-            '--demangle',
-            good_obj,
-            ]).splitlines()
-        for i in range(len(symbol_strings)):
-            symbol = symbol_strings[i].split(maxsplit=2)[2].decode('utf-8')
-            demangled = demangled_symbol_strings[i].split(maxsplit=2)[2] \
-                        .decode('utf-8')
-            symtype = symbol_strings[i].split()[1]
-            # We need to do all defined global symbols or we will get duplicate
-            # symbol linker error
-            #if symtype == b'T':
-            symbol_tuples.append((bad_src, symbol, demangled))
-
-    print('Searching for bad symbols in the bad sources:')
-    logging.info('Searching for bad symbols in the bad sources')
-    logging.info('Note: inlining disabled to isolate functions')
-    logging.info('Note: only searching over globally exported functions')
-    logging.debug('Symbols:')
-    for src, symbol, demangled in symbol_tuples:
-        logging.debug('  {0}: {1} -- {2}'.format(src, symbol, demangled))
 
     def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
         '''
@@ -581,21 +645,21 @@ def main(arguments, prog=sys.argv[0]):
         In order to be able to isolate these symbols, the files will need to be
         compiled with -fPIC, but that is handled by the generated Makefile.
 
-        @param trouble_symbols: (tuple (src, symbol, demangled)) symbols to use
+        @param trouble_symbols: (list of SymbolTuple) symbols to use
             from the trouble compilation
-        @param gt_symbols: (tuple (src, symbol, demangled)) symbols to use from
+        @param gt_symbols: (list of SymbolTuple) symbols to use from
             the ground truth compilation
 
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
         '''
         all_sources = list(sources)  # copy the list of all source files
-        symbol_sources = [x[0] for x in trouble_symbols + gt_symbols]
+        symbol_sources = [x.src for x in trouble_symbols + gt_symbols]
         trouble_src = []
         gt_src = list(set(all_sources).difference(symbol_sources))
         symbol_map = { x: [
-                            [y[1] for y in gt_symbols if y[0] == x],
-                            [z[1] for z in trouble_symbols if z[0] == x],
+                            [y.symbol for y in gt_symbols if y.src == x],
+                            [z.symbol for z in trouble_symbols if z.src == x],
                           ]
                        for x in symbol_sources }
 
@@ -608,8 +672,10 @@ def main(arguments, prog=sys.argv[0]):
         sys.stdout.flush()
         logging.info('Created {0}'.format(makepath))
         logging.info('Checking:')
-        for src, symbol, demangled in trouble_symbols:
-            logging.info('  {0}: {1} -- {2}'.format(src, symbol, demangled))
+        for sym in trouble_symbols:
+            logging.info(
+                    '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
+                    .format(sym=sym))
 
         build_bisect(makepath, args.directory, verbose=args.verbose)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
@@ -623,12 +689,25 @@ def main(arguments, prog=sys.argv[0]):
 
         return result_is_bad
 
+    print('Searching for bad symbols in the bad sources:')
+    logging.info('Searching for bad symbols in the bad sources')
+    logging.info('Note: inlining disabled to isolate functions')
+    logging.info('Note: only searching over globally exported functions')
+    logging.debug('Symbols:')
+    symbol_tuples = extract_symbols(bad_sources, os.path.join(args.directory, 'obj'))
+    for sym in symbol_tuples:
+        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
+                  .format(sym=sym)
+        logging.info(message)
+
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
-    for src, symbol, demangled in bad_symbols:
-        print('    {0}: {1} -- {2}'.format(src, symbol, demangled))
-        logging.info('    {0}: {1} -- {2}'.format(src, symbol, demangled))
+    for sym in bad_symbols:
+        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
+                  .format(sym=sym)
+        print('  ' + message)
+        logging.info(message)
 
 
     # TODO: determine if the problem is on the linker's side

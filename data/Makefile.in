@@ -430,7 +430,7 @@ $(R_TARGET): $(R_OBJ)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
 	  $(R_OBJ) -o $@ \
-		$(LD_REQUIRED)
+	  $(LD_REQUIRED)
 
 $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
@@ -618,7 +618,7 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CC)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
