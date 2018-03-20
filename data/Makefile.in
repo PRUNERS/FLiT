@@ -106,6 +106,8 @@ GT_SWITCHES     := {ground_truth_switches}
 OBJ_DIR          = obj
 
 CC_REQUIRED     += $(FFLAGS)
+# This flag specifies NOT to build position-independent executables
+CC_REQUIRED     += -fno-pie
 CC_REQUIRED     += -std=c++11
 CC_REQUIRED     += -I.
 CC_REQUIRED     += -I$(FLIT_INC_DIR)
@@ -116,6 +118,8 @@ DEV_CFLAGS      += -Wextra
 DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
 
+# This flag specifies NOT to link as a position-independent executable
+LD_REQUIRED     += -no-pie
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
