@@ -494,7 +494,7 @@ TARGET_OUTS     := $(TARGETS:%=%-out)
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 
 %-out: %
-	-./$< --output $@
+	./$< --output $@ || touch $@
 
 # specify how to get comparison
 %-out-comparison.csv: %-out $(GT_OUT) $(GT_TARGET)
