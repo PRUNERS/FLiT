@@ -99,6 +99,7 @@ import logging
 import multiprocessing
 import os
 import re
+import shutil
 import sqlite3
 import subprocess as subp
 import sys
@@ -155,7 +156,7 @@ def create_bisect_dir(parent):
             return bisect_dir
 
 def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
-                           split_symbol_map):
+                           split_symbol_map, cpp_flags=[], link_flags=[]):
     '''
     Returns the name of the created Makefile within the given directory, having
     been populated with the replacements, gt_src, and trouble_src.  It is then
@@ -173,6 +174,10 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
         (dict fname -> list [list good symbols, list bad symbols])
         Files to compile as a split between good and bad, specifying good and
         bad symbols for each file.
+    @param cpp_flags: (list) (optional) List of c++ compiler flags to give to
+        each compiler when compiling object files from source files.
+    @param link_flags: (list) (optional) List of linker flags to give to the
+        ground-truth compiler when performing linking.
 
     @return the bisect makefile name without directory prepended to it
     '''
@@ -183,6 +188,11 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
                                             for x in gt_src])
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
+    repl_copy['EXTRA_CC_FLAGS'] = '\n'.join(['CC_REQUIRED      += {0}'.format(x)
+                                             for x in cpp_flags])
+    repl_copy['EXTRA_LD_FLAGS'] = '\n'.join(['LD_REQUIRED      += {0}'.format(x)
+                                             for x in link_flags])
+
 
     # Find the next unique file name available in directory
     num = 0
@@ -537,60 +547,60 @@ def parse_args(arguments, prog=sys.argv[0]):
 
     return args
 
-def main(arguments, prog=sys.argv[0]):
-    args = parse_args(arguments, prog)
+def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
+    '''
+    Performs the search over the space of statically linked libraries for
+    problems.
+    
+    Linking will be done with the ground-truth compiler, but with the static
+    libraries specified.  During this search, all source files will be compiled
+    with the ground-truth compilation, but the static libraries will be
+    included in the linking.
+    '''
+    def bisect_libs_build_and_check(trouble_libs, ignore_libs):
+        '''
+        Compiles all source files under the ground truth compilation and
+        statically links in the trouble_libs.
 
-    # our hash is the first 10 digits of a sha1 sum
-    trouble_hash = hashlib.sha1(
-        (args.compiler + args.optl + args.switches).encode()).hexdigest()[:10]
+        @param trouble_libs: static libraries to compile in
+        @param ignore_libs: static libraries to ignore and not include
+        
+        @return True if the compilation has a non-zero comparison between this
+            mixed compilation and the full ground-truth compilation.
+        '''
+        makefile = create_bisect_makefile(bisect_path, replacements, sources,
+                                          [], dict(), link_flags=trouble_libs)
+        makepath = os.path.join(bisect_path, makefile)
 
-    # see if the Makefile needs to be regenerated
-    # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+        sys.stdout.write('  Create {0} - compiling and running' \
+                         .format(makepath))
+        sys.stdout.flush()
+        logging.info('Created {0}'.format(makepath))
+        logging.info('Checking:')
+        for lib in trouble_libs:
+            logging.info('  ' + lib)
 
-    # create a unique directory for this bisect run
-    bisect_dir = create_bisect_dir(args.directory)
-    bisect_path = os.path.join(args.directory, bisect_dir)
+        build_bisect(makepath, args.directory, verbose=args.verbose)
+        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                           args.directory)[0]
+        resultpath = os.path.join(args.directory, resultfile)
+        result_is_bad = is_result_bad(resultpath)
 
-    # keep a bisect.log of what was done
-    logging.basicConfig(
-        filename=os.path.join(bisect_path, 'bisect.log'),
-        filemode='w',
-        format='%(asctime)s bisect: %(message)s',
-        #level=logging.INFO)
-        level=logging.DEBUG)
+        result_str = 'bad' if result_is_bad else 'good'
+        sys.stdout.write(' - {0}\n'.format(result_str))
+        logging.info('Result was {0}'.format(result_str))
 
-    logging.info('Starting the bisect procedure')
-    logging.debug('  trouble compiler:           "{0}"'.format(args.compiler))
-    logging.debug('  trouble optimization level: "{0}"'.format(args.optl))
-    logging.debug('  trouble switches:           "{0}"'.format(args.switches))
-    logging.debug('  trouble testcase:           "{0}"'.format(args.testcase))
-    logging.debug('  trouble hash:               "{0}"'.format(trouble_hash))
+        return result_is_bad
 
-    # get the list of source files from the Makefile
-    sources = util.extract_make_var('SOURCE', 'Makefile',
-                                    directory=args.directory)
-    logging.debug('Sources')
-    for source in sources:
-        logging.debug('  ' + source)
+    print('Searching for bad intel static libraries:')
+    logging.info('Searching for bad static libraries included by intel linker:')
+    bad_libs = bisect_search(bisect_libs_build_and_check, libs)
+    return bad_libs
 
-    replacements = {
-        'bisect_dir': bisect_dir,
-        'datetime': datetime.date.today().strftime("%B %d, %Y"),
-        'flit_version': conf.version,
-        'precision': args.precision,
-        'test_case': args.testcase,
-        'trouble_cc': args.compiler,
-        'trouble_optl': args.optl,
-        'trouble_switches': args.switches,
-        'trouble_id': trouble_hash,
-        };
-
-    # TODO: what kind of feedback should we give the user while it is building?
-    #       It is quite annoying as a user to simply issue a command and wait
-    #       with no feedback for a long time.
-
+def search_for_source_problems(args, bisect_path, replacements, sources):
+    '''
+    Performs the search over the space of source files for problems.
+    '''
     def bisect_build_and_check(trouble_src, gt_src):
         '''
         Compiles the compilation with trouble_src compiled with the trouble
@@ -626,17 +636,17 @@ def main(arguments, prog=sys.argv[0]):
 
         return result_is_bad
 
-    update_gt_results(args.directory, verbose=args.verbose)
-
     print('Searching for bad source files:')
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
     bad_sources = bisect_search(bisect_build_and_check, sources)
-    print('  bad sources:')
-    for src in bad_sources:
-        print('    ' + src)
+    return bad_sources
 
-
+def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sources):
+    '''
+    Performs the search over the space of symbols within bad source files for
+    problems.
+    '''
     def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
         '''
         Compiles the compilation with all files compiled under the ground truth
@@ -701,6 +711,107 @@ def main(arguments, prog=sys.argv[0]):
         logging.info(message)
 
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
+    return bad_symbols
+
+def main(arguments, prog=sys.argv[0]):
+    args = parse_args(arguments, prog)
+
+    # our hash is the first 10 digits of a sha1 sum
+    trouble_hash = hashlib.sha1(
+        (args.compiler + args.optl + args.switches).encode()).hexdigest()[:10]
+
+    # see if the Makefile needs to be regenerated
+    # we use the Makefile to check for itself, sweet
+    subp.check_call(['make', '-C', args.directory, 'Makefile'],
+                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+
+    # create a unique directory for this bisect run
+    bisect_dir = create_bisect_dir(args.directory)
+    bisect_path = os.path.join(args.directory, bisect_dir)
+
+    # keep a bisect.log of what was done
+    logging.basicConfig(
+        filename=os.path.join(bisect_path, 'bisect.log'),
+        filemode='w',
+        format='%(asctime)s bisect: %(message)s',
+        #level=logging.INFO)
+        level=logging.DEBUG)
+
+    logging.info('Starting the bisect procedure')
+    logging.debug('  trouble compiler:           "{0}"'.format(args.compiler))
+    logging.debug('  trouble optimization level: "{0}"'.format(args.optl))
+    logging.debug('  trouble switches:           "{0}"'.format(args.switches))
+    logging.debug('  trouble testcase:           "{0}"'.format(args.testcase))
+    logging.debug('  trouble hash:               "{0}"'.format(trouble_hash))
+
+    # get the list of source files from the Makefile
+    sources = util.extract_make_var('SOURCE', 'Makefile',
+                                    directory=args.directory)
+    logging.debug('Sources')
+    for source in sources:
+        logging.debug('  ' + source)
+
+    replacements = {
+        'bisect_dir': bisect_dir,
+        'datetime': datetime.date.today().strftime("%B %d, %Y"),
+        'flit_version': conf.version,
+        'precision': args.precision,
+        'test_case': args.testcase,
+        'trouble_cc': args.compiler,
+        'trouble_optl': args.optl,
+        'trouble_switches': args.switches,
+        'trouble_id': trouble_hash,
+        };
+
+    update_gt_results(args.directory, verbose=args.verbose)
+
+    # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
+    if os.path.basename(args.compiler) in ('icc', 'icpc'):
+        if '/' in args.compiler:
+            compiler = os.path.realpath(args.compiler)
+        else:
+            compiler = os.path.realpath(shutil.which(args.compiler))
+        # TODO: find a more portable way of finding the static libraries
+        #       This can be done by calling the linker command with -v to see
+        #       what intel uses in its linker.  The include path is in that
+        #       output command.
+        # Note: This is a hard-coded approach specifically for the intel linker
+        #       and what I observed was the behavior.
+        intel_dir = os.path.join(os.path.dirname(compiler), '..', '..')
+        intel_dir = os.path.realpath(intel_dir)
+        intel_lib_dir = os.path.join(intel_dir, 'compiler', 'lib', 'intel64')
+        libs = [
+            os.path.join(intel_lib_dir, 'libdecimal.a'),
+            os.path.join(intel_lib_dir, 'libimf.a'),
+            os.path.join(intel_lib_dir, 'libipgo.a'),
+            os.path.join(intel_lib_dir, 'libirc_s.a'),
+            os.path.join(intel_lib_dir, 'libirc.a'),
+            os.path.join(intel_lib_dir, 'libirng.a'),
+            os.path.join(intel_lib_dir, 'libsvml.a'),
+            ]
+        bad_libs = search_for_linker_problems(args, bisect_path, replacements,
+                                              sources, libs)
+        print('  bad static libraries:')
+        for lib in bad_libs:
+            print('    ' + lib)
+
+    # If the linker is to blame, remove it from the equation for future searching
+    # This is done simply by using the ground-truth compiler to link instead of
+    # using the trouble compiler to link.
+    # TODO: Handle the case where the ground-truth compiler is also an intel
+    #       compiler.
+    # TODO: Extra care must be taken when there is more than one intel linker
+    #       specified.
+
+    bad_sources = search_for_source_problems(args, bisect_path, replacements,
+                                             sources)
+    print('  bad sources:')
+    for src in bad_sources:
+        print('    ' + src)
+
+
+    bad_symbols = search_for_symbol_problems(args, bisect_path, replacements,
+                                             sources, bad_sources)
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
     for sym in bad_symbols:
