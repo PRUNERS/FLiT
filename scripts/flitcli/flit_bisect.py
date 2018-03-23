@@ -560,6 +560,17 @@ def parse_args(arguments, prog=sys.argv[0]):
                             precision runs.  The choices are 'float', 'double',
                             and 'long double'.
                             ''')
+    parser.add_argument('-a', '--auto-sqlite-run', action='store',
+                        required=False,
+                        help='''
+                            Automatically run bisect on all of the non-zero
+                            comparison values in the given sqlite3 file.  If
+                            you specify this option, then do not specify the
+                            precision or the compilation or the testcase.
+                            Those will be automatically procured from the
+                            sqlite3 file.  The results will be stored in a csv
+                            file called auto-bisect.csv.
+                            ''')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='''
                             Give verbose output including the output from the
@@ -760,8 +771,16 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     return bad_symbols
 
+def run_bisect(arguments, prog=sys.argv[0]):
+    '''
+    The actual function for running the bisect command-line tool.
 
-def main(arguments, prog=sys.argv[0]):
+    Returns four things, (libs, sources, symbols, returncode).
+    - libs: (list of strings) problem libraries
+    - sources: (list of strings) problem source files
+    - symbols: (list of SymbolTuples) problem functions
+    - returncode: (int) status, zero is success, nonzero is failure
+    '''
     args = parse_args(arguments, prog)
 
     # our hash is the first 10 digits of a sha1 sum
@@ -816,6 +835,7 @@ def main(arguments, prog=sys.argv[0]):
     update_gt_results(args.directory, verbose=args.verbose)
 
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
+    bad_libs = []
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
         warning_message = 'Warning: The intel compiler may not work with bisect'
         logging.info(warning_message)
@@ -885,7 +905,8 @@ def main(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad sources -- cannot continue.')
         logging.exception('Failed to search for bad sources.')
-        return 1
+        raise
+        return bad_libs, [], [], 1
 
     print('  bad sources:')
     logging.info('BAD SOURCES:')
@@ -906,7 +927,7 @@ def main(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad symbols -- cannot continue')
         logging.exception('Failed to search for bad symbols.')
-        return 1
+        return bad_libs, bad_sources, [], 1
 
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
@@ -918,6 +939,86 @@ def main(arguments, prog=sys.argv[0]):
     if len(bad_symbols) == 0:
         print('    None')
         logging.info('  None')
+
+    return bad_libs, bad_sources, bad_symbols, 0
+
+def main(arguments, prog=sys.argv[0]):
+    '''
+    A wrapper around the bisect program.  This checks for the --auto-sqlite-run
+    stuff and runs the run_bisect multiple times if so.
+    '''
+    if '-a' in arguments or '--auto-sqlite-run' in arguments:
+        if '-a' in arguments:
+            idx = arguments.index('-a')
+        else:
+            idx = arguments.index('--auto-sqlite-run')
+
+        arguments.pop(idx)
+        sqlitefile = arguments.pop(idx)
+
+        try:
+            connection = util.sqlite_open(sqlitefile)
+        except:
+            print('Error:', sqlitefile, 'is not an sqlite3 file')
+            return 1
+
+        return_tot = 0
+        with open('auto-bisect.csv', 'w') as resultsfile:
+            writer = csv.writer(resultsfile)
+            query = connection.execute(
+                    'select * from tests where comparison_d!=0.0')
+            precision_map = {
+                'f': 'float',
+                'd': 'double',
+                'e': 'long double',
+                }
+            writer.writerow([
+                'testid',
+                'compiler',
+                'precision',
+                'testcase',
+                'type',
+                'name',
+                'return',
+                ])
+            entries = []
+            for row in query:
+                compilation = ' '.join(
+                        [row['compiler'], row['optl'], row['switches']])
+                testcase = row['name']
+                precision = precision_map[row['precision']]
+                row_args = list(arguments)
+                row_args.extend([
+                    '--precision', precision,
+                    compilation,
+                    testcase,
+                    ])
+                print('flit bisect',
+                      '--precision', precision,
+                      '"' + compilation + '"',
+                      testcase)
+                libs,srcs,syms,ret = run_bisect(row_args, prog)
+                return_tot += ret
+
+                entries.extend([('lib',x) for x in libs])
+                entries.extend([('src',x) for x in srcs])
+                entries.extend([('sym',x) for x in syms])
+
+                for entry in entries:
+                    writer.writerow([
+                        row['id'],
+                        compiler,
+                        precision,
+                        testcase,
+                        entry[0],
+                        entry[1],
+                        ret,
+                        ])
+        return return_tot
+
+    else:
+        _,_,_,ret = run_bisect(arguments, prog)
+        return ret
 
 
 if __name__ == '__main__':
