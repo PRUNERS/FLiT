@@ -992,6 +992,8 @@ def main(arguments, prog=sys.argv[0]):
             writer.writerow([
                 'testid',
                 'compiler',
+                'optl',
+                'switches',
                 'precision',
                 'testcase',
                 'type',
@@ -1025,7 +1027,9 @@ def main(arguments, prog=sys.argv[0]):
                 for entry in entries:
                     writer.writerow([
                         row['id'],
-                        compiler,
+                        row['compiler'],
+                        row['optl'],
+                        row['switches'],
                         precision,
                         testcase,
                         entry[0],
