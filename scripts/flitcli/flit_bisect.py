@@ -840,7 +840,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'cpp_flags': [],
         };
 
-    update_gt_results(args.directory, verbose=args.verbose)
+    update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
     bad_libs = []
