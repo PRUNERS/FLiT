@@ -269,7 +269,8 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
         ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), 'bisect'],
         **kwargs)
 
-def update_gt_results(directory, verbose=False):
+def update_gt_results(directory, verbose=False,
+                      jobs=multiprocessing.cpu_count()):
     '''
     Update the ground-truth.csv results file for FLiT tests within the given
     directory.
@@ -288,7 +289,7 @@ def update_gt_results(directory, verbose=False):
     print('Updating ground-truth results -', gt_resultfile, end='')
     sys.stdout.flush()
     subp.check_call(
-        ['make', '-C', directory, gt_resultfile], **kwargs)
+        ['make', '-j', str(jobs), '-C', directory, gt_resultfile], **kwargs)
     print(' - done')
     logging.info('Finished Updating ground-truth results')
 
@@ -577,6 +578,13 @@ def parse_args(arguments, prog=sys.argv[0]):
                             Makefiles.  The default is to be quiet and to only
                             output short updates.
                             ''')
+    processors = multiprocessing.cpu_count()
+    parser.add_argument('-j', '--jobs', type=int, default=processors,
+                        help='''
+                            The number of parallel jobs to use for the call to
+                            GNU make when performing the compilation.  Note,
+                            this is not used when executing the tests.
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -634,7 +642,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         for lib in trouble_libs:
             logging.info('  ' + lib)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose)
+        build_bisect(makepath, args.directory, verbose=args.verbose, args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -682,7 +690,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         for src in trouble_src:
             logging.info('  ' + src)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose)
+        build_bisect(makepath, args.directory, verbose=args.verbose, args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -745,7 +753,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
                     '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
                     .format(sym=sym))
 
-        build_bisect(makepath, args.directory, verbose=args.verbose)
+        build_bisect(makepath, args.directory, verbose=args.verbose, args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
