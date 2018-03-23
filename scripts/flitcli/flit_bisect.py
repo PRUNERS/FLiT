@@ -426,7 +426,7 @@ def bisect_search(is_bad, elements):
     ...     global call_count
     ...     call_count += 1
     ...     return min(x) < 0
-    >>> x = bisect_search(is_bad, [1, 3, 4, 5, 10, -1, 0, -15])
+    >>> x = bisect_search(is_bad, [1, 3, 4, 5, -1, 10, 0, -15, 3])
     >>> sorted(x)
     [-15, -1]
 
@@ -479,6 +479,7 @@ def bisect_search(is_bad, elements):
 
         bad_element = quest_list.pop(0)
 
+        # TODO: only double check if the last check was False
         # double check that we found a bad element before declaring it bad
         if is_bad([bad_element], known_list + quest_list):
             bad_list.append(bad_element)
@@ -489,9 +490,10 @@ def bisect_search(is_bad, elements):
     # Perform a sanity check.  If we have found all of the bad items, then
     # compiling with all but these bad items will cause a good build.
     # This will fail if our hypothesis class is wrong
-    good_list = list(set(elements).difference(bad_list))
-    assert not is_bad(good_list, bad_list), \
-        'Assumption that bad elements are independent was wrong'
+    if len(bad_list) > 0:
+        good_list = list(set(elements).difference(bad_list))
+        assert not is_bad(good_list, bad_list), \
+            'Assumption that bad elements are independent was wrong'
 
     return bad_list
 
@@ -758,6 +760,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     return bad_symbols
 
+
 def main(arguments, prog=sys.argv[0]):
     args = parse_args(arguments, prog)
 
@@ -807,17 +810,22 @@ def main(arguments, prog=sys.argv[0]):
         'trouble_switches': args.switches,
         'trouble_id': trouble_hash,
         'link_flags': [],
-        'cpp_flags': ['-nostdlib'],
+        'cpp_flags': [],
         };
 
     update_gt_results(args.directory, verbose=args.verbose)
 
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
+        warning_message = 'Warning: The intel compiler may not work with bisect'
+        logging.info(warning_message)
+        print(warning_message)
+
         if '/' in args.compiler:
             compiler = os.path.realpath(args.compiler)
         else:
             compiler = os.path.realpath(shutil.which(args.compiler))
+
         # TODO: find a more portable way of finding the static libraries
         #       This can be done by calling the linker command with -v to see
         #       what intel uses in its linker.  The include path is in that
@@ -847,22 +855,38 @@ def main(arguments, prog=sys.argv[0]):
             print('    None')
             logging.info('  None')
 
-        replacements['link_flags'].extend([
-            '-L' + intel_lib_dir,
-            '-lirc',
-            '-lsvml',
-            ])
+        #replacements['link_flags'].extend([
+        #    '-L' + intel_lib_dir,
+        #    '-lirc',
+        #    '-lsvml',
+        #    ])
 
-    # If the linker is to blame, remove it from the equation for future searching
-    # This is done simply by using the ground-truth compiler to link instead of
-    # using the trouble compiler to link.
+        # TODO: If the linker is to blame, remove it from the equation for
+        #       future searching This is done simply by using the ground-truth
+        #       compiler to link instead of using the trouble compiler to link.
+
+        # For now, if the linker was to blame, then exit saying there is
+        # nothing else we can do.
+        if len(bad_libs) > 0:
+            message = 'May not be able to search further, because of intel'
+            print(message)
+            logging.info(message)
+
     # TODO: Handle the case where the ground-truth compiler is also an intel
     #       compiler.
     # TODO: Extra care must be taken when there is more than one intel linker
     #       specified.
 
-    bad_sources = search_for_source_problems(args, bisect_path, replacements,
-                                             sources)
+    try:
+        bad_sources = search_for_source_problems(args, bisect_path,
+                                                 replacements, sources)
+    except subp.CalledProcessError:
+        print()
+        print('  Executable failed to run.')
+        print('Failed to search for bad sources -- cannot continue.')
+        logging.exception('Failed to search for bad sources.')
+        return 1
+
     print('  bad sources:')
     logging.info('BAD SOURCES:')
     for src in bad_sources:
@@ -873,8 +897,17 @@ def main(arguments, prog=sys.argv[0]):
         logging.info('  None')
 
 
-    bad_symbols = search_for_symbol_problems(args, bisect_path, replacements,
-                                             sources, bad_sources)
+    try:
+        bad_symbols = search_for_symbol_problems(args, bisect_path,
+                                                 replacements, sources,
+                                                 bad_sources)
+    except subp.CalledProcessError:
+        print()
+        print('  Executable failed to run.')
+        print('Failed to search for bad symbols -- cannot continue')
+        logging.exception('Failed to search for bad symbols.')
+        return 1
+
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
     for sym in bad_symbols:
@@ -885,11 +918,6 @@ def main(arguments, prog=sys.argv[0]):
     if len(bad_symbols) == 0:
         print('    None')
         logging.info('  None')
-
-
-    # TODO: determine if the problem is on the linker's side
-    #       I'm not yet sure the best way to do that
-    #       This is to be done later - first go for compilation problems
 
 
 if __name__ == '__main__':
