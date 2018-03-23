@@ -981,6 +981,7 @@ def main(arguments, prog=sys.argv[0]):
                 'name',
                 'return',
                 ])
+            resultsfile.flush()
             entries = []
             for row in query:
                 compilation = ' '.join(
@@ -1014,6 +1015,7 @@ def main(arguments, prog=sys.argv[0]):
                         entry[1],
                         ret,
                         ])
+                resultsfile.flush()
         return return_tot
 
     else:
