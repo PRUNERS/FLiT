@@ -642,7 +642,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         for lib in trouble_libs:
             logging.info('  ' + lib)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose, args.jobs)
+        build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -690,7 +690,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         for src in trouble_src:
             logging.info('  ' + src)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose, args.jobs)
+        build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -753,7 +753,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
                     '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
                     .format(sym=sym))
 
-        build_bisect(makepath, args.directory, verbose=args.verbose, args.jobs)
+        build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
