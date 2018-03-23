@@ -1002,7 +1002,11 @@ def main(arguments, prog=sys.argv[0]):
                 ])
             resultsfile.flush()
             entries = []
-            for row in query:
+            i = 0
+            rows = query.fetchall()
+            rowcount = len(rows)
+            for row in rows:
+                i += 1
                 compilation = ' '.join(
                         [row['compiler'], row['optl'], row['switches']])
                 testcase = row['name']
@@ -1013,6 +1017,9 @@ def main(arguments, prog=sys.argv[0]):
                     compilation,
                     testcase,
                     ])
+                # give feedback about how much is left.  Run x of y
+                print()
+                print('Run', i, 'of', rowcount)
                 print('flit bisect',
                       '--precision', precision,
                       '"' + compilation + '"',
