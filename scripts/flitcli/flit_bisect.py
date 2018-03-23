@@ -885,12 +885,29 @@ def run_bisect(arguments, prog=sys.argv[0]):
         #       future searching This is done simply by using the ground-truth
         #       compiler to link instead of using the trouble compiler to link.
 
-        # For now, if the linker was to blame, then exit saying there is
-        # nothing else we can do.
+        # For now, if the linker was to blame, then say there may be nothing
+        # else we can do.
         if len(bad_libs) > 0:
             message = 'May not be able to search further, because of intel'
             print(message)
             logging.info(message)
+
+        # TODO: Can we instead compare against the ground truth compilation
+        #       with the intel linking?  That is instead of giving up.
+
+        # If the libraries weren't a problem, then include them for the
+        # following searches.
+        if len(bad_libs) == 0:
+            replacements['link_flags'].extend([
+                '-L' + intel_lib_dir,
+                '-ldecimal',
+                '-limf',
+                '-lipgo',
+                '-lirc_s',
+                '-lirc',
+                '-lirng',
+                '-lsvml',
+                ])
 
     # TODO: Handle the case where the ground-truth compiler is also an intel
     #       compiler.
