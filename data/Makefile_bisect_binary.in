@@ -120,6 +120,10 @@ TROUBLE_SRC      :=
 SPLIT_SRC        :=
 {SPLIT_SRC}
 
+# Add to the CC_REQUIRED and LD_REQUIRED if necessary
+{EXTRA_CC_FLAGS}
+{EXTRA_LD_FLAGS}
+
 TROUBLE_TARGET_OBJ := $(addprefix \
 	  $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_GT_OBJ    := $(addprefix \

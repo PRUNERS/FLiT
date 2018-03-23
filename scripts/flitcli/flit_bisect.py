@@ -99,6 +99,7 @@ import logging
 import multiprocessing
 import os
 import re
+import shutil
 import sqlite3
 import subprocess as subp
 import sys
@@ -174,6 +175,12 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
         Files to compile as a split between good and bad, specifying good and
         bad symbols for each file.
 
+    Within replacements, there are some optional fields:
+    - cpp_flags: (list) (optional) List of c++ compiler flags to give to
+          each compiler when compiling object files from source files.
+    - link_flags: (list) (optional) List of linker flags to give to the
+          ground-truth compiler when performing linking.
+
     @return the bisect makefile name without directory prepended to it
     '''
     repl_copy = dict(replacements)
@@ -183,6 +190,15 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
                                             for x in gt_src])
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
+    if 'cpp_flags' in repl_copy:
+        repl_copy['EXTRA_CC_FLAGS'] = '\n'.join(['CC_REQUIRED      += {0}'.format(x)
+                                                 for x in repl_copy['cpp_flags']])
+        del repl_copy['cpp_flags']
+    if 'link_flags' in repl_copy:
+        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join(['LD_REQUIRED      += {0}'.format(x)
+                                                 for x in repl_copy['link_flags']])
+        del repl_copy['link_flags']
+
 
     # Find the next unique file name available in directory
     num = 0
@@ -391,6 +407,11 @@ def bisect_search(is_bad, elements):
     where n is the size of the questionable_list and k is
     the number of bad elements in questionable_list.
 
+    Note: A key assumption to this algorithm is that all bad elements are
+    independent.  That may not always be true, so there are redundant checks
+    within the algorithm to verify that this assumption is not vialoated.  If
+    the assumption is found to be violated, then an AssertionError is raised.
+
     @param is_bad: a function that takes two arguments (maybe_bad_list,
         maybe_good_list) and returns True if the maybe_bad_list has a bad
         element
@@ -405,14 +426,25 @@ def bisect_search(is_bad, elements):
     ...     global call_count
     ...     call_count += 1
     ...     return min(x) < 0
-    >>> x = bisect_search(is_bad, [1, 3, 4, 5, 10, -1, 0, -15])
+    >>> x = bisect_search(is_bad, [1, 3, 4, 5, -1, 10, 0, -15, 3])
     >>> sorted(x)
     [-15, -1]
 
     as a rough performance metric, we want to be sure our call count remains
     low for the is_bad() function.
     >>> call_count
-    6
+    9
+
+    See what happens when it has a pair that only show up together and not
+    alone.  Only if -6 and 5 are in the list, then is_bad returns true.
+    The assumption of this algorithm is that bad elements are independent,
+    so this should throw an exception.
+    >>> def is_bad(x,y):
+    ...     return max(x) - min(x) > 10
+    >>> x = bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that bad elements are independent was wrong
     '''
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
@@ -431,7 +463,8 @@ def bisect_search(is_bad, elements):
             if is_bad(Q1, no_test + Q2):
                 Q = Q1
                 no_test.extend(Q2)
-                # TODO: if the length of Q2 is big enough, test
+                # TODO: possible optimization.
+                #       if the length of Q2 is big enough, test
                 #         is_bad(Q2, no_test + Q1)
                 #       and if that returns False, then mark Q2 as known so
                 #       that we don't need to search it again.
@@ -445,11 +478,22 @@ def bisect_search(is_bad, elements):
                 no_test.extend(Q1)
 
         bad_element = quest_list.pop(0)
-        bad_list.append(bad_element)
+
+        # TODO: only double check if the last check was False
+        # double check that we found a bad element before declaring it bad
+        if is_bad([bad_element], known_list + quest_list):
+            bad_list.append(bad_element)
+
+        # add to the known list to not search it again
         known_list.append(bad_element)
 
-        # double check that we found a bad element
-        #assert is_bad([bad_element], known_list + quest_list)
+    # Perform a sanity check.  If we have found all of the bad items, then
+    # compiling with all but these bad items will cause a good build.
+    # This will fail if our hypothesis class is wrong
+    if len(bad_list) > 0:
+        good_list = list(set(elements).difference(bad_list))
+        assert not is_bad(good_list, bad_list), \
+            'Assumption that bad elements are independent was wrong'
 
     return bad_list
 
@@ -516,6 +560,17 @@ def parse_args(arguments, prog=sys.argv[0]):
                             precision runs.  The choices are 'float', 'double',
                             and 'long double'.
                             ''')
+    parser.add_argument('-a', '--auto-sqlite-run', action='store',
+                        required=False,
+                        help='''
+                            Automatically run bisect on all of the non-zero
+                            comparison values in the given sqlite3 file.  If
+                            you specify this option, then do not specify the
+                            precision or the compilation or the testcase.
+                            Those will be automatically procured from the
+                            sqlite3 file.  The results will be stored in a csv
+                            file called auto-bisect.csv.
+                            ''')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='''
                             Give verbose output including the output from the
@@ -537,60 +592,73 @@ def parse_args(arguments, prog=sys.argv[0]):
 
     return args
 
-def main(arguments, prog=sys.argv[0]):
-    args = parse_args(arguments, prog)
+def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
+    '''
+    Performs the search over the space of statically linked libraries for
+    problems.
+    
+    Linking will be done with the ground-truth compiler, but with the static
+    libraries specified.  During this search, all source files will be compiled
+    with the ground-truth compilation, but the static libraries will be
+    included in the linking.
 
-    # our hash is the first 10 digits of a sha1 sum
-    trouble_hash = hashlib.sha1(
-        (args.compiler + args.optl + args.switches).encode()).hexdigest()[:10]
+    Doing a binary search here actually breaks things since including some
+    static libraries will require including others to resolve the symbols in
+    the included static libraries.  So, instead this function just runs with
+    the libraries included, and checks to see if there are reproducibility
+    problems.
+    '''
+    def bisect_libs_build_and_check(trouble_libs, ignore_libs):
+        '''
+        Compiles all source files under the ground truth compilation and
+        statically links in the trouble_libs.
 
-    # see if the Makefile needs to be regenerated
-    # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+        @param trouble_libs: static libraries to compile in
+        @param ignore_libs: static libraries to ignore and not include
+        
+        @return True if the compilation has a non-zero comparison between this
+            mixed compilation and the full ground-truth compilation.
+        '''
+        repl_copy = dict(replacements)
+        repl_copy['link_flags'] = list(repl_copy['link_flags'])
+        repl_copy['link_flags'].extend(trouble_libs)
+        makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
+                                          [], dict())
+        makepath = os.path.join(bisect_path, makefile)
 
-    # create a unique directory for this bisect run
-    bisect_dir = create_bisect_dir(args.directory)
-    bisect_path = os.path.join(args.directory, bisect_dir)
+        sys.stdout.write('  Create {0} - compiling and running' \
+                         .format(makepath))
+        sys.stdout.flush()
+        logging.info('Created {0}'.format(makepath))
+        logging.info('Checking:')
+        for lib in trouble_libs:
+            logging.info('  ' + lib)
 
-    # keep a bisect.log of what was done
-    logging.basicConfig(
-        filename=os.path.join(bisect_path, 'bisect.log'),
-        filemode='w',
-        format='%(asctime)s bisect: %(message)s',
-        #level=logging.INFO)
-        level=logging.DEBUG)
+        build_bisect(makepath, args.directory, verbose=args.verbose)
+        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                           args.directory)[0]
+        resultpath = os.path.join(args.directory, resultfile)
+        result_is_bad = is_result_bad(resultpath)
 
-    logging.info('Starting the bisect procedure')
-    logging.debug('  trouble compiler:           "{0}"'.format(args.compiler))
-    logging.debug('  trouble optimization level: "{0}"'.format(args.optl))
-    logging.debug('  trouble switches:           "{0}"'.format(args.switches))
-    logging.debug('  trouble testcase:           "{0}"'.format(args.testcase))
-    logging.debug('  trouble hash:               "{0}"'.format(trouble_hash))
+        result_str = 'bad' if result_is_bad else 'good'
+        sys.stdout.write(' - {0}\n'.format(result_str))
+        logging.info('Result was {0}'.format(result_str))
 
-    # get the list of source files from the Makefile
-    sources = util.extract_make_var('SOURCE', 'Makefile',
-                                    directory=args.directory)
-    logging.debug('Sources')
-    for source in sources:
-        logging.debug('  ' + source)
+        return result_is_bad
 
-    replacements = {
-        'bisect_dir': bisect_dir,
-        'datetime': datetime.date.today().strftime("%B %d, %Y"),
-        'flit_version': conf.version,
-        'precision': args.precision,
-        'test_case': args.testcase,
-        'trouble_cc': args.compiler,
-        'trouble_optl': args.optl,
-        'trouble_switches': args.switches,
-        'trouble_id': trouble_hash,
-        };
+    print('Searching for bad intel static libraries:')
+    logging.info('Searching for bad static libraries included by intel linker:')
+    #bad_libs = bisect_search(bisect_libs_build_and_check, libs)
+    #return bad_libs
+    if bisect_libs_build_and_check(libs, []):
+        return libs
+    else:
+        return []
 
-    # TODO: what kind of feedback should we give the user while it is building?
-    #       It is quite annoying as a user to simply issue a command and wait
-    #       with no feedback for a long time.
-
+def search_for_source_problems(args, bisect_path, replacements, sources):
+    '''
+    Performs the search over the space of source files for problems.
+    '''
     def bisect_build_and_check(trouble_src, gt_src):
         '''
         Compiles the compilation with trouble_src compiled with the trouble
@@ -626,17 +694,17 @@ def main(arguments, prog=sys.argv[0]):
 
         return result_is_bad
 
-    update_gt_results(args.directory, verbose=args.verbose)
-
     print('Searching for bad source files:')
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
     bad_sources = bisect_search(bisect_build_and_check, sources)
-    print('  bad sources:')
-    for src in bad_sources:
-        print('    ' + src)
+    return bad_sources
 
-
+def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sources):
+    '''
+    Performs the search over the space of symbols within bad source files for
+    problems.
+    '''
     def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
         '''
         Compiles the compilation with all files compiled under the ground truth
@@ -701,6 +769,166 @@ def main(arguments, prog=sys.argv[0]):
         logging.info(message)
 
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
+    return bad_symbols
+
+def run_bisect(arguments, prog=sys.argv[0]):
+    '''
+    The actual function for running the bisect command-line tool.
+
+    Returns four things, (libs, sources, symbols, returncode).
+    - libs: (list of strings) problem libraries
+    - sources: (list of strings) problem source files
+    - symbols: (list of SymbolTuples) problem functions
+    - returncode: (int) status, zero is success, nonzero is failure
+    '''
+    args = parse_args(arguments, prog)
+
+    # our hash is the first 10 digits of a sha1 sum
+    trouble_hash = hashlib.sha1(
+        (args.compiler + args.optl + args.switches).encode()).hexdigest()[:10]
+
+    # see if the Makefile needs to be regenerated
+    # we use the Makefile to check for itself, sweet
+    subp.check_call(['make', '-C', args.directory, 'Makefile'],
+                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+
+    # create a unique directory for this bisect run
+    bisect_dir = create_bisect_dir(args.directory)
+    bisect_path = os.path.join(args.directory, bisect_dir)
+
+    # keep a bisect.log of what was done
+    logging.basicConfig(
+        filename=os.path.join(bisect_path, 'bisect.log'),
+        filemode='w',
+        format='%(asctime)s bisect: %(message)s',
+        #level=logging.INFO)
+        level=logging.DEBUG)
+
+    logging.info('Starting the bisect procedure')
+    logging.debug('  trouble compiler:           "{0}"'.format(args.compiler))
+    logging.debug('  trouble optimization level: "{0}"'.format(args.optl))
+    logging.debug('  trouble switches:           "{0}"'.format(args.switches))
+    logging.debug('  trouble testcase:           "{0}"'.format(args.testcase))
+    logging.debug('  trouble hash:               "{0}"'.format(trouble_hash))
+
+    # get the list of source files from the Makefile
+    sources = util.extract_make_var('SOURCE', 'Makefile',
+                                    directory=args.directory)
+    logging.debug('Sources')
+    for source in sources:
+        logging.debug('  ' + source)
+
+    replacements = {
+        'bisect_dir': bisect_dir,
+        'datetime': datetime.date.today().strftime("%B %d, %Y"),
+        'flit_version': conf.version,
+        'precision': args.precision,
+        'test_case': args.testcase,
+        'trouble_cc': args.compiler,
+        'trouble_optl': args.optl,
+        'trouble_switches': args.switches,
+        'trouble_id': trouble_hash,
+        'link_flags': [],
+        'cpp_flags': [],
+        };
+
+    update_gt_results(args.directory, verbose=args.verbose)
+
+    # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
+    bad_libs = []
+    if os.path.basename(args.compiler) in ('icc', 'icpc'):
+        warning_message = 'Warning: The intel compiler may not work with bisect'
+        logging.info(warning_message)
+        print(warning_message)
+
+        if '/' in args.compiler:
+            compiler = os.path.realpath(args.compiler)
+        else:
+            compiler = os.path.realpath(shutil.which(args.compiler))
+
+        # TODO: find a more portable way of finding the static libraries
+        #       This can be done by calling the linker command with -v to see
+        #       what intel uses in its linker.  The include path is in that
+        #       output command.
+        # Note: This is a hard-coded approach specifically for the intel linker
+        #       and what I observed was the behavior.
+        intel_dir = os.path.join(os.path.dirname(compiler), '..', '..')
+        intel_dir = os.path.realpath(intel_dir)
+        intel_lib_dir = os.path.join(intel_dir, 'compiler', 'lib', 'intel64')
+        libs = [
+            os.path.join(intel_lib_dir, 'libdecimal.a'),
+            os.path.join(intel_lib_dir, 'libimf.a'),
+            os.path.join(intel_lib_dir, 'libipgo.a'),
+            os.path.join(intel_lib_dir, 'libirc_s.a'),
+            os.path.join(intel_lib_dir, 'libirc.a'),
+            os.path.join(intel_lib_dir, 'libirng.a'),
+            os.path.join(intel_lib_dir, 'libsvml.a'),
+            ]
+        bad_libs = search_for_linker_problems(args, bisect_path, replacements,
+                                              sources, libs)
+        print('  bad static libraries:')
+        logging.info('BAD STATIC LIBRARIES:')
+        for lib in bad_libs:
+            print('    ' + lib)
+            logging.info('  ' + lib)
+        if len(bad_libs) == 0:
+            print('    None')
+            logging.info('  None')
+
+        #replacements['link_flags'].extend([
+        #    '-L' + intel_lib_dir,
+        #    '-lirc',
+        #    '-lsvml',
+        #    ])
+
+        # TODO: If the linker is to blame, remove it from the equation for
+        #       future searching This is done simply by using the ground-truth
+        #       compiler to link instead of using the trouble compiler to link.
+
+        # For now, if the linker was to blame, then exit saying there is
+        # nothing else we can do.
+        if len(bad_libs) > 0:
+            message = 'May not be able to search further, because of intel'
+            print(message)
+            logging.info(message)
+
+    # TODO: Handle the case where the ground-truth compiler is also an intel
+    #       compiler.
+    # TODO: Extra care must be taken when there is more than one intel linker
+    #       specified.
+
+    try:
+        bad_sources = search_for_source_problems(args, bisect_path,
+                                                 replacements, sources)
+    except subp.CalledProcessError:
+        print()
+        print('  Executable failed to run.')
+        print('Failed to search for bad sources -- cannot continue.')
+        logging.exception('Failed to search for bad sources.')
+        raise
+        return bad_libs, [], [], 1
+
+    print('  bad sources:')
+    logging.info('BAD SOURCES:')
+    for src in bad_sources:
+        print('    ' + src)
+        logging.info('  ' + src)
+    if len(bad_sources) == 0:
+        print('    None')
+        logging.info('  None')
+
+
+    try:
+        bad_symbols = search_for_symbol_problems(args, bisect_path,
+                                                 replacements, sources,
+                                                 bad_sources)
+    except subp.CalledProcessError:
+        print()
+        print('  Executable failed to run.')
+        print('Failed to search for bad symbols -- cannot continue')
+        logging.exception('Failed to search for bad symbols.')
+        return bad_libs, bad_sources, [], 1
+
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
     for sym in bad_symbols:
@@ -708,11 +936,89 @@ def main(arguments, prog=sys.argv[0]):
                   .format(sym=sym)
         print('  ' + message)
         logging.info(message)
+    if len(bad_symbols) == 0:
+        print('    None')
+        logging.info('  None')
 
+    return bad_libs, bad_sources, bad_symbols, 0
 
-    # TODO: determine if the problem is on the linker's side
-    #       I'm not yet sure the best way to do that
-    #       This is to be done later - first go for compilation problems
+def main(arguments, prog=sys.argv[0]):
+    '''
+    A wrapper around the bisect program.  This checks for the --auto-sqlite-run
+    stuff and runs the run_bisect multiple times if so.
+    '''
+    if '-a' in arguments or '--auto-sqlite-run' in arguments:
+        if '-a' in arguments:
+            idx = arguments.index('-a')
+        else:
+            idx = arguments.index('--auto-sqlite-run')
+
+        arguments.pop(idx)
+        sqlitefile = arguments.pop(idx)
+
+        try:
+            connection = util.sqlite_open(sqlitefile)
+        except:
+            print('Error:', sqlitefile, 'is not an sqlite3 file')
+            return 1
+
+        return_tot = 0
+        with open('auto-bisect.csv', 'w') as resultsfile:
+            writer = csv.writer(resultsfile)
+            query = connection.execute(
+                    'select * from tests where comparison_d!=0.0')
+            precision_map = {
+                'f': 'float',
+                'd': 'double',
+                'e': 'long double',
+                }
+            writer.writerow([
+                'testid',
+                'compiler',
+                'precision',
+                'testcase',
+                'type',
+                'name',
+                'return',
+                ])
+            entries = []
+            for row in query:
+                compilation = ' '.join(
+                        [row['compiler'], row['optl'], row['switches']])
+                testcase = row['name']
+                precision = precision_map[row['precision']]
+                row_args = list(arguments)
+                row_args.extend([
+                    '--precision', precision,
+                    compilation,
+                    testcase,
+                    ])
+                print('flit bisect',
+                      '--precision', precision,
+                      '"' + compilation + '"',
+                      testcase)
+                libs,srcs,syms,ret = run_bisect(row_args, prog)
+                return_tot += ret
+
+                entries.extend([('lib',x) for x in libs])
+                entries.extend([('src',x) for x in srcs])
+                entries.extend([('sym',x) for x in syms])
+
+                for entry in entries:
+                    writer.writerow([
+                        row['id'],
+                        compiler,
+                        precision,
+                        testcase,
+                        entry[0],
+                        entry[1],
+                        ret,
+                        ])
+        return return_tot
+
+    else:
+        _,_,_,ret = run_bisect(arguments, prog)
+        return ret
 
 
 if __name__ == '__main__':
