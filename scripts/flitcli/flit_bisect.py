@@ -156,7 +156,7 @@ def create_bisect_dir(parent):
             return bisect_dir
 
 def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
-                           split_symbol_map, cpp_flags=[], link_flags=[]):
+                           split_symbol_map):
     '''
     Returns the name of the created Makefile within the given directory, having
     been populated with the replacements, gt_src, and trouble_src.  It is then
@@ -174,10 +174,12 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
         (dict fname -> list [list good symbols, list bad symbols])
         Files to compile as a split between good and bad, specifying good and
         bad symbols for each file.
-    @param cpp_flags: (list) (optional) List of c++ compiler flags to give to
-        each compiler when compiling object files from source files.
-    @param link_flags: (list) (optional) List of linker flags to give to the
-        ground-truth compiler when performing linking.
+
+    Within replacements, there are some optional fields:
+    - cpp_flags: (list) (optional) List of c++ compiler flags to give to
+          each compiler when compiling object files from source files.
+    - link_flags: (list) (optional) List of linker flags to give to the
+          ground-truth compiler when performing linking.
 
     @return the bisect makefile name without directory prepended to it
     '''
@@ -188,10 +190,14 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
                                             for x in gt_src])
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
-    repl_copy['EXTRA_CC_FLAGS'] = '\n'.join(['CC_REQUIRED      += {0}'.format(x)
-                                             for x in cpp_flags])
-    repl_copy['EXTRA_LD_FLAGS'] = '\n'.join(['LD_REQUIRED      += {0}'.format(x)
-                                             for x in link_flags])
+    if 'cpp_flags' in repl_copy:
+        repl_copy['EXTRA_CC_FLAGS'] = '\n'.join(['CC_REQUIRED      += {0}'.format(x)
+                                                 for x in repl_copy['cpp_flags']])
+        del repl_copy['cpp_flags']
+    if 'link_flags' in repl_copy:
+        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join(['LD_REQUIRED      += {0}'.format(x)
+                                                 for x in repl_copy['link_flags']])
+        del repl_copy['link_flags']
 
 
     # Find the next unique file name available in directory
@@ -401,6 +407,11 @@ def bisect_search(is_bad, elements):
     where n is the size of the questionable_list and k is
     the number of bad elements in questionable_list.
 
+    Note: A key assumption to this algorithm is that all bad elements are
+    independent.  That may not always be true, so there are redundant checks
+    within the algorithm to verify that this assumption is not vialoated.  If
+    the assumption is found to be violated, then an AssertionError is raised.
+
     @param is_bad: a function that takes two arguments (maybe_bad_list,
         maybe_good_list) and returns True if the maybe_bad_list has a bad
         element
@@ -422,7 +433,18 @@ def bisect_search(is_bad, elements):
     as a rough performance metric, we want to be sure our call count remains
     low for the is_bad() function.
     >>> call_count
-    6
+    9
+
+    See what happens when it has a pair that only show up together and not
+    alone.  Only if -6 and 5 are in the list, then is_bad returns true.
+    The assumption of this algorithm is that bad elements are independent,
+    so this should throw an exception.
+    >>> def is_bad(x,y):
+    ...     return max(x) - min(x) > 10
+    >>> x = bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that bad elements are independent was wrong
     '''
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
@@ -441,7 +463,8 @@ def bisect_search(is_bad, elements):
             if is_bad(Q1, no_test + Q2):
                 Q = Q1
                 no_test.extend(Q2)
-                # TODO: if the length of Q2 is big enough, test
+                # TODO: possible optimization.
+                #       if the length of Q2 is big enough, test
                 #         is_bad(Q2, no_test + Q1)
                 #       and if that returns False, then mark Q2 as known so
                 #       that we don't need to search it again.
@@ -455,11 +478,20 @@ def bisect_search(is_bad, elements):
                 no_test.extend(Q1)
 
         bad_element = quest_list.pop(0)
-        bad_list.append(bad_element)
+
+        # double check that we found a bad element before declaring it bad
+        if is_bad([bad_element], known_list + quest_list):
+            bad_list.append(bad_element)
+
+        # add to the known list to not search it again
         known_list.append(bad_element)
 
-        # double check that we found a bad element
-        #assert is_bad([bad_element], known_list + quest_list)
+    # Perform a sanity check.  If we have found all of the bad items, then
+    # compiling with all but these bad items will cause a good build.
+    # This will fail if our hypothesis class is wrong
+    good_list = list(set(elements).difference(bad_list))
+    assert not is_bad(good_list, bad_list), \
+        'Assumption that bad elements are independent was wrong'
 
     return bad_list
 
@@ -556,6 +588,12 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     libraries specified.  During this search, all source files will be compiled
     with the ground-truth compilation, but the static libraries will be
     included in the linking.
+
+    Doing a binary search here actually breaks things since including some
+    static libraries will require including others to resolve the symbols in
+    the included static libraries.  So, instead this function just runs with
+    the libraries included, and checks to see if there are reproducibility
+    problems.
     '''
     def bisect_libs_build_and_check(trouble_libs, ignore_libs):
         '''
@@ -568,8 +606,11 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground-truth compilation.
         '''
-        makefile = create_bisect_makefile(bisect_path, replacements, sources,
-                                          [], dict(), link_flags=trouble_libs)
+        repl_copy = dict(replacements)
+        repl_copy['link_flags'] = list(repl_copy['link_flags'])
+        repl_copy['link_flags'].extend(trouble_libs)
+        makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
+                                          [], dict())
         makepath = os.path.join(bisect_path, makefile)
 
         sys.stdout.write('  Create {0} - compiling and running' \
@@ -594,8 +635,12 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
     print('Searching for bad intel static libraries:')
     logging.info('Searching for bad static libraries included by intel linker:')
-    bad_libs = bisect_search(bisect_libs_build_and_check, libs)
-    return bad_libs
+    #bad_libs = bisect_search(bisect_libs_build_and_check, libs)
+    #return bad_libs
+    if bisect_libs_build_and_check(libs, []):
+        return libs
+    else:
+        return []
 
 def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
@@ -761,6 +806,8 @@ def main(arguments, prog=sys.argv[0]):
         'trouble_optl': args.optl,
         'trouble_switches': args.switches,
         'trouble_id': trouble_hash,
+        'link_flags': [],
+        'cpp_flags': ['-nostdlib'],
         };
 
     update_gt_results(args.directory, verbose=args.verbose)
@@ -792,8 +839,19 @@ def main(arguments, prog=sys.argv[0]):
         bad_libs = search_for_linker_problems(args, bisect_path, replacements,
                                               sources, libs)
         print('  bad static libraries:')
+        logging.info('BAD STATIC LIBRARIES:')
         for lib in bad_libs:
             print('    ' + lib)
+            logging.info('  ' + lib)
+        if len(bad_libs) == 0:
+            print('    None')
+            logging.info('  None')
+
+        replacements['link_flags'].extend([
+            '-L' + intel_lib_dir,
+            '-lirc',
+            '-lsvml',
+            ])
 
     # If the linker is to blame, remove it from the equation for future searching
     # This is done simply by using the ground-truth compiler to link instead of
@@ -806,8 +864,13 @@ def main(arguments, prog=sys.argv[0]):
     bad_sources = search_for_source_problems(args, bisect_path, replacements,
                                              sources)
     print('  bad sources:')
+    logging.info('BAD SOURCES:')
     for src in bad_sources:
         print('    ' + src)
+        logging.info('  ' + src)
+    if len(bad_sources) == 0:
+        print('    None')
+        logging.info('  None')
 
 
     bad_symbols = search_for_symbol_problems(args, bisect_path, replacements,
@@ -819,6 +882,9 @@ def main(arguments, prog=sys.argv[0]):
                   .format(sym=sym)
         print('  ' + message)
         logging.info(message)
+    if len(bad_symbols) == 0:
+        print('    None')
+        logging.info('  None')
 
 
     # TODO: determine if the problem is on the linker's side
