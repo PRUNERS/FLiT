@@ -96,7 +96,7 @@ import csv
 import datetime
 import hashlib
 import logging
-import multiprocessing
+import multiprocessing as mp
 import os
 import re
 import shutil
@@ -260,7 +260,7 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
     '''
     logging.info('Building the bisect executable')
     if jobs is None:
-        jobs = multiprocessing.cpu_count()
+        jobs = mp.cpu_count()
     kwargs = dict()
     if not verbose:
         kwargs['stdout'] = subp.DEVNULL
@@ -270,7 +270,7 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
         **kwargs)
 
 def update_gt_results(directory, verbose=False,
-                      jobs=multiprocessing.cpu_count()):
+                      jobs=mp.cpu_count()):
     '''
     Update the ground-truth.csv results file for FLiT tests within the given
     directory.
@@ -519,6 +519,8 @@ def parse_args(arguments, prog=sys.argv[0]):
                 this file is overwritten if you call flit bisect again.
                 ''',
             )
+
+    # These positional arguments only make sense if not doing an auto run
     parser.add_argument('compilation',
                         help='''
                             The problematic compilation to use.  This should
@@ -550,6 +552,7 @@ def parse_args(arguments, prog=sys.argv[0]):
                         #    dev' and then calling the created executable
                         #    './devrun --list-tests'.
                         #    ''')
+
     parser.add_argument('-C', '--directory', default='.',
                         help='The flit test directory to run the bisect tool')
     parser.add_argument('-p', '--precision', action='store', required=True,
@@ -572,13 +575,21 @@ def parse_args(arguments, prog=sys.argv[0]):
                             sqlite3 file.  The results will be stored in a csv
                             file called auto-bisect.csv.
                             ''')
+    parser.add_argument('--parallel', type=int, default=1,
+                        help='''
+                            How many parallel bisect searches to perform.  This
+                            only makes sense with --auto-sqlite-run, since
+                            there are multiple bisect runs to perform.  Each
+                            bisect run is sequential, but the bisect runs may
+                            be parallelized if the user desires so.
+                            ''')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='''
                             Give verbose output including the output from the
                             Makefiles.  The default is to be quiet and to only
                             output short updates.
                             ''')
-    processors = multiprocessing.cpu_count()
+    processors = mp.cpu_count()
     parser.add_argument('-j', '--jobs', type=int, default=processors,
                         help='''
                             The number of parallel jobs to use for the call to
@@ -804,7 +815,11 @@ def run_bisect(arguments, prog=sys.argv[0]):
     bisect_dir = create_bisect_dir(args.directory)
     bisect_path = os.path.join(args.directory, bisect_dir)
 
-    # keep a bisect.log of what was done
+    # keep a bisect.log of what was done, but need to remove all handlers,
+    # otherwise logging.basicConfig() does nothing.
+    log = logging.getLogger()
+    for handler in log.handlers[:]:
+        log.removeHandler(handler)
     logging.basicConfig(
         filename=os.path.join(bisect_path, 'bisect.log'),
         filemode='w',
@@ -966,93 +981,167 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     return bad_libs, bad_sources, bad_symbols, 0
 
+def auto_bisect_worker(arg_queue, result_queue):
+    '''
+    Runs a worker that runs bisect and returns the obtained results into the
+    result_queue.  Runs until the arg_queue is empty.
+
+    @param arg_queue: (multiprocessing.Queue) queue contining lists of
+        command-line arguments, each one associated with a single call to flit
+        bisect.  This is where the work comes from.  These elements are tuples
+        of
+        - arguments: (list of str) base of command-line arguments minus
+          positional
+        - row: (dict of str -> val) The row to run from the sqlite database.
+        - i: which job this is starting from i to rowcount
+        - rowcount: total number of rows that exist
+    @param result_queue: (multiprocessing.Queue or multiprocessing.SimpleQueue)
+        queue for putting the results after running them.  This will contain a
+        dictionary with the following keys:
+        - compiler: (str) compiler used
+        - optl: (str) optimization level
+        - switches: (str) switches
+        - libs: (list of str) bad libraries found
+        - srcs: (list of str) bad source files found
+        - syms: (list of SymbolTuple) bad symbols found
+        - ret: (int) return code of running
+
+    @return None
+    '''
+    import queue
+    precision_map = {
+        'f': 'float',
+        'd': 'double',
+        'e': 'long double',
+        }
+    try:
+        while True:
+            arguments, row, i, rowcount = arg_queue.get(False)
+            
+            compilation = ' '.join(
+                    [row['compiler'], row['optl'], row['switches']])
+            testcase = row['name']
+            precision = precision_map[row['precision']]
+            row_args = list(arguments)
+            row_args.extend([
+                '--precision', precision,
+                compilation,
+                testcase,
+                ])
+            print()
+            print('Run', i, 'of', rowcount)
+            print('flit bisect',
+                  '--precision', precision,
+                  '"' + compilation + '"',
+                  testcase)
+
+            libs,srcs,syms,ret = run_bisect(row_args)
+            result_queue.put((row,libs,srcs,syms,ret))
+
+    except queue.Empty:
+        # exit the function
+        pass
+
+def parallel_auto_bisect(arguments, prog=sys.argv[0]):
+    '''
+    Runs bisect in parallel under the auto mode.  This is only applicable if
+    the --auto-sqlite-run option has been specified in the arguments.
+
+    @return The sum of the return codes of each bisect call
+    '''
+    # prepend a compilation and test case so that if the user provided
+    # some, then an error will occur.
+    args = parse_args(['--precision', 'double', 'compilation', 'testcase'] + arguments, prog)
+    sqlitefile = args.auto_sqlite_run
+
+    try:
+        connection = util.sqlite_open(sqlitefile)
+    except:
+        print('Error:', sqlitefile, 'is not an sqlite3 file')
+        return 1
+
+    return_tot = 0
+    with open('auto-bisect.csv', 'w') as resultsfile:
+        writer = csv.writer(resultsfile)
+        query = connection.execute(
+                'select * from tests where comparison_d!=0.0')
+        writer.writerow([
+            'testid',
+            'compiler',
+            'optl',
+            'switches',
+            'precision',
+            'testcase',
+            'type',
+            'name',
+            'return',
+            ])
+        precision_map = {
+            'f': 'float',
+            'd': 'double',
+            'e': 'long double',
+            }
+        resultsfile.flush()
+        rows = query.fetchall()
+
+        # Update ground-truth results before launching workers
+        update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
+
+        # Generate the worker queue
+        arg_queue = mp.Queue()
+        result_queue = mp.SimpleQueue()
+        i = 0
+        rowcount = len(rows)
+        for row in rows:
+            i += 1
+            arg_queue.put((arguments, dict(row), i, rowcount))
+
+        # Create the workers
+        workers = []
+        for _ in range(args.parallel):
+            p = mp.Process(target=auto_bisect_worker,
+                           args=(arg_queue, result_queue))
+            p.start()
+            workers.append(p)
+
+        # Process the results
+        for _ in range(rowcount):
+            row,libs,srcs,syms,ret = result_queue.get()
+            return_tot += ret
+
+            entries = []
+            entries.extend([('lib',x) for x in libs])
+            entries.extend([('src',x) for x in srcs])
+            entries.extend([('sym',x) for x in syms])
+
+            for entry in entries:
+                writer.writerow([
+                    row['id'],
+                    row['compiler'],
+                    row['optl'],
+                    row['switches'],
+                    precision_map[row['precision']],
+                    row['name'],
+                    entry[0],
+                    entry[1],
+                    ret,
+                    ])
+            resultsfile.flush()
+
+        # Join the workers
+        for p in workers:
+            p.join()
+
+    return return_tot
+
 def main(arguments, prog=sys.argv[0]):
     '''
     A wrapper around the bisect program.  This checks for the --auto-sqlite-run
     stuff and runs the run_bisect multiple times if so.
     '''
+
     if '-a' in arguments or '--auto-sqlite-run' in arguments:
-        if '-a' in arguments:
-            idx = arguments.index('-a')
-        else:
-            idx = arguments.index('--auto-sqlite-run')
-
-        arguments.pop(idx)
-        sqlitefile = arguments.pop(idx)
-
-        try:
-            connection = util.sqlite_open(sqlitefile)
-        except:
-            print('Error:', sqlitefile, 'is not an sqlite3 file')
-            return 1
-
-        return_tot = 0
-        with open('auto-bisect.csv', 'w') as resultsfile:
-            writer = csv.writer(resultsfile)
-            query = connection.execute(
-                    'select * from tests where comparison_d!=0.0')
-            precision_map = {
-                'f': 'float',
-                'd': 'double',
-                'e': 'long double',
-                }
-            writer.writerow([
-                'testid',
-                'compiler',
-                'optl',
-                'switches',
-                'precision',
-                'testcase',
-                'type',
-                'name',
-                'return',
-                ])
-            resultsfile.flush()
-            entries = []
-            i = 0
-            rows = query.fetchall()
-            rowcount = len(rows)
-            for row in rows:
-                i += 1
-                compilation = ' '.join(
-                        [row['compiler'], row['optl'], row['switches']])
-                testcase = row['name']
-                precision = precision_map[row['precision']]
-                row_args = list(arguments)
-                row_args.extend([
-                    '--precision', precision,
-                    compilation,
-                    testcase,
-                    ])
-                # give feedback about how much is left.  Run x of y
-                print()
-                print('Run', i, 'of', rowcount)
-                print('flit bisect',
-                      '--precision', precision,
-                      '"' + compilation + '"',
-                      testcase)
-                libs,srcs,syms,ret = run_bisect(row_args, prog)
-                return_tot += ret
-
-                entries.extend([('lib',x) for x in libs])
-                entries.extend([('src',x) for x in srcs])
-                entries.extend([('sym',x) for x in syms])
-
-                for entry in entries:
-                    writer.writerow([
-                        row['id'],
-                        row['compiler'],
-                        row['optl'],
-                        row['switches'],
-                        precision,
-                        testcase,
-                        entry[0],
-                        entry[1],
-                        ret,
-                        ])
-                resultsfile.flush()
-        return return_tot
-
+        return parallel_auto_bisect(arguments, prog)
     else:
         _,_,_,ret = run_bisect(arguments, prog)
         return ret
