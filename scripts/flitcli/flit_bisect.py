@@ -930,7 +930,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad sources -- cannot continue.')
         logging.exception('Failed to search for bad sources.')
-        raise
         return bad_libs, [], [], 1
 
     print('  bad sources:')
