@@ -197,7 +197,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
         eql_speeds = [speedup[i] for i in eql_idxs]
         not_eql_speeds = [speedup[i] for i in not_eql_idxs]
 
-        plt.figure(num=1, figsize=(12.5,5), dpi=80)
+        plt.figure(num=1, figsize=(3 + 0.13*len(speedup), 5), dpi=80)
         plt.plot(speedup)
         plt.plot(eql_idxs, eql_speeds, 'b.',
                  label='same answer as ground truth')
@@ -210,6 +210,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
         plt.tight_layout()
         newname = '{0}-{1}-{2}.svg'.format(name, host, p)
         plt.savefig(os.path.join(outdir, newname), format='svg')
+        print('Created', os.path.join(outdir, newname))
         plt.cla()
 
 def main(arguments):

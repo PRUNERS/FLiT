@@ -228,66 +228,10 @@ def plot_histogram(rows, test_names=[], outdir='.'):
         label.set_transform(label.get_transform() + offset)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(outdir, 'speedup_histogram.svg'), format='svg')
-    #plt.show()
-
-    # -------
-    
-#    for name in test_names:
-#        test_rows = [row for row in rows if row['name'] == name]
-#        hosts = set(row['host'] for row in test_rows)
-#        for host in hosts:
-#            host_rows = [row for row in test_rows if row['host'] == host]
-#            precisions = set(row['precision'] for row in host_rows)
-#            for p in precisions:
-#                p_rows = [row for row in host_rows if row['precision'] == p]
-#                data = {}
-#                data['name'] = name
-#                data['rows'] = p_rows
-#                data['times'] = np.asarray([int(row['nanosec'])
-#                                            for row in data['rows']])
-#                data['fastest'] = min(data['times'])
-#                data['slowest'] = max(data['times'])
-#                # TODO: instead of calculating the speedup using the slowest
-#                # TODO: time, use the ground-truth time.
-#                data['speedup'] = data['slowest'] / data['times']
-#                data['xlab'] = [to_x_label(row) for row in data['rows']]
-#                data['iseql'] = [float(row['comparison_d']) == 0.0
-#                                 for row in data['rows']]
-#                key = (name, host, p)
-#                test_data[key] = data
-#
-#    for key, data in test_data.items():
-#        name, host, p = key
-#        print(name, max(data['speedup']))
-#        print('  slowest', data['slowest'])
-#        print('  fastest', data['fastest'])
-#        speedup = data['speedup']
-#        xlab = data['xlab']
-#        iseql = data['iseql']
-#        joint_sort = sorted(zip(xlab, speedup, iseql), key=lambda x: x[1])
-#        xlab = [x[0] for x in joint_sort]
-#        speedup = [x[1] for x in joint_sort]
-#        iseql = [x[2] for x in joint_sort]
-#        eql_idxs = [i for i in range(len(iseql)) if iseql[i] is True]
-#        not_eql_idxs = [i for i in range(len(iseql)) if iseql[i] is False]
-#        eql_speeds = [speedup[i] for i in eql_idxs]
-#        not_eql_speeds = [speedup[i] for i in not_eql_idxs]
-#
-#        plt.figure(num=1, figsize=(12.5,5), dpi=80)
-#        plt.plot(speedup)
-#        plt.plot(eql_idxs, eql_speeds, 'b.',
-#                 label='same answer as ground truth')
-#        plt.plot(not_eql_idxs, not_eql_speeds, 'rx',
-#                 label='different answer than ground truth')
-#        plt.xticks(np.arange(len(xlab)), xlab, rotation='vertical')
-#        plt.legend()
-#        plt.ylim(ymin=0)
-#        plt.ylabel('Speedup from slowest')
-#        plt.tight_layout()
-#        newname = '{0}-{1}-{2}.svg'.format(name, host, p)
-#        plt.savefig(os.path.join(outdir, newname), format='svg')
-#        plt.cla()
+    figfile = os.path.join(outdir, 'speedup_histogram.svg')
+    plt.savefig(figfile, format='svg')
+    plt.cla()
+    print('Created', figfile)
 
 def main(arguments):
     'Main entry point, calls plot_timing()'
