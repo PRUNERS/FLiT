@@ -83,11 +83,9 @@
 # -- LICENSE END --
 
 '''
-Plots the speedup vs compilation.  The x-axis is organized to make the speedup
-curve be monotonically non-decreasing.  Along the speedup curve, there are
-marks at each point.  A blue dot represents where the answer was the same as
-the ground truth.  A red X represents where the answer differed from the ground
-truth answer.
+Plots the best speedup vs compilation as a bar chart.  The x-axis is the test
+name, and the y-axis is the speedup.  There is one bar per compiler (for
+fastest safe compilation) and one bar for all unsafe compilations.
 '''
 
 import argparse
@@ -97,38 +95,65 @@ import os
 import sqlite3
 import sys
 
-# This matplot command makes the use of pyplot without X11 possible
+from plot_timing import read_sqlite
+
+# This matplot command makes possible the use of pyplot without X11
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def read_csv(csvfile):
+def calc_speedups(rows, test_names):
     '''
-    Reads and returns the csvfile as a list of dictionaries
+    Calculates the safe speedup and the unsafe speedup for each test_name,
+    compiler combination.
+    
+    @return (safe_speedups, unsafe_speedups)
+    
+    - safe_speedups: (dict{compiler -> list[speedup for test_name i]})
+      Safe speedups, defined by row['comparison_d'] == 0.0
+    - unsafe_speedups: (dist{compiler -> list[speedup for test_name i]})
+      Unsafe speedups, defined by not safe.
+
+    If there are no safe runs or no unsafe runs for a given compiler, then the
+    speedup returned is zero.  This speedup is against the slowest run across
+    compilers.
     '''
-    rows = []
-    with open(csvfile, 'r') as fin:
-        reader = csv.DictReader(fin)
-        rows = [row for row in reader]
-    return rows
+    compilers = sorted(set(x['compiler'] for x in rows))
 
-def read_sqlite(sqlitefile, run=None):
-    connection = sqlite3.connect(sqlitefile,
-            detect_types=sqlite3.PARSE_DECLTYPES)
-    connection.row_factory = sqlite3.Row
-    cur = connection.cursor()
-    cur.execute('select id from runs order by id')
-    run_ids = sorted([x['id'] for x in cur])
-    if len(run_ids) == 0:
-        raise RuntimeError('No runs in the database: ' + sqlitefile)
-    if run is None:
-        run = run_ids[-1]
-    else:
-        assert run in run_ids
-    cur.execute('select * from tests where run = ?', (run,))
-    return [dict(x) for x in cur]
+    test_row_map = {x: [row for row in rows if row['name'] == x]
+                    for x in test_names}
+    safe_speedups = {x: [] for x in compilers}
+    unsafe_speedups = {x: [] for x in compilers}
+    for test_name in test_names:
+        test_rows = test_row_map[test_name]
+        compiler_row_map = {x: [row for row in test_rows
+                                    if row['compiler'] == x]
+                            for x in compilers}
+        slowest_time = max([int(x['nanosec']) for x in test_rows])
+        fastest_safe = []
+        fastest_unsafe = []
+        for compiler in compilers:
+            compiler_rows = compiler_row_map[compiler]
+            safe_times = [int(x['nanosec']) for x in compiler_rows 
+                          if float(x['comparison_d']) == 0.0]
+            unsafe_times = [int(x['nanosec']) for x in compiler_rows 
+                            if float(x['comparison_d']) == 0.0]
 
-def plot_timing(rows, test_names=[], outdir='.'):
+            if len(safe_times) > 0:
+                safe_speedup = slowest_time / min(safe_times)
+            else:
+                safe_speedup = 0
+
+            if len(unsafe_times) > 0:
+                unsafe_speedup = slowest_time / min(unsafe_times)
+            else:
+                unsafe_speedup = 0
+
+            safe_speedups[compiler].append(safe_speedup)
+            unsafe_speedups[compiler].append(unsafe_speedup)
+    return safe_speedups, unsafe_speedups
+
+def plot_histogram(rows, test_names=[], outdir='.'):
     '''
     Plots the timing metrics from the rows and for the given test_names.  The
     resultant plots will be placed in outdir.
@@ -149,69 +174,64 @@ def plot_timing(rows, test_names=[], outdir='.'):
     except FileExistsError:
         pass
 
-    # generates labels for the x-axis
-    to_x_label = lambda row: \
-            '{0} {1} {2}' \
-            .format(row['compiler'], row['optl'], row['switches']) \
-            .strip()
+    safe_speedups, unsafe_speedups = calc_speedups(rows, test_names)
+    compilers = safe_speedups.keys()
 
-    test_data = {}
-    for name in test_names:
-        test_rows = [row for row in rows if row['name'] == name]
-        hosts = set(row['host'] for row in test_rows)
-        for host in hosts:
-            host_rows = [row for row in test_rows if row['host'] == host]
-            precisions = set(row['precision'] for row in host_rows)
-            for p in precisions:
-                p_rows = [row for row in host_rows if row['precision'] == p]
-                data = {}
-                data['name'] = name
-                data['rows'] = p_rows
-                data['times'] = np.asarray([int(row['nanosec'])
-                                            for row in data['rows']])
-                data['fastest'] = min(data['times'])
-                data['slowest'] = max(data['times'])
-                # TODO: instead of calculating the speedup using the slowest
-                # TODO: time, use the ground-truth time.
-                data['speedup'] = data['slowest'] / data['times']
-                data['xlab'] = [to_x_label(row) for row in data['rows']]
-                data['iseql'] = [float(row['comparison_d']) == 0.0
-                                 for row in data['rows']]
-                key = (name, host, p)
-                test_data[key] = data
+    width = 1 / (len(compilers) + 2)  # The bar width
+    ind = np.arange(len(test_names))  # The x locations for the groups
 
-    for key, data in test_data.items():
-        name, host, p = key
-        print(name, max(data['speedup']))
-        print('  slowest', data['slowest'])
-        print('  fastest', data['fastest'])
-        speedup = data['speedup']
-        xlab = data['xlab']
-        iseql = data['iseql']
-        joint_sort = sorted(zip(xlab, speedup, iseql), key=lambda x: x[1])
-        xlab = [x[0] for x in joint_sort]
-        speedup = [x[1] for x in joint_sort]
-        iseql = [x[2] for x in joint_sort]
-        eql_idxs = [i for i in range(len(iseql)) if iseql[i] is True]
-        not_eql_idxs = [i for i in range(len(iseql)) if iseql[i] is False]
-        eql_speeds = [speedup[i] for i in eql_idxs]
-        not_eql_speeds = [speedup[i] for i in not_eql_idxs]
+    #fig = plt.figure(num=1, figsize=(2 + len(test_names), 6))
+    #ax = fig.add_axes()
+    fig, ax = plt.subplots()
+    fig.set_figwidth(2 + len(test_names))
+    fig.set_figheight(6)
+    bar_colormap = matplotlib.colors.LinearSegmentedColormap(
+            'myblues',
+            {
+                'red': [(0.0, 0x70/256, 0x70/256),
+                        (0.5, 0.0, 0.0),
+                        (1.0, 0.0, 0.0)],
+                'green': [(0.0, 0xdb/256, 0xdb/256),
+                          (0.5, 0xad/256, 0xad/256),
+                          (1.0, 0x5b/256, 0x5b/256)],
+                'blue': [(0.0, 1.0, 1.0),
+                         (0.5, 0xda/256, 0xda/256),
+                         (1.0, 0xa9/256, 0xa9/256)]
+            })
+    #bar_colors = plt.cm.Blues(np.linspace(1.0, 0.5, len(compilers)))
+    bar_colors = bar_colormap(np.linspace(0.0, 1.0, len(compilers)))
+    compiler_rects = [ax.bar(ind + width*i, safe_speedups[comp], width, color=bar_colors[i])
+                      for i, comp in enumerate(compilers)]
+    unsafe_rect = ax.bar(ind + width*len(compilers),
+                         [max(unsafe_speedups[comp][i] for comp in compilers)
+                          for i in range(len(test_names))],
+                         width,
+                         color='r')
 
-        plt.figure(num=1, figsize=(3 + 0.13*len(speedup), 5), dpi=80)
-        plt.plot(speedup)
-        plt.plot(eql_idxs, eql_speeds, 'b.',
-                 label='same answer as ground truth')
-        plt.plot(not_eql_idxs, not_eql_speeds, 'rx',
-                 label='different answer than ground truth')
-        plt.xticks(np.arange(len(xlab)), xlab, rotation='vertical')
-        plt.legend()
-        plt.ylim(ymin=0)
-        plt.ylabel('Speedup from slowest')
-        plt.tight_layout()
-        newname = '{0}-{1}-{2}.svg'.format(name, host, p)
-        plt.savefig(os.path.join(outdir, newname), format='svg')
-        print('Created', os.path.join(outdir, newname))
-        plt.cla()
+    ax.set_ylabel('Speedup from Slowest')
+    ax.yaxis.grid(which='major')  # Have horizontal grid lines
+    ax.set_axisbelow(True)        # Grid lines behind the bars
+    ax.set_xticks(ind - width)
+    ax.set_xticklabels(test_names)
+
+    legend = ax.legend(
+            compiler_rects + [unsafe_rect],
+            [x + ' fastest safe' for x in compilers] + ['fastest unsafe'])
+    legend.get_frame().set_alpha(1.0)
+
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=-45, ha='left')
+
+    dx = 0.5 * (1 - width)
+    offset = matplotlib.transforms.ScaledTranslation(dx, 0, fig.dpi_scale_trans)
+    
+    for label in ax.xaxis.get_majorticklabels():
+        label.set_transform(label.get_transform() + offset)
+
+    plt.tight_layout()
+    figfile = os.path.join(outdir, 'speedup_histogram.svg')
+    plt.savefig(figfile, format='svg')
+    plt.cla()
+    print('Created', figfile)
 
 def main(arguments):
     'Main entry point, calls plot_timing()'
@@ -223,15 +243,13 @@ def main(arguments):
     parser.add_argument('-p', '--precision', default='all',
             choices=['all', 'f', 'd', 'e'],
             help='Which precision to draw.  By default does all precisions')
-    #parser.add_argument('csv')
     parser.add_argument('sqlite')
     parser.add_argument('test', nargs='*')
     args = parser.parse_args(arguments)
-    #rows = read_csv(args.csv)
     rows = read_sqlite(args.sqlite, args.run)
     if args.precision != 'all':
         rows = [x for x in rows if x['precision'] == args.precision]
-    plot_timing(rows, args.test, args.outdir)
+    plot_histogram(rows, args.test, args.outdir)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

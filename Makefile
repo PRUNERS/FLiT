@@ -111,6 +111,7 @@ install: $(TARGET)
 	install -m 0644 $(SCRIPT_DIR)/README.md $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(DOC_DIR)/*.md $(PREFIX)/share/flit/doc/
 	install -m 0644 $(DATA_DIR)/Makefile.in $(PREFIX)/share/flit/data/
+	install -m 0644 $(DATA_DIR)/Makefile_bisect_binary.in $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/custom.mk $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/main.cpp $(PREFIX)/share/flit/data/
 	install -m 0644 $(DATA_DIR)/tests/Empty.cpp $(PREFIX)/share/flit/data/tests/

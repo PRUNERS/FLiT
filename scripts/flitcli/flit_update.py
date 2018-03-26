@@ -149,7 +149,7 @@ def main(arguments, prog=sys.argv[0]):
     # TODO: use the compiler mnemonic rather than the path
     gt_compiler_bin = matching_gt_compilers[0]['binary']
     if '/' in dev_compiler_bin:
-        gt_compiler_bin = os.path.realpath(gt_compiler_name)
+        gt_compiler_bin = os.path.realpath(gt_compiler_bin)
 
     flitutil.process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),

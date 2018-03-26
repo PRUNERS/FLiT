@@ -106,6 +106,8 @@ GT_SWITCHES     := {ground_truth_switches}
 OBJ_DIR          = obj
 
 CC_REQUIRED     += $(FFLAGS)
+# This flag specifies NOT to build position-independent executables
+CC_REQUIRED     += -fno-pie
 CC_REQUIRED     += -std=c++11
 CC_REQUIRED     += -I.
 CC_REQUIRED     += -I$(FLIT_INC_DIR)
@@ -116,6 +118,8 @@ DEV_CFLAGS      += -Wextra
 DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
 
+# This flag specifies NOT to link as a position-independent executable
+LD_REQUIRED     += -no-pie
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
@@ -430,7 +434,7 @@ $(R_TARGET): $(R_OBJ)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
 	  $(R_OBJ) -o $@ \
-		$(LD_REQUIRED)
+	  $(LD_REQUIRED)
 
 $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
@@ -486,10 +490,15 @@ $(foreach c, $(COMPILERS),                 \
   $(foreach s, $(SWITCHES_$(strip $c)),    \
     $(foreach o, $(OPCODES),               \
       $(eval $(call RECURSION_RULE, $c, $o, $s)))))
-TARGET_OUTS     := $(TARGETS:%=%_out.csv)
+TARGET_OUTS     := $(TARGETS:%=%-out)
+TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 
-%_out.csv: %
-	-./$< --output $@
+%-out: %
+	./$< --output $@ || touch $@
+
+# specify how to get comparison
+%-out-comparison.csv: %-out $(GT_OUT) $(GT_TARGET)
+	./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
 #$(RESULTS_DIR)/%_out.csv: $(RESULTS_DIR)/%
 #	$< --output $@
 
@@ -502,7 +511,8 @@ DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
 ifdef HAS_CUDA
 CUTARGET_OUTS   := $(foreach s, $(CUSWITCHES), \
-                     $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))_out.csv)
+                     $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))-out)
+CUTARGET_RESULTS:= $(CUTARGET_OUTS:%=%-comparison.csv)
 CUTARGETS       := $(CUTARGET_OUTS:%_out.csv=%)
 endif # ifdef HAS_CUDA
 
@@ -512,7 +522,10 @@ devcuda: $(DEV_CUTARGET)
 gt: groundtruth
 groundtruth: $(GT_TARGET)
 
-run: $(TARGET_OUTS) $(CUTARGET_OUTS) runbuild $(GT_OUT)
+run: $(TARGET_RESULTS) $(TARGET_OUTS)
+run: $(CUTARGET_RESULTS) $(CUTARGET_OUTS)
+run: $(GT_OUT)
+run: runbuild
 runbuild: $(TARGETS) $(CUTARGETS) groundtruth
 
 .PHONY: clean
@@ -529,9 +542,11 @@ distclean: clean
 	rm -f $(DEV_TARGET)
 	rm -f $(DEV_CUTARGET)
 	rm -f $(TARGET_OUTS)
+	rm -f $(TARGET_RESULTS)
 	rm -f $(addsuffix *.dat,$(TARGET_OUTS))
 	rm -f $(TARGETS)
 	rm -f $(CUTARGET_OUTS)
+	rm -f $(CUTARGET_RESULTS)
 	rm -f $(addsuffix *.dat,$(CUTARGET_OUTS))
 	rm -f $(CUTARGETS)
 	rm -f $(GT_TARGET)
@@ -559,14 +574,14 @@ cleanlibflit:
 	rm -rf lib
 
 $(DEV_TARGET): lib/libflit.so
-$(GT_TARGET): lib/libflit.so
-$(TARGETS): lib/libflit.so
-$(CUTARGETS): lib/libflit.so
+$(GT_TARGET):  lib/libflit.so
+$(TARGETS):    lib/libflit.so
+$(CUTARGETS):  lib/libflit.so
 else
 $(DEV_TARGET): $(FLIT_LIB_DIR)/libflit.so
-$(GT_TARGET): $(FLIT_LIB_DIR)/libflit.so
-$(TARGETS): $(FLIT_LIB_DIR)/libflit.so
-$(CUTARGETS): $(FLIT_LIB_DIR)/libflit.so
+$(GT_TARGET):  $(FLIT_LIB_DIR)/libflit.so
+$(TARGETS):    $(FLIT_LIB_DIR)/libflit.so
+$(CUTARGETS):  $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 # include the build dependencies for gt and dev
@@ -600,15 +615,14 @@ $(OBJ_DIR)/%_cu_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 endif # ifdef HAS_CUDA
 
 # Ground truth compilation rules
-$(GT_OUT): $(GT_TARGET) $(TARGET_OUTS) $(CUTARGET_OUTS)
-	./$(GT_TARGET) --output $(GT_OUT) \
-	  --compare-mode $(TARGET_OUTS) $(CUTARGET_OUTS)
+$(GT_OUT): $(GT_TARGET)
+	./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CC)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
