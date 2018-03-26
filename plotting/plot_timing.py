@@ -145,7 +145,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
     
     # Make sure outdir exists
     try:
-        os.mkdir(outdir)
+        os.makedirs(outdir)
     except FileExistsError:
         pass
 
