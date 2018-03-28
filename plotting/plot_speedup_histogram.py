@@ -200,7 +200,8 @@ def plot_histogram(rows, test_names=[], outdir='.'):
             })
     #bar_colors = plt.cm.Blues(np.linspace(1.0, 0.5, len(compilers)))
     bar_colors = bar_colormap(np.linspace(0.0, 1.0, len(compilers)))
-    compiler_rects = [ax.bar(ind + width*i, safe_speedups[comp], width, color=bar_colors[i])
+    compiler_rects = [ax.bar(ind + width*i, safe_speedups[comp], width,
+                             color=bar_colors[i])
                       for i, comp in enumerate(compilers)]
     unsafe_rect = ax.bar(ind + width*len(compilers),
                          [max(unsafe_speedups[comp][i] for comp in compilers)
@@ -240,15 +241,20 @@ def main(arguments):
             help='Specify output directory for generated plots')
     parser.add_argument('-r', '--run', default=None, type=int,
             help='Which run to use from the sqlite database')
-    parser.add_argument('-p', '--precision', default='all',
-            choices=['all', 'f', 'd', 'e'],
-            help='Which precision to draw.  By default does all precisions')
-    parser.add_argument('sqlite')
-    parser.add_argument('test', nargs='*')
+    # TODO: If all precisions, then make one histogram for each
+    #parser.add_argument('-p', '--precision', default='all',
+    #        choices=['all', 'f', 'd', 'e'],
+    #        help='Which precision to draw.  By default does all precisions')
+    parser.add_argument('sqlite', help='Database with data to plot')
+    parser.add_argument('test', nargs='*',
+            help='''
+                Which tests to include in the histogram.  By default, includes
+                all tests.
+                ''')
     args = parser.parse_args(arguments)
     rows = read_sqlite(args.sqlite, args.run)
-    if args.precision != 'all':
-        rows = [x for x in rows if x['precision'] == args.precision]
+    #if args.precision != 'all':
+    #    rows = [x for x in rows if x['precision'] == args.precision]
     plot_histogram(rows, args.test, args.outdir)
 
 if __name__ == '__main__':
