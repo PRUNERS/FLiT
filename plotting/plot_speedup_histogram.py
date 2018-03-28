@@ -228,7 +228,7 @@ def plot_histogram(rows, test_names=[], outdir='.'):
         label.set_transform(label.get_transform() + offset)
 
     plt.tight_layout()
-    figfile = os.path.join(outdir, 'speedup_histogram.svg')
+    figfile = os.path.join(outdir, 'speedup-histogram.svg')
     plt.savefig(figfile, format='svg')
     plt.cla()
     print('Created', figfile)
