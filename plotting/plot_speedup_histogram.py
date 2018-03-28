@@ -137,7 +137,7 @@ def calc_speedups(rows, test_names):
             safe_times = [int(x['nanosec']) for x in compiler_rows 
                           if float(x['comparison_d']) == 0.0]
             unsafe_times = [int(x['nanosec']) for x in compiler_rows 
-                            if float(x['comparison_d']) == 0.0]
+                            if float(x['comparison_d']) != 0.0]
 
             if len(safe_times) > 0:
                 safe_speedup = slowest_time / min(safe_times)
