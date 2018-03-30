@@ -186,7 +186,7 @@ $(BISECT_OBJ_DIR):
 # ground-truth files are already specified in Makefile
 # but need to specify how to do the fPIC variant
 $(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CC) -fPIC $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CC)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
@@ -205,7 +205,7 @@ $(OBJ_DIR)/%_bisect_$(TROUBLE_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 
 # and the fPIC variant
 $(OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CC) -fPIC $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(TROUBLE_CC) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(TROUBLE_CC)"' \
 	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
