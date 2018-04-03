@@ -102,11 +102,20 @@ import matplotlib
 #matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-def calc_speedups(rows, test_names):
+def calc_speedups(rows, test_names, baseline=None):
     '''
     Calculates the safe speedup and the unsafe speedup for each test_name,
     compiler combination.
-    
+
+    @param rows: (list[dict{str: str}]) Database rows
+    @param test_names: (list[str]) tests to calculate speedups.  Output
+        speedups will be in the same order as this list.
+    @param baseline: (tuple(compiler,optl,switches))
+        Which compilation to use as the baseline timing.  If None (which is the
+        default), then this will choose the slowest compilation per test.  If
+        provided, the compilation must exist in the provided rows for each name
+        in test_names.
+
     @return (safe_speedups, unsafe_speedups)
     
     - safe_speedups: (dict{compiler -> list[speedup for test_name i]})
@@ -115,8 +124,7 @@ def calc_speedups(rows, test_names):
       Unsafe speedups, defined by not safe.
 
     If there are no safe runs or no unsafe runs for a given compiler, then the
-    speedup returned is zero.  This speedup is against the slowest run across
-    compilers.
+    speedup returned is zero.
     '''
     compilers = sorted(set(x['compiler'] for x in rows))
 
@@ -129,7 +137,14 @@ def calc_speedups(rows, test_names):
         compiler_row_map = {x: [row for row in test_rows
                                     if row['compiler'] == x]
                             for x in compilers}
-        slowest_time = max([int(x['nanosec']) for x in test_rows])
+        if baseline is None:
+            baseline_time = max([int(x['nanosec']) for x in test_rows])
+        else:
+            matching_compilations = [
+                int(x['nanosec']) for x in test_rows
+                if [x['compiler'],x['optl'],x['switches']] == baseline]
+            assert len(matching_compilations) > 0, baseline
+            baseline_time = max(matching_compilations)
         fastest_safe = []
         fastest_unsafe = []
         for compiler in compilers:
@@ -140,12 +155,12 @@ def calc_speedups(rows, test_names):
                             if float(x['comparison_d']) != 0.0]
 
             if len(safe_times) > 0:
-                safe_speedup = slowest_time / min(safe_times)
+                safe_speedup = baseline_time / min(safe_times)
             else:
                 safe_speedup = 0
 
             if len(unsafe_times) > 0:
-                unsafe_speedup = slowest_time / min(unsafe_times)
+                unsafe_speedup = baseline_time / min(unsafe_times)
             else:
                 unsafe_speedup = 0
 
@@ -153,7 +168,7 @@ def calc_speedups(rows, test_names):
             unsafe_speedups[compiler].append(unsafe_speedup)
     return safe_speedups, unsafe_speedups
 
-def plot_histogram(rows, test_names=[], outdir='.'):
+def plot_histogram(rows, test_names=[], outdir='.', baseline=None):
     '''
     Plots the timing metrics from the rows and for the given test_names.  The
     resultant plots will be placed in outdir.
@@ -174,7 +189,7 @@ def plot_histogram(rows, test_names=[], outdir='.'):
     except FileExistsError:
         pass
 
-    safe_speedups, unsafe_speedups = calc_speedups(rows, test_names)
+    safe_speedups, unsafe_speedups = calc_speedups(rows, test_names, baseline)
     compilers = safe_speedups.keys()
 
     width = 1 / (len(compilers) + 2)  # The bar width
@@ -209,7 +224,10 @@ def plot_histogram(rows, test_names=[], outdir='.'):
                          width,
                          color='r')
 
-    ax.set_ylabel('Speedup from Slowest')
+    if baseline is None:
+        ax.set_ylabel('Speedup from Slowest')
+    else:
+        ax.set_ylabel('Speedup from "' + ' '.join(baseline).strip() + '"')
     ax.yaxis.grid(which='major')  # Have horizontal grid lines
     ax.set_axisbelow(True)        # Grid lines behind the bars
     ax.set_xticks(ind - width)
@@ -245,6 +263,14 @@ def main(arguments):
     #parser.add_argument('-p', '--precision', default='all',
     #        choices=['all', 'f', 'd', 'e'],
     #        help='Which precision to draw.  By default does all precisions')
+    parser.add_argument('-b', '--baseline', action='store',
+            help='''
+                Compilation to use as the baseline timing.  The default
+                behavior is to use the slowest speed for each test.  If
+                specified, this should have the compiler, optimization level,
+                and switches in that order.  For example,
+                "g++ -O2 -funsafe-math-optimizations".
+                ''')
     parser.add_argument('sqlite', help='Database with data to plot')
     parser.add_argument('test', nargs='*',
             help='''
@@ -252,10 +278,18 @@ def main(arguments):
                 all tests.
                 ''')
     args = parser.parse_args(arguments)
+
+    # Split the compilation into separate components
+    if args.baseline is not None:
+        split_baseline = args.baseline.strip().split(maxsplit=2)
+        split_baseline.extend([''] * (3 - len(split_baseline)))
+    else:
+        split_baseline = None
+
     rows = read_sqlite(args.sqlite, args.run)
     #if args.precision != 'all':
     #    rows = [x for x in rows if x['precision'] == args.precision]
-    plot_histogram(rows, args.test, args.outdir)
+    plot_histogram(rows, args.test, args.outdir, split_baseline)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
