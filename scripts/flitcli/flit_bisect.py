@@ -465,10 +465,10 @@ def bisect_search(is_bad, elements):
                 Q = Q1
                 no_test.extend(Q2)
                 # TODO: possible optimization.
-                #       if the length of Q2 is big enough, test
-                #         is_bad(Q2, no_test + Q1)
-                #       and if that returns False, then mark Q2 as known so
-                #       that we don't need to search it again.
+                # TODO- if the length of Q2 is big enough, test
+                # TODO-   is_bad(Q2, no_test + Q1)
+                # TODO- and if that returns False, then mark Q2 as known so
+                # TODO- that we don't need to search it again.
             else:
                 # optimization: mark Q1 as known, so that we don't need to
                 # search it again
@@ -542,7 +542,7 @@ def parse_args(arguments, prog=sys.argv[0]):
                             by calling 'make dev' and then calling the created
                             executable './devrun --list-tests'.
                             ''')
-                        # TODO: get the default case to work
+                        # TODO: get the default test case to work
                         #help='''
                         #    The testcase to use.  If there is only one test
                         #    case, then the default behavior is to use that
@@ -875,9 +875,9 @@ def run_bisect(arguments, prog=sys.argv[0]):
             compiler = os.path.realpath(shutil.which(args.compiler))
 
         # TODO: find a more portable way of finding the static libraries
-        #       This can be done by calling the linker command with -v to see
-        #       what intel uses in its linker.  The include path is in that
-        #       output command.
+        # TODO- This can be done by calling the linker command with -v to see
+        # TODO- what intel uses in its linker.  The include path is in that
+        # TODO- output command.
         # Note: This is a hard-coded approach specifically for the intel linker
         #       and what I observed was the behavior.
         intel_dir = os.path.join(os.path.dirname(compiler), '..', '..')
@@ -917,8 +917,8 @@ def run_bisect(arguments, prog=sys.argv[0]):
         #    ])
 
         # TODO: If the linker is to blame, remove it from the equation for
-        #       future searching This is done simply by using the ground-truth
-        #       compiler to link instead of using the trouble compiler to link.
+        # TODO- future searching This is done simply by using the ground-truth
+        # TODO- compiler to link instead of using the trouble compiler to link.
 
         # For now, if the linker was to blame, then say there may be nothing
         # else we can do.
@@ -928,7 +928,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
             logging.info(message)
 
         # TODO: Can we instead compare against the ground truth compilation
-        #       with the intel linking?  That is instead of giving up.
+        # TODO- with the intel linking?  That is instead of giving up.
 
         # If the libraries weren't a problem, then include them for the
         # following searches.
@@ -945,9 +945,9 @@ def run_bisect(arguments, prog=sys.argv[0]):
                 ])
 
     # TODO: Handle the case where the ground-truth compiler is also an intel
-    #       compiler.
+    # TODO- compiler.
     # TODO: Extra care must be taken when there is more than one intel linker
-    #       specified.
+    # TODO- specified.
 
     try:
         bad_sources = search_for_source_problems(args, bisect_path,

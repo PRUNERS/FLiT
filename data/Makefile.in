@@ -470,7 +470,7 @@ define RECURSION_RULE
 TARGETS         += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 # TODO: use the variable $$(MAKECMDGOALS) to get the original make target
-#       or see if it is even necessary
+# TODO- or see if it is even necessary
 
 # Make the recursive target depend on $$(GT_TARGET), not because it actually
 # depends on that target, but we know that when $$(GT_TARGET) needs to be
