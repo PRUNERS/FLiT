@@ -799,6 +799,11 @@ def run_bisect(arguments, prog=sys.argv[0]):
     - sources: (list of strings) problem source files
     - symbols: (list of SymbolTuples) problem functions
     - returncode: (int) status, zero is success, nonzero is failure
+
+    If the search fails in a certain part, then all subsequent items return
+    None.  For example, if the search fails in the sources search, then the
+    return value for sources and symbols are both None.  If the search fails in
+    the symbols part, then only the symbols return value is None.
     '''
     args = parse_args(arguments, prog)
 
@@ -887,8 +892,15 @@ def run_bisect(arguments, prog=sys.argv[0]):
             os.path.join(intel_lib_dir, 'libirng.a'),
             os.path.join(intel_lib_dir, 'libsvml.a'),
             ]
-        bad_libs = search_for_linker_problems(args, bisect_path, replacements,
-                                              sources, libs)
+        try:
+            bad_libs = search_for_linker_problems(args, bisect_path,
+                                                  replacements, sources, libs)
+        except subp.CalledProcessError:
+            print()
+            print('  Executable failed to run.')
+            print('Failed to search for bad libraries -- cannot continue.')
+            return None, None, None, 1
+
         print('  bad static libraries:')
         logging.info('BAD STATIC LIBRARIES:')
         for lib in bad_libs:
@@ -945,7 +957,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad sources -- cannot continue.')
         logging.exception('Failed to search for bad sources.')
-        return bad_libs, [], [], 1
+        return bad_libs, None, None, 1
 
     print('  bad sources:')
     logging.info('BAD SOURCES:')
@@ -966,7 +978,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad symbols -- cannot continue')
         logging.exception('Failed to search for bad symbols.')
-        return bad_libs, bad_sources, [], 1
+        return bad_libs, bad_sources, None, 1
 
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
@@ -1048,10 +1060,45 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     the --auto-sqlite-run option has been specified in the arguments.
 
     @return The sum of the return codes of each bisect call
+
+    The results will be put into a file called auto-bisect.csv with the
+    following columns:
+    - testid:    The id of the row from the tests table in the sqlite db
+    - compiler:  Compiler name from the db
+    - optl:      Optimization level used, options are '-O0', '-O1', '-O2', and
+                 '-O3'
+    - switches:  Optimization flags used
+    - precision: Precision checked, options are 'f', 'd', and 'e' for float,
+                 double and extended respectively.
+    - testcase:  FLiT test name run
+    - type:      Type of result.  Choices are, 'completed', 'lib', 'src', and
+                 'sim'.
+        - completed:
+                 comma-separated list of completed phases.  All phases are
+                 'lib', 'src', and 'sym'.  This row is to help identify where
+                 things errored out and failed to continue without parsing the
+                 log files.
+        - lib:   This row has a library reproducibility finding
+        - src:   This row has a source file reproducibility finding
+        - sym:   This row has a symbol reproducibility finding
+    - name:      The value associated with the type from the type column.  For
+                 completed, this has a comma-separated list of completed
+                 phases.  For lib, the path to the blamed library.  For src,
+                 the path to the blamed source file.  For sym, has the full
+                 SymbolTuple() output string format, complete with source file,
+                 line number, symbol name (before and after demangling), and
+                 the filename where the symbol is located.
+
+    Note: only for Intel compilations as the trouble compiler will the lib
+    check actually be performed.  If the lib check is skipped, it will still
+    show up in the list of completed steps, since it is considered to be a null
+    step.
     '''
     # prepend a compilation and test case so that if the user provided
     # some, then an error will occur.
-    args = parse_args(['--precision', 'double', 'compilation', 'testcase'] + arguments, prog)
+    args = parse_args(
+            ['--precision', 'double', 'compilation', 'testcase'] + arguments,
+            prog)
     sqlitefile = args.auto_sqlite_run
 
     try:
@@ -1110,9 +1157,18 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
             return_tot += ret
 
             entries = []
-            entries.extend([('lib',x) for x in libs])
-            entries.extend([('src',x) for x in srcs])
-            entries.extend([('sym',x) for x in syms])
+            completed = []
+            if libs is not None:
+                entries.extend([('lib',x) for x in libs])
+                completed.append('lib')
+            if srcs is not None:
+                entries.extend([('src',x) for x in srcs])
+                completed.append('src')
+            if syms is not None:
+                entries.extend([('sym',x) for x in syms])
+                completed.append('sym')
+            # prepend the completed items so it is first.
+            entries = [('completed', ','.join(completed))] + entries
 
             for entry in entries:
                 writer.writerow([
