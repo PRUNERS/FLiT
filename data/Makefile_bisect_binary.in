@@ -177,6 +177,30 @@ trouble: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
 bisect: $(BISECT_TARGET) $(GT_TARGET)
 bisect: $(BISECT_RESULT) $(BISECT_OUT)
 
+.PHONY: bisect-smallclean bisect-clean bisect-distclean
+clean: bisect-clean
+distclean: bisect-distclean
+bisect-smallclean:
+	rm -f $(BISECT_TARGET)
+	rm -f $(BISECT_OUT)
+	rm -f $(addsuffix *.dat,$(BISECT_OUT))
+	rm -f $(TROUBLE_TARGET)
+	rm -f $(TROUBLE_TARGET_OUT)
+	rm -f $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
+	rm -f $(TROUBLE_SYMBOLS)
+	rm -f $(SPLIT_OBJ)
+	-rmdir $(BISECT_OBJ_DIR)
+
+bisect-clean: bisect-smallclean
+	rm -f $(TROUBLE_TARGET_OBJ)
+
+bisect-distclean: bisect-clean
+	rm -f bisect.log
+	rm -f $(TROUBLE_TARGET_RESULT)
+	rm -f $(BISECT_RESULT)
+	rm -f $(MAKEFILE)
+	-rmdir $(BISECT_DIR)
+
 $(BISECT_DIR):
 	mkdir -p $(BISECT_DIR)
 
