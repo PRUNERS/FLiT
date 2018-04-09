@@ -247,12 +247,22 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
 
     return makefile
 
-def build_bisect(makefilename, directory, verbose=False, jobs=None):
+def build_bisect(makefilename, directory,
+                 target='bisect',
+                 verbose=False,
+                 jobs=None):
     '''
     Creates the bisect executable by executing a parallel make.
 
+    You may alternatively specify a different target than bisect, for example
+    'bisect-clean' to specify to clean the unnecessary files for the build,
+    'bisect-smallclean' to clean unnecessary things without needing to
+    recompile for the next bisect step, or
+    'distclean' to clean everything, including the generated makefile.
+
     @param makefilename: the filepath to the makefile
     @param directory: where to execute make
+    @param target: Makefile target to run
     @param verbose: False means block output from GNU make and running
     @param jobs: number of parallel jobs.  Defaults to #cpus
 
@@ -266,7 +276,7 @@ def build_bisect(makefilename, directory, verbose=False, jobs=None):
         kwargs['stdout'] = subp.DEVNULL
         kwargs['stderr'] = subp.DEVNULL
     subp.check_call(
-        ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), 'bisect'],
+        ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), target],
         **kwargs)
 
 def update_gt_results(directory, verbose=False,
@@ -324,7 +334,7 @@ def extract_symbols(file_or_filelist, objdir):
     Extracts symbols for the given file(s) given.  The corresponding object is
     assumed to be in the objdir with the filename replaced with the GNU Make
     pattern %.cpp=%_gt.o.
-    
+
     @param file_or_filelist: (str or list(str)) source file(s) for which to get
         symbols.
     @param objdir: (str) directory where object files are compiled for the
@@ -380,7 +390,7 @@ def extract_symbols(file_or_filelist, objdir):
             defline = int(line[srcmatch.start()+1:])
             symbol_line_mapping[symbol] = (deffile, defline)
             symbol = None                 # deactivate the symbol to not overwrite
-            
+
 
     # generate the symbol tuples
     for i in range(len(symbol_strings)):
@@ -596,6 +606,24 @@ def parse_args(arguments, prog=sys.argv[0]):
                             GNU make when performing the compilation.  Note,
                             this is not used when executing the tests.
                             ''')
+    parser.add_argument('-d', '--delete', action='store_true',
+                        help='''
+                            Automatically delete intermediate binaries and
+                            output files.  This allows for much bigger
+                            automatic runs where there is a concern for disk
+                            space.  However, this option is not solely for the
+                            --auto-sqlite-run option.  This will keep the
+                            generated makefiles (e.g.
+                            bisect-01/bisect-make-01.mk), the output
+                            comparisons (e.g.
+                            bisect-01/runbisect-01-out-comparison.csv), and the
+                            log (e.g. bisect-01/bisect.log).  The things that
+                            will not stay around are the executables (e.g.
+                            bisect-01/runbisect-01), the saved output values
+                            (e.g. runbisect-01-out_testcase_d.dat and
+                            runbusect-01-out), or the object files (e.g.
+                            bisect-01/obj/*).
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -615,7 +643,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     '''
     Performs the search over the space of statically linked libraries for
     problems.
-    
+
     Linking will be done with the ground-truth compiler, but with the static
     libraries specified.  During this search, all source files will be compiled
     with the ground-truth compilation, but the static libraries will be
@@ -634,7 +662,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
         @param trouble_libs: static libraries to compile in
         @param ignore_libs: static libraries to ignore and not include
-        
+
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground-truth compilation.
         '''
@@ -654,6 +682,9 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
             logging.info('  ' + lib)
 
         build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
+        if args.delete:
+            build_bisect(makepath, args.directory, target='bisect-smallclean',
+                         verbose=args.verbose, jobs=args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -702,6 +733,9 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
             logging.info('  ' + src)
 
         build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
+        if args.delete:
+            build_bisect(makepath, args.directory, target='bisect-smallclean',
+                         verbose=args.verbose, jobs=args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -765,6 +799,9 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
                     .format(sym=sym))
 
         build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
+        if args.delete:
+            build_bisect(makepath, args.directory, target='bisect-smallclean',
+                         verbose=args.verbose, jobs=args.jobs)
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -862,6 +899,16 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
+    def cleanup_bisect():
+        'Cleanup after this run_bisect() function'
+        if args.delete:
+            build_bisect(
+                    os.path.join(bisect_path, 'bisect-make-01.mk'),
+                    args.directory,
+                    target='bisect-clean',
+                    verbose=args.verbose,
+                    jobs=args.jobs)
+
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
     bad_libs = []
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
@@ -899,6 +946,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
             print()
             print('  Executable failed to run.')
             print('Failed to search for bad libraries -- cannot continue.')
+            cleanup_bisect()
             return None, None, None, 1
 
         print('  bad static libraries:')
@@ -957,6 +1005,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad sources -- cannot continue.')
         logging.exception('Failed to search for bad sources.')
+        cleanup_bisect()
         return bad_libs, None, None, 1
 
     print('  bad sources:')
@@ -978,6 +1027,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad symbols -- cannot continue')
         logging.exception('Failed to search for bad symbols.')
+        cleanup_bisect()
         return bad_libs, bad_sources, None, 1
 
     print('  bad symbols:')
@@ -991,6 +1041,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('    None')
         logging.info('  None')
 
+    cleanup_bisect()
     return bad_libs, bad_sources, bad_symbols, 0
 
 def auto_bisect_worker(arg_queue, result_queue):
@@ -1029,7 +1080,7 @@ def auto_bisect_worker(arg_queue, result_queue):
     try:
         while True:
             arguments, row, i, rowcount = arg_queue.get(False)
-            
+
             compilation = ' '.join(
                     [row['compiler'], row['optl'], row['switches']])
             testcase = row['name']
