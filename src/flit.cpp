@@ -288,7 +288,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
       options.compareSuffix = argList[++i];
     } else {
       options.tests.push_back(current);
-      if (!options.compareMode && !isIn(allowedTests, current)) {
+      if (!options.compareMode && !isIn(allowedTests, removeIdxFromName(current))) {
         throw ParseException("unknown test " + current);
       }
     }
@@ -470,7 +470,7 @@ std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
   return metadata;
 }
 
-std::string removeIdxFromName(const std::string &name) {
+std::string removeIdxFromName(const std::string &name, int *idx) {
   std::string pattern("_idx"); // followed by 1 or more digits
   auto it = std::find_end(name.begin(), name.end(),
                           pattern.begin(), pattern.end());
@@ -482,6 +482,13 @@ std::string removeIdxFromName(const std::string &name) {
         });
   if (!is_integer_idx) {
     throw std::invalid_argument("in removeIdxFromName, non-integer idx");
+  }
+  if (idx != nullptr) {
+    if (it != name.end()) {
+      *idx = std::stoi(std::string(it+4, name.end()));
+    } else {
+      *idx = -1;
+    }
   }
   return std::string(name.begin(), it);
 }

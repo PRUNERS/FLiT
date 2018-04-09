@@ -199,8 +199,21 @@ std::vector<TestResult> parseResults(std::istream &in);
 /// Parse the result file to get metadata from the first row
 std::unordered_map<std::string, std::string> parseMetadata(std::istream &in);
 
-/// Test names sometimes are postfixed with "_idx" + <num>.  Remove that postfix
-std::string removeIdxFromName(const std::string &name);
+/** Removes the "_idx<num>" from the name
+ *
+ * The name passed in is not modified, but the shortened one is returned.
+ * Optionally, you can pass in an integer pointer to have it populated with the
+ * value of the <num> from the end of the idx string.
+ *
+ * If the name does not end in "_idx<num>", then the name is returned as-is,
+ * and idx (if not nullptr) is set to -1.
+ *
+ * @param name Name to remove "_idx<num>" from the end
+ * @param idx Pointer to an integer to store <num> (optional)
+ *
+ * @return shortened name with "_idx<num>" removed from the end
+ */
+std::string removeIdxFromName(const std::string &name, int *idx = nullptr);
 
 /// Returns the tests that need to be run for comparisons
 std::vector<std::string> calculateMissingComparisons(const FlitOptions &opt);
@@ -339,11 +352,12 @@ void runTestWithDefaultInput(TestFactory* factory,
                              const std::string &filebase = "",
                              bool shouldTime = true,
                              int timingLoops = -1,
-                             int timingRepeats = 3) {
+                             int timingRepeats = 3,
+                             int idx = -1) {
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
   auto results = test->run(ip, filebase, shouldTime, timingLoops,
-                           timingRepeats);
+                           timingRepeats, idx);
   totResults.insert(totResults.end(), results.begin(), results.end());
   info_stream.flushout();
 }
@@ -466,21 +480,22 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   auto testMap = getTests();
   for (auto& testName : options.tests) {
-    auto factory = testMap[testName];
+    int idx;
+    auto factory = testMap[removeIdxFromName(testName, &idx)];
     if (options.precision == "all" || options.precision == "float") {
       runTestWithDefaultInput<float>(factory, results, test_result_filebase,
                                      options.timing, options.timingLoops,
-                                     options.timingRepeats);
+                                     options.timingRepeats, idx);
     }
     if (options.precision == "all" || options.precision == "double") {
       runTestWithDefaultInput<double>(factory, results, test_result_filebase,
                                       options.timing, options.timingLoops,
-                                      options.timingRepeats);
+                                      options.timingRepeats, idx);
     }
     if (options.precision == "all" || options.precision == "long double") {
       runTestWithDefaultInput<long double>(
           factory, results, test_result_filebase, options.timing,
-          options.timingLoops, options.timingRepeats);
+          options.timingLoops, options.timingRepeats, idx);
     }
   }
 #if defined(__CUDA__) && !defined(__CPUKERNEL__)
