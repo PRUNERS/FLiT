@@ -85,11 +85,6 @@ Implements the bisect subcommand, identifying the problematic subset of source
 files that cause the variability.
 '''
 
-import flitconfig as conf
-import flitutil as util
-
-import toml
-
 from collections import namedtuple
 import argparse
 import csv
@@ -103,7 +98,9 @@ import shutil
 import sqlite3
 import subprocess as subp
 import sys
-import tempfile
+
+import flitconfig as conf
+import flitutil as util
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
@@ -393,18 +390,16 @@ def extract_symbols(file_or_filelist, objdir):
 
 
     # generate the symbol tuples
-    for i in range(len(symbol_strings)):
-        symtype, symbol = symbol_strings[i].split(maxsplit=2)[1:3]
-        demangled = demangled_symbol_strings[i].split(maxsplit=2)[2]
+    for symbol_string, demangled_string in zip(symbol_strings,
+                                               demangled_symbol_strings):
+        symbol = symbol_string.split(maxsplit=2)[2]
+        demangled = demangled_string.split(maxsplit=2)[2]
         try:
             deffile, defline = symbol_line_mapping[symbol]
         except KeyError:
             deffile, defline = None, None
-        # We need to do all defined global symbols or we will get duplicate
-        # symbol linker error
-        #if symtype == 'T':
         symbol_tuples.append(
-                SymbolTuple(fname, symbol, demangled, deffile, defline))
+            SymbolTuple(fname, symbol, demangled, deffile, defline))
 
     return symbol_tuples
 
@@ -516,19 +511,19 @@ def parse_args(arguments, prog=sys.argv[0]):
     @param prog: (str) name of the program
     '''
     parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                Compiles the source code under both the ground-truth
-                compilation and a given problematic compilation.  This tool
-                then finds the minimal set of source files needed to be
-                compiled under the problematic compilation flags so that the
-                same answer is given.  This allows you to narrow down where the
-                reproducibility problem lies.
+        prog=prog,
+        description='''
+            Compiles the source code under both the ground-truth
+            compilation and a given problematic compilation.  This tool
+            then finds the minimal set of source files needed to be
+            compiled under the problematic compilation flags so that the
+            same answer is given.  This allows you to narrow down where the
+            reproducibility problem lies.
 
-                The log of the procedure will be kept in bisect.log.  Note that
-                this file is overwritten if you call flit bisect again.
-                ''',
-            )
+            The log of the procedure will be kept in bisect.log.  Note that
+            this file is overwritten if you call flit bisect again.
+            ''',
+        )
 
     # These positional arguments only make sense if not doing an auto run
     parser.add_argument('compilation',
@@ -702,8 +697,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     #return bad_libs
     if bisect_libs_build_and_check(libs, []):
         return libs
-    else:
-        return []
+    return []
 
 def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
@@ -778,11 +772,11 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
         symbol_sources = [x.src for x in trouble_symbols + gt_symbols]
         trouble_src = []
         gt_src = list(set(all_sources).difference(symbol_sources))
-        symbol_map = { x: [
-                            [y.symbol for y in gt_symbols if y.src == x],
-                            [z.symbol for z in trouble_symbols if z.src == x],
-                          ]
-                       for x in symbol_sources }
+        symbol_map = {x: [
+            [y.symbol for y in gt_symbols if y.src == x],
+            [z.symbol for z in trouble_symbols if z.src == x],
+            ]
+                      for x in symbol_sources}
 
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           trouble_src, symbol_map)
@@ -795,8 +789,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
         logging.info('Checking:')
         for sym in trouble_symbols:
             logging.info(
-                    '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
-                    .format(sym=sym))
+                '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
+                .format(sym=sym))
 
         build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
         if args.delete:
@@ -895,7 +889,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'trouble_id': trouble_hash,
         'link_flags': [],
         'cpp_flags': [],
-        };
+        }
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
@@ -903,11 +897,11 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'Cleanup after this run_bisect() function'
         if args.delete:
             build_bisect(
-                    os.path.join(bisect_path, 'bisect-make-01.mk'),
-                    args.directory,
-                    target='bisect-clean',
-                    verbose=args.verbose,
-                    jobs=args.jobs)
+                os.path.join(bisect_path, 'bisect-make-01.mk'),
+                args.directory,
+                target='bisect-clean',
+                verbose=args.verbose,
+                jobs=args.jobs)
 
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
     bad_libs = []
@@ -1082,7 +1076,7 @@ def auto_bisect_worker(arg_queue, result_queue):
             arguments, row, i, rowcount = arg_queue.get(False)
 
             compilation = ' '.join(
-                    [row['compiler'], row['optl'], row['switches']])
+                [row['compiler'], row['optl'], row['switches']])
             testcase = row['name']
             precision = precision_map[row['precision']]
             row_args = list(arguments)
@@ -1098,8 +1092,8 @@ def auto_bisect_worker(arg_queue, result_queue):
                   '"' + compilation + '"',
                   testcase)
 
-            libs,srcs,syms,ret = run_bisect(row_args)
-            result_queue.put((row,libs,srcs,syms,ret))
+            libs, srcs, syms, ret = run_bisect(row_args)
+            result_queue.put((row, libs, srcs, syms, ret))
 
     except queue.Empty:
         # exit the function
@@ -1148,13 +1142,13 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     # prepend a compilation and test case so that if the user provided
     # some, then an error will occur.
     args = parse_args(
-            ['--precision', 'double', 'compilation', 'testcase'] + arguments,
-            prog)
+        ['--precision', 'double', 'compilation', 'testcase'] + arguments,
+        prog)
     sqlitefile = args.auto_sqlite_run
 
     try:
         connection = util.sqlite_open(sqlitefile)
-    except:
+    except sqlite3.DatabaseError:
         print('Error:', sqlitefile, 'is not an sqlite3 file')
         return 1
 
@@ -1162,7 +1156,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     with open('auto-bisect.csv', 'w') as resultsfile:
         writer = csv.writer(resultsfile)
         query = connection.execute(
-                'select * from tests where comparison_d!=0.0')
+            'select * from tests where comparison_d!=0.0')
         writer.writerow([
             'testid',
             'compiler',
@@ -1204,19 +1198,19 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
         # Process the results
         for _ in range(rowcount):
-            row,libs,srcs,syms,ret = result_queue.get()
+            row, libs, srcs, syms, ret = result_queue.get()
             return_tot += ret
 
             entries = []
             completed = []
             if libs is not None:
-                entries.extend([('lib',x) for x in libs])
+                entries.extend([('lib', x) for x in libs])
                 completed.append('lib')
             if srcs is not None:
-                entries.extend([('src',x) for x in srcs])
+                entries.extend([('src', x) for x in srcs])
                 completed.append('src')
             if syms is not None:
-                entries.extend([('sym',x) for x in syms])
+                entries.extend([('sym', x) for x in syms])
                 completed.append('sym')
             # prepend the completed items so it is first.
             entries = [('completed', ','.join(completed))] + entries
@@ -1249,9 +1243,10 @@ def main(arguments, prog=sys.argv[0]):
 
     if '-a' in arguments or '--auto-sqlite-run' in arguments:
         return parallel_auto_bisect(arguments, prog)
-    else:
-        _,_,_,ret = run_bisect(arguments, prog)
-        return ret
+
+    # else:
+    _, _, _, ret = run_bisect(arguments, prog)
+    return ret
 
 
 if __name__ == '__main__':
