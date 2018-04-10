@@ -825,7 +825,9 @@ def run_bisect(arguments, prog=sys.argv[0]):
     '''
     The actual function for running the bisect command-line tool.
 
-    Returns four things, (libs, sources, symbols, returncode).
+    Returns five things, (bisect_num, libs, sources, symbols, returncode).
+    - bisect_num: (int) which bisect run this is.  Means the bisect results are
+      stored in args.directory + '/bisect-' + str(bisect_num)
     - libs: (list of strings) problem libraries
     - sources: (list of strings) problem source files
     - symbols: (list of SymbolTuples) problem functions
@@ -849,6 +851,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     # create a unique directory for this bisect run
     bisect_dir = create_bisect_dir(args.directory)
+    bisect_num = int(bisect_dir.replace('bisect-', '').lstrip('0'))
     bisect_path = os.path.join(args.directory, bisect_dir)
 
     # keep a bisect.log of what was done, but need to remove all handlers,
@@ -941,7 +944,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
             print('  Executable failed to run.')
             print('Failed to search for bad libraries -- cannot continue.')
             cleanup_bisect()
-            return None, None, None, 1
+            return bisect_num, None, None, None, 1
 
         print('  bad static libraries:')
         logging.info('BAD STATIC LIBRARIES:')
@@ -1000,7 +1003,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('Failed to search for bad sources -- cannot continue.')
         logging.exception('Failed to search for bad sources.')
         cleanup_bisect()
-        return bad_libs, None, None, 1
+        return bisect_num, bad_libs, None, None, 1
 
     print('  bad sources:')
     logging.info('BAD SOURCES:')
@@ -1022,7 +1025,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('Failed to search for bad symbols -- cannot continue')
         logging.exception('Failed to search for bad symbols.')
         cleanup_bisect()
-        return bad_libs, bad_sources, None, 1
+        return bisect_num, bad_libs, bad_sources, None, 1
 
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
@@ -1036,7 +1039,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         logging.info('  None')
 
     cleanup_bisect()
-    return bad_libs, bad_sources, bad_symbols, 0
+    return bisect_num, bad_libs, bad_sources, bad_symbols, 0
 
 def auto_bisect_worker(arg_queue, result_queue):
     '''
@@ -1092,8 +1095,8 @@ def auto_bisect_worker(arg_queue, result_queue):
                   '"' + compilation + '"',
                   testcase)
 
-            libs, srcs, syms, ret = run_bisect(row_args)
-            result_queue.put((row, libs, srcs, syms, ret))
+            num, libs, srcs, syms, ret = run_bisect(row_args)
+            result_queue.put((row, num, libs, srcs, syms, ret))
 
     except queue.Empty:
         # exit the function
@@ -1159,6 +1162,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
             'select * from tests where comparison_d!=0.0')
         writer.writerow([
             'testid',
+            'bisectnum',
             'compiler',
             'optl',
             'switches',
@@ -1198,7 +1202,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
         # Process the results
         for _ in range(rowcount):
-            row, libs, srcs, syms, ret = result_queue.get()
+            row, num, libs, srcs, syms, ret = result_queue.get()
             return_tot += ret
 
             entries = []
@@ -1218,6 +1222,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
             for entry in entries:
                 writer.writerow([
                     row['id'],
+                    num,
                     row['compiler'],
                     row['optl'],
                     row['switches'],
@@ -1245,7 +1250,7 @@ def main(arguments, prog=sys.argv[0]):
         return parallel_auto_bisect(arguments, prog)
 
     # else:
-    _, _, _, ret = run_bisect(arguments, prog)
+    _, _, _, _, ret = run_bisect(arguments, prog)
     return ret
 
 
