@@ -266,14 +266,25 @@ public:
    *   the test is such that it needs to change the notion of running the test
    *   from only a std::vector of inputs for each result pair.
    *
+   * @param ti Test input vector
+   * @param filebase basename for the result file
+   * @param shouldTime true means we should to timing
+   * @param timingLoops how many times to loop.  A value less than one means
+   *        automatically determine timing loops.
+   * @param timingRepeats how many times to repeat the timing.
+   * @param idx which test to run if it is data driven, zero-based indexing.  A
+   *        value less than one means to run them all.
+   *
+   * @return A vector of test results
+   *
    * @see getInputsPerRun
    */
   virtual std::vector<TestResult> run(const std::vector<T>& ti,
                                       const std::string &filebase,
-                                      const bool shouldTime,
-                                      const int timingLoops,
-                                      const int timingRepeats) {
-    FLIT_UNUSED(timingRepeats);
+                                      const bool shouldTime = true,
+                                      const int timingLoops = -1,
+                                      const int timingRepeats = 3,
+                                      const int idx = -1) {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
@@ -326,7 +337,16 @@ public:
     };
     std::vector<TimedResult> resultValues;
 
-    for (size_t i = 0; i < inputSequence.size(); i++) {
+    // Either only do the specified index, or all of them
+    std::vector<size_t> indices;
+    if (idx < 0) {
+      indices.resize(inputSequence.size());
+      std::iota(indices.begin(), indices.end(), 0);
+    } else {
+      indices.push_back(idx);
+    }
+
+    for (auto i : indices) {
       auto& runInput = inputSequence.at(i);
       Variant testResult;
       int_fast64_t timing = 0;

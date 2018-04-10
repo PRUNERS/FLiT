@@ -288,7 +288,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
       options.compareSuffix = argList[++i];
     } else {
       options.tests.push_back(current);
-      if (!options.compareMode && !isIn(allowedTests, current)) {
+      if (!options.compareMode && !isIn(allowedTests, removeIdxFromName(current))) {
         throw ParseException("unknown test " + current);
       }
     }
@@ -320,6 +320,34 @@ std::string usage(std::string progName) {
        "Description:\n"
        "  Runs the FLiT tests and outputs the results to the console in CSV\n"
        "  format.\n"
+       "\n"
+       "Positional Arguments:\n"
+       "\n"
+       "  <test>          The name of the test as shown by the --list-tests\n"
+       "                  option.  If this is not specified, then all tests\n"
+       "                  will be executed.\n"
+       "\n"
+       "                  When a test is data-driven, it generates multiple\n"
+       "                  test results.  Each of these test results will be\n"
+       "                  appended with \"_idx\" followed by a number\n"
+       "                  indicating which data-driven input it used.  You\n"
+       "                  may specify this same suffix when you specify the\n"
+       "                  test to only run particular data-driven inputs\n"
+       "                  instead of all of them.\n"
+       "\n"
+       "                  Example:\n"
+       "                    " << progName << " TestCase_idx3 TestCase_idx5\n"
+       "\n"
+       "                  This will only run inputs 3 and 5 instead of all\n"
+       "                  of them.  Note that if you specify an index higher\n"
+       "                  than the number of inputs for your test, then it\n"
+       "                  will be ignored.\n"
+       "\n"
+       "                  Note: this is zero-based indexing.  So to run the\n"
+       "                  2nd test input sequence, use TestCase_idx1.\n"
+       "\n"
+       "  <csvfile>       File path to the csv results to compare this\n"
+       "                  executable's results against.\n"
        "\n"
        "Options:\n"
        "\n"
@@ -470,7 +498,7 @@ std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
   return metadata;
 }
 
-std::string removeIdxFromName(const std::string &name) {
+std::string removeIdxFromName(const std::string &name, int *idx) {
   std::string pattern("_idx"); // followed by 1 or more digits
   auto it = std::find_end(name.begin(), name.end(),
                           pattern.begin(), pattern.end());
@@ -482,6 +510,13 @@ std::string removeIdxFromName(const std::string &name) {
         });
   if (!is_integer_idx) {
     throw std::invalid_argument("in removeIdxFromName, non-integer idx");
+  }
+  if (idx != nullptr) {
+    if (it != name.end()) {
+      *idx = std::stoi(std::string(it+4, name.end()));
+    } else {
+      *idx = -1;
+    }
   }
   return std::string(name.begin(), it);
 }
