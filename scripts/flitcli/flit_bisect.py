@@ -1223,6 +1223,11 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
         compilation_set = {(row['compiler'], row['optl'], row['switches'])
                            for row in rows}
 
+        # see if the Makefile needs to be regenerated
+        # we use the Makefile to check for itself, sweet
+        subp.check_call(['make', '-C', args.directory, 'Makefile'],
+                        stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+
         print('Before parallel bisect run, compile all object files')
         for compiler, optl, switches in compilation_set:
             print('  ' + ' '.join((compiler, optl, switches)), end='',
