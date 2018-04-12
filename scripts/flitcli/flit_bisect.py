@@ -1213,7 +1213,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
                     stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 
     print('Before parallel bisect run, compile all object files')
-    for compiler, optl, switches in compilation_set:
+    for compiler, optl, switches in sorted(compilation_set):
         print('  ' + ' '.join((compiler, optl, switches)), end='',
               flush=True)
         compile_trouble(args.directory, compiler, optl, switches,
