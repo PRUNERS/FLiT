@@ -1195,11 +1195,55 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
         print('Error:', sqlitefile, 'is not an sqlite3 file')
         return 1
 
+    query = connection.execute(
+        'select * from tests where comparison_d!=0.0')
+    rows = query.fetchall()
+    precision_map = {
+        'f': 'float',
+        'd': 'double',
+        'e': 'long double',
+        }
+
+    compilation_set = {(row['compiler'], row['optl'], row['switches'])
+                       for row in rows}
+
+    # see if the Makefile needs to be regenerated
+    # we use the Makefile to check for itself, sweet
+    subp.check_call(['make', '-C', args.directory, 'Makefile'],
+                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+
+    print('Before parallel bisect run, compile all object files')
+    for compiler, optl, switches in compilation_set:
+        print('  ' + ' '.join((compiler, optl, switches)), end='',
+              flush=True)
+        compile_trouble(args.directory, compiler, optl, switches,
+                        verbose=args.verbose, jobs=args.jobs,
+                        delete=args.delete)
+        print(' - done', flush=True)
+
+    # Update ground-truth results before launching workers
+    update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
+
+    # Generate the worker queue
+    arg_queue = mp.Queue()
+    result_queue = mp.SimpleQueue()
+    i = 0
+    rowcount = len(rows)
+    for row in rows:
+        i += 1
+        arg_queue.put((arguments, dict(row), i, rowcount))
+
+    # Create the workers
+    workers = []
+    for _ in range(args.parallel):
+        p = mp.Process(target=auto_bisect_worker,
+                       args=(arg_queue, result_queue))
+        p.start()
+        workers.append(p)
+
     return_tot = 0
     with open('auto-bisect.csv', 'w') as resultsfile:
         writer = csv.writer(resultsfile)
-        query = connection.execute(
-            'select * from tests where comparison_d!=0.0')
         writer.writerow([
             'testid',
             'bisectnum',
@@ -1212,50 +1256,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
             'name',
             'return',
             ])
-        precision_map = {
-            'f': 'float',
-            'd': 'double',
-            'e': 'long double',
-            }
         resultsfile.flush()
-        rows = query.fetchall()
-
-        compilation_set = {(row['compiler'], row['optl'], row['switches'])
-                           for row in rows}
-
-        # see if the Makefile needs to be regenerated
-        # we use the Makefile to check for itself, sweet
-        subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                        stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-
-        print('Before parallel bisect run, compile all object files')
-        for compiler, optl, switches in compilation_set:
-            print('  ' + ' '.join((compiler, optl, switches)), end='',
-                  flush=True)
-            compile_trouble(args.directory, compiler, optl, switches,
-                            verbose=args.verbose, jobs=args.jobs,
-                            delete=args.delete)
-            print(' - done', flush=True)
-
-        # Update ground-truth results before launching workers
-        update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
-
-        # Generate the worker queue
-        arg_queue = mp.Queue()
-        result_queue = mp.SimpleQueue()
-        i = 0
-        rowcount = len(rows)
-        for row in rows:
-            i += 1
-            arg_queue.put((arguments, dict(row), i, rowcount))
-
-        # Create the workers
-        workers = []
-        for _ in range(args.parallel):
-            p = mp.Process(target=auto_bisect_worker,
-                           args=(arg_queue, result_queue))
-            p.start()
-            workers.append(p)
 
         # Process the results
         for _ in range(rowcount):
@@ -1291,9 +1292,23 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
                     ])
             resultsfile.flush()
 
-        # Join the workers
-        for p in workers:
-            p.join()
+    # Join the workers
+    for p in workers:
+        p.join()
+
+    # Remove the files that were precompiled
+    if args.delete:
+        for row in rows:
+            hashval = hash_compilation(row['compiler'], row['optl'],
+                                       row['switches'])
+            basename = os.path.join(args.directory, 'obj',
+                                    '*_bisect_' + hashval)
+            filelist = itertools.chain(
+                glob.iglob(basename + '.d'),
+                glob.iglob(basename + '.o'),
+                )
+            for fname in filelist:
+                os.remove(fname)
 
     return return_tot
 
