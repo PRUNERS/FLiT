@@ -160,7 +160,7 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
     ready to be executed by 'make bisect' from the top-level directory of the
     user's flit tests.
 
-    @param directory: (str) path where to put the created Makefil
+    @param directory: (str) path where to put the created Makefile
     @param replacements: (dict) key -> value.  The key is found in the
         Makefile_bisect_binary.in and replaced with the corresponding value.
     @param gt_src: (list) which source files would be compiled with the
@@ -896,16 +896,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
-    def cleanup_bisect():
-        'Cleanup after this run_bisect() function'
-        if args.delete:
-            build_bisect(
-                os.path.join(bisect_path, 'bisect-make-01.mk'),
-                args.directory,
-                target='bisect-clean',
-                verbose=args.verbose,
-                jobs=args.jobs)
-
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
     bad_libs = []
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
@@ -943,7 +933,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
             print()
             print('  Executable failed to run.')
             print('Failed to search for bad libraries -- cannot continue.')
-            cleanup_bisect()
             return bisect_num, None, None, None, 1
 
         print('  bad static libraries:')
@@ -1002,7 +991,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad sources -- cannot continue.')
         logging.exception('Failed to search for bad sources.')
-        cleanup_bisect()
         return bisect_num, bad_libs, None, None, 1
 
     print('  bad sources:')
@@ -1024,7 +1012,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('  Executable failed to run.')
         print('Failed to search for bad symbols -- cannot continue')
         logging.exception('Failed to search for bad symbols.')
-        cleanup_bisect()
         return bisect_num, bad_libs, bad_sources, None, 1
 
     print('  bad symbols:')
@@ -1038,7 +1025,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('    None')
         logging.info('  None')
 
-    cleanup_bisect()
     return bisect_num, bad_libs, bad_sources, bad_symbols, 0
 
 def auto_bisect_worker(arg_queue, result_queue):
