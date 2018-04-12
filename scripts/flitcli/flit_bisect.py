@@ -1215,14 +1215,14 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     print('Before parallel bisect run, compile all object files')
     for i, compilation in enumerate(sorted(compilation_set)):
         compiler, optl, switches = compilation
-        print('  ({0} of {1})'.format(i, len(compilation_set)),
-              ' '.join((compiler, optl, switches)),
+        print('  ({0} of {1})'.format(i + 1, len(compilation_set)),
+              ' '.join((compiler, optl, switches)) + ':',
               end='',
               flush=True)
         compile_trouble(args.directory, compiler, optl, switches,
                         verbose=args.verbose, jobs=args.jobs,
                         delete=args.delete)
-        print(' - done', flush=True)
+        print('  done', flush=True)
 
     # Update ground-truth results before launching workers
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
