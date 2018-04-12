@@ -173,9 +173,9 @@ $(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(TROUBLE_CC) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED)
 
-.PHONY: trouble
-trouble: $(TROUBLE_TARGET) $(GT_TARGET)
-trouble: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
+.PHONY: trouble trouble-out
+trouble: $(TROUBLE_TARGET)
+trouble-out: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
 
 .PHONY: bisect
 bisect: $(BISECT_TARGET) $(GT_TARGET)
