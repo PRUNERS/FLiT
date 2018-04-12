@@ -188,12 +188,14 @@ def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
     if 'cpp_flags' in repl_copy:
-        repl_copy['EXTRA_CC_FLAGS'] = '\n'.join(['CC_REQUIRED      += {0}'.format(x)
-                                                 for x in repl_copy['cpp_flags']])
+        repl_copy['EXTRA_CC_FLAGS'] = '\n'.join([
+            'CC_REQUIRED      += {0}'.format(x)
+            for x in repl_copy['cpp_flags']])
         del repl_copy['cpp_flags']
     if 'link_flags' in repl_copy:
-        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join(['LD_REQUIRED      += {0}'.format(x)
-                                                 for x in repl_copy['link_flags']])
+        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join([
+            'LD_REQUIRED      += {0}'.format(x)
+            for x in repl_copy['link_flags']])
         del repl_copy['link_flags']
 
 
@@ -317,7 +319,8 @@ def is_result_bad(resultfile):
 
 SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
-Tuple containing information about the symbols in a file.  Has the following attributes:
+Tuple containing information about the symbols in a file.  Has the following
+attributes:
     src:        source file that was compiled
     symbol:     mangled symbol in the compiled version
     demangled:  demangled version of symbol
@@ -374,19 +377,19 @@ def extract_symbols(file_or_filelist, objdir):
     symbol_line_mapping = dict()
     symbol = None
     for line in objdump_strings:
-        if len(line.strip()) == 0:        # skip empty lines
+        if len(line.strip()) == 0:      # skip empty lines
             continue
-        if line[0].isdigit():             # we are at a symbol
+        if line[0].isdigit():           # we are at a symbol
             symbol = line.split()[1][1:-2]
             continue
-        if symbol is None:                # if we don't have an active symbol
-            continue                      # then skip
+        if symbol is None:              # if we don't have an active symbol
+            continue                    # then skip
         srcmatch = re.search(':[0-9]+$', line)
         if srcmatch is not None:
             deffile = line[:srcmatch.start()]
             defline = int(line[srcmatch.start()+1:])
             symbol_line_mapping[symbol] = (deffile, defline)
-            symbol = None                 # deactivate the symbol to not overwrite
+            symbol = None               # deactivate the symbol to not overwrite
 
 
     # generate the symbol tuples
@@ -676,7 +679,8 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         for lib in trouble_libs:
             logging.info('  ' + lib)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
+        build_bisect(makepath, args.directory, verbose=args.verbose,
+                     jobs=args.jobs)
         if args.delete:
             build_bisect(makepath, args.directory, target='bisect-smallclean',
                          verbose=args.verbose, jobs=args.jobs)
@@ -726,7 +730,8 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         for src in trouble_src:
             logging.info('  ' + src)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
+        build_bisect(makepath, args.directory, verbose=args.verbose,
+                     jobs=args.jobs)
         if args.delete:
             build_bisect(makepath, args.directory, target='bisect-smallclean',
                          verbose=args.verbose, jobs=args.jobs)
@@ -747,7 +752,8 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     bad_sources = bisect_search(bisect_build_and_check, sources)
     return bad_sources
 
-def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sources):
+def search_for_symbol_problems(args, bisect_path, replacements, sources,
+                               bad_sources):
     '''
     Performs the search over the space of symbols within bad source files for
     problems.
@@ -792,7 +798,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
                 '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
                 .format(sym=sym))
 
-        build_bisect(makepath, args.directory, verbose=args.verbose, jobs=args.jobs)
+        build_bisect(makepath, args.directory, verbose=args.verbose,
+                     jobs=args.jobs)
         if args.delete:
             build_bisect(makepath, args.directory, target='bisect-smallclean',
                          verbose=args.verbose, jobs=args.jobs)
@@ -812,7 +819,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources, bad_sou
     logging.info('Note: inlining disabled to isolate functions')
     logging.info('Note: only searching over globally exported functions')
     logging.debug('Symbols:')
-    symbol_tuples = extract_symbols(bad_sources, os.path.join(args.directory, 'obj'))
+    symbol_tuples = extract_symbols(bad_sources,
+                                    os.path.join(args.directory, 'obj'))
     for sym in symbol_tuples:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
