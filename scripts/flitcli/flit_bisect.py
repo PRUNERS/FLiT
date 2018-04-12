@@ -104,6 +104,10 @@ import flitutil as util
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
+def hash_compilation(compiler, optl, switches):
+    'Takes a compilation and returns a 10 digit hash string.'
+    return hashlib.sha1((compiler + optl + switches).encode()).hexdigest()[:10]
+
 def create_bisect_dir(parent):
     '''
     Create a unique bisect directory named bisect-## where ## is the lowest
@@ -152,8 +156,9 @@ def create_bisect_dir(parent):
         else:
             return bisect_dir
 
-def create_bisect_makefile(directory, replacements, gt_src, trouble_src,
-                           split_symbol_map):
+def create_bisect_makefile(directory, replacements, gt_src,
+                           trouble_src=[],
+                           split_symbol_map=dict()):
     '''
     Returns the name of the created Makefile within the given directory, having
     been populated with the replacements, gt_src, and trouble_src.  It is then
@@ -287,7 +292,6 @@ def update_gt_results(directory, verbose=False,
     @param directory: where to execute make
     @param verbose: False means block output from GNU make and running
     '''
-    sys.stdout.flush()
     kwargs = dict()
     if not verbose:
         kwargs['stdout'] = subp.DEVNULL
@@ -295,8 +299,7 @@ def update_gt_results(directory, verbose=False,
     gt_resultfile = util.extract_make_var(
         'GT_OUT', os.path.join(directory, 'Makefile'))[0]
     logging.info('Updating ground-truth results - {0}'.format(gt_resultfile))
-    print('Updating ground-truth results -', gt_resultfile, end='')
-    sys.stdout.flush()
+    print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
     subp.check_call(
         ['make', '-j', str(jobs), '-C', directory, gt_resultfile], **kwargs)
     print(' - done')
@@ -588,8 +591,11 @@ def parse_args(arguments, prog=sys.argv[0]):
                             How many parallel bisect searches to perform.  This
                             only makes sense with --auto-sqlite-run, since
                             there are multiple bisect runs to perform.  Each
-                            bisect run is sequential, but the bisect runs may
-                            be parallelized if the user desires so.
+                            bisect run is sequential.  This is distinct from
+                            the --jobs argument.  This one specifies how many
+                            instances of bisect to run, whereas --jobs
+                            specifies how many compilation processes can be
+                            spawned in parallel.
                             ''')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='''
@@ -602,7 +608,8 @@ def parse_args(arguments, prog=sys.argv[0]):
                         help='''
                             The number of parallel jobs to use for the call to
                             GNU make when performing the compilation.  Note,
-                            this is not used when executing the tests.
+                            this is not used when executing the tests, just in
+                            compilation.
                             ''')
     parser.add_argument('-d', '--delete', action='store_true',
                         help='''
@@ -671,9 +678,8 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
 
-        sys.stdout.write('  Create {0} - compiling and running' \
-                         .format(makepath))
-        sys.stdout.flush()
+        print('  Create {0} - compiling and running'.format(makepath),
+              end='', flush=True)
         logging.info('Created {0}'.format(makepath))
         logging.info('Checking:')
         for lib in trouble_libs:
@@ -722,9 +728,8 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
 
-        sys.stdout.write('  Created {0} - compiling and running' \
-                         .format(makepath))
-        sys.stdout.flush()
+        print('  Created {0} - compiling and running'.format(makepath), end='',
+              flush=True)
         logging.info('Created {0}'.format(makepath))
         logging.info('Checking:')
         for src in trouble_src:
@@ -788,9 +793,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
                                           trouble_src, symbol_map)
         makepath = os.path.join(bisect_path, makefile)
 
-        sys.stdout.write('  Created {0} - compiling and running' \
-                         .format(makepath))
-        sys.stdout.flush()
+        print('  Created {0} - compiling and running'.format(makepath), end='',
+              flush=True)
         logging.info('Created {0}'.format(makepath))
         logging.info('Checking:')
         for sym in trouble_symbols:
@@ -829,6 +833,50 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     return bad_symbols
 
+def compile_trouble(directory, compiler, optl, switches, verbose=False,
+                    jobs=mp.cpu_count(), delete=True):
+    '''
+    Compiles the trouble executable for the given arguments.  This is useful because 
+    '''
+    # TODO: much of this was copied from run_bisect().  Refactor code.
+    trouble_hash = hash_compilation(compiler, optl, switches)
+
+    # see if the Makefile needs to be regenerated
+    # we use the Makefile to check for itself, sweet
+    subp.check_call(['make', '-C', directory, 'Makefile'],
+                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+
+    # trouble compilations all happen in the same directory
+    trouble_path = os.path.join(directory, 'bisect-precompile')
+    try:
+        os.mkdir(trouble_path)
+    except FileExistsError:
+        pass # not a problem if it already exists
+
+    replacements = {
+        'bisect_dir': 'bisect-precompile',
+        'datetime': datetime.date.today().strftime("%B %d, %Y"),
+        'flit_version': conf.version,
+        'precision': '',
+        'test_case': '',
+        'trouble_cc': compiler,
+        'trouble_optl': optl,
+        'trouble_switches': switches,
+        'trouble_id': trouble_hash,
+        'link_flags': [],
+        'cpp_flags': [],
+        }
+    makefile = create_bisect_makefile(trouble_path, replacements, [])
+    makepath = os.path.join(trouble_path, makefile)
+
+    # Compile the trouble executable simply so that we have the object files
+    build_bisect(makepath, directory, verbose=verbose,
+                 jobs=jobs, target='trouble')
+
+    # Remove this prebuild temporary directory now
+    if delete:
+        shutil.rmtree(trouble_path)
+
 def run_bisect(arguments, prog=sys.argv[0]):
     '''
     The actual function for running the bisect command-line tool.
@@ -848,9 +896,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     '''
     args = parse_args(arguments, prog)
 
-    # our hash is the first 10 digits of a sha1 sum
-    trouble_hash = hashlib.sha1(
-        (args.compiler + args.optl + args.switches).encode()).hexdigest()[:10]
+    trouble_hash = hash_compilation(args.compiler, args.optl, args.switches)
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
@@ -1173,6 +1219,18 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
             }
         resultsfile.flush()
         rows = query.fetchall()
+
+        compilation_set = {(row['compiler'], row['optl'], row['switches'])
+                           for row in rows}
+
+        print('Before parallel bisect run, compile all object files')
+        for compiler, optl, switches in compilation_set:
+            print('  ' + ' '.join((compiler, optl, switches)), end='',
+                  flush=True)
+            compile_trouble(args.directory, compiler, optl, switches,
+                            verbose=args.verbose, jobs=args.jobs,
+                            delete=args.delete)
+            print(' - done', flush=True)
 
         # Update ground-truth results before launching workers
         update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
