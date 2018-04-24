@@ -1021,16 +1021,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         # If the libraries weren't a problem, then include them for the
         # following searches.
         if len(bad_libs) == 0:
-            replacements['link_flags'].extend([
-                '-L' + intel_lib_dir,
-                '-ldecimal',
-                '-limf',
-                '-lipgo',
-                '-lirc_s',
-                '-lirc',
-                '-lirng',
-                '-lsvml',
-                ])
+            replacements['link_flags'].extend(libs)
 
     # TODO: Handle the case where the ground-truth compiler is also an intel
     # TODO- compiler.
