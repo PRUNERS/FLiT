@@ -124,6 +124,8 @@ SPLIT_SRC        :=
 {EXTRA_CC_FLAGS}
 {EXTRA_LD_FLAGS}
 
+BUILD_GT_LOCAL   := {build_gt_local}
+
 TROUBLE_TARGET_OBJ := $(addprefix \
 	  $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_GT_OBJ    := $(addprefix \
@@ -159,6 +161,35 @@ else
 $(BISECT_TARGET):  $(FLIT_LIB_DIR)/libflit.so
 $(TROUBLE_TARGET): $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
+
+
+# If we want the ground-truth build to be done locally, for example if we have
+# added to the $(LD_REQUIRED) flag and want to recompile the ground-truth
+# executable, then simply set BUILD_GT_LOCAL=true.  This generates
+# $(BISECT_DIR)/gtrun-lib that will be the ground truth for this bisect
+# execution.
+ifeq ($(BUILD_GT_LOCAL),true)
+
+GT_LIB_TARGET      := $(BISECT_DIR)/gtrun-lib
+GT_LIB_OUT         := $(BISECT_DIR)/gtrun-lib-out
+
+ifeq ($(UNAME_S),Darwin)
+$(GT_LIB_TARGET): lib/libflit.so
+else
+$(GT_LIB_TARGET): $(FLIT_LIB_DIR)/libflit.so
+endif # ifeq ($(UNAME_S),Darwin): meaning we are on a mac
+
+$(GT_LIB_OUT): $(GT_LIB_TARGET)
+	./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
+
+$(GT_LIB_TARGET): $(GT_OBJ) Makefile custom.mk $(MAKEFILE)
+	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
+
+$(BISECT_RESULT): $(BISECT_OUT) $(GT_LIB_OUT) $(GT_LIB_TARGET)
+	./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null
+
+endif # ifeq ($(BUILD_GT_LOCAL),true): meaning we are making a local gt
+
 
 -include $(TROUBLE_TARGET_DEPS)
 
@@ -198,6 +229,8 @@ bisect-smallclean:
 
 bisect-clean: bisect-smallclean
 	rm -f $(TROUBLE_TARGET_OBJ)
+	rm -f $(GT_LIB_TARGET)
+	rm -f $(GT_LIB_OUT)
 
 bisect-distclean: bisect-clean
 	rm -f bisect.log

@@ -946,6 +946,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'trouble_id': trouble_hash,
         'link_flags': [],
         'cpp_flags': [],
+        'build_gt_local': 'false',
         }
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
@@ -1011,17 +1012,22 @@ def run_bisect(arguments, prog=sys.argv[0]):
         # For now, if the linker was to blame, then say there may be nothing
         # else we can do.
         if len(bad_libs) > 0:
-            message = 'May not be able to search further, because of intel'
+            message = 'May not be able to search further, because of intel optimizations'
             print(message)
             logging.info(message)
 
         # TODO: Can we instead compare against the ground truth compilation
         # TODO- with the intel linking?  That is instead of giving up.
 
-        # If the libraries weren't a problem, then include them for the
-        # following searches.
-        if len(bad_libs) == 0:
-            replacements['link_flags'].extend(libs)
+        # Compile all following executables with these static libraries
+        # regardless of their effect
+        replacements['link_flags'].extend(libs)
+
+        # If the libraries were a problem, then reset what the baseline
+        # ground-truth is, especially since we updated the LINK_FLAGS in the
+        # generated Makefiles.
+        if len(bad_libs) > 0:
+            replacements['build_gt_local'] = 'true'
 
     # TODO: Handle the case where the ground-truth compiler is also an intel
     # TODO- compiler.
