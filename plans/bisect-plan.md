@@ -167,10 +167,10 @@ This approach has a few downsides:
 
 <span style="color: red">
 TODO: make tests that check this functionality with
-(1) both shared,
-(2) gt shared only,
-(3) trouble shared only, and
-(4) inlining.
+TODO- (1) both shared,
+TODO- (2) gt shared only,
+TODO- (3) trouble shared only, and
+TODO- (4) inlining.
 </span>
 
 I have actually found a way that works, but may have additional drawbacks.  Let

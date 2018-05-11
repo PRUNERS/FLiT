@@ -172,7 +172,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
                 data['fastest'] = min(data['times'])
                 data['slowest'] = max(data['times'])
                 # TODO: instead of calculating the speedup using the slowest
-                # TODO: time, use the ground-truth time.
+                # TODO- time, use the ground-truth time.
                 data['speedup'] = data['slowest'] / data['times']
                 data['xlab'] = [to_x_label(row) for row in data['rows']]
                 data['iseql'] = [float(row['comparison_d']) == 0.0

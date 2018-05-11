@@ -125,11 +125,11 @@ def main(arguments):
     for name in names:
         switches = set(x['switches'] for x in groups[name])
         ## TODO: Find a base score to compare against...
-        ## TODO:   Without that, we don't have anything to plot on the switches front
-        ## TODO:   Maybe we could have the base be
-        ## TODO:   - the most common score.
-        ## TODO:   - the empty switch for gcc
-        ## TODO:   - something else
+        ## TODO-   Without that, we don't have anything to plot on the switches front
+        ## TODO-   Maybe we could have the base be
+        ## TODO-   - the most common score.
+        ## TODO-   - the empty switch for gcc
+        ## TODO-   - something else
         #for switch in switches:
         #    switch_counts[switch] += len(set(x['score0'] for x in 
 
