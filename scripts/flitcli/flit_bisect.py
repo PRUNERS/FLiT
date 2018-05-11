@@ -865,6 +865,7 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
         'trouble_id': trouble_hash,
         'link_flags': [],
         'cpp_flags': [],
+        'build_gt_local': 'false',
         }
     makefile = create_bisect_makefile(trouble_path, replacements, [])
     makepath = os.path.join(trouble_path, makefile)
