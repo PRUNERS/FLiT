@@ -85,7 +85,7 @@
 
 #required:
 #BRANCH REPO FLIT_DIR CORES DB_USER DB_HOST
-#[maybe] CUDA_ONLY and DO_PIN
+#[maybe] DO_PIN
 
 #SBATCH --time=1:00:00 
 #SBATCH --nodes=1
@@ -98,7 +98,6 @@
 
 set -e
 
-module load cuda
 module load gcc
 
 #setup working directory

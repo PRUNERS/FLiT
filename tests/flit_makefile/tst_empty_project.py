@@ -146,11 +146,9 @@ Creating ...
 name,host,compiler,optl,switches,precision,score,score_d,resultfile,comparison,comparison_d,file,nanosec
 
 TODO: let's test that the full set of tests would get created.
-TODO: test the cuda generation,
 TODO: test that the custom.mk stuff gets used
-TODO: test CUDA_ONLY
 TODO: test CLANG_ONLY
-TODO: test targets dev, devcuda, gt, run, runbuild, clean, veryclean, distclean
+TODO: test targets dev, gt, run, runbuild, clean, veryclean, distclean
 TODO: test solution on a mac (with UNAME_S being Darwin)
 '''
 

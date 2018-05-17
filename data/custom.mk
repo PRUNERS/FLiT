@@ -86,9 +86,6 @@
 # since those directories are added by a wildcard.
 SOURCE         +=
 
-# for when cuda is compiled, you can specify different source files
-CUSOURCE       +=
-
 # required compiler flags
 # for example, include directories
 #   CC_REQUIRED += -I<path>
@@ -109,12 +106,3 @@ LD_REQUIRED    +=
 DEV_CFLAGS     +=
 DEV_LDFLAGS    +=
 
-# required compiler flags for CUDA
-NVCC_CFLAGS    +=
-
-# required link flags for CUDA
-NVCC_LINK      +=
-
-# compiler and linker flags respectively - specifically for a dev cuda build
-DEV_NVCC_CC    +=
-DEV_NVCC_LD    +=

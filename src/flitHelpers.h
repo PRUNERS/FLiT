@@ -89,7 +89,6 @@
 #define FLIT_HELPERS_HPP
 
 #include "InfoStream.h"
-#include "CUHelpers.h"
 
 #include <algorithm>
 #include <fstream>
@@ -115,8 +114,7 @@ const int RAND_VECT_SIZE = 256;
 extern thread_local InfoStream info_stream;
 
 // this section provides a pregenerated random
-// sequence that can be used by tests, including
-// CUDA
+// sequence that can be used by tests
 
 template <typename T>
 const std::vector<T>
@@ -148,7 +146,6 @@ std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
 template <typename F, typename I>
-HOST_DEVICE
 F as_float_impl(I val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
@@ -158,13 +155,11 @@ F as_float_impl(I val) {
   return u.f;
 }
 
-HOST_DEVICE
 inline float
 as_float(uint32_t val) {
   return as_float_impl<float, uint32_t>(val);
 }
 
-HOST_DEVICE
 inline double
 as_float(uint64_t val) {
   return as_float_impl<double, uint64_t>(val);
@@ -176,7 +171,6 @@ as_float(unsigned __int128 val) {
 }
 
 template <typename F, typename I>
-HOST_DEVICE
 I as_int_impl(F val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
@@ -186,13 +180,11 @@ I as_int_impl(F val) {
   return u.i;
 }
 
-HOST_DEVICE
 inline uint32_t
 as_int(float val) {
   return as_int_impl<float, uint32_t>(val);
 }
 
-HOST_DEVICE
 inline uint64_t
 as_int(double val) {
   return as_int_impl<double, uint64_t>(val);

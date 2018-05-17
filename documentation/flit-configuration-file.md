@@ -117,7 +117,6 @@ The `type` parameter can be one of
 * `gcc`
 * `clang`
 * `intel`
-* `cuda`
 
 The `optimization_levels` and `switches` will be combined as a Cartesian
 product and each possible pairing will become a compilation performed by FLiT.

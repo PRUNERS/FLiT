@@ -63,10 +63,10 @@ symbolic link called `python3` in your `PATH` pointing to that python executable
 ### Runner Prerequisites
 
 The test runner can run multiple compilers.  For now, only one compiler is
-supported from each of the types: GCC, Clang, Intel's `icpc`, and NVIDIA's `nvcc`.
-Simply have the one you want used as the first in your system PATH.  You do not
-need all four of those, only those ones installed will be used.  But all of
-them need to support C++11.
+supported from each of the types: GCC, Clang, and Intel's `icpc`.  Simply have
+the one you want used as the first in your system PATH.  You do not need all
+four of those, only those ones installed will be used.  But all of them need to
+support C++11.
 
 If this is not on the same machine as the Launcher, then the Database machine
 will need an SSH server running.

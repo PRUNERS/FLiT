@@ -93,16 +93,11 @@ echo DB_USER: ${DB_USER}
 echo DB_HOST: ${DB_HOST}
 echo FLIT_DIR: ${FLIT_DIR}
 echo SLURMED: ${SLURMED}
-echo CUDA_ONLY: ${CUDA_ONLY}
 
 mkdir -p results
 
 #do the full test suite
 cd src
-
-if [ "$CUDA_ONLY" = "False" ]; then
-    unset CUDA_ONLY
-fi
 
 make -j ${CORES} &> ../results/makeOut
 

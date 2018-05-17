@@ -87,28 +87,6 @@
 #include <vector>
 #include <tuple>
 
-#ifdef __CUDA__
-#include <thrust/tuple.h>
-#endif
-
-template <typename T>
-GLOBAL
-void
-DistOfMultKernel(const T* tiList, size_t n, double* results){
-#ifdef __CUDA__
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-  auto idx = 0;
-#endif
-  const T* ti = tiList + (idx*n);
-  T a = ti[0];
-  T b = ti[1];
-  T c = ti[2];
-
-  auto distributed = (a * c) + (b * c);
-  results[idx] = distributed;
-}
-
 template <typename T>
 class DistributivityOfMultiplication : public flit::TestBase<T> {
 public:
@@ -119,10 +97,6 @@ public:
   virtual std::vector<T> getDefaultInput() override;
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override {
-    return DistOfMultKernel;
-  }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     T a = ti[0];
     T b = ti[1];
