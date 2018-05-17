@@ -239,6 +239,7 @@ bisect-clean: bisect-smallclean
 	rm -f $(TROUBLE_TARGET_DEPS)
 	rm -f $(GT_LIB_TARGET)
 	rm -f $(GT_LIB_OUT)
+	rm -f $(addsuffix *.dat,$(GT_LIB_OUT))
 	-rmdir $(BISECT_OBJ_DIR)
 
 bisect-distclean: bisect-clean
