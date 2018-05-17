@@ -158,7 +158,6 @@ def runOnAll(cmdStrs):
         local_env = os.environ.copy()
         local_env['SSHPASS'] = pwds[pkey]
         rem_env = REM_ENV.copy()
-        rem_env['CUDA_ONLY'] = str(host[0][4])
         rem_env['DO_PIN'] = str(host[0][5])
         rem_env['CORES'] = str(host[0][2])
         rem_env['DB_HOST'] = str(db_host[1])

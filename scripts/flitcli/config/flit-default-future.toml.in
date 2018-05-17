@@ -135,7 +135,7 @@ switches = ''
   # database and analysis.
   name = 'g++'
   # TODO: implement these supported types
-  # There are a few supported types: [ gcc, intel, clang, cuda ]
+  # There are a few supported types: [ gcc, intel, clang ]
   type = 'gcc'
   optimization_levels = [
     '-O0',

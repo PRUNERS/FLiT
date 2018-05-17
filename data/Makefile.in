@@ -84,7 +84,6 @@
 
 FFLAGS          ?=
 DEV_TARGET      ?= devrun
-DEV_CUTARGET    ?= cu_devrun
 GT_TARGET       ?= gtrun
 GT_OUT          := ground-truth.csv
 
@@ -139,45 +138,6 @@ SOURCE          += $(TESTS)
 
 VPATH            = $(dir $(SOURCE))
 
-CUSOURCE        += $(TESTS)
-CUSOURCE        += $(wildcard *.cpp)
-# TODO: use DEV_CUOBJ.  It is not yet used
-DEV_CUOBJ       += $(addprefix $(OBJ_DIR)/,$(notdir $(CUSOURCE:%.cpp=%_cu_dev.o)))
-
-VPATH           += $(dir $(CUSOURCE))
-
-NVCC_BIN        := nvcc
-HAS_CUDA        := $(shell command -v $(NVCC_BIN) 2> /dev/null)
-ifdef HAS_CUDA
-NVCC            := $(shell which $(NVCC_BIN) 2>/dev/null)
-CUDA_DIR        := $(dir $(NVCC))/..
-NVCC_CFLAGS     += --std=c++11
-NVCC_CFLAGS     += -ccbin=g++
-NVCC_CFLAGS     += $(DEVCAP)
-NVCC_CFLAGS     += -I .
-NVCC_CFLAGS     += -x cu
-NVCC_CFLAGS     += -dc
-NVCC_CFLAGS     += -D__CUDA__
-NVCC_CFLAGS     += -I$(FLIT_INC_DIR)
-NVCC_CFLAGS     += -I$(CUDA_DIR)/samples/common/inc
-endif # end of ifdef HAS_CUDA
-
-ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
-  NVCC_LINK     += -Llib -lflit
-else  # not on Mac OSX
-  NVCC_LINK     += -L$(FLIT_LIB_DIR) -lflit
-  NVCC_LINK     += -Xcompiler \"-Wl,-rpath=$(realpath $(FLIT_LIB_DIR))\"
-endif # end of if on Mac OSX
-
-NVCC_LINK       += --std=c++11
-NVCC_LINK       += -ccbin=g++
-NVCC_LINK       += -L$(CUDA_DIR)/lib64
-
-# TODO: double check CUDA flags.  Really?  No optimization levels?
-
-DEV_NVCC_CC     +=
-DEV_NVCC_LD     +=
-
 .PHONY: help
 help:
 	@echo 'You can run the Makefile directly, but it is recommended to use'
@@ -191,7 +151,6 @@ help:
 	@echo
 	@echo '  help        Show this help and exit (default target)'
 	@echo '  dev         Only run the devel compilation to test things out'
-	@echo '  devcuda     Only run the devel CUDA compilation to test CUDA out'
 	@echo '  groundtruth Compile the ground-truth version'
 	@echo '  gt          Same as groundtruth'
 	@echo '  runbuild    Build all executables needed for the run target'
@@ -216,11 +175,6 @@ GT_DEPS          = $(GT_OBJ:%.o=%.d)
 CLANG           := clang++
 INTEL           := icpc
 GCC             := g++
-
-ifndef CUDA_ONLY
-COMPILERS       := $(foreach c, GCC INTEL CLANG, \
-                       $(if $(shell which $($(c)) 2>/dev/null), $c,))
-endif
 
 ifdef CLANG_ONLY
 COMPILERS        = CLANG
@@ -363,45 +317,6 @@ SWITCHES_INTEL  += SINGLEPRECCONST
 SWITCHES_INTEL  += SSE
 SWITCHES_INTEL  += USEFASTM
 
-##################################################
-#
-# Now deal with CUDA stuff if it is even available
-#
-##################################################
-
-
-
-# These are the fp affecting switches for CUDA (7.5).
-# We will naively apply these (though the docs say
-# that, for instance, --use_fast_math implies
-# --ftz=true --prec-div=false --prec-sqrt=false
-# --fmad=true.
-
-ifdef HAS_CUDA
-
-FASTMC          := --use_fast_math
-FMADFC          := --fmad=false
-FMADTC          := --fmad=true
-FTZFC           := --ftz=false
-FTZTC           := --ftz=true
-PRECDFC         := --prec-div=false
-PRECDTC         := --prec-div=true
-PRECSFC         := --prec-sqrt=false
-PRECSTC         := --prec-sqrt=true
-
-CUSWITCHES      += DEFFLAGS
-CUSWITCHES      += FASTMC
-CUSWITCHES      += FMADFC
-CUSWITCHES      += FMADTC
-CUSWITCHES      += FTZFC
-CUSWITCHES      += FTZTC
-CUSWITCHES      += PRECDFC
-CUSWITCHES      += PRECDTC
-CUSWITCHES      += PRECSFC
-CUSWITCHES      += PRECSTC
-
-endif # end of ifdef HAS_CUDA
-
 
 ##########################################################
 #
@@ -509,24 +424,15 @@ TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
 DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
-ifdef HAS_CUDA
-CUTARGET_OUTS   := $(foreach s, $(CUSWITCHES), \
-                     $(RESULTS_DIR)/NVCC_$(HOSTNAME)_$(strip $(s))-out)
-CUTARGET_RESULTS:= $(CUTARGET_OUTS:%=%-comparison.csv)
-CUTARGETS       := $(CUTARGET_OUTS:%_out.csv=%)
-endif # ifdef HAS_CUDA
-
-.PHONY: dev devcuda gt groundtruth run runbuild
+.PHONY: dev gt groundtruth run runbuild
 dev: $(DEV_TARGET)
-devcuda: $(DEV_CUTARGET)
 gt: groundtruth
 groundtruth: $(GT_TARGET)
 
 run: $(TARGET_RESULTS) $(TARGET_OUTS)
-run: $(CUTARGET_RESULTS) $(CUTARGET_OUTS)
 run: $(GT_OUT)
 run: runbuild
-runbuild: $(TARGETS) $(CUTARGETS) groundtruth
+runbuild: $(TARGETS) groundtruth
 
 .PHONY: clean
 clean:
@@ -540,15 +446,10 @@ clean:
 veryclean: distclean
 distclean: clean
 	rm -f $(DEV_TARGET)
-	rm -f $(DEV_CUTARGET)
 	rm -f $(TARGET_OUTS)
 	rm -f $(TARGET_RESULTS)
 	rm -f $(addsuffix *.dat,$(TARGET_OUTS))
 	rm -f $(TARGETS)
-	rm -f $(CUTARGET_OUTS)
-	rm -f $(CUTARGET_RESULTS)
-	rm -f $(addsuffix *.dat,$(CUTARGET_OUTS))
-	rm -f $(CUTARGETS)
 	rm -f $(GT_TARGET)
 	rm -f $(GT_OUT)
 	rm -f $(addsuffix *.dat,$(GT_OUT))
@@ -576,12 +477,10 @@ cleanlibflit:
 $(DEV_TARGET): lib/libflit.so
 $(GT_TARGET):  lib/libflit.so
 $(TARGETS):    lib/libflit.so
-$(CUTARGETS):  lib/libflit.so
 else
 $(DEV_TARGET): $(FLIT_LIB_DIR)/libflit.so
 $(GT_TARGET):  $(FLIT_LIB_DIR)/libflit.so
 $(TARGETS):    $(FLIT_LIB_DIR)/libflit.so
-$(CUTARGETS):  $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 # include the build dependencies for gt and dev
@@ -605,14 +504,6 @@ $(OBJ_DIR)/%_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	  -DFLIT_OPTL='"$(DEV_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
 	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
-
-ifdef HAS_CUDA
-$(DEV_CUTARGET): $(DEV_CUOBJ) Makefile custom.mk
-	$(NVCC) $(NVCC_LINK) $(DEV_NVCC_LD) $(DEV_CUOBJ) -o $(DEV_CUTARGET)
-
-$(OBJ_DIR)/%_cu_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(NVCC) -c $(NVCC_CFLAGS) $(DEV_NVCC_CC) $< -o $@
-endif # ifdef HAS_CUDA
 
 # Ground truth compilation rules
 $(GT_OUT): $(GT_TARGET)

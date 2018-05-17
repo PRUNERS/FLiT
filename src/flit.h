@@ -88,16 +88,9 @@
 #define FLIT_H 0
 
 #include "Matrix.h"
-#include "MatrixCU.h"
 #include "TestBase.h"
 #include "Vector.h"
-#include "VectorCU.h"
 #include "flitHelpers.h"
-
-#ifdef __CUDA__
-//#include <cuda.h>
-#include "CUHelpers.h"
-#endif
 
 #include <algorithm>
 #include <chrono>
@@ -474,10 +467,6 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
 
-#ifdef __CUDA__
-  initDeviceData();
-#endif
-
   auto testMap = getTests();
   for (auto& testName : options.tests) {
     int idx;
@@ -498,9 +487,6 @@ inline int runFlitTests(int argc, char* argv[]) {
           options.timingLoops, options.timingRepeats, idx);
     }
   }
-#if defined(__CUDA__) && !defined(__CPUKERNEL__)
-  cudaDeviceSynchronize();
-#endif
 
   // Sort the results first by name then by precision
   auto testComparator = [](const TestResult &a, const TestResult &b) {

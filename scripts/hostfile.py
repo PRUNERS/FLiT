@@ -83,7 +83,7 @@
 #this is where the user configures her database and
 #worker hosts.
 #db_host: (user, fqdn)
-#run_host: (user, fqdn, processes, SlurmScript, CUDA only, get opcode count)
+#run_host: (user, fqdn, processes, SlurmScript, get opcode count)
 
 import os
 import multiprocessing
