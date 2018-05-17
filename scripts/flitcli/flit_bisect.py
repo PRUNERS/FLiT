@@ -691,11 +691,13 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         for lib in trouble_libs:
             logging.info('  %s', lib)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose,
-                     jobs=args.jobs)
-        if args.delete:
-            build_bisect(makepath, args.directory, target='bisect-smallclean',
-                         verbose=args.verbose, jobs=args.jobs)
+        try:
+            build_bisect(makepath, args.directory, verbose=args.verbose,
+                         jobs=args.jobs)
+        finally:
+            if args.delete:
+                build_bisect(makepath, args.directory, verbose=args.verbose,
+                             jobs=args.jobs, target='bisect-smallclean')
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -741,11 +743,13 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         for src in trouble_src:
             logging.info('  %s', src)
 
-        build_bisect(makepath, args.directory, verbose=args.verbose,
-                     jobs=args.jobs)
-        if args.delete:
-            build_bisect(makepath, args.directory, target='bisect-smallclean',
-                         verbose=args.verbose, jobs=args.jobs)
+        try:
+            build_bisect(makepath, args.directory, verbose=args.verbose,
+                         jobs=args.jobs)
+        finally:
+            if args.delete:
+                build_bisect(makepath, args.directory, verbose=args.verbose,
+                             jobs=args.jobs, target='bisect-smallclean')
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -809,11 +813,13 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
                 '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
                 .format(sym=sym))
 
-        build_bisect(makepath, args.directory, verbose=args.verbose,
-                     jobs=args.jobs)
-        if args.delete:
-            build_bisect(makepath, args.directory, target='bisect-smallclean',
-                         verbose=args.verbose, jobs=args.jobs)
+        try:
+            build_bisect(makepath, args.directory, verbose=args.verbose,
+                         jobs=args.jobs)
+        finally:
+            if args.delete:
+                build_bisect(makepath, args.directory, verbose=args.verbose,
+                             jobs=args.jobs, target='bisect-smallclean')
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
@@ -1319,7 +1325,6 @@ def main(arguments, prog=sys.argv[0]):
     if '-a' in arguments or '--auto-sqlite-run' in arguments:
         return parallel_auto_bisect(arguments, prog)
 
-    # else:
     _, _, _, _, ret = run_bisect(arguments, prog)
     return ret
 
