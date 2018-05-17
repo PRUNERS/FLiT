@@ -91,7 +91,7 @@ import os
 # - default_input: populate ti.vals vector.
 # - vars_initialize: initialize scope variable for the test using ti.vals
 #   tiList[idx].vals
-# - func_body: test body that is shared between cuda and non-cuda.  Populate score
+# - func_body: test body
 template_string = '''
 #include "flit.h"
 
