@@ -1010,25 +1010,13 @@ def run_bisect(arguments, prog=sys.argv[0]):
             print('    None')
             logging.info('  None')
 
-        #replacements['link_flags'].extend([
-        #    '-L' + intel_lib_dir,
-        #    '-lirc',
-        #    '-lsvml',
-        #    ])
-
-        # TODO: If the linker is to blame, remove it from the equation for
-        # TODO- future searching This is done simply by using the ground-truth
-        # TODO- compiler to link instead of using the trouble compiler to link.
-
         # For now, if the linker was to blame, then say there may be nothing
         # else we can do.
         if len(bad_libs) > 0:
-            message = 'May not be able to search further, because of intel optimizations'
+            message = 'May not be able to search further, because of intel ' \
+                      'optimizations'
             print(message)
             logging.info('%s', message)
-
-        # TODO: Can we instead compare against the ground truth compilation
-        # TODO- with the intel linking?  That is instead of giving up.
 
         # Compile all following executables with these static libraries
         # regardless of their effect
@@ -1039,11 +1027,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
         # generated Makefiles.
         if len(bad_libs) > 0:
             replacements['build_gt_local'] = 'true'
-
-    # TODO: Handle the case where the ground-truth compiler is also an intel
-    # TODO- compiler.
-    # TODO: Extra care must be taken when there is more than one intel linker
-    # TODO- specified.
 
     try:
         bad_sources = search_for_source_problems(args, bisect_path,
@@ -1204,7 +1187,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
         return 1
 
     query = connection.execute(
-        'select * from tests where comparison_d!=0.0')
+        'select * from tests where comparison_d != 0.0')
     rows = query.fetchall()
     precision_map = {
         'f': 'float',

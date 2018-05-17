@@ -168,10 +168,11 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 # executable, then simply set BUILD_GT_LOCAL=true.  This generates
 # $(BISECT_DIR)/gtrun-lib that will be the ground truth for this bisect
 # execution.
-ifeq ($(BUILD_GT_LOCAL),true)
 
 GT_LIB_TARGET      := $(BISECT_DIR)/gtrun-lib
 GT_LIB_OUT         := $(BISECT_DIR)/gtrun-lib-out
+
+ifeq ($(BUILD_GT_LOCAL),true)
 
 ifeq ($(UNAME_S),Darwin)
 $(GT_LIB_TARGET): lib/libflit.so
