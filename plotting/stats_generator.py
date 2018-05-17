@@ -91,6 +91,8 @@ import argparse
 def main(arguments):
     'Main entry point'
     # Parse arguments
+    # TODO: rework this since FLiT has been updated since the creation.
+    # TODO: finish generating important statistics
     parser = argparse.ArgumentParser(
         description='''
             Generates statistics from a given test results csv file.  The csv
