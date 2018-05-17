@@ -472,11 +472,13 @@ def bisect_search(is_bad, elements):
         # find one bad element
         quest_copy = quest_list
         no_test = list(known_list)
+        last_result = False
         while len(quest_copy) > 1:
             # split the questionable list into two lists
             half_1 = quest_copy[:len(quest_copy) // 2]
             half_2 = quest_copy[len(quest_copy) // 2:]
-            if is_bad(half_1, no_test + half_2):
+            last_result = is_bad(half_1, no_test + half_2)
+            if last_result:
                 quest_copy = half_1
                 no_test.extend(half_2)
                 # TODO: possible optimization.
@@ -495,9 +497,8 @@ def bisect_search(is_bad, elements):
 
         bad_element = quest_list.pop(0)
 
-        # TODO: only double check if the last check was False
         # double check that we found a bad element before declaring it bad
-        if is_bad([bad_element], known_list + quest_list):
+        if last_result or is_bad([bad_element], known_list + quest_list):
             bad_list.append(bad_element)
 
         # add to the known list to not search it again
