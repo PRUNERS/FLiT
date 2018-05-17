@@ -87,31 +87,33 @@
 
 // Only store these locally because we want multiple compiled copies
 namespace {
-  template<typename T> TruthType<T>
+  std::vector<flit::TestResult>
   runGroundtruth_impl(std::string testName,
                       std::function<T()> randGen)
   {
+    flit::FlitOptions opt;
+
     auto test = flit::getTests()[testName]->get<T>();
     auto input = test->getDefaultInput();
     input = std::vector<T>(test->getInputsPerRun(), randGen);
-    auto scores = test->run(input);
+    auto scores = test->run(input, opt.output);
 
     // Return only the first score.  Ignore the key
     return { input, std::get<0>(scores.begin()->second) };
   }
 } // end of unnamed namespace
 
-TruthType<float>
+std::vector<flit::TestResult>
 runGroundtruth(const std::string &testName, std::function<float()> randGen) {
   return runGroundtruth_impl(testName, randGen);
 }
 
-TruthType<double>
+std::vector<flit::TestResult>
 runGroundtruth(const std::string &testName, std::function<double()> randGen) {
   return runGroundtruth_impl(testName, randGen);
 }
 
-TruthType<long double>
+std::vector<flit::TestResult>
 runGroundtruth(const std::string &testName, std::function<long double()> randGen) {
   return runGroundtruth_impl(testName, randGen);
 }

@@ -89,16 +89,13 @@
 #include <vector>
 #include <tuple>
 
-template <typename T>
-using TruthType = std::pair<std::vector<T>, long double>;
-
-TruthType<float>
+std::vector<flit::TestResult>
 runGroundtruth(const std::string &testName, std::function<float()> randGen);
 
-TruthType<double>
+std::vector<flit::TestResult>
 runGroundtruth(const std::string &testName, std::function<double()> randGen);
 
-TruthType<long double>
+std::vector<flit::TestResult>
 runGroundtruth(const std::string &testName, std::function<long double()> randGen);
 
 #endif // GROUNDTRUTH_H
