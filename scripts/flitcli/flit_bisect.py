@@ -89,7 +89,9 @@ from collections import namedtuple
 import argparse
 import csv
 import datetime
+import glob
 import hashlib
+import itertools
 import logging
 import multiprocessing as mp
 import os
@@ -157,8 +159,8 @@ def create_bisect_dir(parent):
             return bisect_dir
 
 def create_bisect_makefile(directory, replacements, gt_src,
-                           trouble_src=[],
-                           split_symbol_map=dict()):
+                           trouble_src=tuple(),
+                           split_symbol_map=None):
     '''
     Returns the name of the created Makefile within the given directory, having
     been populated with the replacements, gt_src, and trouble_src.  It is then
@@ -185,6 +187,8 @@ def create_bisect_makefile(directory, replacements, gt_src,
 
     @return the bisect makefile name without directory prepended to it
     '''
+    if split_symbol_map is None:
+        split_symbol_map = {} # default to an empty dictionary
     repl_copy = dict(replacements)
     repl_copy['TROUBLE_SRC'] = '\n'.join(['TROUBLE_SRC      += {0}'.format(x)
                                           for x in trouble_src])
@@ -220,7 +224,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
 
     repl_copy['makefile'] = makepath
     repl_copy['number'] = '{0:02d}'.format(num)
-    logging.info('Creating makefile: ' + makepath)
+    logging.info('Creating makefile: %s', makepath)
     util.process_in_file(
         os.path.join(conf.data_dir, 'Makefile_bisect_binary.in'),
         makepath,
@@ -298,7 +302,7 @@ def update_gt_results(directory, verbose=False,
         kwargs['stderr'] = subp.DEVNULL
     gt_resultfile = util.extract_make_var(
         'GT_OUT', os.path.join(directory, 'Makefile'))[0]
-    logging.info('Updating ground-truth results - {0}'.format(gt_resultfile))
+    logging.info('Updating ground-truth results - %s', gt_resultfile)
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
     subp.check_call(
         ['make', '-j', str(jobs), '-C', directory, gt_resultfile], **kwargs)
@@ -466,28 +470,28 @@ def bisect_search(is_bad, elements):
     while len(quest_list) > 0 and is_bad(quest_list, known_list):
 
         # find one bad element
-        Q = quest_list
+        quest_copy = quest_list
         no_test = list(known_list)
-        while len(Q) > 1:
+        while len(quest_copy) > 1:
             # split the questionable list into two lists
-            Q1 = Q[:len(Q) // 2]
-            Q2 = Q[len(Q) // 2:]
-            if is_bad(Q1, no_test + Q2):
-                Q = Q1
-                no_test.extend(Q2)
+            half_1 = quest_copy[:len(quest_copy) // 2]
+            half_2 = quest_copy[len(quest_copy) // 2:]
+            if is_bad(half_1, no_test + half_2):
+                quest_copy = half_1
+                no_test.extend(half_2)
                 # TODO: possible optimization.
-                # TODO- if the length of Q2 is big enough, test
-                # TODO-   is_bad(Q2, no_test + Q1)
-                # TODO- and if that returns False, then mark Q2 as known so
+                # TODO- if the length of half_2 is big enough, test
+                # TODO-   is_bad(half_2, no_test + half_1)
+                # TODO- and if that returns False, then mark half_2 as known so
                 # TODO- that we don't need to search it again.
             else:
-                # optimization: mark Q1 as known, so that we don't need to
+                # optimization: mark half_1 as known, so that we don't need to
                 # search it again
-                quest_list = quest_list[len(Q1):]
-                known_list.extend(Q1)
+                quest_list = quest_list[len(half_1):]
+                known_list.extend(half_1)
                 # update the local search
-                Q = Q2
-                no_test.extend(Q1)
+                quest_copy = half_2
+                no_test.extend(half_1)
 
         bad_element = quest_list.pop(0)
 
@@ -660,13 +664,14 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     the libraries included, and checks to see if there are reproducibility
     problems.
     '''
-    def bisect_libs_build_and_check(trouble_libs, ignore_libs):
+    def bisect_libs_build_and_check(trouble_libs, dummy_libs):
         '''
         Compiles all source files under the ground truth compilation and
         statically links in the trouble_libs.
 
         @param trouble_libs: static libraries to compile in
-        @param ignore_libs: static libraries to ignore and not include
+        @param dummy_libs: static libraries to ignore and not include
+            This variable is not used, but necessary for the interface.
 
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground-truth compilation.
@@ -680,10 +685,10 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
         print('  Create {0} - compiling and running'.format(makepath),
               end='', flush=True)
-        logging.info('Created {0}'.format(makepath))
+        logging.info('Created %s', makepath)
         logging.info('Checking:')
         for lib in trouble_libs:
-            logging.info('  ' + lib)
+            logging.info('  %s', lib)
 
         build_bisect(makepath, args.directory, verbose=args.verbose,
                      jobs=args.jobs)
@@ -697,7 +702,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
         result_str = 'bad' if result_is_bad else 'good'
         sys.stdout.write(' - {0}\n'.format(result_str))
-        logging.info('Result was {0}'.format(result_str))
+        logging.info('Result was %s', result_str)
 
         return result_is_bad
 
@@ -730,10 +735,10 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
 
         print('  Created {0} - compiling and running'.format(makepath), end='',
               flush=True)
-        logging.info('Created {0}'.format(makepath))
+        logging.info('Created %s', makepath)
         logging.info('Checking:')
         for src in trouble_src:
-            logging.info('  ' + src)
+            logging.info('  %s', src)
 
         build_bisect(makepath, args.directory, verbose=args.verbose,
                      jobs=args.jobs)
@@ -747,7 +752,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
 
         result_str = 'bad' if result_is_bad else 'good'
         sys.stdout.write(' - {0}\n'.format(result_str))
-        logging.info('Result was {0}'.format(result_str))
+        logging.info('Result was %s', result_str)
 
         return result_is_bad
 
@@ -795,10 +800,11 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         print('  Created {0} - compiling and running'.format(makepath), end='',
               flush=True)
-        logging.info('Created {0}'.format(makepath))
+        logging.info('Created %s', makepath)
         logging.info('Checking:')
         for sym in trouble_symbols:
             logging.info(
+                '%s',
                 '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
                 .format(sym=sym))
 
@@ -814,7 +820,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         result_str = 'bad' if result_is_bad else 'good'
         sys.stdout.write(' - {0}\n'.format(result_str))
-        logging.info('Result was {0}'.format(result_str))
+        logging.info('Result was %s', result_str)
 
         return result_is_bad
 
@@ -828,7 +834,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     for sym in symbol_tuples:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
-        logging.info(message)
+        logging.info('%s', message)
 
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     return bad_symbols
@@ -836,7 +842,10 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
                     jobs=mp.cpu_count(), delete=True):
     '''
-    Compiles the trouble executable for the given arguments.  This is useful because 
+    Compiles the trouble executable for the given arguments.  This is useful to
+    compile the trouble executable as it will force the creation of all needed
+    object files for bisect.  This can be used to precompile all object files
+    needed for bisect.
     '''
     # TODO: much of this was copied from run_bisect().  Refactor code.
     trouble_hash = hash_compilation(compiler, optl, switches)
@@ -922,18 +931,18 @@ def run_bisect(arguments, prog=sys.argv[0]):
         level=logging.DEBUG)
 
     logging.info('Starting the bisect procedure')
-    logging.debug('  trouble compiler:           "{0}"'.format(args.compiler))
-    logging.debug('  trouble optimization level: "{0}"'.format(args.optl))
-    logging.debug('  trouble switches:           "{0}"'.format(args.switches))
-    logging.debug('  trouble testcase:           "{0}"'.format(args.testcase))
-    logging.debug('  trouble hash:               "{0}"'.format(trouble_hash))
+    logging.debug('  trouble compiler:           "%s"', args.compiler)
+    logging.debug('  trouble optimization level: "%s"', args.optl)
+    logging.debug('  trouble switches:           "%s"', args.switches)
+    logging.debug('  trouble testcase:           "%s"', args.testcase)
+    logging.debug('  trouble hash:               "%s"', trouble_hash)
 
     # get the list of source files from the Makefile
     sources = util.extract_make_var('SOURCE', 'Makefile',
                                     directory=args.directory)
     logging.debug('Sources')
     for source in sources:
-        logging.debug('  ' + source)
+        logging.debug('  %s', source)
 
     replacements = {
         'bisect_dir': bisect_dir,
@@ -956,7 +965,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     bad_libs = []
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
         warning_message = 'Warning: The intel compiler may not work with bisect'
-        logging.info(warning_message)
+        logging.info('%s', warning_message)
         print(warning_message)
 
         if '/' in args.compiler:
@@ -995,7 +1004,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         logging.info('BAD STATIC LIBRARIES:')
         for lib in bad_libs:
             print('    ' + lib)
-            logging.info('  ' + lib)
+            logging.info('  %s', lib)
         if len(bad_libs) == 0:
             print('    None')
             logging.info('  None')
@@ -1015,7 +1024,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         if len(bad_libs) > 0:
             message = 'May not be able to search further, because of intel optimizations'
             print(message)
-            logging.info(message)
+            logging.info('%s', message)
 
         # TODO: Can we instead compare against the ground truth compilation
         # TODO- with the intel linking?  That is instead of giving up.
@@ -1049,7 +1058,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     logging.info('BAD SOURCES:')
     for src in bad_sources:
         print('    ' + src)
-        logging.info('  ' + src)
+        logging.info('  %s', src)
     if len(bad_sources) == 0:
         print('    None')
         logging.info('  None')
@@ -1072,7 +1081,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
         print('  ' + message)
-        logging.info(message)
+        logging.info('%s', message)
     if len(bad_symbols) == 0:
         print('    None')
         logging.info('  None')
@@ -1237,10 +1246,10 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     # Create the workers
     workers = []
     for _ in range(args.parallel):
-        p = mp.Process(target=auto_bisect_worker,
-                       args=(arg_queue, result_queue))
-        p.start()
-        workers.append(p)
+        process = mp.Process(target=auto_bisect_worker,
+                             args=(arg_queue, result_queue))
+        process.start()
+        workers.append(process)
 
     return_tot = 0
     with open('auto-bisect.csv', 'w') as resultsfile:
@@ -1294,8 +1303,8 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
             resultsfile.flush()
 
     # Join the workers
-    for p in workers:
-        p.join()
+    for process in workers:
+        process.join()
 
     # Remove the files that were precompiled
     if args.delete:
