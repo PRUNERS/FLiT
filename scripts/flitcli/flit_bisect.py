@@ -1301,18 +1301,6 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
         for makepath in glob.iglob('bisect-*/bisect-make-01.mk'):
             build_bisect(makepath, args.directory, verbose=args.verbose,
                          jobs=args.jobs, target='bisect-clean')
-        # TODO: test that these files are deleted with the above Makefile calls
-        #for row in rows:
-        #    hashval = hash_compilation(row['compiler'], row['optl'],
-        #                               row['switches'])
-        #    basename = os.path.join(args.directory, 'obj',
-        #                            '*_bisect_' + hashval)
-        #    filelist = itertools.chain(
-        #        glob.iglob(basename + '.d'),
-        #        glob.iglob(basename + '.o'),
-        #        )
-        #    for fname in filelist:
-        #        os.remove(fname)
 
     return return_tot
 
