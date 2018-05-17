@@ -177,7 +177,10 @@ INTEL           := icpc
 GCC             := g++
 
 ifdef CLANG_ONLY
-COMPILERS        = CLANG
+COMPILERS       := CLANG
+else
+COMPILERS       := $(foreach c, GCC INTEL CLANG, \
+                     $(if $(shell which $($(c)) 2>/dev/null), $c,))
 endif
 
 HOSTNAME        := $(shell hostname)
@@ -337,8 +340,6 @@ R_ID            := $(R_CUR_COMPILER)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
 R_TARGET        := $(RESULTS_DIR)/$(R_ID)
 R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(R_ID).o)))
 R_DEP           := $(R_OBJ:%.o=%.d)
-
-$(info $(R_OBJ))
 
 -include $(R_DEP)
 
