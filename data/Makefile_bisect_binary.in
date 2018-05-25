@@ -154,11 +154,15 @@ FPIC_OBJ         := $(addprefix \
 FPIC_OBJ         := $(addprefix \
 	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_bisect_$(TROUBLE_ID)_fPIC.o)))
 FPIC_DEPS        := $(FPIC_OBJ:%.o=%.d)
-SPLIT_OBJ        := $(addprefix \
-	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
+FPIC_SYMS        := $(FPIC_OBJ:%.o=%_allsyms.txt)
+FPIC_SYMS        := $(FPIC_OBJ:%.o=%_externsyms.txt)
+FPIC_SYMS        := $(FPIC_OBJ:%.o=%_internsyms.txt)
+FPIC_SYMS        := $(FPIC_OBJ:%.o=%_internredefine.txt)
 SPLIT_OBJ        += $(addprefix \
 	  $(BISECT_OBJ_DIR)/,$(notdir \
 	    $(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
+SPLIT_OBJ        := $(addprefix \
+	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
 SPLIT_DEPS       := $(SPLIT_OBJ:%.o=%.d)
 TROUBLE_SYMBOLS  := $(addprefix \
 	  $(BISECT_OBJ_DIR)/,$(notdir \
@@ -243,8 +247,6 @@ bisect-smallclean:
 	rm -f $(TROUBLE_TARGET_OUT)
 	rm -f $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
 	rm -f $(TROUBLE_SYMBOLS)
-	rm -f $(FPIC_OBJ)
-	rm -f $(FPIC_DEPS)
 	rm -f $(SPLIT_OBJ)
 	rm -f $(SPLIT_DEPS)
 	-rmdir $(BISECT_OBJ_DIR)
@@ -254,6 +256,9 @@ bisect-clean: bisect-smallclean
 	rm -f $(TROUBLE_TARGET_DEPS)
 	rm -f $(GT_LIB_TARGET)
 	rm -f $(GT_LIB_OUT)
+	rm -f $(FPIC_OBJ)
+	rm -f $(FPIC_DEPS)
+	rm -f $(FPIC_SYMS)
 	rm -f $(addsuffix *.dat,$(GT_LIB_OUT))
 	-rmdir $(BISECT_OBJ_DIR)
 
@@ -316,38 +321,57 @@ $(OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	  -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
 	  -DFLIT_FILENAME='"bisect-default-out"'
 
+%_allsyms.txt: %.o
+	nm --defined-only $< | cut -c20- > $@
+
+%_externalsyms.txt: %.o
+	nm --defined-only --extern-only $< | cut -c20- > $@
+
+%_internsyms.txt: %_allsyms.txt %_externalsyms.txt
+	comm --check-order -23 $*_allsyms.txt $*_externalsyms.txt > $@
+
+%_internredefine.txt: %_internsyms.txt
+	sed -e 's/^\(.*\)$$/\1 $(notdir $*)_\1/g' $< > $@
+
 # Specify how to split symbols using objcopy
 
+# TODO: handle the case where %_internredefine.txt is empty
 # Defines how to split the one object file into two object files using objcopy
 # @param 1: src basename (e.g. for 'tests/Example01.cpp' pass in 'Example01')
 define SPLIT_RULE
 
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_gt_fPIC.o
+$$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_gt_fPIC_internredefine.txt
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
 	if [ -s "$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
 	    --weaken-symbols=$$(BISECT_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
+			--redefine-syms=$$(BISECT_OBJ_DIR)/$1_gt_fPIC_internredefine.txt \
 	    $$(BISECT_OBJ_DIR)/$1_gt_fPIC.o \
 	    $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
 	else \
-	  cp \
+	  objcopy \
+			--redefine-syms=$$(BISECT_OBJ_DIR)/$1_gt_fPIC_internredefine.txt \
 	    $$(BISECT_OBJ_DIR)/$1_gt_fPIC.o \
 	    $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
 	fi
 
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o
+$$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC_internredefine.txt
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt
 $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
 	if [ -s "$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
 	    --weaken-symbols=$$(BISECT_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
+			--redefine-syms=$$(BISECT_OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC_internredefine.txt \
 	    $$(BISECT_OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
 	    $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
 	else \
-	  cp \
+	  objcopy \
+			--redefine-syms=$$(BISECT_OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC_internredefine.txt \
 	    $$(BISECT_OBJ_DIR)/$1_bisect_$$(TROUBLE_ID)_fPIC.o \
 	    $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
 	fi
