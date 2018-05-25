@@ -94,7 +94,7 @@ distclean: clean
 install: $(TARGET)
 	mkdir -m 0755 -p $(PREFIX)/bin
 	mkdir -m 0755 -p $(PREFIX)/lib
-	mkdir -m 0755 -p $(PREFIX)/include
+	mkdir -m 0755 -p $(PREFIX)/include/flit
 	mkdir -m 0755 -p $(PREFIX)/share/flit/scripts
 	mkdir -m 0755 -p $(PREFIX)/share/flit/doc
 	mkdir -m 0755 -p $(PREFIX)/share/flit/data/tests
@@ -104,7 +104,7 @@ install: $(TARGET)
 	mkdir -m 0755 -p $(PREFIX)/share/licenses/flit
 	ln -sf ../share/flit/scripts/flit.py $(PREFIX)/bin/flit
 	install -m 0755 $(TARGET) $(PREFIX)/lib/$(notdir $(TARGET))
-	install -m 0644 $(HEADERS) $(PREFIX)/include/
+	install -m 0644 $(HEADERS) $(PREFIX)/include/flit/
 	install -m 0755 $(SCRIPT_DIR)/flit.py $(PREFIX)/share/flit/scripts/
 	install -m 0755 $(SCRIPT_DIR)/flit_*.py $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(SCRIPT_DIR)/flitutil.py $(PREFIX)/share/flit/scripts/
@@ -151,7 +151,7 @@ install: $(TARGET)
 	@echo "lib_dir = '$(abspath $(PREFIX))/lib'"                                >> $(INSTALL_FLIT_CONFIG)
 	@echo                                                                       >> $(INSTALL_FLIT_CONFIG)
 	@echo "# flit C++ include files, primarily flit.h"                          >> $(INSTALL_FLIT_CONFIG)
-	@echo "include_dir = '$(abspath $(PREFIX))/include'"                        >> $(INSTALL_FLIT_CONFIG)
+	@echo "include_dir = '$(abspath $(PREFIX))/include/flit'"                   >> $(INSTALL_FLIT_CONFIG)
 	@echo                                                                       >> $(INSTALL_FLIT_CONFIG)
 	@echo "# default configuration for flit init"                               >> $(INSTALL_FLIT_CONFIG)
 	@echo "config_dir = '$(abspath $(PREFIX))/share/flit/config'"               >> $(INSTALL_FLIT_CONFIG)
