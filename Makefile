@@ -166,3 +166,10 @@ install: $(TARGET)
 	@echo "# directory containing litmus tests"                                 >> $(INSTALL_FLIT_CONFIG)
 	@echo "litmus_test_dir = '$(abspath $(PREFIX))/share/flit/litmus-tests'"    >> $(INSTALL_FLIT_CONFIG)
 
+.PHONY: uninstall
+uninstall:
+	rm -rf $(PREFIX)/include/flit
+	rm -rf $(PREFIX)/share/flit
+	rm -rf $(PREFIX)/share/licenses/flit
+	rm -f $(PREFIX)/bin/flit
+	rm -f $(PREFIX)/lib/$(notdir $(TARGET))
