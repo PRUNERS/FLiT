@@ -3,20 +3,37 @@
 #include <string>
 #include <random>
 
+using namespace std;
+
 template <typename T, typename Gen, typename Dist>
 class Random : public flit::TestBase<T> {
 public:
-  Random(std::string id) : flit::TestBase<T>(std::move(id)) {}
+  Random(string id) : flit::TestBase<T>(move(id)) {}
   virtual size_t getInputsPerRun() override { return 1; }
-  virtual std::vector<T> getDefaultInput() override { return { 42, 24, 12, 10, 103 }; }
+  virtual vector<T> getDefaultInput() override { return { 42, 24, 12, 10, 103 }; }
 protected:
-  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
+  virtual flit::Variant run_impl(const vector<T> &ti) override {
     size_t seed = ti[0];
     Gen g(seed);
     return Dist()(g);
   }
 protected:
   using flit::TestBase<T>::id;
+};
+
+template <typename Gen>
+struct Pass {
+  auto operator() (Gen &g) -> decltype(g()) {
+    return g();
+  }
+};
+
+template <typename T>
+struct Canonical {
+  template <typename G>
+  T operator() (G &g) {
+    return generate_canonical<T, numeric_limits<T>::digits>(g);
+  }
 };
 
 #define MY_REGISTRATION(name, gen, dist) \
@@ -26,22 +43,34 @@ protected:
   }; \
   REGISTER_TYPE(name)
 
-MY_REGISTRATION(Random_mt19937_uniform,           std::mt19937, std::uniform_real_distribution<T>)
-MY_REGISTRATION(Random_mt19937_binomial,          std::mt19937, std::binomial_distribution<int>)
-MY_REGISTRATION(Random_mt19937_bernoulli,         std::mt19937, std::bernoulli_distribution)
-MY_REGISTRATION(Random_mt19937_geometric,         std::mt19937, std::geometric_distribution<int>)
-MY_REGISTRATION(Random_mt19937_negative_binomial, std::mt19937, std::negative_binomial_distribution<int>)
-MY_REGISTRATION(Random_mt19937_poisson,           std::mt19937, std::poisson_distribution<int>)
-MY_REGISTRATION(Random_mt19937_exponential,       std::mt19937, std::exponential_distribution<T>)
-MY_REGISTRATION(Random_mt19937_gamma,             std::mt19937, std::gamma_distribution<T>)
-MY_REGISTRATION(Random_mt19937_weibull,           std::mt19937, std::weibull_distribution<T>)
-MY_REGISTRATION(Random_mt19937_extreme_value,     std::mt19937, std::extreme_value_distribution<T>)
-MY_REGISTRATION(Random_mt19937_normal,            std::mt19937, std::normal_distribution<T>)
-MY_REGISTRATION(Random_mt19937_lognormal,         std::mt19937, std::lognormal_distribution<T>)
-MY_REGISTRATION(Random_mt19937_chi_squared,       std::mt19937, std::chi_squared_distribution<T>)
-MY_REGISTRATION(Random_mt19937_cauchy,            std::mt19937, std::cauchy_distribution<T>)
-MY_REGISTRATION(Random_mt19937_fisher_f,          std::mt19937, std::fisher_f_distribution<T>)
-MY_REGISTRATION(Random_mt19937_student_t,         std::mt19937, std::student_t_distribution<T>)
-MY_REGISTRATION(Random_mt19937_discrete,          std::mt19937, std::discrete_distribution<T>)
+#define REGISTER_GENERATOR(name, klass) \
+  MY_REGISTRATION(Random_##name##_Pass,              klass, Pass<klass>) \
+  MY_REGISTRATION(Random_##name##_uniformint,        klass, uniform_int_distribution<long>) \
+  MY_REGISTRATION(Random_##name##_uniformreal,       klass, uniform_real_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_binomial,          klass, binomial_distribution<int>) \
+  MY_REGISTRATION(Random_##name##_bernoulli,         klass, bernoulli_distribution) \
+  MY_REGISTRATION(Random_##name##_geometric,         klass, geometric_distribution<int>) \
+  MY_REGISTRATION(Random_##name##_negative_binomial, klass, negative_binomial_distribution<int>) \
+  MY_REGISTRATION(Random_##name##_poisson,           klass, poisson_distribution<int>) \
+  MY_REGISTRATION(Random_##name##_exponential,       klass, exponential_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_gamma,             klass, gamma_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_weibull,           klass, weibull_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_extreme_value,     klass, extreme_value_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_normal,            klass, normal_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_lognormal,         klass, lognormal_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_chi_squared,       klass, chi_squared_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_cauchy,            klass, cauchy_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_fisher_f,          klass, fisher_f_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_student_t,         klass, student_t_distribution<T>) \
+  MY_REGISTRATION(Random_##name##_canonical,         klass, Canonical<T>)
+
+REGISTER_GENERATOR(mt19937, mt19937)
+REGISTER_GENERATOR(mt19937_64, mt19937_64)
+REGISTER_GENERATOR(default, default_random_engine);
+REGISTER_GENERATOR(minstd_rand, minstd_rand);
+REGISTER_GENERATOR(minstd_rand0, minstd_rand0);
+REGISTER_GENERATOR(ranlux24, ranlux24);
+REGISTER_GENERATOR(ranlux48, ranlux48);
+REGISTER_GENERATOR(knuth_b, knuth_b);
 
 
