@@ -173,3 +173,9 @@ uninstall:
 	rm -rf $(PREFIX)/share/licenses/flit
 	rm -f $(PREFIX)/bin/flit
 	rm -f $(PREFIX)/lib/$(notdir $(TARGET))
+	-rmdir --ignore-fail-on-non-empty $(PREFIX)/include
+	-rmdir --ignore-fail-on-non-empty $(PREFIX)/share/licenses
+	-rmdir --ignore-fail-on-non-empty $(PREFIX)/share
+	-rmdir --ignore-fail-on-non-empty $(PREFIX)/bin
+	-rmdir --ignore-fail-on-non-empty $(PREFIX)/lib
+	-rmdir --ignore-fail-on-non-empty $(PREFIX)
