@@ -21,6 +21,7 @@ protected:
   using flit::TestBase<T>::id;
 };
 
+// A simple passthrough distribution that returns the generator's value
 template <typename Gen>
 struct Pass {
   auto operator() (Gen &g) -> decltype(g()) {
@@ -28,6 +29,7 @@ struct Pass {
   }
 };
 
+// A distribution between [0, 1) using std::generate_canonical()
 template <typename T>
 struct Canonical {
   template <typename G>
@@ -36,6 +38,7 @@ struct Canonical {
   }
 };
 
+// Convenience macro to create new tests with a generator and distribution
 #define MY_REGISTRATION(name, gen, dist) \
   template <typename T> \
   class name : public Random<T, gen, dist> { \
@@ -43,34 +46,36 @@ struct Canonical {
   }; \
   REGISTER_TYPE(name)
 
+// Convenience macro to create a suite of tests varying the distribution for the given generator
 #define REGISTER_GENERATOR(name, klass) \
-  MY_REGISTRATION(Random_##name##_Pass,              klass, Pass<klass>) \
-  MY_REGISTRATION(Random_##name##_uniformint,        klass, uniform_int_distribution<long>) \
-  MY_REGISTRATION(Random_##name##_uniformreal,       klass, uniform_real_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_binomial,          klass, binomial_distribution<int>) \
-  MY_REGISTRATION(Random_##name##_bernoulli,         klass, bernoulli_distribution) \
-  MY_REGISTRATION(Random_##name##_geometric,         klass, geometric_distribution<int>) \
+  MY_REGISTRATION(Random_##name##_Pass,              klass, Pass<klass>                        ) \
+  MY_REGISTRATION(Random_##name##_uniformint,        klass, uniform_int_distribution<long>     ) \
+  MY_REGISTRATION(Random_##name##_uniformreal,       klass, uniform_real_distribution<T>       ) \
+  MY_REGISTRATION(Random_##name##_binomial,          klass, binomial_distribution<int>         ) \
+  MY_REGISTRATION(Random_##name##_bernoulli,         klass, bernoulli_distribution             ) \
+  MY_REGISTRATION(Random_##name##_geometric,         klass, geometric_distribution<int>        ) \
   MY_REGISTRATION(Random_##name##_negative_binomial, klass, negative_binomial_distribution<int>) \
-  MY_REGISTRATION(Random_##name##_poisson,           klass, poisson_distribution<int>) \
-  MY_REGISTRATION(Random_##name##_exponential,       klass, exponential_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_gamma,             klass, gamma_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_weibull,           klass, weibull_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_extreme_value,     klass, extreme_value_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_normal,            klass, normal_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_lognormal,         klass, lognormal_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_chi_squared,       klass, chi_squared_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_cauchy,            klass, cauchy_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_fisher_f,          klass, fisher_f_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_student_t,         klass, student_t_distribution<T>) \
-  MY_REGISTRATION(Random_##name##_canonical,         klass, Canonical<T>)
+  MY_REGISTRATION(Random_##name##_poisson,           klass, poisson_distribution<int>          ) \
+  MY_REGISTRATION(Random_##name##_exponential,       klass, exponential_distribution<T>        ) \
+  MY_REGISTRATION(Random_##name##_gamma,             klass, gamma_distribution<T>              ) \
+  MY_REGISTRATION(Random_##name##_weibull,           klass, weibull_distribution<T>            ) \
+  MY_REGISTRATION(Random_##name##_extreme_value,     klass, extreme_value_distribution<T>      ) \
+  MY_REGISTRATION(Random_##name##_normal,            klass, normal_distribution<T>             ) \
+  MY_REGISTRATION(Random_##name##_lognormal,         klass, lognormal_distribution<T>          ) \
+  MY_REGISTRATION(Random_##name##_chi_squared,       klass, chi_squared_distribution<T>        ) \
+  MY_REGISTRATION(Random_##name##_cauchy,            klass, cauchy_distribution<T>             ) \
+  MY_REGISTRATION(Random_##name##_fisher_f,          klass, fisher_f_distribution<T>           ) \
+  MY_REGISTRATION(Random_##name##_student_t,         klass, student_t_distribution<T>          ) \
+  MY_REGISTRATION(Random_##name##_canonical,         klass, Canonical<T>                       )
 
-REGISTER_GENERATOR(mt19937, mt19937)
-REGISTER_GENERATOR(mt19937_64, mt19937_64)
-REGISTER_GENERATOR(default, default_random_engine);
-REGISTER_GENERATOR(minstd_rand, minstd_rand);
-REGISTER_GENERATOR(minstd_rand0, minstd_rand0);
-REGISTER_GENERATOR(ranlux24, ranlux24);
-REGISTER_GENERATOR(ranlux48, ranlux48);
-REGISTER_GENERATOR(knuth_b, knuth_b);
+// Create all of the tests now for various generators
+REGISTER_GENERATOR(mt19937,      mt19937              )
+REGISTER_GENERATOR(mt19937_64,   mt19937_64           )
+REGISTER_GENERATOR(default,      default_random_engine)
+REGISTER_GENERATOR(minstd_rand,  minstd_rand          )
+REGISTER_GENERATOR(minstd_rand0, minstd_rand0         )
+REGISTER_GENERATOR(ranlux24,     ranlux24             )
+REGISTER_GENERATOR(ranlux48,     ranlux48             )
+REGISTER_GENERATOR(knuth_b,      knuth_b              )
 
 
