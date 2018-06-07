@@ -114,6 +114,7 @@ def main(arguments, prog=sys.argv[0]):
         print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
               file=sys.stderr)
         return 1
+    flitutil.fill_defaults(projconf)
 
     makefile = os.path.join(args.directory, 'Makefile')
     if os.path.exists(makefile):
