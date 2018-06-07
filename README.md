@@ -58,6 +58,7 @@ Contents:
   * [Available Compiler Flags](documentation/available-compiler-flags.md)
 * [Writing Test Cases](documentation/writing-test-cases.md)
 * [Test Executable](documentation/test-executable.md)
+* [Benchmarks](documentation/benchmarks.md)
 * [Database Structure](documentation/database-structure.md)
 * [Analyze Results](documentation/analyze-results.md)
 * **Extra Tools**

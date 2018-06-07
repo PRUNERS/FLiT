@@ -1,6 +1,6 @@
 # Database Structure
 
-[Prev](test-executable.md)
+[Prev](benchmarks.md)
 |
 [Table of Contents](README.md)
 |

@@ -101,6 +101,7 @@ install: $(TARGET)
 	mkdir -m 0755 -p $(PREFIX)/share/flit/data/db
 	mkdir -m 0755 -p $(PREFIX)/share/flit/config
 	mkdir -m 0755 -p $(PREFIX)/share/flit/litmus-tests
+	mkdir -m 0755 -p $(PREFIX)/share/flit/benchmarks
 	mkdir -m 0755 -p $(PREFIX)/share/licenses/flit
 	ln -sf ../share/flit/scripts/flit.py $(PREFIX)/bin/flit
 	install -m 0755 $(TARGET) $(PREFIX)/lib/$(notdir $(TARGET))
@@ -120,6 +121,7 @@ install: $(TARGET)
 	install -m 0644 $(CONFIG_DIR)/flit-default.toml.in $(PREFIX)/share/flit/config/
 	install -m 0644 $(LITMUS_TESTS) $(PREFIX)/share/flit/litmus-tests/
 	install -m 0644 LICENSE $(PREFIX)/share/licenses/flit/
+	cp -r benchmarks/* $(PREFIX)/share/flit/benchmarks/
 	@echo "Generating $(INSTALL_FLIT_CONFIG)"
 	@# Make the flitconfig.py script specifying this installation information
 	@echo "'''"                                                                  > $(INSTALL_FLIT_CONFIG)
