@@ -152,6 +152,14 @@ def main(arguments, prog=sys.argv[0]):
     if '/' in dev_compiler_bin:
         gt_compiler_bin = os.path.realpath(gt_compiler_bin)
 
+    test_run_args = ''
+    if not projconf['run']['timing']:
+        test_run_args = '--no-timing'
+    else:
+        test_run_args = ' '.join([
+            '--timing-loops', str(projconf['run']['timing_loops']),
+            '--timing-repeats', str(projconf['run']['timing_repeats']),
+            ])
     flitutil.process_in_file(
         os.path.join(conf.data_dir, 'Makefile.in'),
         makefile,
@@ -167,6 +175,7 @@ def main(arguments, prog=sys.argv[0]):
             'flit_data_dir': conf.data_dir,
             'flit_script_dir': conf.script_dir,
             'flit_version': conf.version,
+            'test_run_args': test_run_args,
         },
         overwrite=True)
 
