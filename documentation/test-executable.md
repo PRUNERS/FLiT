@@ -4,7 +4,7 @@
 |
 [Table of Contents](README.md)
 |
-[Next](database-structure.md)
+[Next](benchmarks.md)
 
 After you have [configured your test environment](flit-configuration-file.md)
 and [written your test files](writing-test-cases.md), you can autogenerate a
