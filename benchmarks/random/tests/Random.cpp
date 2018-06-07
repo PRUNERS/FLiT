@@ -93,7 +93,7 @@ class Random : public flit::TestBase<T> {
 public:
   Random(string id) : flit::TestBase<T>(move(id)) {}
   virtual size_t getInputsPerRun() override { return 1; }
-  virtual vector<T> getDefaultInput() override { return { 42, 24, 12, 10, 103 }; }
+  virtual vector<T> getDefaultInput() override { return { 0, 42, 24, 12, 103 }; }
 protected:
   virtual flit::Variant run_impl(const vector<T> &ti) override {
     size_t seed = ti[0];
