@@ -176,6 +176,8 @@ def tempdir(*args, **kwargs):
     of the with statement, the temporary directory will be deleted with
     everything in it.
 
+    Test that the temporary directory exists during the block and is removed
+    after
     >>> import os
     >>> temporary_directory = None
     >>> with tempdir() as new_dir:
@@ -187,12 +189,20 @@ def tempdir(*args, **kwargs):
     False
     >>> print(os.path.exists(temporary_directory))
     False
+
+    Test that an exception is not thrown if it was already deleted
+    >>> import shutil
+    >>> with tempdir() as new_dir:
+    ...     shutil.rmtree(new_dir)
     '''
     import tempfile
     import shutil
     new_dir = tempfile.mkdtemp(*args, **kwargs)
     yield new_dir
-    shutil.rmtree(new_dir)
+    try:
+        shutil.rmtree(new_dir)
+    except FileNotFoundError:
+        pass
 
 def touch(filename):
     '''
