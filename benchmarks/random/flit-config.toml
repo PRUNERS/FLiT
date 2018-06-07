@@ -11,6 +11,9 @@ type = 'sqlite'
 # configuration file.
 filepath = 'results.sqlite'
 
+[run]
+timing = false
+
 # For now, only one host is supported, all others are ignored
 [[hosts]]
 
