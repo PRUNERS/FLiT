@@ -86,11 +86,114 @@ Utility functions shared between multiple flit subcommands.
 
 import flitconfig as conf
 
+import copy
 import os
+import socket
 import sqlite3
 import subprocess as subp
 import sys
 import tempfile
+import toml
+
+# cached values
+_default_toml = None
+_default_toml_string = None
+
+def get_default_toml_string():
+    '''
+    Gets the default toml configuration file for FLiT and returns the string.
+    '''
+    global _default_toml_string
+    if _default_toml_string is None:
+        _default_toml_string = process_in_string(
+            os.path.join(conf.config_dir, 'flit-default.toml.in'),
+            {
+                'flit_path': os.path.join(conf.script_dir, 'flit.py'),
+                'config_dir': conf.config_dir,
+                'hostname': socket.gethostname(),
+                'flit_version': conf.version,
+            })
+    return _default_toml_string
+
+def get_default_toml():
+    '''
+    Gets the default toml configuration file for FLIT and returns the
+    configuration object.
+    '''
+    global _default_toml
+    if _default_toml is None:
+        _default_toml = toml.loads(get_default_toml_string())
+    return _default_toml
+
+def fill_defaults(vals, defaults=None):
+    '''
+    Given two combinations of dictionaries and lists (such as something
+    generated from a json file or a toml file), enforce the defaults where the
+    vals has missing values.
+    
+    - For dictionaries, missing keys will be populated with default values
+    - For lists, this will recursively fill the defaults on each list item with
+      the first list item in defaults (all other list items in defaults are
+      ignored)
+
+    Modifies vals and also returns the vals dictionary.
+
+    If defaults is None, then the dictionary returned from get_default_toml()
+    will be used.
+
+    >>> fill_defaults({'a': 1}, {})
+    {'a': 1}
+
+    >>> fill_defaults({}, {'a': 1})
+    {'a': 1}
+
+    >>> fill_defaults({'a': 1}, {'a': 2})
+    {'a': 1}
+
+    >>> fill_defaults({'a': 2}, {'a': 1, 'b': 3})
+    {'a': 2, 'b': 3}
+
+    >>> fill_defaults([{}, {'a': 1}], [{'a': 2, 'b': 3}])
+    [{'a': 2, 'b': 3}, {'a': 1, 'b': 3}]
+    '''
+    if defaults is None:
+        defaults = get_default_toml()
+    if isinstance(vals, dict):
+        assert isinstance(defaults, dict)
+        for key in defaults:
+            if key not in vals:
+                vals[key] = copy.deepcopy(defaults[key])
+            else:
+                fill_defaults(vals[key], defaults[key])
+    elif isinstance(vals, list):
+        assert isinstance(defaults, list)
+        for x in vals:
+            fill_defaults(x, defaults[0])
+    return vals
+
+def process_in_string(infile, vals, remove_license=True):
+    '''
+    Process a file such as 'Makefile.in' where there are variables to
+    replace.  Returns a string with the replacements instead of outputting to a
+    file.
+
+    @param infile: input file.  Usually ends in ".in"
+    @param vals: dictionary of key -> val where we search and replace {key}
+        with val everywhere in the infile.
+    @param remove_license: (default True) True means remove the License
+        declaration at the top of the file that has "-- LICENSE BEGIN --" at
+        the beginning and "-- LICENSE END --" at the end.  All lines between
+        including those lines will be removed.  False means ignore the license
+        section.  If the license section is not there, then this will have no
+        effect (except for a slight slowdown for searching)
+    @return processed string
+    '''
+    with open(infile, 'r') as fin:
+        if remove_license:
+            fin_content = ''.join(remove_license_lines(fin))
+        else:
+            fin_content = fin.read()
+    return fin_content.format(**vals)
 
 def process_in_file(infile, dest, vals, overwrite=False, remove_license=True):
     '''
@@ -118,13 +221,9 @@ def process_in_file(infile, dest, vals, overwrite=False, remove_license=True):
         print('Warning: {0} already exists, not overwriting'.format(dest),
               file=sys.stderr)
         return
-    with open(infile, 'r') as fin:
-        if remove_license:
-            fin_content = ''.join(remove_license_lines(fin))
-        else:
-            fin_content = fin.read()
-        with open(dest, 'w') as fout:
-            fout.write(fin_content.format(**vals))
+    content = process_in_string(infile, vals, remove_license=remove_license)
+    with open(dest, 'w') as fout:
+        fout.write(content)
 
 def remove_license_lines(lines):
     '''

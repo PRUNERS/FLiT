@@ -102,6 +102,8 @@ GT_CC           := {ground_truth_compiler}
 GT_OPTL         := {ground_truth_optl}
 GT_SWITCHES     := {ground_truth_switches}
 
+TEST_RUN_ARGS   := {test_run_args}
+
 OBJ_DIR          = obj
 
 CC_REQUIRED     += $(FFLAGS)
@@ -410,7 +412,7 @@ TARGET_OUTS     := $(TARGETS:%=%-out)
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 
 %-out: %
-	./$< --output $@ || touch $@
+	./$< $(TEST_RUN_ARGS) --output $@ || touch $@
 
 # specify how to get comparison
 %-out-comparison.csv: %-out $(GT_OUT) $(GT_TARGET)
