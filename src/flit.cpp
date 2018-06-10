@@ -189,6 +189,7 @@ std::string FlitOptions::toString() const {
   messanger
     << "Options:\n"
     << "  help:           " << boolToString(this->help) << "\n"
+    << "  info:           " << boolToString(this->info) << "\n"
     << "  verbose:        " << boolToString(this->verbose) << "\n"
     << "  timing:         " << boolToString(this->timing) << "\n"
     << "  timingLoops:    " << this->timingLoops << "\n"
@@ -215,6 +216,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   FlitOptions options;
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };
+  std::vector<std::string> infoOpts          = { "--info" };
   std::vector<std::string> verboseOpts       = { "-v", "--verbose" };
   std::vector<std::string> timingOpts        = { "-t", "--timing" };
   std::vector<std::string> loopsOpts         = { "-l", "--timing-loops" };
@@ -234,6 +236,8 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
     std::string current(argList[i]);
     if (isIn(helpOpts, current)) {
       options.help = true;
+    } else if (isIn(infoOpts, current)) {
+      options.info = true;
     } else if (isIn(verboseOpts, current)) {
       options.verbose = true;
     } else if (isIn(timingOpts, current)) {
@@ -352,6 +356,8 @@ std::string usage(std::string progName) {
        "Options:\n"
        "\n"
        "  -h, --help      Show this help and exit\n"
+       "\n"
+       "  --info          Show compilation information and exit\n"
        "\n"
        "  -L, --list-tests\n"
        "                  List all available tests and exit.\n"
