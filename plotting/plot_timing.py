@@ -175,7 +175,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
                 # TODO- time, use the ground-truth time.
                 data['speedup'] = data['slowest'] / data['times']
                 data['xlab'] = [to_x_label(row) for row in data['rows']]
-                data['iseql'] = [float(row['comparison_d']) == 0.0
+                data['iseql'] = [float(row['comparison']) == 0.0
                                  for row in data['rows']]
                 key = (name, host, p)
                 test_data[key] = data

@@ -464,9 +464,9 @@ std::vector<TestResult> parseResults(std::istream &in) {
     auto nanosec = std::stol(row["nanosec"]);
     Variant value;
     std::string resultfile;
-    if (row["score"] != "NULL") {
-      // Convert score into a long double
-      value = as_float(flit::stouint128(row["score"]));
+    if (row["score_hex"] != "NULL") {
+      // Convert score_hex into a long double
+      value = as_float(flit::stouint128(row["score_hex"]));
     } else {
       // Read string from the resultfile
       if (row["resultfile"] == "NULL") {

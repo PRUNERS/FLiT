@@ -293,11 +293,11 @@ inline void outputResults (
          "optl,"
          "switches,"
          "precision,"
+         "score_hex,"
          "score,"
-         "score_d,"
          "resultfile,"
+         "comparison_hex,"
          "comparison,"
-         "comparison_d,"
          "file,"
          "nanosec"
       << std::endl;
@@ -313,13 +313,13 @@ inline void outputResults (
 
     if (result.result().type() == Variant::Type::LongDouble) {
       out
-        << as_int(result.result().longDouble()) << "," // score
-        << result.result().longDouble() << ","       // score_d
+        << as_int(result.result().longDouble()) << "," // score_hex
+        << result.result().longDouble() << ","       // score
         ;
     } else {
       out
+        << FLIT_NULL << ","                          // score_hex
         << FLIT_NULL << ","                          // score
-        << FLIT_NULL << ","                          // score_d
         ;
     }
 
@@ -331,13 +331,13 @@ inline void outputResults (
 
     if (result.is_comparison_null()) {
       out
+        << FLIT_NULL << ","                          // comparison_hex
         << FLIT_NULL << ","                          // comparison
-        << FLIT_NULL << ","                          // comparison_d
         ;
     } else {
       out
-        << as_int(result.comparison()) << ","        // comparison
-        << result.comparison() << ","                // comparison_d
+        << as_int(result.comparison()) << ","        // comparison_hex
+        << result.comparison() << ","                // comparison
         ;
     }
 
