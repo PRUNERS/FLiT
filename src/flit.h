@@ -137,6 +137,7 @@ namespace flit {
 /** Command-line options */
 struct FlitOptions {
   bool help = false;         // show usage and exit
+  bool info = false;         // show compilation info and exit
   bool listTests = false;    // list available tests and exit
   bool verbose = false;      // show debug verbose messages
   std::vector<std::string> tests; // which tests to run
@@ -177,11 +178,20 @@ struct pair_hash {
   }
 };
 
-/** Parse arguments */
+/// Parse arguments
 FlitOptions parseArguments(int argCount, char const* const argList[]);
 
-/** Returns the usage information as a string */
+/// Returns the usage information as a string
 std::string usage(std::string progName);
+
+/// The compilation information as a string
+static std::string info =
+  "Compilation information:\n"
+  "  Host:               \"" FLIT_HOST     "\"\n"
+  "  Compiler:           \"" FLIT_COMPILER "\"\n"
+  "  Optimization level: \"" FLIT_OPTL     "\"\n"
+  "  Compiler flags:     \"" FLIT_SWITCHES "\"\n"
+  "  Filename:           \"" FLIT_FILENAME "\"\n";
 
 /// Read file contents entirely into a string
 std::string readFile(const std::string &filename);
@@ -417,6 +427,11 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   if (options.help) {
     std::cout << usage(argv[0]);
+    return 0;
+  }
+
+  if (options.info) {
+    std::cout << info;
     return 0;
   }
 
