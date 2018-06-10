@@ -322,7 +322,7 @@ def is_result_bad(resultfile):
         # should only have one row
         for row in parser:
             # identical to ground truth means comparison is zero
-            return float(row['comparison_d']) != 0.0
+            return float(row['comparison']) != 0.0
 
 SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
@@ -1193,7 +1193,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
         return 1
 
     query = connection.execute(
-        'select * from tests where comparison_d != 0.0')
+        'select * from tests where comparison != 0.0')
     rows = query.fetchall()
     precision_map = {
         'f': 'float',

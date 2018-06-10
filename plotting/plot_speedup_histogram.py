@@ -119,7 +119,7 @@ def calc_speedups(rows, test_names, baseline=None):
     @return (safe_speedups, unsafe_speedups)
     
     - safe_speedups: (dict{compiler -> list[speedup for test_name i]})
-      Safe speedups, defined by row['comparison_d'] == 0.0
+      Safe speedups, defined by row['comparison'] == 0.0
     - unsafe_speedups: (dist{compiler -> list[speedup for test_name i]})
       Unsafe speedups, defined by not safe.
 
@@ -150,9 +150,9 @@ def calc_speedups(rows, test_names, baseline=None):
         for compiler in compilers:
             compiler_rows = compiler_row_map[compiler]
             safe_times = [int(x['nanosec']) for x in compiler_rows 
-                          if float(x['comparison_d']) == 0.0]
+                          if float(x['comparison']) == 0.0]
             unsafe_times = [int(x['nanosec']) for x in compiler_rows 
-                            if float(x['comparison_d']) != 0.0]
+                            if float(x['comparison']) != 0.0]
 
             if len(safe_times) > 0:
                 safe_speedup = baseline_time / min(safe_times)
