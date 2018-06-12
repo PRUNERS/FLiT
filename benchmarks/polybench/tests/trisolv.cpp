@@ -126,8 +126,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Trisolv, 4)
-REGISTER_1(Trisolv, 5)
-REGISTER_1(Trisolv, 6)
-REGISTER_1(Trisolv, 7)
-REGISTER_1(Trisolv, 8)
+POLY_REGISTER_DIM1(Trisolv, 4)
+POLY_REGISTER_DIM1(Trisolv, 5)
+POLY_REGISTER_DIM1(Trisolv, 6)
+POLY_REGISTER_DIM1(Trisolv, 7)
+POLY_REGISTER_DIM1(Trisolv, 8)

@@ -124,8 +124,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Floyd_Warshall, 4)
-REGISTER_1(Floyd_Warshall, 5)
-REGISTER_1(Floyd_Warshall, 6)
-REGISTER_1(Floyd_Warshall, 7)
-REGISTER_1(Floyd_Warshall, 8)
+POLY_REGISTER_DIM1(Floyd_Warshall, 4)
+POLY_REGISTER_DIM1(Floyd_Warshall, 5)
+POLY_REGISTER_DIM1(Floyd_Warshall, 6)
+POLY_REGISTER_DIM1(Floyd_Warshall, 7)
+POLY_REGISTER_DIM1(Floyd_Warshall, 8)

@@ -152,8 +152,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Ludcmp, 4)
-REGISTER_1(Ludcmp, 5)
-REGISTER_1(Ludcmp, 6)
-REGISTER_1(Ludcmp, 7)
-REGISTER_1(Ludcmp, 8)
+POLY_REGISTER_DIM1(Ludcmp, 4)
+POLY_REGISTER_DIM1(Ludcmp, 5)
+POLY_REGISTER_DIM1(Ludcmp, 6)
+POLY_REGISTER_DIM1(Ludcmp, 7)
+POLY_REGISTER_DIM1(Ludcmp, 8)

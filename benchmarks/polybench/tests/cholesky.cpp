@@ -131,8 +131,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Cholesky, 4)
-REGISTER_1(Cholesky, 5)
-REGISTER_1(Cholesky, 6)
-REGISTER_1(Cholesky, 7)
-REGISTER_1(Cholesky, 8)
+POLY_REGISTER_DIM1(Cholesky, 4)
+POLY_REGISTER_DIM1(Cholesky, 5)
+POLY_REGISTER_DIM1(Cholesky, 6)
+POLY_REGISTER_DIM1(Cholesky, 7)
+POLY_REGISTER_DIM1(Cholesky, 8)

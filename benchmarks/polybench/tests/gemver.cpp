@@ -148,8 +148,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Gemver, 4)
-REGISTER_1(Gemver, 5)
-REGISTER_1(Gemver, 6)
-REGISTER_1(Gemver, 7)
-REGISTER_1(Gemver, 8)
+POLY_REGISTER_DIM1(Gemver, 4)
+POLY_REGISTER_DIM1(Gemver, 5)
+POLY_REGISTER_DIM1(Gemver, 6)
+POLY_REGISTER_DIM1(Gemver, 7)
+POLY_REGISTER_DIM1(Gemver, 8)

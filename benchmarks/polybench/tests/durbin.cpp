@@ -143,8 +143,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Durbin, 4)
-REGISTER_1(Durbin, 5)
-REGISTER_1(Durbin, 6)
-REGISTER_1(Durbin, 7)
-REGISTER_1(Durbin, 8)
+POLY_REGISTER_DIM1(Durbin, 4)
+POLY_REGISTER_DIM1(Durbin, 5)
+POLY_REGISTER_DIM1(Durbin, 6)
+POLY_REGISTER_DIM1(Durbin, 7)
+POLY_REGISTER_DIM1(Durbin, 8)

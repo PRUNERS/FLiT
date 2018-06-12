@@ -142,8 +142,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Nussinov, 4)
-REGISTER_1(Nussinov, 5)
-REGISTER_1(Nussinov, 6)
-REGISTER_1(Nussinov, 7)
-REGISTER_1(Nussinov, 8)
+POLY_REGISTER_DIM1(Nussinov, 4)
+POLY_REGISTER_DIM1(Nussinov, 5)
+POLY_REGISTER_DIM1(Nussinov, 6)
+POLY_REGISTER_DIM1(Nussinov, 7)
+POLY_REGISTER_DIM1(Nussinov, 8)

@@ -135,8 +135,8 @@ protected:
   using flit::TestBase<T>::id;
 };
 
-REGISTER_1(Gesummv, 4)
-REGISTER_1(Gesummv, 5)
-REGISTER_1(Gesummv, 6)
-REGISTER_1(Gesummv, 7)
-REGISTER_1(Gesummv, 8)
+POLY_REGISTER_DIM1(Gesummv, 4)
+POLY_REGISTER_DIM1(Gesummv, 5)
+POLY_REGISTER_DIM1(Gesummv, 6)
+POLY_REGISTER_DIM1(Gesummv, 7)
+POLY_REGISTER_DIM1(Gesummv, 8)
