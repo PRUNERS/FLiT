@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 template <typename T, int N>
 class CholeskyBase : public flit::TestBase<T> {
@@ -134,9 +130,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_1(Cholesky, 4)
 REGISTER_1(Cholesky, 5)

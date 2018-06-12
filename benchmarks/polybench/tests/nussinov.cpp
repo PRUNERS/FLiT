@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 #define match(b1, b2) (((b1)+(b2)) == 3 ? 1 : 0)
 #define max_score(s1, s2) ((s1 >= s2) ? s1 : s2)
@@ -145,9 +141,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_1(Nussinov, 4)
 REGISTER_1(Nussinov, 5)

@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 template <typename T, int NR, int NQ, int NP>
 class DoitgenBase : public flit::TestBase<T> {
@@ -133,9 +129,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_3(Doitgen, 4, 4, 4)
 REGISTER_3(Doitgen, 5, 5, 5)

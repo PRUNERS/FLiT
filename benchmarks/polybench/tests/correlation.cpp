@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 template <typename T, int M, int N>
 class CorrelationBase : public flit::TestBase<T> {
@@ -169,9 +165,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_2(Correlation, 4, 4)
 REGISTER_2(Correlation, 5, 5)

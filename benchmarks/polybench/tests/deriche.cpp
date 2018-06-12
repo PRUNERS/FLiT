@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 template <typename T, int W, int H>
 class DericheBase : public flit::TestBase<T> {
@@ -203,9 +199,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_2(Deriche, 4, 4)
 REGISTER_2(Deriche, 5, 5)

@@ -86,8 +86,11 @@
 
 #include <cstdint>
 #include <iomanip>
+#include <vector>
 #include <sstream>
 
+#include <cfloat>
+#include <cstdint>
 
 #define REGISTER_1(NAME, DIM0)						\
   template <typename T> class NAME##_##DIM0 : public NAME##Base<T, DIM0> { \

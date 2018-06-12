@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 template <typename T, int M, int N>
 class SyrkBase : public flit::TestBase<T> {
@@ -131,9 +127,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_2(Syrk, 4, 4)
 REGISTER_2(Syrk, 5, 5)

@@ -81,15 +81,11 @@
  * -- LICENSE END --
  */
 
-
-#include <string>
+#include "polybench_utils.h"
 
 #include <flit.h>
 
-#include "polybench_utils.h"
-
-
-
+#include <string>
 
 template <typename T, int TMAX, int NX, int NY>
 class Fdtd_2dBase : public flit::TestBase<T> {
@@ -138,9 +134,6 @@ protected:
 protected:
   using flit::TestBase<T>::id;
 };
-
-
-
 
 REGISTER_3(Fdtd_2d, 4, 4, 4)
 REGISTER_3(Fdtd_2d, 5, 5, 5)
