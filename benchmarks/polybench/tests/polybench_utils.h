@@ -91,6 +91,13 @@
 #include <cfloat>
 #include <cstdint>
 
+/** These REGISTER definitions are helper macro functions that create a
+ * specification of the given NAME with different amounts of extra template
+ * parameters.
+ *
+ * These will create test classes named ${NAME}_${DIM0}_${DIM1}_...
+ * (for how many extra template parameters exist)
+ */
 #define POLY_REGISTER_DIM1(NAME, DIM0)						\
   template <typename T> class NAME##_##DIM0 : public NAME##Base<T, DIM0> { \
   public: using NAME##Base<T, DIM0>::NAME##Base;			\
@@ -99,29 +106,37 @@
   REGISTER_TYPE(NAME##_##DIM0)						\
 
 #define POLY_REGISTER_DIM2(NAME, DIM0, DIM1)					\
-  template <typename T> class NAME##_##DIM0##_##DIM1 : public NAME##Base<T, DIM0, DIM1> { \
-  public: using NAME##Base<T, DIM0, DIM1>::NAME##Base;			\
+  template <typename T> class NAME##_##DIM0##_##DIM1 \
+    : public NAME##Base<T, DIM0, DIM1> \
+  { \
+    public: using NAME##Base<T, DIM0, DIM1>::NAME##Base;			\
   };									\
   									\
   REGISTER_TYPE(NAME##_##DIM0##_##DIM1)					\
 
 #define POLY_REGISTER_DIM3(NAME, DIM0, DIM1, DIM2)				\
-  template <typename T> class NAME##_##DIM0##_##DIM1##_##DIM2 : public NAME##Base<T, DIM0, DIM1, DIM2> { \
-  public: using NAME##Base<T, DIM0, DIM1, DIM2>::NAME##Base;		\
+  template <typename T> class NAME##_##DIM0##_##DIM1##_##DIM2 \
+    : public NAME##Base<T, DIM0, DIM1, DIM2> \
+  { \
+    public: using NAME##Base<T, DIM0, DIM1, DIM2>::NAME##Base;		\
   };									\
   									\
   REGISTER_TYPE(NAME##_##DIM0##_##DIM1##_##DIM2)			\
 
 #define POLY_REGISTER_DIM4(NAME, DIM0, DIM1, DIM2, DIM3)			\
-  template <typename T> class NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3 : public NAME##Base<T, DIM0, DIM1, DIM2, DIM3> { \
-  public: using NAME##Base<T, DIM0, DIM1, DIM2, DIM3>::NAME##Base;	\
+  template <typename T> class NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3 \
+    : public NAME##Base<T, DIM0, DIM1, DIM2, DIM3> \
+  { \
+    public: using NAME##Base<T, DIM0, DIM1, DIM2, DIM3>::NAME##Base;	\
   };									\
   									\
   REGISTER_TYPE(NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3)		\
 
 #define POLY_REGISTER_DIM5(NAME, DIM0, DIM1, DIM2, DIM3, DIM4)			\
-  template <typename T> class NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3##_##DIM4 : public NAME##Base<T, DIM0, DIM1, DIM2, DIM3, DIM4> { \
-  public: using NAME##Base<T, DIM0, DIM1, DIM2, DIM3, DIM4>::NAME##Base; \
+  template <typename T> class NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3##_##DIM4 \
+    : public NAME##Base<T, DIM0, DIM1, DIM2, DIM3, DIM4> \
+  { \
+    public: using NAME##Base<T, DIM0, DIM1, DIM2, DIM3, DIM4>::NAME##Base; \
   };									\
   									\
   REGISTER_TYPE(NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3##_##DIM4)	\
