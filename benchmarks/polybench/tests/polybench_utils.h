@@ -85,6 +85,7 @@
 
 
 #include <iomanip>
+#include <limits>
 #include <vector>
 #include <sstream>
 
@@ -143,12 +144,6 @@
   REGISTER_TYPE(NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3##_##DIM4)             \
 
 
-template<typename T> inline T max_f();
-template<> inline float max_f<float>() { return FLT_MAX; }
-template<> inline double max_f<double>() { return DBL_MAX; }
-template<> inline long double max_f<long double>() { return LDBL_MAX; }
-
-
 template<typename T>
 std::vector<T> seeded_random_vector(size_t n, unsigned int seed) {
   std::vector<T> v(n);
@@ -163,7 +158,8 @@ std::vector<T> seeded_random_vector(size_t n, unsigned int seed) {
     int sign = -1 * (pad & 0x1);
     pad >>= 1;
 
-    v[i] = sign * static_cast<double>(rand()) / RAND_MAX * max_f<T>();
+    v[i] = sign * static_cast<double>(rand())
+             / RAND_MAX * std::numeric_limits<T>::max();
   }
   return v;
 }
@@ -193,7 +189,7 @@ vector_string_compare(const std::string &ground_truth,
   }
 
   if (expected.good() != actual.good()) {
-    absdiff = max_f<long double>();
+    absdiff = std::numeric_limits<long double>::max();
   }
 
   return absdiff;
