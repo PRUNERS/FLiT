@@ -113,13 +113,13 @@ protected:
 
     for (r = 0; r < NR; r++)
       for (q = 0; q < NQ; q++)  {
-	for (p = 0; p < NP; p++)  {
-	  sum[p] = static_cast<T>(0.0);
-	  for (s = 0; s < NP; s++)
-	    sum[p] += A[r*NR*NQ + q*NQ + s] * C4[s*NP + p];
-	}
-	for (p = 0; p < NP; p++)
-	  A[r*NR*NQ + q*NQ + p] = sum[p];
+        for (p = 0; p < NP; p++)  {
+          sum[p] = static_cast<T>(0.0);
+          for (s = 0; s < NP; s++)
+            sum[p] += A[r*NR*NQ + q*NQ + s] * C4[s*NP + p];
+        }
+        for (p = 0; p < NP; p++)
+          A[r*NR*NQ + q*NQ + p] = sum[p];
       }
 
 

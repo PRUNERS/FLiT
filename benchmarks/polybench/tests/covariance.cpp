@@ -121,7 +121,7 @@ protected:
 
     for (i = 0; i < N; i++) {
       for (j = 0; j < M; j++) {
-	data[i*N + j] -= mean[j];
+        data[i*N + j] -= mean[j];
       }
     }
 
@@ -129,8 +129,8 @@ protected:
       for (j = i; j < M; j++) {
         cov[i*M + j] = static_cast<T>(0.0);
         for (k = 0; k < N; k++) {
-	  cov[i*M + j] += data[k*N + i] * data[k*N + j];
-	}
+          cov[i*M + j] += data[k*N + i] * data[k*N + j];
+        }
         cov[i*M + j] /= (float_n - static_cast<T>(1.0));
         cov[j*M + i] = cov[i*M + j];
       }

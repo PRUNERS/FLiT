@@ -115,12 +115,12 @@ protected:
 
     for (i = 0; i < NI; i++) {
       for (j = 0; j < NJ; j++) {
-	C[i*NI + j] *= beta;
+        C[i*NI + j] *= beta;
       }
       for (k = 0; k < NK; k++) {
-	for (j = 0; j < NJ; j++) {
-	  C[i*NI + j] += alpha * A[i*NI + k] * B[k*NK + j];
-	}
+        for (j = 0; j < NJ; j++) {
+          C[i*NI + j] += alpha * A[i*NI + k] * B[k*NK + j];
+        }
       }
     }
 

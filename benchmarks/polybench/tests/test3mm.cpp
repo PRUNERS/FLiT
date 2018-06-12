@@ -118,27 +118,27 @@ protected:
     /* E := A*B */
     for (i = 0; i < NI; i++)
       for (j = 0; j < NJ; j++)
-	{
-	  E[i*NI + j] = static_cast<T>(0.0);
-	  for (k = 0; k < NK; ++k)
-	    E[i*NI + j] += A[i*NI + k] * B[k*NK + j];
-	}
+        {
+          E[i*NI + j] = static_cast<T>(0.0);
+          for (k = 0; k < NK; ++k)
+            E[i*NI + j] += A[i*NI + k] * B[k*NK + j];
+        }
     /* F := C*D */
     for (i = 0; i < NJ; i++)
       for (j = 0; j < NL; j++)
-	{
-	  F[i*NJ + j] = static_cast<T>(0.0);
-	  for (k = 0; k < NM; ++k)
-	    F[i*NJ + j] += C[i*NJ + k] * D[k*NM + j];
-	}
+        {
+          F[i*NJ + j] = static_cast<T>(0.0);
+          for (k = 0; k < NM; ++k)
+            F[i*NJ + j] += C[i*NJ + k] * D[k*NM + j];
+        }
     /* G := E*F */
     for (i = 0; i < NI; i++)
       for (j = 0; j < NL; j++)
-	{
-	  G[i*NI + j] = static_cast<T>(0.0);
-	  for (k = 0; k < NJ; ++k)
-	    G[i*NI + j] += E[i*NI + k] * F[k*NJ + j];
-	}
+        {
+          G[i*NI + j] = static_cast<T>(0.0);
+          for (k = 0; k < NJ; ++k)
+            G[i*NI + j] += E[i*NI + k] * F[k*NJ + j];
+        }
 
     return pickles({E, F, G});
   }

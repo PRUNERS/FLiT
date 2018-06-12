@@ -134,32 +134,32 @@ protected:
     for (t=1; t<=TSTEPS; t++) {
       //Column Sweep
       for (i=1; i<N-1; i++) {
-	v[0*N + i] = static_cast<T>(1.0);
-	p[i*N + 0] = static_cast<T>(0.0);
-	q[i*N + 0] = v[0*N + i];
-	for (j=1; j<N-1; j++) {
-	  p[i*N + j] = -c / (a*p[i*N + j-1]+b);
-	  q[i*N + j] = (-d*u[j*N + i-1]+(static_cast<T>(1.0)+static_cast<T>(2.0)*d)*u[j*N + i] - f*u[j*N + i+1]-a*q[i*N + j-1])/(a*p[i*N + j-1]+b);
-	}
+        v[0*N + i] = static_cast<T>(1.0);
+        p[i*N + 0] = static_cast<T>(0.0);
+        q[i*N + 0] = v[0*N + i];
+        for (j=1; j<N-1; j++) {
+          p[i*N + j] = -c / (a*p[i*N + j-1]+b);
+          q[i*N + j] = (-d*u[j*N + i-1]+(static_cast<T>(1.0)+static_cast<T>(2.0)*d)*u[j*N + i] - f*u[j*N + i+1]-a*q[i*N + j-1])/(a*p[i*N + j-1]+b);
+        }
 
-	v[(N-1)*N + i] = static_cast<T>(1.0);
-	for (j=N-2; j>=1; j--) {
-	  v[j*N + i] = p[i*N + j] * v[(j+1)*N + i] + q[i*N + j];
-	}
+        v[(N-1)*N + i] = static_cast<T>(1.0);
+        for (j=N-2; j>=1; j--) {
+          v[j*N + i] = p[i*N + j] * v[(j+1)*N + i] + q[i*N + j];
+        }
       }
       //Row Sweep
       for (i=1; i<N-1; i++) {
-	u[i*N + 0] = static_cast<T>(1.0);
-	p[i*N + 0] = static_cast<T>(0.0);
-	q[i*N + 0] = u[i*N + 0];
-	for (j=1; j<N-1; j++) {
-	  p[i*N + j] = -f / (d*p[i*N + j-1]+e);
-	  q[i*N + j] = (-a*v[(i-1)*N + j]+(static_cast<T>(1.0)+static_cast<T>(2.0)*a)*v[i*N + j] - c*v[(i+1)*N + j]-d*q[i*N + j-1])/(d*p[i*N + j-1]+e);
-	}
-	u[i*N + N-1] = static_cast<T>(1.0);
-	for (j=N-2; j>=1; j--) {
-	  u[i*N + j] = p[i*N + j] * u[i*N + j+1] + q[i*N + j];
-	}
+        u[i*N + 0] = static_cast<T>(1.0);
+        p[i*N + 0] = static_cast<T>(0.0);
+        q[i*N + 0] = u[i*N + 0];
+        for (j=1; j<N-1; j++) {
+          p[i*N + j] = -f / (d*p[i*N + j-1]+e);
+          q[i*N + j] = (-a*v[(i-1)*N + j]+(static_cast<T>(1.0)+static_cast<T>(2.0)*a)*v[i*N + j] - c*v[(i+1)*N + j]-d*q[i*N + j-1])/(d*p[i*N + j-1]+e);
+        }
+        u[i*N + N-1] = static_cast<T>(1.0);
+        for (j=N-2; j>=1; j--) {
+          u[i*N + j] = p[i*N + j] * u[i*N + j+1] + q[i*N + j];
+        }
       }
     }
 

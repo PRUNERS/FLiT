@@ -114,10 +114,10 @@ protected:
 
     for (i = 0; i < N; i++) {
       for (j = 0; j <= i; j++)
-	C[i*N + j] *= beta;
+        C[i*N + j] *= beta;
       for (k = 0; k < M; k++) {
-	for (j = 0; j <= i; j++)
-	  C[i*N + j] += alpha * A[i*N + k] * A[j*N + k];
+        for (j = 0; j <= i; j++)
+          C[i*N + j] += alpha * A[i*N + k] * A[j*N + k];
       }
     }
 

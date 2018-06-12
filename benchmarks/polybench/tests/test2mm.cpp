@@ -118,18 +118,18 @@ protected:
     /* D := alpha*A*B*C + beta*D */
     for (i = 0; i < NI; i++)
       for (j = 0; j < NJ; j++)
-	{
-	  tmp[i*NI + j] = static_cast<T>(0.0);
-	  for (k = 0; k < NK; ++k)
-	    tmp[i*NI + j] += alpha * A[i*NI + k] * B[k*NK + j];
-	}
+        {
+          tmp[i*NI + j] = static_cast<T>(0.0);
+          for (k = 0; k < NK; ++k)
+            tmp[i*NI + j] += alpha * A[i*NI + k] * B[k*NK + j];
+        }
     for (i = 0; i < NI; i++)
       for (j = 0; j < NL; j++)
-	{
-	  D[i*NI + j] *= beta;
-	  for (k = 0; k < NJ; ++k)
-	    D[i*NI + j] += tmp[i*NI + k] * C[k*NJ + j];
-	}
+        {
+          D[i*NI + j] *= beta;
+          for (k = 0; k < NJ; ++k)
+            D[i*NI + j] += tmp[i*NI + k] * C[k*NJ + j];
+        }
 
     return pickles({tmp, D});
   }

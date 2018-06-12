@@ -121,13 +121,13 @@ protected:
 
     for (i = 0; i < N; i++) {
       for (j = 0; j < N; j++) {
-	A[i*N + j] = A[i*N + j] + u1[i] * v1[j] + u2[i] * v2[j];
+        A[i*N + j] = A[i*N + j] + u1[i] * v1[j] + u2[i] * v2[j];
       }
     }
 
     for (i = 0; i < N; i++) {
       for (j = 0; j < N; j++) {
-	x[i] = x[i] + beta * A[j*N + i] * y[j];
+        x[i] = x[i] + beta * A[j*N + i] * y[j];
       }
     }
 
@@ -137,7 +137,7 @@ protected:
 
     for (i = 0; i < N; i++) {
       for (j = 0; j < N; j++) {
-	w[i] = w[i] +  alpha * A[i*N + j] * x[j];
+        w[i] = w[i] +  alpha * A[i*N + j] * x[j];
       }
     }
 

@@ -115,20 +115,20 @@ protected:
 
     for (k = 0; k < N; k++)
       {
-	nrm = static_cast<T>(0.0);
-	for (i = 0; i < M; i++)
-	  nrm += A[i*M + k] * A[i*M + k];
-	R[k*N + k] = std::sqrt(nrm);
-	for (i = 0; i < M; i++)
-	  Q[i*M + k] = A[i*M + k] / R[k*N + k];
-	for (j = k + 1; j < N; j++)
-	  {
-	    R[k*N + j] = static_cast<T>(0.0);
-	    for (i = 0; i < M; i++)
-	      R[k*N + j] += Q[i*M + k] * A[i*M + j];
-	    for (i = 0; i < M; i++)
-	      A[i*M + j] = A[i*M + j] - Q[i*M + k] * R[k*N + j];
-	  }
+        nrm = static_cast<T>(0.0);
+        for (i = 0; i < M; i++)
+          nrm += A[i*M + k] * A[i*M + k];
+        R[k*N + k] = std::sqrt(nrm);
+        for (i = 0; i < M; i++)
+          Q[i*M + k] = A[i*M + k] / R[k*N + k];
+        for (j = k + 1; j < N; j++)
+          {
+            R[k*N + j] = static_cast<T>(0.0);
+            for (i = 0; i < M; i++)
+              R[k*N + j] += Q[i*M + k] * A[i*M + j];
+            for (i = 0; i < M; i++)
+              A[i*M + j] = A[i*M + j] - Q[i*M + k] * R[k*N + j];
+          }
       }
 
     return pickles({A, R, Q});

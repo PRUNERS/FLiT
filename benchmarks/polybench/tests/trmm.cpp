@@ -114,7 +114,7 @@ protected:
     for (i = 0; i < M; i++)
       for (j = 0; j < N; j++) {
         for (k = i+1; k < M; k++)
-	  B[i*M + j] += A[k*M + i] * B[k*M + j];
+          B[i*M + j] += A[k*M + i] * B[k*M + j];
         B[i*M + j] = alpha * B[i*M + j];
       }
 

@@ -116,18 +116,18 @@ protected:
 
     for (i = 0; i < N; i++) {
       for (j = 0; j <i; j++) {
-	w = A[i*N + j];
-	for (k = 0; k < j; k++) {
+        w = A[i*N + j];
+        for (k = 0; k < j; k++) {
           w -= A[i*N + k] * A[k*N + j];
-	}
+        }
         A[i*N + j] = w / A[j*N + j];
       }
       for (j = i; j < N; j++) {
-	w = A[i*N + j];
-	for (k = 0; k < i; k++) {
+        w = A[i*N + j];
+        for (k = 0; k < i; k++) {
           w -= A[i*N + k] * A[k*N + j];
-	}
-	A[i*N + j] = w;
+        }
+        A[i*N + j] = w;
       }
     }
 

@@ -113,7 +113,7 @@ protected:
       //j<i
       for (j = 0; j < i; j++) {
         for (k = 0; k < j; k++) {
-	  A[i*N + j] -= A[i*N + k] * A[j*N + k];
+          A[i*N + j] -= A[i*N + k] * A[j*N + k];
         }
         A[i*N + j] /= A[j*N + j];
       }

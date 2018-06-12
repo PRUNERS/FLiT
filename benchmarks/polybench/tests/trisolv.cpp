@@ -113,10 +113,10 @@ protected:
 
     for (i = 0; i < N; i++)
       {
-	x[i] = b[i];
-	for (j = 0; j <i; j++)
-	  x[i] -= L[i*N + j] * x[j];
-	x[i] = x[i] / L[i*N + i];
+        x[i] = b[i];
+        for (j = 0; j <i; j++)
+          x[i] -= L[i*N + j] * x[j];
+        x[i] = x[i] / L[i*N + i];
       }
 
     return pickles({x});

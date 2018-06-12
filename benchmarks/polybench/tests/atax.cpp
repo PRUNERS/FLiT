@@ -116,11 +116,11 @@ protected:
       y[i] = 0;
     for (i = 0; i < M; i++)
       {
-	tmp[i] = static_cast<T>(0.0);
-	for (j = 0; j < N; j++)
-	  tmp[i] = tmp[i] + A[i*M + j] * x[j];
-	for (j = 0; j < N; j++)
-	  y[j] = y[j] + A[i*M + j] * tmp[i];
+        tmp[i] = static_cast<T>(0.0);
+        for (j = 0; j < N; j++)
+          tmp[i] = tmp[i] + A[i*M + j] * x[j];
+        for (j = 0; j < N; j++)
+          y[j] = y[j] + A[i*M + j] * tmp[i];
       }
 
 

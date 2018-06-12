@@ -116,14 +116,14 @@ protected:
 
     for (i = 0; i < M; i++)
       for (j = 0; j < N; j++ )
-	{
-	  temp2 = 0;
-	  for (k = 0; k < i; k++) {
-	    C[k*M +j] += alpha*B[i*M +j] * A[i*M +k];
-	    temp2 += B[k*M +j] * A[i*M +k];
-	  }
-	  C[i*M +j] = beta * C[i*M +j] + alpha*B[i*M +j] * A[i*M +i] + alpha * temp2;
-	}
+        {
+          temp2 = 0;
+          for (k = 0; k < i; k++) {
+            C[k*M +j] += alpha*B[i*M +j] * A[i*M +k];
+            temp2 += B[k*M +j] * A[i*M +k];
+          }
+          C[i*M +j] = beta * C[i*M +j] + alpha*B[i*M +j] * A[i*M +i] + alpha * temp2;
+        }
 
     return pickles({C});
   }

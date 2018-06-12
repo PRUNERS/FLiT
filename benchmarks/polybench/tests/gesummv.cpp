@@ -118,14 +118,14 @@ protected:
 
     for (i = 0; i < N; i++)
       {
-	tmp[i] = static_cast<T>(0.0);
-	y[i] = static_cast<T>(0.0);
-	for (j = 0; j < N; j++)
-	  {
-	    tmp[i] = A[i*N + j] * x[j] + tmp[i];
-	    y[i] = B[i*N + j] * x[j] + y[i];
-	  }
-	y[i] = alpha * tmp[i] + beta * y[i];
+        tmp[i] = static_cast<T>(0.0);
+        y[i] = static_cast<T>(0.0);
+        for (j = 0; j < N; j++)
+          {
+            tmp[i] = A[i*N + j] * x[j] + tmp[i];
+            y[i] = B[i*N + j] * x[j] + y[i];
+          }
+        y[i] = alpha * tmp[i] + beta * y[i];
       }
 
     return pickles({tmp, y});

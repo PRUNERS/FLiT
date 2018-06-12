@@ -118,7 +118,7 @@ protected:
     for (j=0; j<M; j++) {
       mean[j] = 0.0;
       for (i=0; i<N; i++) {
-	mean[j] += data[i*N + j];
+        mean[j] += data[i*N + j];
       }
       mean[j] /= float_n;
     }
@@ -149,11 +149,11 @@ protected:
     for (i=0; i<M-1; i++) {
       corr[i*M + i] = 1.0;
       for (j=i+1; j<M; j++) {
-	corr[i*M + j] = 0.0;
-	for (k=0; k<N; k++) {
-	  corr[i*M + j] += (data[k*N + i] * data[k*N + j]);
-	}
-	corr[j*M + i] = corr[i*M + j];
+        corr[i*M + j] = 0.0;
+        for (k=0; k<N; k++) {
+          corr[i*M + j] += (data[k*N + i] * data[k*N + j]);
+        }
+        corr[j*M + i] = corr[i*M + j];
       }
     }
     corr[(M-1)*M + (M-1)] = 1.0;
