@@ -138,7 +138,7 @@ std::vector<T> seeded_random_vector(size_t n, unsigned int seed) {
 
   // IB: Not a good rng algo, improve later
   uint32_t pad = 0;
-  for (int i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     if ((i)%31 == 0) {
       pad = static_cast<uint32_t>(rand());
     }
