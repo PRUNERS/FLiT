@@ -84,10 +84,12 @@
 #define POLYBENCH_UTILS_H
 
 
+#include <algorithm>
 #include <iomanip>
 #include <limits>
-#include <vector>
+#include <random>
 #include <sstream>
+#include <vector>
 
 #include <cfloat>
 #include <cstdint>
@@ -144,34 +146,39 @@
   REGISTER_TYPE(NAME##_##DIM0##_##DIM1##_##DIM2##_##DIM3##_##DIM4)             \
 
 
+/** Generates a random vector of numbers from a seeded random number generator
+ *
+ * @param n: number of random numbers to generate
+ * @param seed: random number generator seed
+ * @param lower: lower bound of numbers to generate
+ * @param upper: upper bound of numbers to generate
+ *
+ * @return std::vector containing the generated random numbers
+ */
 template<typename T>
-std::vector<T> seeded_random_vector(size_t n, unsigned int seed) {
+std::vector<T> seeded_random_vector(size_t n, unsigned int seed, T lower = 0.0,
+                                    T upper = std::numeric_limits<T>::max())
+{
   std::vector<T> v(n);
-  srand(seed);
-
-  // IB: Not a good rng algo, improve later
-  uint32_t pad = 0;
-  for (size_t i = 0; i < n; i++) {
-    if ((i)%31 == 0) {
-      pad = static_cast<uint32_t>(rand());
-    }
-    int sign = -1 * (pad & 0x1);
-    pad >>= 1;
-
-    v[i] = sign * static_cast<double>(rand())
-             / RAND_MAX * std::numeric_limits<T>::max();
-  }
+  std::minstd_rand g(seed);
+  std::uniform_real_distribution<T> dist(lower, upper);
+  std::generate_n(v.begin(), n, [&g, &dist]() { return dist(g); });
   return v;
 }
 
-
+/** Generates a random vector with a hard-coded seed
+ *
+ * This is a convenience function that calls seeded_random_vector().
+ */
 template<typename T>
-std::vector<T> random_vector(size_t n) {
-  return seeded_random_vector<T>(n, 42);
+std::vector<T> random_vector(size_t n, T lower = 0.0,
+                             T upper = std::numeric_limits<T>::max())
+{
+  return seeded_random_vector<T>(n, 42, lower, upper);
 }
 
 
-
+/// Compare two strings representing vectors using L1 norm
 template<typename T>
 long double
 vector_string_compare(const std::string &ground_truth,
@@ -196,13 +203,17 @@ vector_string_compare(const std::string &ground_truth,
 }
 
 
+/** Convert a vector of vectors into a single string
+ *
+ * Note: the sequence of vectors are collapsed as a single vector
+ */
 template<typename T>
 std::string
 pickles(std::initializer_list<std::vector<T>> cucumbers) {
   std::stringstream ss;
   ss << std::setprecision(22); // enough to round trip long doubles
 
-  for (std::vector<T> cuke : cucumbers) {
+  for (const auto& cuke : cucumbers) {
     for (T c : cuke) {
       ss << c << " ";
     }
@@ -211,6 +222,8 @@ pickles(std::initializer_list<std::vector<T>> cucumbers) {
   return ss.str();
 }
 
+
+/// Splits the ti vector into multiple disjoint vectors specified by sizes
 template<typename T>
 std::vector<T>
 split_vector(std::vector<int> sizes, int index, std::vector<T> ti) {
