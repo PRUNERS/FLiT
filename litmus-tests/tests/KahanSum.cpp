@@ -129,9 +129,7 @@ namespace {
 //template<> std::vector<float> getToRepeat() { return { 1.0, 1.0e8, -1.0e8 }; }
   template<> std::vector<float> getToRepeat() { return { 1.0e4, PI, EXP, -1.0e4 }; }
   template<> std::vector<double> getToRepeat() { return { 1.0e11, PI, EXP, -1.0e11 }; }
-#ifndef __CUDA__
   template<> std::vector<long double> getToRepeat() { return { 1.0e14, PI, EXP, -1.0e14 }; }
-#endif
 } // end of unnamed namespace
 
 template <typename T>

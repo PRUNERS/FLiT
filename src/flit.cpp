@@ -87,6 +87,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <type_traits>
 #include <typeinfo>
@@ -188,6 +189,7 @@ std::string FlitOptions::toString() const {
   messanger
     << "Options:\n"
     << "  help:           " << boolToString(this->help) << "\n"
+    << "  info:           " << boolToString(this->info) << "\n"
     << "  verbose:        " << boolToString(this->verbose) << "\n"
     << "  timing:         " << boolToString(this->timing) << "\n"
     << "  timingLoops:    " << this->timingLoops << "\n"
@@ -196,6 +198,8 @@ std::string FlitOptions::toString() const {
     << "  precision:      " << this->precision << "\n"
     << "  output:         " << this->output << "\n"
     << "  compareMode:    " << boolToString(this->compareMode) << "\n"
+    << "  compareGtFile:  " << this->compareGtFile << "\n"
+    << "  compareSuffix:  " << this->compareSuffix << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
@@ -212,6 +216,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   FlitOptions options;
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };
+  std::vector<std::string> infoOpts          = { "--info" };
   std::vector<std::string> verboseOpts       = { "-v", "--verbose" };
   std::vector<std::string> timingOpts        = { "-t", "--timing" };
   std::vector<std::string> loopsOpts         = { "-l", "--timing-loops" };
@@ -220,6 +225,8 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   std::vector<std::string> precisionOpts     = { "-p", "--precision" };
   std::vector<std::string> outputOpts        = { "-o", "--output" };
   std::vector<std::string> compareMode       = { "-c", "--compare-mode" };
+  std::vector<std::string> compareGtFileOpts = { "-g", "--compare-gt" };
+  std::vector<std::string> compareSuffixOpts = { "-s", "--suffix" };
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
@@ -229,6 +236,8 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
     std::string current(argList[i]);
     if (isIn(helpOpts, current)) {
       options.help = true;
+    } else if (isIn(infoOpts, current)) {
+      options.info = true;
     } else if (isIn(verboseOpts, current)) {
       options.verbose = true;
     } else if (isIn(timingOpts, current)) {
@@ -270,9 +279,20 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
       options.output = argList[++i];
     } else if (isIn(compareMode, current)) {
       options.compareMode = true;
+      options.timing = false;
+    } else if (isIn(compareGtFileOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.compareGtFile = argList[++i];
+    } else if (isIn(compareSuffixOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.compareSuffix = argList[++i];
     } else {
       options.tests.push_back(current);
-      if (!options.compareMode && !isIn(allowedTests, current)) {
+      if (!options.compareMode && !isIn(allowedTests, removeIdxFromName(current))) {
         throw ParseException("unknown test " + current);
       }
     }
@@ -281,14 +301,12 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   // names passed on the command line in compareMode are compareFiles not tests
   if (options.compareMode) {
     options.tests.swap(options.compareFiles);
-    options.tests.emplace_back("all");
     if (options.compareFiles.size() == 0) {
       throw ParseException("You must pass in some test results in compare"
                            " mode");
     }
-  }
-
-  if (options.tests.size() == 0 || isIn(options.tests, std::string("all"))) {
+  } else if (options.tests.size() == 0
+          || isIn(options.tests, std::string("all"))) {
     options.tests = getKeys(getTests());
   }
 
@@ -307,9 +325,39 @@ std::string usage(std::string progName) {
        "  Runs the FLiT tests and outputs the results to the console in CSV\n"
        "  format.\n"
        "\n"
+       "Positional Arguments:\n"
+       "\n"
+       "  <test>          The name of the test as shown by the --list-tests\n"
+       "                  option.  If this is not specified, then all tests\n"
+       "                  will be executed.\n"
+       "\n"
+       "                  When a test is data-driven, it generates multiple\n"
+       "                  test results.  Each of these test results will be\n"
+       "                  appended with \"_idx\" followed by a number\n"
+       "                  indicating which data-driven input it used.  You\n"
+       "                  may specify this same suffix when you specify the\n"
+       "                  test to only run particular data-driven inputs\n"
+       "                  instead of all of them.\n"
+       "\n"
+       "                  Example:\n"
+       "                    " << progName << " TestCase_idx3 TestCase_idx5\n"
+       "\n"
+       "                  This will only run inputs 3 and 5 instead of all\n"
+       "                  of them.  Note that if you specify an index higher\n"
+       "                  than the number of inputs for your test, then it\n"
+       "                  will be ignored.\n"
+       "\n"
+       "                  Note: this is zero-based indexing.  So to run the\n"
+       "                  2nd test input sequence, use TestCase_idx1.\n"
+       "\n"
+       "  <csvfile>       File path to the csv results to compare this\n"
+       "                  executable's results against.\n"
+       "\n"
        "Options:\n"
        "\n"
        "  -h, --help      Show this help and exit\n"
+       "\n"
+       "  --info          Show compilation information and exit\n"
        "\n"
        "  -L, --list-tests\n"
        "                  List all available tests and exit.\n"
@@ -353,12 +401,42 @@ std::string usage(std::string progName) {
        "                  arguments are interpreted as the results files to\n"
        "                  use in the comparison.\n"
        "\n"
+       "                  This option implies --no-timing\n"
+       "\n"
        "                  Note: for tests returning a string, the results\n"
        "                  file will contain a relative path to the file that\n"
        "                  actually contains the string return value.  So you\n"
        "                  will want to make sure to call this option in the\n"
        "                  same directory used when executing the test\n"
        "                  executable.\n"
+       "\n"
+       "  -g GT_RESULTS, --compare-gt GT_RESULTS\n"
+       "                  Only applicable with --compare-mode on.\n"
+       "\n"
+       "                  Specify the csv file to use for the ground-truth\n"
+       "                  results.  If this is not specified, then the\n"
+       "                  associated tests will be executed in order to\n"
+       "                  compare.  If there are tests not in this results\n"
+       "                  file, but needing comparison, then those tests\n"
+       "                  will be executed to be able to compare.\n"
+       "\n"
+       "                  If the --output option is specified as well, then\n"
+       "                  only the extra tests that were executed and not\n"
+       "                  found in this results file will be output.\n"
+       "\n"
+       "  -s SUFFIX, --suffix SUFFIX\n"
+       "                  Only applicable with --compare-mode on.\n"
+       "\n"
+       "                  Typically in compare mode, each compare file is\n"
+       "                  read in, compared, and then rewritten over the top\n"
+       "                  of that compare file.  If you want to keep the\n"
+       "                  compare file untouched and instead output to a\n"
+       "                  different file, you can use this option to add a\n"
+       "                  suffix to the compared filename.\n"
+       "\n"
+       "                  In other words, the default value for this option\n"
+       "                  is the empty string, causing the filenames to\n"
+       "                  match.\n"
        "\n"
        "  -p PRECISION, --precision PRECISION\n"
        "                  Which precision to run.  The choices are 'float',\n"
@@ -386,9 +464,9 @@ std::vector<TestResult> parseResults(std::istream &in) {
     auto nanosec = std::stol(row["nanosec"]);
     Variant value;
     std::string resultfile;
-    if (row["score"] != "NULL") {
-      // Convert score into a long double
-      value = as_float(flit::stouint128(row["score"]));
+    if (row["score_hex"] != "NULL") {
+      // Convert score_hex into a long double
+      value = as_float(flit::stouint128(row["score_hex"]));
     } else {
       // Read string from the resultfile
       if (row["resultfile"] == "NULL") {
@@ -426,7 +504,7 @@ std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
   return metadata;
 }
 
-std::string removeIdxFromName(const std::string &name) {
+std::string removeIdxFromName(const std::string &name, int *idx) {
   std::string pattern("_idx"); // followed by 1 or more digits
   auto it = std::find_end(name.begin(), name.end(),
                           pattern.begin(), pattern.end());
@@ -439,7 +517,40 @@ std::string removeIdxFromName(const std::string &name) {
   if (!is_integer_idx) {
     throw std::invalid_argument("in removeIdxFromName, non-integer idx");
   }
+  if (idx != nullptr) {
+    if (it != name.end()) {
+      *idx = std::stoi(std::string(it+4, name.end()));
+    } else {
+      *idx = -1;
+    }
+  }
   return std::string(name.begin(), it);
+}
+
+std::vector<std::string> calculateMissingComparisons(const FlitOptions &opt) {
+  // We don't want to run the tests that are specified in the gt test file
+  std::set<std::string> gtTestNames;
+  if (!opt.compareGtFile.empty()) {
+    std::ifstream gtresultfile(opt.compareGtFile);
+    for (auto &result : parseResults(gtresultfile)) {
+      gtTestNames.emplace(result.name());
+    }
+  }
+
+  // TODO: double check that we have {testname, precision} pairings in there
+  // parse the incoming files to determine which tests need to be run
+  std::set<std::string> testNames;
+  for (auto fname : opt.compareFiles) {
+    std::ifstream resultfile(fname);
+    for (auto &result : parseResults(resultfile)) {
+      if (gtTestNames.end() == gtTestNames.find(result.name())) {
+        testNames.emplace(result.name());
+      }
+    }
+  }
+
+  std::vector<std::string> missingTests(testNames.begin(), testNames.end());
+  return missingTests;
 }
 
 } // end of namespace flit

@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # -- LICENSE BEGIN --
 #
 # Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
@@ -82,124 +80,61 @@
 #
 # -- LICENSE END --
 
-set -x
+'''
+Tests FLiT's capabilities to uninstall itself
 
-exists ()
-{
-    command -v "$1" >/dev/null 2>&1
-}
+The tests are below using doctest
 
-python3_has ()
-{
-    python3 -c "import $1" >/dev/null 2>&1
-}
+Let's now make a temporary directory, install there, and then uninstall.
+>>> import glob
+>>> import os
+>>> import subprocess as subp
+>>> with th.tempdir() as temp_dir:
+...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...                          'install', 'PREFIX=' + temp_dir],
+...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+...     dirs1 = os.listdir(temp_dir)
+...     dirs2 = [os.path.join(x, y) for x in dirs1
+...                                 for y in os.listdir(os.path.join(temp_dir, x))]
+...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...                          'uninstall', 'PREFIX=' + temp_dir],
+...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+...     tempdir_exists = os.path.exists(temp_dir)
+>>> sorted(dirs1)
+['bin', 'include', 'lib', 'share']
+>>> sorted(dirs2)
+['bin/flit', 'include/flit', 'lib/libflit.so', 'share/flit', 'share/licenses']
+>>> tempdir_exists
+False
 
-SCRIPT_DIR="$(pwd)/$(dirname $0)"
+Now we test that directories are not deleted when other files exist in the
+PREFIX path
+>>> import glob
+>>> with th.tempdir() as temp_dir:
+...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...                          'install', 'PREFIX=' + temp_dir],
+...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+...     with open(os.path.join(temp_dir, 'lib', 'otherlib.so'), 'w'):
+...         pass
+...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...                          'uninstall', 'PREFIX=' + temp_dir],
+...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+...     prevdir = os.path.realpath(os.curdir)
+...     os.chdir(temp_dir)
+...     all_files = glob.glob('**', recursive=True)
+...     os.chdir(prevdir)
+>>> sorted(all_files)
+['lib', 'lib/otherlib.so']
+'''
 
-# Check for psql install
-if  ! exists createdb || ! exists psql; then
-    # Install if not present
-    echo "Postgres does not seem to be installed."
-    echo "Attempting install now."
+# Test setup before the docstring is run.
+import sys
+before_path = sys.path[:]
+sys.path.append('..')
+import test_harness as th
+sys.path = before_path
 
-    # Try different package managers
-    if exists apt; then
-	sudo apt install postgresql postgresql-plpython3
-    elif exists apt-get; then
-	sudo apt install postgresql postgresql-plpython3
-    elif exists pacman; then
-	sudo pacman -S postgresql postgresql-lib-python3
-    elif exists yum; then
-	sudo yum install postgresql-server #name-for-plpython3
-    elif exists brew; then
-	brew install postgresql --with-python3
-	brew services start postgresql
-    else
-	echo "Unable to find a suitable package manager."
-	echo "Please install Postgres and plpython3"
-	exit -1
-    fi
-fi
-
-
-# Check for numpy install
-if  ! python3_has numpy; then
-    # Install if not present
-    echo "Numpy does not seem to be installed for python 3."
-    echo "Attempting install now."
-
-    Try different package managers
-    if exists apt; then
-    	sudo apt install python3-numpy
-    elif exists apt-get; then
-    	sudo apt install python3-numpy
-    elif exists pacman; then
-    	sudo pacman -S python3-numpy
-    elif exists yum; then
-    	sudo yum install python3-numpy
-    elif exists brew; then
-    	brew install numpy -with-ptyhon3
-    else
-    	echo "Unable to find a suitable package manager."
-    	echo "Please install numpy for python3"
-    	exit -1
-    fi
-fi
-
-
-# Check for matplotlib install
-if  ! python3_has matplotlib; then
-    # Install if not present
-    echo "Matplotlib does not seem to be installed for python 3."
-    echo "Attempting install now."
-
-    Try different package managers
-    if exists apt; then
-    	sudo apt install python3-matplotlib
-    elif exists apt-get; then
-    	sudo apt install python3-matplotlib
-    elif exists pacman; then
-    	sudo pacman -S python3-matplotlib
-    elif exists yum; then
-    	sudo yum install python3-matplotlib
-    elif exists brew; then
-	brew tap homebrew/science
-    	brew install homebrew/science/matplotlib -with-ptyhon3
-    else
-    	echo "Unable to find a suitable package manager."
-    	echo "Please install Postgres and plpython3"
-    	exit -1
-    fi
-fi
-
-# Check if user exists
-# from http://stackoverflow.com/questions/8546759/how-to-check-if-a-postgres-user-exists
-if psql -t -c '\du' | cut -d \| -f 1 | grep -qw `whoami`; then
-    echo "User `whoami` already exists"
-else
-    echo "Creating user `whoami`"
-    sudo -u postgres createuser --superuser `whoami`
-fi
-
-
-createdb flit "The database for collecting all FLiT results"
-psql flit < "$SCRIPT_DIR/tables.sql"
-
-wait
-
-#add our config to postgres for matplotlib
-PGDIR=$(psql flit -t -c 'select getpwd()')
-if [ ! -e ${PGDIR}/matplotlibrc ]; then
-    sudo -u postgres cp ${SCRIPT_DIR}/matplotlibrc ${PGDIR}/matplotlibrc
-else
-    if ! egrep '^backend[[:space:]]*:[[:space:]]*Agg$' ${PGDIR}/matplotlibrc; then
-	echo "FLiT reporting will fail without the setting 'backend : Agg' in ${PGDIR}/matplotlibrc.  Please set before using FLiT"
-    fi
-fi
-       
-#now we need to add the user and postres to the flit group
-
-sudo addgroup flit
-sudo usermod -aG flit sawaya
-sudo usermod -aG flit postgres
-sudo service postgresql restart
+if __name__ == '__main__':
+    from doctest import testmod
+    failures, tests = testmod()
+    sys.exit(failures)

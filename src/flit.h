@@ -88,16 +88,9 @@
 #define FLIT_H 0
 
 #include "Matrix.h"
-#include "MatrixCU.h"
 #include "TestBase.h"
 #include "Vector.h"
-#include "VectorCU.h"
 #include "flitHelpers.h"
-
-#ifdef __CUDA__
-//#include <cuda.h>
-#include "CUHelpers.h"
-#endif
 
 #include <algorithm>
 #include <chrono>
@@ -143,18 +136,21 @@ namespace flit {
 
 /** Command-line options */
 struct FlitOptions {
-  bool help = false;        // show usage and exit
-  bool listTests = false;   // list available tests and exit
-  bool verbose = false;     // show debug verbose messages
+  bool help = false;         // show usage and exit
+  bool info = false;         // show compilation info and exit
+  bool listTests = false;    // list available tests and exit
+  bool verbose = false;      // show debug verbose messages
   std::vector<std::string> tests; // which tests to run
   std::string precision = "all";  // which precision to use
   std::string output = "";        // output file for results.  default stdout
-  bool timing = true;       // should we run timing?
-  int timingLoops = -1;     // < 1 means to auto-determine the timing loops
-  int timingRepeats = 3;    // return best of this many timings
+  bool timing = true;        // should we run timing?
+  int timingLoops = -1;      // < 1 means to auto-determine the timing loops
+  int timingRepeats = 3;     // return best of this many timings
   
-  bool compareMode = false; // compare results after running the test
+  bool compareMode = false;  // compare results after running the test
+  std::string compareGtFile; // ground truth results to use in compareMode
   std::vector<std::string> compareFiles; // files for compareMode
+  std::string compareSuffix; // suffix to add when writing back compareFiles
 
   /** Give a string representation of this struct for printing purposes */
   std::string toString() const;
@@ -182,30 +178,55 @@ struct pair_hash {
   }
 };
 
-/** Parse arguments */
+/// Parse arguments
 FlitOptions parseArguments(int argCount, char const* const argList[]);
 
-/** Returns the usage information as a string */
+/// Returns the usage information as a string
 std::string usage(std::string progName);
 
-/** Read file contents entirely into a string */
+/// The compilation information as a string
+static std::string info =
+  "Compilation information:\n"
+  "  Host:               \"" FLIT_HOST     "\"\n"
+  "  Compiler:           \"" FLIT_COMPILER "\"\n"
+  "  Optimization level: \"" FLIT_OPTL     "\"\n"
+  "  Compiler flags:     \"" FLIT_SWITCHES "\"\n"
+  "  Filename:           \"" FLIT_FILENAME "\"\n";
+
+/// Read file contents entirely into a string
 std::string readFile(const std::string &filename);
 
-/** Parse the results file into a vector of results */
+/// Parse the results file into a vector of results
 std::vector<TestResult> parseResults(std::istream &in);
 
-/** Parse the result file to get metadata from the first row */
+/// Parse the result file to get metadata from the first row
 std::unordered_map<std::string, std::string> parseMetadata(std::istream &in);
 
-/** Test names sometimes are postfixed with "_idx" + <num>.  Remove that postfix */
-std::string removeIdxFromName(const std::string &name);
+/** Removes the "_idx<num>" from the name
+ *
+ * The name passed in is not modified, but the shortened one is returned.
+ * Optionally, you can pass in an integer pointer to have it populated with the
+ * value of the <num> from the end of the idx string.
+ *
+ * If the name does not end in "_idx<num>", then the name is returned as-is,
+ * and idx (if not nullptr) is set to -1.
+ *
+ * @param name Name to remove "_idx<num>" from the end
+ * @param idx Pointer to an integer to store <num> (optional)
+ *
+ * @return shortened name with "_idx<num>" removed from the end
+ */
+std::string removeIdxFromName(const std::string &name, int *idx = nullptr);
+
+/// Returns the tests that need to be run for comparisons
+std::vector<std::string> calculateMissingComparisons(const FlitOptions &opt);
 
 class TestResultMap {
 public:
   using key_type = std::pair<std::string, std::string>;
 
   void loadfile(const std::string &filename) {
-    std::ifstream resultfile(filename);
+    std::ifstream resultfile = ifopen(filename);
     auto parsed = parseResults(resultfile);
     this->extend(parsed, filename);
   }
@@ -251,7 +272,9 @@ private:
     TestResult*,
     pair_hash<std::string, std::string>
     > m_testmap;   // (testname, precision) -> TestResult*
-  std::unordered_multimap<std::string, TestResult> m_filemap; // filename -> TestResult
+
+  // filename -> TestResult
+  std::unordered_multimap<std::string, TestResult> m_filemap;
 };
 
 inline void outputResults (
@@ -270,11 +293,11 @@ inline void outputResults (
          "optl,"
          "switches,"
          "precision,"
+         "score_hex,"
          "score,"
-         "score_d,"
          "resultfile,"
+         "comparison_hex,"
          "comparison,"
-         "comparison_d,"
          "file,"
          "nanosec"
       << std::endl;
@@ -290,13 +313,13 @@ inline void outputResults (
 
     if (result.result().type() == Variant::Type::LongDouble) {
       out
-        << as_int(result.result().longDouble()) << "," // score
-        << result.result().longDouble() << ","       // score_d
+        << as_int(result.result().longDouble()) << "," // score_hex
+        << result.result().longDouble() << ","       // score
         ;
     } else {
       out
+        << FLIT_NULL << ","                          // score_hex
         << FLIT_NULL << ","                          // score
-        << FLIT_NULL << ","                          // score_d
         ;
     }
 
@@ -308,13 +331,13 @@ inline void outputResults (
 
     if (result.is_comparison_null()) {
       out
+        << FLIT_NULL << ","                          // comparison_hex
         << FLIT_NULL << ","                          // comparison
-        << FLIT_NULL << ","                          // comparison_d
         ;
     } else {
       out
-        << as_int(result.comparison()) << ","        // comparison
-        << result.comparison() << ","                // comparison_d
+        << as_int(result.comparison()) << ","        // comparison_hex
+        << result.comparison() << ","                // comparison
         ;
     }
 
@@ -332,11 +355,12 @@ void runTestWithDefaultInput(TestFactory* factory,
                              const std::string &filebase = "",
                              bool shouldTime = true,
                              int timingLoops = -1,
-                             int timingRepeats = 3) {
+                             int timingRepeats = 3,
+                             int idx = -1) {
   auto test = factory->get<F>();
   auto ip = test->getDefaultInput();
   auto results = test->run(ip, filebase, shouldTime, timingLoops,
-                           timingRepeats);
+                           timingRepeats, idx);
   totResults.insert(totResults.end(), results.begin(), results.end());
   info_stream.flushout();
 }
@@ -406,6 +430,11 @@ inline int runFlitTests(int argc, char* argv[]) {
     return 0;
   }
 
+  if (options.info) {
+    std::cout << info;
+    return 0;
+  }
+
   if (options.listTests) {
     for (auto& test : getKeys(getTests())) {
       std::cout << test << std::endl;
@@ -421,41 +450,58 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::ostream *outstream = &std::cout;
   std::string test_result_filebase(FLIT_FILENAME);
   if (!options.output.empty()) {
-    stream_deleter.reset(new std::ofstream(options.output.c_str()));
+    stream_deleter.reset(new std::ofstream());
     outstream = stream_deleter.get();
+    try {
+      static_cast<std::ofstream&>(*outstream) = ofopen(options.output);
+    } catch (std::ios::failure &ex) {
+      std::cerr << "Error: failed to open " << options.output << std::endl;
+      return 1;
+    }
     test_result_filebase = options.output;
+  }
+
+  std::vector<TestResult> results;
+
+  // if comparison mode, then find out which tests we need to run
+  if (options.compareMode) {
+    options.tests = calculateMissingComparisons(options);
+    if (!options.compareGtFile.empty()) {
+      std::ifstream fin;
+      try {
+        fin = ifopen(options.compareGtFile);
+      } catch (std::ios::failure &ex) {
+        std::cerr << "Error: file does not exist: " << options.compareGtFile
+                  << std::endl;
+        return 1;
+      }
+      results = parseResults(fin);
+    }
   }
 
   std::cout.precision(1000); //set cout to print many decimal places
   info_stream.precision(1000);
 
-#ifdef __CUDA__
-  initDeviceData();
-#endif
-
-  std::vector<TestResult> results;
   auto testMap = getTests();
   for (auto& testName : options.tests) {
-    auto factory = testMap[testName];
+    int idx;
+    auto factory = testMap[removeIdxFromName(testName, &idx)];
     if (options.precision == "all" || options.precision == "float") {
       runTestWithDefaultInput<float>(factory, results, test_result_filebase,
                                      options.timing, options.timingLoops,
-                                     options.timingRepeats);
+                                     options.timingRepeats, idx);
     }
     if (options.precision == "all" || options.precision == "double") {
       runTestWithDefaultInput<double>(factory, results, test_result_filebase,
                                       options.timing, options.timingLoops,
-                                      options.timingRepeats);
+                                      options.timingRepeats, idx);
     }
     if (options.precision == "all" || options.precision == "long double") {
       runTestWithDefaultInput<long double>(
           factory, results, test_result_filebase, options.timing,
-          options.timingLoops, options.timingRepeats);
+          options.timingLoops, options.timingRepeats, idx);
     }
   }
-#if defined(__CUDA__) && !defined(__CPUKERNEL__)
-  cudaDeviceSynchronize();
-#endif
 
   // Sort the results first by name then by precision
   auto testComparator = [](const TestResult &a, const TestResult &b) {
@@ -472,7 +518,12 @@ inline int runFlitTests(int argc, char* argv[]) {
     TestResultMap comparisonResults;
   
     for (auto fname : options.compareFiles) {
-      comparisonResults.loadfile(fname);
+      try {
+        comparisonResults.loadfile(fname);
+      } catch (std::ios::failure &ex) {
+        std::cerr << "Error: failed to open file " << fname << std::endl;
+        return 1;
+      }
     }
 
     // compare mode is only done in the ground truth compilation
@@ -491,7 +542,13 @@ inline int runFlitTests(int argc, char* argv[]) {
       // read in the metadata to use in creating the file again
       std::unordered_map<std::string, std::string> metadata;
       {
-        std::ifstream fin(fname);
+        std::ifstream fin;
+        try {
+          fin = ifopen(fname);
+        } catch (std::ios_base::failure &ex) {
+          std::cerr << "Error: file does not exist: " << fname << std::endl;
+          return 1;
+        }
         metadata = parseMetadata(fin);
       }
 
@@ -507,7 +564,13 @@ inline int runFlitTests(int argc, char* argv[]) {
 
       // output back to a file
       {
-        std::ofstream fout(fname);
+        std::ofstream fout;
+        try {
+          fout = ofopen(fname + options.compareSuffix);
+        } catch (std::ios::failure &ex) {
+          std::cerr << "Error: could not write to " << fname << std::endl;
+          return 1;
+        }
         outputResults(
             fileresults,
             fout,

@@ -9,6 +9,7 @@
   * [Available Compiler Flags](available-compiler-flags.md)
 * [Writing Test Cases](writing-test-cases.md)
 * [Test Executable](test-executable.md)
+* [Benchmarks](benchmarks.md)
 * [Database Structure](database-structure.md)
 * [Analyze Results](analyze-results.md)
 * **Extra Tools**

@@ -86,28 +86,6 @@
 #include <cmath>
 
 template <typename T>
-GLOBAL
-void
-DoSkewSCPRKernel(const T* tiList, size_t n, double* results){
-#ifdef __CUDA__
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-  auto idx = 0;
-#endif
-  const T* vals = tiList + (idx*n);
-  auto A = flit::VectorCU<T>(vals, 3).getUnitVector();
-  auto B = flit::VectorCU<T>(vals + 3, 3).getUnitVector();
-  auto cross = A.cross(B);
-  auto sine = cross.L2Norm();
-  auto cos = A ^ B;
-  auto sscpm = flit::MatrixCU<T>::SkewSymCrossProdM(cross);
-  auto rMatrix = flit::MatrixCU<T>::Identity(3) +
-    sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
-  auto result = rMatrix * A;
-  results[idx] = result.L1Distance(B);
-}
-
-template <typename T>
 class DoSkewSymCPRotationTest: public flit::TestBase<T> {
 public:
   DoSkewSymCPRotationTest(std::string id)
@@ -120,8 +98,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return DoSkewSCPRKernel;}
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     flit::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
