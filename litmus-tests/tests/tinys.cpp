@@ -98,8 +98,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     std::numeric_limits<T> nlim;
     // from https://en.wikipedia.org/wiki/IEEE_floating_point
@@ -127,8 +125,6 @@ public:
     return { std::numeric_limits<T>::min() };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     return ti[0] - ti[0] / 2;
   }
@@ -145,8 +141,6 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     auto size = 16;
@@ -174,8 +168,6 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     auto vals = flit::getRandSeq<T>();
@@ -230,8 +222,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] + ti[1] + ti[2];
     return res;
@@ -251,8 +241,6 @@ public:
     return { T(1.0) };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     std::numeric_limits<T> nls;
     auto man_bits = nls.digits;
@@ -278,8 +266,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] / ti[1];
     return res;
@@ -299,8 +285,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = T(0.0) - ti[0];
     return res;
@@ -320,8 +304,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] - T(0.0);
     return res;
@@ -340,8 +322,6 @@ public:
     return { flit::getRandSeq<T>()[0] };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = (T)0.0 / ti[0];
     return res;
@@ -360,8 +340,6 @@ public:
     return { flit::getRandSeq<T>()[0] };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     T res = ti[0] / T(1.0);
     return res;
@@ -380,8 +358,6 @@ public:
     return { flit::getRandSeq<T>()[0] };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     T res = ti[0] / T(-1.0);
     return res;
@@ -403,8 +379,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = -(ti[0] / ti[1]);
     return res;
@@ -426,8 +400,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = -(ti[0] - ti[1]);
     return res;
@@ -447,8 +419,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] - ti[0];
     return res;
@@ -470,8 +440,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = -(ti[0] + ti[1]);
     return res;
@@ -494,8 +462,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] * (ti[1] / ti[2]);
     return res;
@@ -518,8 +484,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] * (ti[1] * ti[2]);
     return res;
@@ -542,8 +506,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto res = ti[0] + (ti[1] + ti[2]);
     return res;
@@ -568,8 +530,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     bool res = ti[0] + ti[1] == ti[2];
     return res ? 1.0 : 0.0;
@@ -594,8 +554,6 @@ public:
     };
   }
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     bool res = (ti[0] + ti[1] != ti[2]);
     return res ? 1.0 : 0.0;

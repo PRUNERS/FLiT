@@ -90,31 +90,10 @@ import os
 # - input_count: how many inputs the test will take
 # - default_input: populate ti.vals vector.
 # - vars_initialize: initialize scope variable for the test using ti.vals
-# - cu_vars_initialize: initialize scope variables for the test in CUDA using
 #   tiList[idx].vals
-# - func_body: test body that is shared between cuda and non-cuda.  Populate score
+# - func_body: test body
 template_string = '''
 #include "flit.h"
-
-template <typename T>
-GLOBAL
-void
-{name}Kernel(const T* const* tiList, double* results) {{
-#ifdef __CUDA__
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-  auto idx = 0;
-#endif
-  double score = 0.0;
-
-  {cu_vars_initialize}
-
-  {{
-    {func_body}
-  }}
-
-  results[idx] = score;
-}}
 
 template <typename T>
 class {name} : public flit::TestBase<T> {{
@@ -132,10 +111,6 @@ public:
   }}
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override {{
-    return {name}Kernel;
-  }}
-
   virtual
   flit::Variant run_impl(const std::vector<T>& ti) override {{
     T score = 0.0;
@@ -179,8 +154,6 @@ class TestCase(object):
         'ti.push_back({0});'.format(x) for x in default_input_vals]
     self.vars_initialize_lines = [
         'T in_{0} = ti[{0}];'.format(i+1) for i in range(self.input_count)]
-    self.cu_vars_initialize_lines = [
-        'T in_{0} = tiList[idx][{0}];'.format(i+1) for i in range(self.input_count)]
 
     # Create an environment for the function body
     env = Environment({
@@ -213,7 +186,6 @@ class TestCase(object):
       input_count=self.input_count,
       default_input='\n    '.join(self.default_input_lines),
       vars_initialize='\n    '.join(self.vars_initialize_lines),
-      cu_vars_initialize='\n  '.join(self.cu_vars_initialize_lines),
       func_body='\n    '.join(self.func_body_lines),
       )
 

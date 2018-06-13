@@ -90,10 +90,6 @@
 
 #include "flitHelpers.h"
 
-#ifdef __CUDA__
-#include "CUHelpers.h"
-#endif // __CUDA__
-
 #include "timeFunction.h"
 #include "Variant.h"
 
@@ -154,101 +150,10 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const TestResult& res);
 
-/** Definition of a kernel function used by CUDA tests
- *
- * @param arr: array of input arrays, flattened, already allocated and populated
- * @param n: length of each input, it is the stride
- * @param results: array where to store results, already allocated
- */
-template <typename T>
-using KernelFunction = void (const T*, size_t, double*);
-
-template <typename T>
-using CudaDeleter = void (T*);
-
-template <typename T>
-std::unique_ptr<T, CudaDeleter<T>*> makeCudaArr(const T* vals, size_t length) {
-#ifdef __CUDA__
-  T* arr;
-  const auto arrSize = sizeof(T) * length;
-
-  // Create the array
-  checkCudaErrors(cudaMalloc(&arr, arrSize));
-
-  // Store it in a smart pointer with a custom deleter
-  CudaDeleter<T>* deleter = [](T* p) { checkCudaErrors(cudaFree(p)); };
-  std::unique_ptr<T, CudaDeleter<T>*> ptr(arr, deleter);
-
-  // Copy over the vals array from hist into the device
-  if (vals != nullptr) {
-    checkCudaErrors(cudaMemcpy(ptr.get(), vals, arrSize, cudaMemcpyHostToDevice));
-  }
-
-  return ptr;
-#else
-  FLIT_UNUSED(vals);
-  FLIT_UNUSED(length);
-  throw std::runtime_error("Should not use makeCudaArr without CUDA enabled");
-#endif
-}
-
 class TestDisabledError : public std::runtime_error {
 public:
   using std::runtime_error::runtime_error;
 };
-
-/** Calls a CUDA kernel function and returns the scores
- *
- * This function is expecting a non-nullptr kernel function with a test input
- * sufficient to run the test exactly once.
- *
- * If we are not compiling under CUDA, then this does nothing and returns
- * zeros.  If we are compiling under CUDA, then we may run the kernel on the
- * CPU or on the GPU based on the definition of __CPUKERNEL__.
- *
- * This function handles copying the test input to the kernel, allocating
- * memory for the result storage, and copying the result type back to the host
- * to be returned.
- *
- * @param kernel: kernel function pointer to call with split up inputs
- * @param ti: inputs for all tests runs, to be split by stride
- * @param stride: how many inputs per test run
- */
-template <typename T>
-std::vector<double>
-runKernel(KernelFunction<T>* kernel, const std::vector<T>& ti, size_t stride) {
-#ifdef __CUDA__
-  size_t runCount;
-  if (stride < 1) { // the test takes no inputs
-    runCount = 1;
-  } else {
-    runCount = ti.size() / stride;
-  }
-
-  std::unique_ptr<double[]> cuResults(new double[runCount]);
-  // Note: __CPUKERNEL__ mode is broken by the change to run the kernel in
-  // multithreaded mode.  Its compilation is broken.
-  // TODO: fix __CPUKERNEL__ mode for testing.
-# ifdef __CPUKERNEL__
-  kernel(ti.data(), stride, cuResults);
-# else  // not __CPUKERNEL__
-  auto deviceVals = makeCudaArr(ti.data(), ti.size());
-  auto deviceResult = makeCudaArr<double>(nullptr, runCount);
-  kernel<<<runCount,1>>>(deviceVals.get(), stride, deviceResult.get());
-  auto resultSize = sizeof(double) * runCount;
-  checkCudaErrors(cudaMemcpy(cuResults.get(), deviceResult.get(), resultSize,
-                             cudaMemcpyDeviceToHost));
-# endif // __CPUKERNEL__
-  std::vector<double> results(cuResults, cuResults + runCount);
-  return results;
-#else   // not __CUDA__
-  // Do nothing
-  FLIT_UNUSED(kernel);
-  FLIT_UNUSED(ti);
-  FLIT_UNUSED(stride);
-  return {};
-#endif  // __CUDA__
-}
 
 template <typename T>
 class TestBase {
@@ -265,14 +170,25 @@ public:
    *   the test is such that it needs to change the notion of running the test
    *   from only a std::vector of inputs for each result pair.
    *
+   * @param ti Test input vector
+   * @param filebase basename for the result file
+   * @param shouldTime true means we should to timing
+   * @param timingLoops how many times to loop.  A value less than one means
+   *        automatically determine timing loops.
+   * @param timingRepeats how many times to repeat the timing.
+   * @param idx which test to run if it is data driven, zero-based indexing.  A
+   *        value less than one means to run them all.
+   *
+   * @return A vector of test results
+   *
    * @see getInputsPerRun
    */
   virtual std::vector<TestResult> run(const std::vector<T>& ti,
                                       const std::string &filebase,
-                                      const bool shouldTime,
-                                      const int timingLoops,
-                                      const int timingRepeats) {
-    FLIT_UNUSED(timingRepeats);
+                                      const bool shouldTime = true,
+                                      const int timingLoops = -1,
+                                      const int timingRepeats = 3,
+                                      const int idx = -1) {
     using std::chrono::high_resolution_clock;
     using std::chrono::duration;
     using std::chrono::duration_cast;
@@ -301,18 +217,6 @@ public:
       runcount++;
       return this->run_impl(runInput);
     };
-#ifdef __CUDA__
-    // Use the cuda kernel if it is available by replacing runner
-    auto kernel = getKernel();
-    if (kernel != nullptr) {
-      runner = [kernel, stride, &runcount] (const std::vector<T>& ti) {
-        // TODO: implement this timer better.
-        runcount++;
-        auto scorelist = runKernel(kernel, ti, stride);
-        return Variant{ scorelist[0] };
-      }
-    }
-#endif // __CUDA__
 
     // Run the tests
     struct TimedResult {
@@ -325,7 +229,16 @@ public:
     };
     std::vector<TimedResult> resultValues;
 
-    for (size_t i = 0; i < inputSequence.size(); i++) {
+    // Either only do the specified index, or all of them
+    std::vector<size_t> indices;
+    if (idx < 0) {
+      indices.resize(inputSequence.size());
+      std::iota(indices.begin(), indices.end(), 0);
+    } else {
+      indices.push_back(idx);
+    }
+
+    for (auto i : indices) {
       auto& runInput = inputSequence.at(i);
       Variant testResult;
       int_fast64_t timing = 0;
@@ -358,7 +271,7 @@ public:
       std::string resultfile;
       if (testResult.type() == Variant::Type::String) {
         resultfile = filebase + "_" + name + "_" + typeid(T).name() + ".dat";
-        std::ofstream resultout(resultfile);
+        std::ofstream resultout = ofopen(resultfile);
         resultout << testResult.string();
         testResult = Variant(); // empty the result to release memory
       }
@@ -433,9 +346,6 @@ public:
    * Which one is used depends on the type of Variant that is returned from the
    * run_impl function.  The value returned by compare will be the value stored
    * in the database for later analysis.
-   *
-   * Note: when using the CUDA kernel functionality, only long double return
-   * values are valid for now.
    */
   virtual long double compare(long double ground_truth,
                               long double test_results) const {
@@ -452,27 +362,14 @@ public:
   }
 
 protected:
-  /** If this test implements a CUDA kernel, return the kernel pointer
-   *
-   * If compiling under CUDA and this returns a valid function pointer (meaning
-   * not nullptr), then this kernel function will be called instead of
-   * run_impl().  Otherwise, run_impl() will be called.
-   *
-   * This method is not pure virtual because it is not required to implement.
-   * If it is overridden to return something other than nullptr, then the
-   * kernel will be called when compiling under a CUDA environment.  If when
-   * compiling under a CUDA environment, this returns nullptr, then the test
-   * reverts to calling run().
-   */
-  virtual KernelFunction<T>* getKernel() { return nullptr; }
-
   /** This is where you implement the test
    *
    * @param ti: Test input.  The vals element will have exactly the amount of
    *   test inputs required according to the implemented getInputsPerRun().  So
    *   if that function returns 9, then the vector will have exactly 9
    *   elements.
-   * @return a single result.  You can return any type supported by flit::Variant.
+   * @return a single result.  You can return any type supported by
+   *   flit::Variant.
    *
    * The returned value (whichever type is chosen) will be used by the public
    * virtual compare() method.
@@ -493,7 +390,6 @@ public:
   virtual std::vector<TestResult> run(
       const std::vector<T>&, const bool, const size_t) override { return {}; }
 protected:
-  virtual KernelFunction<T>* getKernel() override { return nullptr; }
   virtual Variant run_impl(const std::vector<T>&) override { return {}; }
 };
 
@@ -540,28 +436,6 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
   return std::get<2>(_tests);
 }
 
-#ifdef __CUDA__
-
-#define REGISTER_TYPE(klass)                                \
-  class klass##Factory : public flit::TestFactory {         \
-  public:                                                   \
-    klass##Factory() {                                      \
-      flit::registerTest(#klass, this);                     \
-    }                                                       \
-  protected:                                                \
-    virtual createType create() override {                  \
-      return std::make_tuple(                               \
-          std::make_shared<klass<float>>(#klass),           \
-          std::make_shared<klass<double>>(#klass),          \
-          /* empty test for long double */                  \
-          std::make_shared<flit::NullTest<long double>>(#klass) \
-          );                                                \
-    }                                                       \
-  };                                                        \
-  static klass##Factory global_##klass##Factory;            \
-
-#else // not __CUDA__
-
 #define REGISTER_TYPE(klass)                                \
   class klass##Factory : public flit::TestFactory {         \
   public:                                                   \
@@ -578,8 +452,6 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
     }                                                       \
   };                                                        \
   static klass##Factory global_##klass##Factory;            \
-
-#endif // __CUDA__
 
 std::map<std::string, TestFactory*>& getTests();
 

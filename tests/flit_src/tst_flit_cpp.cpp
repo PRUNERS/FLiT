@@ -90,10 +90,45 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <sstream>
 #include <vector>
 
 #include <cstdio>
+
+namespace {
+struct TempFile {
+public:
+  std::string name;
+  std::ofstream out;
+  TempFile() {
+    char fname_buf[L_tmpnam];
+    std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
+
+    name = fname_buf;
+    name += "-tst_flit.in";    // this makes the danger much less likely
+    out.exceptions(std::ios::failbit);
+    out.open(name);
+  }
+  ~TempFile() {
+    out.close();
+    std::remove(name.c_str());
+  }
+};
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T> &v) {
+  out << "[";
+  if (v.size() > 0) {
+    out << v[0];
+  }
+  for (int i = 1; i < v.size(); i++) {
+    out << ", " << v[i];
+  }
+  out << "]";
+  return out;
+}
+} // end of unnamed namespace
 
 namespace tst_CsvRow {
 void tst_CsvRow_header() {
@@ -177,6 +212,7 @@ TH_REGISTER(tst_default_macro_values);
 void tst_FlitOptions_toString() {
   flit::FlitOptions opt;
   opt.help = true;
+  opt.info = false;
   opt.listTests = false;
   opt.verbose = false;
   opt.tests = {"one", "two", "three"};
@@ -186,11 +222,14 @@ void tst_FlitOptions_toString() {
   opt.timingLoops = 100;
   opt.timingRepeats = 2;
   opt.compareMode = true;
+  opt.compareGtFile = "MY-GTFILE";
+  opt.compareSuffix = "-suffix.csv";
   opt.compareFiles = {"A", "B", "C", "D"};
 
   TH_EQUAL(opt.toString(),
       "Options:\n"
       "  help:           true\n"
+      "  info:           false\n"
       "  verbose:        false\n"
       "  timing:         false\n"
       "  timingLoops:    100\n"
@@ -199,6 +238,8 @@ void tst_FlitOptions_toString() {
       "  precision:      my precision\n"
       "  output:         my output\n"
       "  compareMode:    true\n"
+      "  compareGtFile:  MY-GTFILE\n"
+      "  compareSuffix:  -suffix.csv\n"
       "  tests:\n"
       "    one\n"
       "    two\n"
@@ -240,54 +281,60 @@ bool operator!=(const flit::FlitOptions& a, const flit::FlitOptions& b) {
   return ! (a == b);
 }
 void tst_parseArguments_empty() {
-  const char* argList[1] = {"progName"};
+  std::vector<const char*> argList = {"progName"};
   flit::FlitOptions expected;
-  auto actual = flit::parseArguments(1, argList);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
 TH_REGISTER(tst_parseArguments_empty);
 
 void tst_parseArguments_one_flag() {
-  const char* argList[2] = {"progName", "-h"};
+  std::vector<const char*> argList = {"progName", "-h"};
   flit::FlitOptions expected;
   expected.help = true;
-  auto actual = flit::parseArguments(2, argList);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
 TH_REGISTER(tst_parseArguments_one_flag);
 
 void tst_parseArguments_short_flags() {
-  const char* argList[17] = {"progName",
+  std::vector<const char*> argList = {"progName",
     "-h", "-v", "-t", "-L", "-c", // bool flags
     "-l", "323",
     "-r", "21",
     "-p", "double",
     "-o", "out.txt",
+    "-s", "mysuffix.csv",
+    "-g", "gtrun.csv",
     "comp1", "comp2", "comp3",
   };
   flit::FlitOptions expected;
   expected.help = true;
   expected.verbose = true;
-  expected.timing = true;
+  expected.timing = false;
   expected.listTests = true;
   expected.compareMode = true;
   expected.timingLoops = 323;
   expected.timingRepeats = 21;
   expected.precision = "double";
   expected.output = "out.txt";
+  expected.compareGtFile = "gtrun.csv";
+  expected.compareSuffix = "mysuffix.csv";
   expected.compareFiles = {"comp1", "comp2", "comp3"};
-  auto actual = flit::parseArguments(17, argList);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
 TH_REGISTER(tst_parseArguments_short_flags);
 
 void tst_parseArguments_long_flags() {
-  const char* argList[17] = {"progName",
-    "--help", "--verbose", "--timing", "--list-tests", "--compare-mode",
+  std::vector<const char*> argList = {"progName",
+    "--help", "--verbose", "--list-tests", "--compare-mode", "--timing",
     "--timing-loops", "323",
     "--timing-repeats", "21",
     "--precision", "double",
     "--output", "out.txt",
+    "--compare-gt", "my-gtrun-output-csv",
+    "--suffix", "my-suffix",
     "comp1", "comp2", "comp3",
   };
   flit::FlitOptions expected;
@@ -300,26 +347,50 @@ void tst_parseArguments_long_flags() {
   expected.timingRepeats = 21;
   expected.precision = "double";
   expected.output = "out.txt";
+  expected.compareGtFile = "my-gtrun-output-csv";
+  expected.compareSuffix = "my-suffix";
   expected.compareFiles = {"comp1", "comp2", "comp3"};
-  auto actual = flit::parseArguments(17, argList);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
 TH_REGISTER(tst_parseArguments_long_flags);
 
+void tst_parseArguments_compare_test_names() {
+  // tests that the parseArguments does not read the files - keep it simple
+  TempFile tmpf;
+  tmpf.out << "name,precision,score_hex,resultfile,nanosec\n"
+           << "test1,d,0x0,NULL,0\n"
+           << "test2,d,0x0,NULL,0\n"
+           << "test3,d,0x0,NULL,0";
+  tmpf.out.flush();
+  std::vector<const char*> argList = {"progName",
+    "--compare-mode", tmpf.name.c_str()
+  };
+  flit::FlitOptions expected;
+  expected.compareMode = true;
+  expected.timing = false;
+  expected.compareFiles = {tmpf.name};
+  auto actual = flit::parseArguments(argList.size(), argList.data());
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_parseArguments_compare_test_names);
+
 void tst_parseArguments_unrecognized_flag() {
-  const char* argList[2] = {"progName", "-T"};
-  TH_THROWS(flit::parseArguments(2, argList), flit::ParseException);
+  std::vector<const char*> argList = {"progName", "-T"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
 }
 TH_REGISTER(tst_parseArguments_unrecognized_flag);
 
 void tst_parseArguments_unknown_precision() {
-  const char* argList[3] = {"progName", "--precision", "half"};
-  TH_THROWS(flit::parseArguments(2, argList), flit::ParseException);
+  std::vector<const char*> argList = {"progName", "--precision", "half"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
 }
 TH_REGISTER(tst_parseArguments_unknown_precision);
 
 void tst_parseArguments_valid_precisions() {
-  const char* argList[10] = {"progName",
+  std::vector<const char*> argList = {"progName",
     "--precision", "all",
     "--precision", "float",
     "--precision", "double",
@@ -329,43 +400,57 @@ void tst_parseArguments_valid_precisions() {
   flit::FlitOptions expected;
   expected.precision = "long double";
   expected.timing = false;
-  auto actual = flit::parseArguments(10, argList);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
 }
 TH_REGISTER(tst_parseArguments_valid_precisions);
 
 void tst_parseArguments_requires_argument() {
-  const char* argList1[2] = {"progName", "--precision"};
-  TH_THROWS(flit::parseArguments(2, argList1), flit::ParseException);
-  const char* argList2[2] = {"progName", "--timing-loops"};
-  TH_THROWS(flit::parseArguments(2, argList2), flit::ParseException);
-  const char* argList3[2] = {"progName", "--timing-repeats"};
-  TH_THROWS(flit::parseArguments(2, argList3), flit::ParseException);
-  const char* argList4[2] = {"progName", "--output"};
-  TH_THROWS(flit::parseArguments(2, argList4), flit::ParseException);
+  std::vector<const char*> argList;
+  argList = {"progName", "--precision"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
+  argList = {"progName", "--timing-loops"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
+  argList = {"progName", "--timing-repeats"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
+  argList = {"progName", "--output"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
+  argList = {"progName", "--compare-gt"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
+  argList = {"progName", "--suffix"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
 
   // Giving a flag after a parameter option will result in the parameter option
   // assuming the flag is the argument to store.
-  const char* argList5[3] = {"progName", "--output", "--help"};
+  argList = {"progName", "--output", "--help"};
   flit::FlitOptions expected;
   expected.output = "--help";
-  auto actual = flit::parseArguments(3, argList5);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
 }
 TH_REGISTER(tst_parseArguments_requires_argument);
 
 void tst_parseArguments_expects_integers() {
-  const char* argList1[3] = {"progName", "--timing-loops", "123abc"};
+  std::vector<const char*> argList;
+  argList = {"progName", "--timing-loops", "123abc"};
   flit::FlitOptions expected;
   expected.timingLoops = 123;
-  auto actual = flit::parseArguments(3, argList1);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
   
-  const char* argList2[3] = {"progName", "--timing-loops", "abc"};
-  TH_THROWS(flit::parseArguments(3, argList2), flit::ParseException);
+  argList = {"progName", "--timing-loops", "abc"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
   
-  const char* argList3[3] = {"progName", "--timing-repeats", "abc"};
-  TH_THROWS(flit::parseArguments(3, argList3), flit::ParseException);
+  argList = {"progName", "--timing-repeats", "abc"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
 }
 TH_REGISTER(tst_parseArguments_expects_integers);
 
@@ -378,16 +463,18 @@ void tst_parseArguments_specify_tests() {
   TestContainerDeleter deleter;
   (void)deleter;  // suppresses the warning that deleter is not used
 
-  const char* argList[3] = {"progName", "test1", "test2"};
-  TH_THROWS(flit::parseArguments(3, argList), flit::ParseException);
+  std::vector<const char*> argList = {"progName", "test1", "test2"};
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
 
   flit::getTests()["test1"] = nullptr;
-  TH_THROWS(flit::parseArguments(3, argList), flit::ParseException);
+  TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
+            flit::ParseException);
 
   flit::getTests()["test2"] = nullptr;
   flit::FlitOptions expected;
   expected.tests = {"test1", "test2"};
-  auto actual = flit::parseArguments(3, argList);
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
 }
 TH_REGISTER(tst_parseArguments_specify_tests);
@@ -403,18 +490,19 @@ void tst_parseArguments_all_tests_expand() {
   flit::getTests()["test3"] = nullptr;
 
   // even if tests are provided, if "all" is there, just have each test once
-  const char* argList1[3] = {"progName", "test3", "all"};
-  auto actual1 = flit::parseArguments(3, argList1);
-  TH_EQUAL(1, std::count(actual1.tests.begin(), actual1.tests.end(), "test1"));
-  TH_EQUAL(1, std::count(actual1.tests.begin(), actual1.tests.end(), "test2"));
-  TH_EQUAL(1, std::count(actual1.tests.begin(), actual1.tests.end(), "test3"));
+  std::vector<const char*> argList;
+  argList = {"progName", "test3", "all"};
+  auto actual = flit::parseArguments(argList.size(), argList.data());
+  TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test1"));
+  TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test2"));
+  TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test3"));
 
   // if no tests are provided, then use all tests
-  const char* argList2[1] = {"progName"};
-  auto actual2 = flit::parseArguments(1, argList2);
-  TH_EQUAL(1, std::count(actual2.tests.begin(), actual2.tests.end(), "test1"));
-  TH_EQUAL(1, std::count(actual2.tests.begin(), actual2.tests.end(), "test2"));
-  TH_EQUAL(1, std::count(actual2.tests.begin(), actual2.tests.end(), "test3"));
+  argList = {"progName"};
+  actual = flit::parseArguments(argList.size(), argList.data());
+  TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test1"));
+  TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test2"));
+  TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test3"));
 }
 TH_REGISTER(tst_parseArguments_all_tests_expand);
 
@@ -428,8 +516,8 @@ void tst_parseArguments_specify_test_more_than_once() {
   flit::getTests()["test2"] = nullptr;
   flit::getTests()["test3"] = nullptr;
 
-  const char* argList[4] = {"progName", "test2", "test3", "test2"};
-  auto actual = flit::parseArguments(4, argList);
+  std::vector<const char*> argList = {"progName", "test2", "test3", "test2"};
+  auto actual = flit::parseArguments(argList.size(), argList.data());
   decltype(actual.tests) expected_tests {"test2", "test3", "test2"};
   TH_EQUAL(actual.tests, expected_tests);
 }
@@ -458,6 +546,8 @@ void tst_usage() {
   TH_VERIFY(usage_contains("-r REPEATS, --timing-repeats REPEATS"));
   TH_VERIFY(usage_contains("-o OUTFILE, --output OUTFILE"));
   TH_VERIFY(usage_contains("-c, --compare-mode"));
+  TH_VERIFY(usage_contains("-g GT_RESULTS, --compare-gt GT_RESULTS"));
+  TH_VERIFY(usage_contains("-s SUFFIX, --suffix SUFFIX"));
   TH_VERIFY(usage_contains("-p PRECISION, --precision PRECISION"));
   TH_VERIFY(usage_contains("'float'"));
   TH_VERIFY(usage_contains("'double'"));
@@ -467,26 +557,7 @@ void tst_usage() {
 TH_REGISTER(tst_usage);
 
 void tst_readFile_exists() {
-  struct TmpFile {
-    std::ofstream out;
-    std::string fname;
-
-    TmpFile() {
-      char fname_buf[L_tmpnam];
-      auto ptr = std::tmpnam(fname_buf); // gives a warning, but I'm not worried
-
-      fname = fname_buf;
-      fname += "-tst_flit.in";           // this makes the danger much less likely
-      out.exceptions(std::ios::failbit);
-      out.open(fname);
-    }
-
-    ~TmpFile() {
-      out.close();
-      std::remove(fname.c_str());
-    }
-  };
-  TmpFile tmp;
+  TempFile tmpf;
   std::string contents =
     "This is the sequence of characters and lines\n"
     "that I want to check that the readFile()\n"
@@ -494,10 +565,10 @@ void tst_readFile_exists() {
     "\n"
     "\n"
     "You okay with that?";
-  tmp.out << contents;
-  tmp.out.flush();
+  tmpf.out << contents;
+  tmpf.out.flush();
 
-  TH_EQUAL(contents, flit::readFile(tmp.fname));
+  TH_EQUAL(contents, flit::readFile(tmpf.name));
 }
 TH_REGISTER(tst_readFile_exists);
 
@@ -524,7 +595,7 @@ namespace flit {
 }
 void tst_parseResults() {
   std::istringstream in(
-      "name,precision,score,resultfile,nanosec\n"
+      "name,precision,score_hex,resultfile,nanosec\n"
       "Mike,double,0x00000000000000000000,output.txt,149293\n"
       "Brady,long double,0x3fff8000000000000000,NULL,-1\n"
       "Julia,float,NULL,test-output.txt,498531\n"
@@ -549,22 +620,22 @@ void tst_parseResults_invalid_format() {
   TH_THROWS(flit::parseResults(in), std::invalid_argument);
 
   // empty row
-  in.str("name,precision,score,resultfile,nanosec\n"
+  in.str("name,precision,score_hex,resultfile,nanosec\n"
          "\n");
   TH_THROWS(flit::parseResults(in), std::out_of_range);
 
   // non-integer nanosec
-  in.str("name,precision,score,resultfile,nanosec\n"
+  in.str("name,precision,score_hex,resultfile,nanosec\n"
          "Mike,double,0x0,NULL,bob\n");
   TH_THROWS(flit::parseResults(in), std::invalid_argument);
 
   // non-integer score
-  in.str("name,precision,score,resultfile,nanosec\n"
+  in.str("name,precision,score_hex,resultfile,nanosec\n"
          "Mike,double,giraffe,NULL,323\n");
   TH_THROWS(flit::parseResults(in), std::invalid_argument);
 
   // doesn't end in a newline.  Make sure it doesn't throw
-  in.str("name,precision,score,resultfile,nanosec\n"
+  in.str("name,precision,score_hex,resultfile,nanosec\n"
          "Mike,double,0x0,NULL,323");
   auto actual = flit::parseResults(in);
   decltype(actual) expected;
@@ -620,3 +691,56 @@ void tst_removeIdxFromName() {
   TH_THROWS(flit::removeIdxFromName("hello there_idxa"), std::invalid_argument);
 }
 TH_REGISTER(tst_removeIdxFromName);
+
+void tst_calculateMissingComparisons_empty() {
+  flit::FlitOptions options;
+  std::vector<std::string> expected;
+  auto actual = calculateMissingComparisons(options);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_calculateMissingComparisons_empty);
+
+void tst_calculateMissingComparisons_noGtFile() {
+  flit::FlitOptions options;
+  options.compareMode = true;
+  TempFile tmpf;
+  tmpf.out << "name,precision,score_hex,resultfile,nanosec\n"
+           << "test1,d,0x0,NULL,0\n"
+           << "test2,d,0x0,NULL,0\n"
+           << "test3,d,0x0,NULL,0";
+  tmpf.out.flush();
+  options.compareFiles = {tmpf.name};
+  std::vector<std::string> expected = {"test1", "test2", "test3"};
+  auto actual = calculateMissingComparisons(options);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_calculateMissingComparisons_noGtFile);
+
+void tst_calculateMissingComparisons_withGtFile() {
+  TempFile compf1;
+  compf1.out << "name,precision,score_hex,resultfile,nanosec\n"
+             << "test1,d,0x0,NULL,0\n"
+             << "test2,d,0x0,NULL,0\n"
+             << "test3,d,0x0,NULL,0\n";
+  compf1.out.flush();
+  TempFile compf2;
+  compf2.out << "name,precision,score_hex,resultfile,nanosec\n"
+             << "test2,d,0x0,NULL,0\n"
+             << "test4,d,0x0,NULL,0\n"
+             << "test6,d,0x0,NULL,0\n";
+  compf2.out.flush();
+  TempFile gtf;
+  gtf.out << "name,precision,score_hex,resultfile,nanosec\n"
+          << "test1,d,0x0,NULL,0\n"
+          << "test2,d,0x0,NULL,0\n"
+          << "test5,d,0x0,NULL,0\n";
+  gtf.out.flush();
+  flit::FlitOptions options;
+  options.compareMode = true;
+  options.compareFiles = {compf1.name, compf2.name};
+  options.compareGtFile = gtf.name;
+  std::vector<std::string> expected = {"test3", "test4", "test6"};
+  auto actual = calculateMissingComparisons(options);
+  TH_EQUAL(expected, actual);
+}
+TH_REGISTER(tst_calculateMissingComparisons_withGtFile);

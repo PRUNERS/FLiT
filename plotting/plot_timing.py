@@ -145,7 +145,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
     
     # Make sure outdir exists
     try:
-        os.mkdir(outdir)
+        os.makedirs(outdir)
     except FileExistsError:
         pass
 
@@ -172,10 +172,10 @@ def plot_timing(rows, test_names=[], outdir='.'):
                 data['fastest'] = min(data['times'])
                 data['slowest'] = max(data['times'])
                 # TODO: instead of calculating the speedup using the slowest
-                # TODO: time, use the ground-truth time.
+                # TODO- time, use the ground-truth time.
                 data['speedup'] = data['slowest'] / data['times']
                 data['xlab'] = [to_x_label(row) for row in data['rows']]
-                data['iseql'] = [float(row['comparison_d']) == 0.0
+                data['iseql'] = [float(row['comparison']) == 0.0
                                  for row in data['rows']]
                 key = (name, host, p)
                 test_data[key] = data
@@ -197,7 +197,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
         eql_speeds = [speedup[i] for i in eql_idxs]
         not_eql_speeds = [speedup[i] for i in not_eql_idxs]
 
-        plt.figure(num=1, figsize=(12.5,5), dpi=80)
+        plt.figure(num=1, figsize=(3 + 0.13*len(speedup), 5), dpi=80)
         plt.plot(speedup)
         plt.plot(eql_idxs, eql_speeds, 'b.',
                  label='same answer as ground truth')
@@ -210,6 +210,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
         plt.tight_layout()
         newname = '{0}-{1}-{2}.svg'.format(name, host, p)
         plt.savefig(os.path.join(outdir, newname), format='svg')
+        print('Created', os.path.join(outdir, newname))
         plt.cla()
 
 def main(arguments):
