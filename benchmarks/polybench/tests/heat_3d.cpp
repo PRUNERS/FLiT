@@ -104,9 +104,9 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N*N*N, N*N*N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> B = split_vector(sizes, 1, ti);
+    auto split = split_vector(ti, {N*N*N, N*N*N});
+    auto &A = split[0];
+    auto &B = split[1];
 
     int t, i, j, k;
 
@@ -114,20 +114,35 @@ protected:
       for (i = 1; i < N-1; i++) {
         for (j = 1; j < N-1; j++) {
           for (k = 1; k < N-1; k++) {
-            B[i*N*N + j*N +k] =   static_cast<T>(0.125) * (A[(i+1)*N*N + j*N +k] - static_cast<T>(2.0) * A[i*N*N + j*N +k] + A[(i-1)*N*N + j*N +k])
-              + static_cast<T>(0.125) * (A[i*N*N + (j+1)*N +k] - static_cast<T>(2.0) * A[i*N*N + j*N +k] + A[i*N*N + (j-1)*N*N + k])
-              + static_cast<T>(0.125) * (A[i*N*N + j*N +k+1] - static_cast<T>(2.0) * A[i*N*N + j*N +k] + A[i*N*N + j*N +k-1])
-              + A[i*N*N + j*N +k];
+            B[i*N*N + j*N +k] =
+                T(0.125) * (A[(i+1)*N*N + j*N +k] - T(2.0) * A[i*N*N + j*N +k] +
+                            A[(i-1)*N*N + j*N +k])
+                +
+                T(0.125) * (A[i*N*N + (j+1)*N +k] - T(2.0) * A[i*N*N + j*N +k] +
+                            A[i*N*N + (j-1)*N*N + k])
+                +
+                T(0.125) * (A[i*N*N + j*N +k+1] - T(2.0) * A[i*N*N + j*N +k] +
+                            A[i*N*N + j*N +k-1])
+                +
+                A[i*N*N + j*N +k];
           }
         }
       }
       for (i = 1; i < N-1; i++) {
         for (j = 1; j < N-1; j++) {
           for (k = 1; k < N-1; k++) {
-            A[i*N*N + j*N +k] =   static_cast<T>(0.125) * (B[(i+1)*N*N + j*N +k] - static_cast<T>(2.0) * B[i*N*N + j*N +k] + B[(i-1)*N*N + j*N +k])
-              + static_cast<T>(0.125) * (B[i*N*N + (j+1)*N*N + k] - static_cast<T>(2.0) * B[i*N*N + j*N +k] + B[i*N*N + (j-1)*N*N + k])
-              + static_cast<T>(0.125) * (B[i*N*N + j*N +k+1] - static_cast<T>(2.0) * B[i*N*N + j*N +k] + B[i*N*N + j*N +k-1])
-              + B[i*N*N + j*N +k];
+            A[i*N*N + j*N +k] =
+                T(0.125) * (B[(i+1)*N*N + j*N +k] - T(2.0) * B[i*N*N + j*N +k] +
+                            B[(i-1)*N*N + j*N +k])
+                +
+                T(0.125) * (B[i*N*N + (j+1)*N*N + k] -
+                            T(2.0) * B[i*N*N + j*N +k] +
+                            B[i*N*N + (j-1)*N*N + k])
+                +
+                T(0.125) * (B[i*N*N + j*N + k+1] - T(2.0) * B[i*N*N + j*N + k] +
+                            B[i*N*N + j*N + k-1])
+                +
+                B[i*N*N + j*N +k];
           }
         }
       }

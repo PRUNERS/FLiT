@@ -104,29 +104,26 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    T alpha = static_cast<T>(1.5);
-    T beta = static_cast<T>(1.2);
-    std::vector<int> sizes = {N*N, N*N, N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> B = split_vector(sizes, 1, ti);
-    std::vector<T> x = split_vector(sizes, 2, ti);
+    T alpha{1.5};
+    T beta{1.2};
+    auto split = split_vector(ti, {N*N, N*N, N});
+    auto &A = split[0];
+    auto &B = split[1];
+    auto &x = split[2];
 
-    std::vector<T> tmp(N);
-    std::vector<T> y(N);
+    std::vector<T> tmp(N), y(N);
 
     int i, j;
 
-    for (i = 0; i < N; i++)
-      {
-        tmp[i] = static_cast<T>(0.0);
-        y[i] = static_cast<T>(0.0);
-        for (j = 0; j < N; j++)
-          {
-            tmp[i] = A[i*N + j] * x[j] + tmp[i];
-            y[i] = B[i*N + j] * x[j] + y[i];
-          }
-        y[i] = alpha * tmp[i] + beta * y[i];
+    for (i = 0; i < N; i++) {
+      tmp[i] = T(0.0);
+      y[i] = T(0.0);
+      for (j = 0; j < N; j++) {
+        tmp[i] = A[i*N + j] * x[j] + tmp[i];
+        y[i] = B[i*N + j] * x[j] + y[i];
       }
+      y[i] = alpha * tmp[i] + beta * y[i];
+    }
 
     return pickles({tmp, y});
   }

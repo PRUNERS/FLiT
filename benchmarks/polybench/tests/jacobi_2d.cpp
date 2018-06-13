@@ -104,21 +104,26 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N*N, N*N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> B = split_vector(sizes, 1, ti);
+    auto split = split_vector(ti, {N*N, N*N});
+    auto &A = split[0];
+    auto &B = split[1];
 
     int t, i, j;
 
-    for (t = 0; t < TSTEPS; t++)
-      {
-        for (i = 1; i < N - 1; i++)
-          for (j = 1; j < N - 1; j++)
-            B[i*N + j] = static_cast<T>(0.2) * (A[i*N + j] + A[i*N + j-1] + A[i*N + 1+j] + A[(1+i)*N + j] + A[(i-1)*N + j]);
-        for (i = 1; i < N - 1; i++)
-          for (j = 1; j < N - 1; j++)
-            A[i*N + j] = static_cast<T>(0.2) * (B[i*N + j] + B[i*N + j-1] + B[i*N + 1+j] + B[(1+i)*N + j] + B[(i-1)*N + j]);
+    for (t = 0; t < TSTEPS; t++) {
+      for (i = 1; i < N - 1; i++) {
+        for (j = 1; j < N - 1; j++) {
+          B[i*N + j] = T(0.2) * (A[i*N + j] + A[i*N + j-1] + A[i*N + 1+j] +
+                                 A[(1+i)*N + j] + A[(i-1)*N + j]);
+        }
       }
+      for (i = 1; i < N - 1; i++) {
+        for (j = 1; j < N - 1; j++) {
+          A[i*N + j] = T(0.2) * (B[i*N + j] + B[i*N + j-1] + B[i*N + 1+j] +
+                                 B[(1+i)*N + j] + B[(i-1)*N + j]);
+        }
+      }
+    }
 
     return pickles({A, B});
   }

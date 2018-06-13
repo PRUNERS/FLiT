@@ -104,26 +104,27 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    T alpha = static_cast<T>(1.5);
-    T beta = static_cast<T>(1.2);
-    std::vector<int> sizes = {M*N, M*M, M*N};
-    std::vector<T> C = split_vector(sizes, 0, ti);
-    std::vector<T> A = split_vector(sizes, 1, ti);
-    std::vector<T> B = split_vector(sizes, 2, ti);
+    T alpha{1.5};
+    T beta{1.2};
+    auto split = split_vector(ti, {M*N, M*M, M*N});
+    auto &C = split[0];
+    auto &A = split[1];
+    auto &B = split[2];
 
     int i, j, k;
     T temp2;
 
-    for (i = 0; i < M; i++)
-      for (j = 0; j < N; j++ )
-        {
-          temp2 = 0;
-          for (k = 0; k < i; k++) {
-            C[k*M +j] += alpha*B[i*M +j] * A[i*M +k];
-            temp2 += B[k*M +j] * A[i*M +k];
-          }
-          C[i*M +j] = beta * C[i*M +j] + alpha*B[i*M +j] * A[i*M +i] + alpha * temp2;
+    for (i = 0; i < M; i++) {
+      for (j = 0; j < N; j++ ) {
+        temp2 = 0;
+        for (k = 0; k < i; k++) {
+          C[k*M +j] += alpha*B[i*M +j] * A[i*M +k];
+          temp2 += B[k*M +j] * A[i*M +k];
         }
+        C[i*M +j] = beta * C[i*M +j] + alpha*B[i*M +j] * A[i*M +i]
+                    + alpha * temp2;
+      }
+    }
 
     return pickles({C});
   }

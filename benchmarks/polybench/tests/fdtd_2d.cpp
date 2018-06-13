@@ -104,29 +104,35 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {NX*NY, NX*NY, NX*NY, TMAX};
-    std::vector<T> ex = split_vector(sizes, 0, ti);
-    std::vector<T> ey = split_vector(sizes, 1, ti);
-    std::vector<T> hz = split_vector(sizes, 2, ti);
-    std::vector<T> _fict_ = split_vector(sizes, 3, ti);
+    auto split = split_vector(ti, {NX*NY, NX*NY, NX*NY, TMAX});
+    auto &ex = split[0];
+    auto &ey = split[1];
+    auto &hz = split[2];
+    auto &_fict_ = split[3];
 
     int t, i, j;
 
-    for(t = 0; t < TMAX; t++)
-      {
-        for (j = 0; j < NY; j++)
-          ey[0*NX + j] = _fict_[t];
-        for (i = 1; i < NX; i++)
-          for (j = 0; j < NY; j++)
-            ey[i*NX + j] = ey[i*NX + j] - static_cast<T>(0.5)*(hz[i*NX + j]-hz[(i-1)*NX + j]);
-        for (i = 0; i < NX; i++)
-          for (j = 1; j < NY; j++)
-            ex[i*NX + j] = ex[i*NX + j] - static_cast<T>(0.5)*(hz[i*NX + j]-hz[i*NX + j-1]);
-        for (i = 0; i < NX - 1; i++)
-          for (j = 0; j < NY - 1; j++)
-            hz[i*NX + j] = hz[i*NX + j] - static_cast<T>(0.7)*  (ex[i*NX + j+1] - ex[i*NX + j] +
-                                                                 ey[(i+1)*NX + j] - ey[i*NX + j]);
+    for(t = 0; t < TMAX; t++) {
+      for (j = 0; j < NY; j++) {
+        ey[0*NX + j] = _fict_[t];
       }
+      for (i = 1; i < NX; i++) {
+        for (j = 0; j < NY; j++) {
+          ey[i*NX + j] -= T(0.5) * (hz[i*NX + j] - hz[(i-1)*NX + j]);
+        }
+      }
+      for (i = 0; i < NX; i++) {
+        for (j = 1; j < NY; j++) {
+          ex[i*NX + j] -= T(0.5) * (hz[i*NX + j] - hz[i*NX + j-1]);
+        }
+      }
+      for (i = 0; i < NX - 1; i++) {
+        for (j = 0; j < NY - 1; j++) {
+          hz[i*NX + j] -= T(0.7) * (ex[i*NX + j+1] - ex[i*NX + j] +
+                                    ey[(i+1)*NX + j] - ey[i*NX + j]);
+        }
+      }
+    }
 
     return pickles({ex, ey, hz});
   }

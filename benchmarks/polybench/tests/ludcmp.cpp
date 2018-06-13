@@ -104,11 +104,11 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N*N, N, N, N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> b = split_vector(sizes, 1, ti);
-    std::vector<T> x = split_vector(sizes, 2, ti);
-    std::vector<T> y = split_vector(sizes, 3, ti);
+    auto split = split_vector(ti, {N*N, N, N, N});
+    auto &A = split[0];
+    auto &b = split[1];
+    auto &x = split[2];
+    auto &y = split[3];
 
     int i, j, k;
 
@@ -133,15 +133,17 @@ protected:
 
     for (i = 0; i < N; i++) {
       w = b[i];
-      for (j = 0; j < i; j++)
+      for (j = 0; j < i; j++) {
         w -= A[i*N + j] * y[j];
+      }
       y[i] = w;
     }
 
     for (i = N-1; i >=0; i--) {
       w = y[i];
-      for (j = i+1; j < N; j++)
+      for (j = i+1; j < N; j++) {
         w -= A[i*N + j] * x[j];
+      }
       x[i] = w / A[i*N + i];
     }
 

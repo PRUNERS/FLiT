@@ -104,33 +104,26 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N};
-    std::vector<T> r = split_vector(sizes, 0, ti);
-    std::vector<T> y(N);
-
-    std::vector<T> z(N);
-    T alpha;
-    T beta;
-    T sum;
-
-    int i,k;
-
+    auto &r = ti;
+    std::vector<T> y(N), z(N);
     y[0] = -r[0];
-    beta = static_cast<T>(1.0);
-    alpha = -r[0];
+
+    T alpha{-r[0]}, beta{1.0}, sum;
+
+    int i, k;
 
     for (k = 1; k < N; k++) {
       beta = (1-alpha*alpha)*beta;
-      sum = static_cast<T>(0.0);
-      for (i=0; i<k; i++) {
-        sum += r[k-i-1]*y[i];
+      sum = T(0.0);
+      for (i = 0; i < k; i++) {
+        sum += r[k-i-1] * y[i];
       }
       alpha = - (r[k] + sum)/beta;
 
-      for (i=0; i<k; i++) {
+      for (i = 0; i < k; i++) {
         z[i] = y[i] + alpha*y[k-i-1];
       }
-      for (i=0; i<k; i++) {
+      for (i = 0; i < k; i++) {
         y[i] = z[i];
       }
       y[k] = alpha;

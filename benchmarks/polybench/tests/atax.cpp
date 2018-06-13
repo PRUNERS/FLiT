@@ -104,28 +104,25 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {M*N, N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> x = split_vector(sizes, 1, ti);
-    std::vector<T> y(N);
-    std::vector<T> tmp(M);
+    auto split = split_vector(ti, {M*N, N});
+    auto &A = split[0];
+    auto &x = split[1];
+    std::vector<T> y(N), tmp(M);
 
-    int i,j;
+    int i, j;
 
-    for (i = 0; i < N; i++)
-      y[i] = 0;
-    for (i = 0; i < M; i++)
-      {
-        tmp[i] = static_cast<T>(0.0);
-        for (j = 0; j < N; j++)
-          tmp[i] = tmp[i] + A[i*M + j] * x[j];
-        for (j = 0; j < N; j++)
-          y[j] = y[j] + A[i*M + j] * tmp[i];
+    for (i = 0; i < M; i++) {
+      tmp[i] = T(0.0);
+      for (j = 0; j < N; j++) {
+        tmp[i] += A[i*M + j] * x[j];
       }
-
+      for (j = 0; j < N; j++) {
+        y[j] += A[i*M + j] * tmp[i];
+      }
+    }
 
     return pickles({y, tmp});
-}
+  }
 
 protected:
 using flit::TestBase<T>::id;

@@ -104,19 +104,20 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N, N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> B = split_vector(sizes, 1, ti);
+    auto split = split_vector(ti, {N, N});
+    auto &A = split[0];
+    auto &B = split[1];
 
     int t, i;
 
-    for (t = 0; t < TSTEPS; t++)
-      {
-        for (i = 1; i < N - 1; i++)
-          B[i] = 0.33333 * (A[i-1] + A[i] + A[i + 1]);
-        for (i = 1; i < N - 1; i++)
-          A[i] = 0.33333 * (B[i-1] + B[i] + B[i + 1]);
+    for (t = 0; t < TSTEPS; t++) {
+      for (i = 1; i < N - 1; i++) {
+        B[i] = T(0.33333) * (A[i-1] + A[i] + A[i + 1]);
       }
+      for (i = 1; i < N - 1; i++) {
+        A[i] = T(0.33333) * (B[i-1] + B[i] + B[i + 1]);
+      }
+    }
 
     return pickles({A, B});
   }

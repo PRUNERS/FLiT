@@ -104,18 +104,18 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N*N};
-    std::vector<T> path = split_vector(sizes, 0, ti);
+    auto path = ti;
 
     int i, j, k;
 
-    for (k = 0; k < N; k++)
-      {
-        for(i = 0; i < N; i++)
-          for (j = 0; j < N; j++)
-            path[i*N + j] = path[i*N + j] < path[i*N + k] + path[k*N + j] ?
-                                            path[i*N + j] : path[i*N + k] + path[k*N + j];
+    for (k = 0; k < N; k++) {
+      for(i = 0; i < N; i++) {
+        for (j = 0; j < N; j++) {
+          path[i*N + j] = path[i*N + j] < path[i*N + k] + path[k*N + j] ?
+                            path[i*N + j] : path[i*N + k] + path[k*N + j];
+        }
       }
+    }
 
     return pickles({path});
   }

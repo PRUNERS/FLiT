@@ -104,8 +104,7 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {N*N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
+    auto A = ti;
 
     int i, j, k;
 

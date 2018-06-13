@@ -104,20 +104,21 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {M*M, M*N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> B = split_vector(sizes, 1, ti);
-    T alpha = static_cast<T>(1.5);
+    auto split = split_vector(ti, {M*M, M*N});
+    auto &A = split[0];
+    auto &B = split[1];
+    T alpha{1.5};
 
     int i, j, k;
 
-    for (i = 0; i < M; i++)
+    for (i = 0; i < M; i++) {
       for (j = 0; j < N; j++) {
-        for (k = i+1; k < M; k++)
+        for (k = i+1; k < M; k++) {
           B[i*M + j] += A[k*M + i] * B[k*M + j];
+        }
         B[i*M + j] = alpha * B[i*M + j];
       }
-
+    }
 
     return pickles({B});
   }

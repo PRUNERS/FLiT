@@ -104,24 +104,26 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {NR*NQ*NP, NP*NP};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> C4 = split_vector(sizes, 1, ti);
+    auto split = split_vector(ti, {NR*NQ*NP, NP*NP});
+    auto &A = split[0];
+    auto &C4 = split[1];
     std::vector<T> sum(NP);
 
     int r, q, p, s;
 
-    for (r = 0; r < NR; r++)
-      for (q = 0; q < NQ; q++)  {
-        for (p = 0; p < NP; p++)  {
-          sum[p] = static_cast<T>(0.0);
-          for (s = 0; s < NP; s++)
+    for (r = 0; r < NR; r++) {
+      for (q = 0; q < NQ; q++) {
+        for (p = 0; p < NP; p++) {
+          sum[p] = T(0.0);
+          for (s = 0; s < NP; s++) {
             sum[p] += A[r*NR*NQ + q*NQ + s] * C4[s*NP + p];
+          }
         }
-        for (p = 0; p < NP; p++)
+        for (p = 0; p < NP; p++) {
           A[r*NR*NQ + q*NQ + p] = sum[p];
+        }
       }
-
+    }
 
     return pickles({A, sum});
   }

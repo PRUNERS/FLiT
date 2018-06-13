@@ -104,32 +104,34 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {NI*NK, NK*NJ, NJ*NL, NI*NL};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> B = split_vector(sizes, 1, ti);
-    std::vector<T> C = split_vector(sizes, 2, ti);
-    std::vector<T> D = split_vector(sizes, 3, ti);
+    auto split = split_vector(ti, {NI*NK, NK*NJ, NJ*NL, NI*NL});
+    auto &A = split[0];
+    auto &B = split[1];
+    auto &C = split[2];
+    auto &D = split[3];
     std::vector<T> tmp(NI*NJ);
-    T alpha = static_cast<T>(1.5);
-    T beta = static_cast<T>(1.2);
+    T alpha{1.5};
+    T beta{1.2};
 
     int i, j, k;
 
     /* D := alpha*A*B*C + beta*D */
-    for (i = 0; i < NI; i++)
-      for (j = 0; j < NJ; j++)
-        {
-          tmp[i*NI + j] = static_cast<T>(0.0);
-          for (k = 0; k < NK; ++k)
-            tmp[i*NI + j] += alpha * A[i*NI + k] * B[k*NK + j];
+    for (i = 0; i < NI; i++) {
+      for (j = 0; j < NJ; j++) {
+        tmp[i*NI + j] = T(0.0);
+        for (k = 0; k < NK; ++k) {
+          tmp[i*NI + j] += alpha * A[i*NI + k] * B[k*NK + j];
         }
-    for (i = 0; i < NI; i++)
-      for (j = 0; j < NL; j++)
-        {
-          D[i*NI + j] *= beta;
-          for (k = 0; k < NJ; ++k)
-            D[i*NI + j] += tmp[i*NI + k] * C[k*NJ + j];
+      }
+    }
+    for (i = 0; i < NI; i++) {
+      for (j = 0; j < NL; j++) {
+        D[i*NI + j] *= beta;
+        for (k = 0; k < NJ; ++k) {
+          D[i*NI + j] += tmp[i*NI + k] * C[k*NJ + j];
         }
+      }
+    }
 
     return pickles({tmp, D});
   }

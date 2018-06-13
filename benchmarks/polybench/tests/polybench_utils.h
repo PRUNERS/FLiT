@@ -225,16 +225,17 @@ pickles(std::initializer_list<std::vector<T>> cucumbers) {
 
 /// Splits the ti vector into multiple disjoint vectors specified by sizes
 template<typename T>
-std::vector<T>
-split_vector(std::vector<int> sizes, int index, std::vector<T> ti) {
-  int start = 0;
-  int end = 0;
-  int i = 0;
-  for (; i<index; i++) {
-    start += sizes[i];
+std::vector<std::vector<T>>
+split_vector(const std::vector<T> &ti, const std::vector<int> &sizes) {
+  std::vector<std::vector<T>> split;
+  auto start = ti.begin();
+  auto stop = start;
+  for (size_t i = 0; i < sizes.size(); i++) {
+    start = stop;
+    stop += sizes[i];
+    split.emplace_back(start, stop);
   }
-  end = start + sizes[i];
-  return std::vector<T>(ti.begin() + start, ti.begin() + end);
+  return split;
 }
 
 #endif // POLYBENCH_UTILS_H

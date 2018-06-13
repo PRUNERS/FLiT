@@ -104,15 +104,14 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    T float_n = static_cast<T>(N);
-    std::vector<T> data = ti;
-    std::vector<T> cov(M*M);
-    std::vector<T> mean(M);
+    T float_n{N};
+    auto data = ti;
+    std::vector<T> cov(M*M), mean(M);
 
     int i, j, k;
 
     for (j = 0; j < M; j++) {
-      mean[j] = static_cast<T>(0.0);
+      mean[j] = T(0.0);
       for (i = 0; i < N; i++) {
         mean[j] += data[i*N + j];
       }
@@ -127,11 +126,11 @@ protected:
 
     for (i = 0; i < M; i++) {
       for (j = i; j < M; j++) {
-        cov[i*M + j] = static_cast<T>(0.0);
+        cov[i*M + j] = T(0.0);
         for (k = 0; k < N; k++) {
           cov[i*M + j] += data[k*N + i] * data[k*N + j];
         }
-        cov[i*M + j] /= (float_n - static_cast<T>(1.0));
+        cov[i*M + j] /= (float_n - T(1.0));
         cov[j*M + i] = cov[i*M + j];
       }
     }

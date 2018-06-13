@@ -104,13 +104,12 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::vector<int> sizes = {W*H, W*H};
-    std::vector<T> imgIn = split_vector(sizes, 0, ti);
-    std::vector<T> imgOut = split_vector(sizes, 1, ti);
-    std::vector<T> y1(W*H);
-    std::vector<T> y2(W*H);
+    auto split = split_vector(ti, {W*H, W*H});
+    auto &imgIn = split[0];
+    auto &imgOut = split[1];
+    std::vector<T> y1(W*H), y2(W*H);
 
-    T alpha = static_cast<T>(0.25);
+    T alpha{0.25};
 
     int i,j;
     T xm1, tm1, ym1, ym2;
@@ -122,34 +121,37 @@ protected:
     T a1, a2, a3, a4, a5, a6, a7, a8;
     T b1, b2, c1, c2;
 
-    k = (static_cast<T>(1.0)-std::exp(-alpha))*(static_cast<T>(1.0)-std::exp(-alpha))/(static_cast<T>(1.0)+static_cast<T>(2.0)*alpha*std::exp(-alpha)-std::exp(static_cast<T>(2.0)*alpha));
+    k = (T(1.0) - std::exp(-alpha)) *
+        (T(1.0) - std::exp(-alpha))
+          / (T(1.0) + T(2.0) * alpha * std::exp(-alpha)
+             - std::exp(T(2.0) * alpha));
     a1 = a5 = k;
-    a2 = a6 = k*std::exp(-alpha)*(alpha-static_cast<T>(1.0));
-    a3 = a7 = k*std::exp(-alpha)*(alpha+static_cast<T>(1.0));
-    a4 = a8 = -k*std::exp(static_cast<T>(-2.0)*alpha);
-    b1 =  std::pow(static_cast<T>(2.0),-alpha);
-    b2 = -std::exp(static_cast<T>(-2.0)*alpha);
+    a2 = a6 = k * std::exp(-alpha) * (alpha - T(1.0));
+    a3 = a7 = k * std::exp(-alpha) * (alpha + T(1.0));
+    a4 = a8 = -k * std::exp(T(-2.0) * alpha);
+    b1 =  std::pow(T(2.0), -alpha);
+    b2 = -std::exp(T(-2.0) * alpha);
     c1 = c2 = 1;
 
-    for (i=0; i<W; i++) {
-      ym1 = static_cast<T>(0.0);
-      ym2 = static_cast<T>(0.0);
-      xm1 = static_cast<T>(0.0);
-      for (j=0; j<H; j++) {
-        y1[i*W + j] = a1*imgIn[i*W + j] + a2*xm1 + b1*ym1 + b2*ym2;
+    for (i = 0; i < W; i++) {
+      ym1 = T(0.0);
+      ym2 = T(0.0);
+      xm1 = T(0.0);
+      for (j = 0; j < H; j++) {
+        y1[i*W + j] = a1 * imgIn[i*W + j] + a2 * xm1 + b1 * ym1 + b2 * ym2;
         xm1 = imgIn[i*W + j];
         ym2 = ym1;
         ym1 = y1[i*W + j];
       }
     }
 
-    for (i=0; i<W; i++) {
-      yp1 = static_cast<T>(0.0);
-      yp2 = static_cast<T>(0.0);
-      xp1 = static_cast<T>(0.0);
-      xp2 = static_cast<T>(0.0);
-      for (j=H-1; j>=0; j--) {
-        y2[i*W + j] = a3*xp1 + a4*xp2 + b1*yp1 + b2*yp2;
+    for (i = 0; i < W; i++) {
+      yp1 = T(0.0);
+      yp2 = T(0.0);
+      xp1 = T(0.0);
+      xp2 = T(0.0);
+      for (j = H-1; j >= 0; j--) {
+        y2[i*W + j] = a3 * xp1 + a4 * xp2 + b1 * yp1 + b2 * yp2;
         xp2 = xp1;
         xp1 = imgIn[i*W + j];
         yp2 = yp1;
@@ -157,31 +159,31 @@ protected:
       }
     }
 
-    for (i=0; i<W; i++)
-      for (j=0; j<H; j++) {
+    for (i = 0; i < W; i++)
+      for (j = 0; j < H; j++) {
         imgOut[i*W + j] = c1 * (y1[i*W + j] + y2[i*W + j]);
       }
 
-    for (j=0; j<H; j++) {
-      tm1 = static_cast<T>(0.0);
-      ym1 = static_cast<T>(0.0);
-      ym2 = static_cast<T>(0.0);
-      for (i=0; i<W; i++) {
-        y1[i*W + j] = a5*imgOut[i*W + j] + a6*tm1 + b1*ym1 + b2*ym2;
+    for (j = 0; j < H; j++) {
+      tm1 = T(0.0);
+      ym1 = T(0.0);
+      ym2 = T(0.0);
+      for (i = 0; i < W; i++) {
+        y1[i*W + j] = a5 * imgOut[i*W + j] + a6 * tm1 + b1 * ym1 + b2 * ym2;
         tm1 = imgOut[i*W + j];
         ym2 = ym1;
-        ym1 = y1 [i*W + j];
+        ym1 = y1[i*W + j];
       }
     }
 
 
-    for (j=0; j<H; j++) {
-      tp1 = static_cast<T>(0.0);
-      tp2 = static_cast<T>(0.0);
-      yp1 = static_cast<T>(0.0);
-      yp2 = static_cast<T>(0.0);
-      for (i=W-1; i>=0; i--) {
-        y2[i*W + j] = a7*tp1 + a8*tp2 + b1*yp1 + b2*yp2;
+    for (j = 0; j < H; j++) {
+      tp1 = T(0.0);
+      tp2 = T(0.0);
+      yp1 = T(0.0);
+      yp2 = T(0.0);
+      for (i = W-1; i >= 0; i--) {
+        y2[i*W + j] = a7 * tp1 + a8 * tp2 + b1 * yp1 + b2 * yp2;
         tp2 = tp1;
         tp1 = imgOut[i*W + j];
         yp2 = yp1;
@@ -189,9 +191,11 @@ protected:
       }
     }
 
-    for (i=0; i<W; i++)
-      for (j=0; j<H; j++)
-        imgOut[i*W + j] = c2*(y1[i*W + j] + y2[i*W + j]);
+    for (i = 0; i < W; i++) {
+      for (j = 0; j < H; j++) {
+        imgOut[i*W + j] = c2 * (y1[i*W + j] + y2[i*W + j]);
+      }
+    }
 
     return pickles({imgOut, y1, y2});
   }

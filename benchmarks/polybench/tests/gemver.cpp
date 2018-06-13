@@ -104,20 +104,20 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    T alpha = static_cast<T>(1.5);
-    T beta = static_cast<T>(1.2);
-    std::vector<int> sizes = {N*N, N, N, N, N, N, N, N, N};
-    std::vector<T> A = split_vector(sizes, 0, ti);
-    std::vector<T> u1 = split_vector(sizes, 1, ti);
-    std::vector<T> v1 = split_vector(sizes, 2, ti);
-    std::vector<T> u2 = split_vector(sizes, 3, ti);
-    std::vector<T> v2 = split_vector(sizes, 4, ti);
-    std::vector<T> w = split_vector(sizes, 5, ti);
-    std::vector<T> x = split_vector(sizes, 6, ti);
-    std::vector<T> y = split_vector(sizes, 7, ti);
-    std::vector<T> z = split_vector(sizes, 8, ti);
+    T alpha{1.5};
+    T beta{1.2};
+    auto split = split_vector(ti, {N*N, N, N, N, N, N, N, N, N});
+    auto &A = split[0];
+    auto &u1 = split[1];
+    auto &v1 = split[2];
+    auto &u2 = split[3];
+    auto &v2 = split[4];
+    auto &w = split[5];
+    auto &x = split[6];
+    auto &y = split[7];
+    auto &z = split[8];
 
-    int i,j;
+    int i, j;
 
     for (i = 0; i < N; i++) {
       for (j = 0; j < N; j++) {
