@@ -90,6 +90,25 @@ namespace {
 } // end of unnamed namespace
 
 template <typename T>
+GLOBAL
+void
+RFCKern(const T* tiList, size_t n, double* results){
+#ifdef __CUDA__
+  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
+#else
+  auto idx = 0;
+#endif
+  const T* ti = tiList + (idx*n);
+  auto A = flit::VectorCU<T>(ti, n);
+  auto orig = A;
+  T theta = 2 * M_PI / iters;
+  for(int r = 0; r < iters; ++r){
+    A = A.rotateAboutZ_3d(theta);
+  }
+  results[idx] = A.L1Distance(orig);
+}
+
+template <typename T>
 class RotateFullCircle: public flit::TestBase<T> {
 public:
   RotateFullCircle(std::string id) : flit::TestBase<T>(std::move(id)){}
@@ -101,6 +120,8 @@ public:
   }
 
 protected:
+  virtual flit::KernelFunction<T>* getKernel() override {return RFCKern; }
+
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     flit::Vector<T> A = flit::Vector<T>(ti);
     auto orig = A;

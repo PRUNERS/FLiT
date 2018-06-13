@@ -102,14 +102,14 @@ def main(arguments, prog=sys.argv[0]):
             )
     processors = multiprocessing.cpu_count()
     parser.add_argument('-j', '--jobs', type=int, default=processors,
-                        help='''
-                            The number of parallel jobs to use for the call to
-                            GNU make when performing the compilation.  Note,
-                            this is not used when executing the tests.  This
-                            is because in order to get accurate timing data,
-                            one cannot in general run multiple versions of the
-                            same code in parallel.
-                            ''')
+                         help='''
+                             The number of parallel jobs to use for the call to
+                             GNU make when performing the compilation.  Note,
+                             this is not used when executing the tests.  This
+                             is because in order to get accurate timing data,
+                             one cannot in general run multiple versions of the
+                             same code in parallel.
+                             ''')
     parser.add_argument('--exec-jobs', type=int, default=1,
                         help='''
                             The number of parallel jobs to use for the call to

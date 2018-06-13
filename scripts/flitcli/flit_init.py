@@ -87,6 +87,7 @@ import os
 import shutil
 import socket
 import sys
+import toml
 
 import flitconfig as conf
 import flitutil
@@ -118,8 +119,16 @@ def main(arguments, prog=sys.argv[0]):
     # write flit-config.toml
     flit_config_dest = os.path.join(args.directory, 'flit-config.toml')
     print('Creating {0}'.format(flit_config_dest))
-    with open(flit_config_dest, 'w') as fout:
-        fout.write(flitutil.get_default_toml_string())
+    flitutil.process_in_file(
+        os.path.join(conf.config_dir, 'flit-default.toml.in'),
+        flit_config_dest,
+        {
+            'flit_path': os.path.join(conf.script_dir, 'flit.py'),
+            'config_dir': conf.config_dir,
+            'hostname': socket.gethostname(),
+            'flit_version': conf.version,
+        },
+        overwrite=args.overwrite)
 
     def copy_files(dest_to_src, remove_license=True):
         '''

@@ -150,7 +150,6 @@ def main(arguments, prog=sys.argv[0]):
         print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
               file=sys.stderr)
         return 1
-    util.fill_defaults(projconf)
 
     assert projconf['database']['type'] == 'sqlite', \
             'Only sqlite database supported'
@@ -183,7 +182,7 @@ def main(arguments, prog=sys.argv[0]):
             latest_run = importee_run_ids[-1]
             import_run = args.run if args.run is not None else latest_run
             cur.execute('select name,host,compiler,optl,switches,precision,'
-                        'comparison_hex,comparison,file,nanosec '
+                        'comparison,comparison_d,file,nanosec '
                         'from tests where run = ?', (import_run,))
             rows = [dict(x) for x in cur]
         else:
@@ -207,8 +206,8 @@ def main(arguments, prog=sys.argv[0]):
                 row['optl'],
                 row['switches'],
                 row['precision'],
-                row['comparison_hex'],
                 row['comparison'],
+                row['comparison_d'],
                 row['file'],
                 row['nanosec'],
                 ))
@@ -221,8 +220,8 @@ def main(arguments, prog=sys.argv[0]):
                 optl,
                 switches,
                 precision,
-                comparison_hex,
                 comparison,
+                comparison_d,
                 file,
                 nanosec)
             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

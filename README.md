@@ -6,14 +6,6 @@ Floating-point Litmus Tests (FLiT) is a C++ test infrastructure for detecting
 variability in floating-point code caused by variations in compiler code
 generation, hardware and execution environments.
 
-Originally, FLiT stood for "Floating-point Litmus Tests", but has grown into a
-tool with much more flexability than to study simple litmus tests.  However, it
-has always been the focus of FLiT to study the variability caused by compilers.
-That brings us to the other reason for the name, "flit" is defined by the
-Merriam Webster dictionary as "to pass quickly or abruptly from one place or
-condition to another".  This fits in well with testing for various sources of
-variability.
-
 Compilers are primarily focused on optimizing the speed of your code.  However,
 when it comes to floating-point, compilers go a little further than some might
 want, to the point that you may not get the same result from your
@@ -37,17 +29,19 @@ More than simply comparing against a "ground truth" test result, the FLiT
 framework also measures runtime of your tests.  Using this information, you can
 not only determine which compilations of your code are safe for your specific
 application, but you can also determine the fastest safe compilation.  This
-ability helps the developer navigate the tradeoff between reproducibility and
-performance.
+ability really helps the developer navigate the tradeoff between
+reproducibility and performance.
 
 It consists of the following components:
 
-* a C++ reproducibility test infrastructure
+* a c++ reproducibility test infrastructure
 * a dynamic make system to generate diverse compilations
-* an SQLite database containing results
-* tools to help analyze test results
-* a bisection tool that can isolate the file(s) and function(s) where
-  variability was introduced by the compiler.
+* _(currently broken)_ an execution disbursement system 
+* an SQL database for collecting results
+  * _(currently broken)_ a collection of queries to help the user understand
+    results
+  * _(currently broken)_ some data analysis tools, providing visualization of
+    results
 
 Contents:
 
@@ -58,7 +52,6 @@ Contents:
   * [Available Compiler Flags](documentation/available-compiler-flags.md)
 * [Writing Test Cases](documentation/writing-test-cases.md)
 * [Test Executable](documentation/test-executable.md)
-* [Benchmarks](documentation/benchmarks.md)
 * [Database Structure](documentation/database-structure.md)
 * [Analyze Results](documentation/analyze-results.md)
 * **Extra Tools**

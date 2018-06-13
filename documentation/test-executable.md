@@ -4,7 +4,7 @@
 |
 [Table of Contents](README.md)
 |
-[Next](benchmarks.md)
+[Next](database-structure.md)
 
 After you have [configured your test environment](flit-configuration-file.md)
 and [written your test files](writing-test-cases.md), you can autogenerate a
@@ -62,7 +62,7 @@ $ flit init --directory flit-litmus --litmus-tests
 $ cd flit-litmus
 $ make dev -j10
 $ ./devrun Paranoia
-name,host,compiler,optl,switches,precision,score_hex,score,resultfile,comparison_hex,comparison,file,nanosec
+name,host,compiler,optl,switches,precision,score,score_d,resultfile,comparison,comparison_d,file,nanosec
 Paranoia,bihexal,g++,-O2,-funsafe-math-optimizations,d,0x4002a000000000000000,10,NULL,NULL,NULL,devrun,1000028414
 Paranoia,bihexal,g++,-O2,-funsafe-math-optimizations,e,0x4002a000000000000000,10,NULL,NULL,NULL,devrun,1000030686
 Paranoia,bihexal,g++,-O2,-funsafe-math-optimizations,f,0x4002a000000000000000,10,NULL,NULL,NULL,devrun,1000043012
@@ -133,7 +133,7 @@ In the following example, the TrianglePHeron example is executed only for 32-bit
 
 ```bash
 $ ./devrun --precision float TrianglePHeron
-name,host,compiler,optl,switches,precision,score_hex,score,resultfile,comparison_hex,comparison,file,nanosec
+name,host,compiler,optl,switches,precision,score,score_d,resultfile,comparison,comparison_d,file,nanosec
 TrianglePHeron,bihexal,g++,-O2,-funsafe-math-optimizations,f,0x3ff3e400000000000000,0.00043487548828125,NULL,NULL,NULL,devrun,6137
 ```
 
@@ -150,7 +150,7 @@ $ ./devrun --no-timing --verbose --precision double SinInt
 SinInt: score       = 1
 SinInt: score - 1.0 = 0
 SinInt-d: # runs = 1
-name,host,compiler,optl,switches,precision,score_hex,score,resultfile,comparison_hex,comparison,file,nanosec
+name,host,compiler,optl,switches,precision,score,score_d,resultfile,comparison,comparison_d,file,nanosec
 SinInt,bihexal,g++,-O2,-funsafe-math-optimizations,d,0x3fff8000000000000000,1,NULL,NULL,NULL,devrun,0
 ```
 

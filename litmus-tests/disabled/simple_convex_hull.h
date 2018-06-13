@@ -97,7 +97,11 @@
 #endif
 
 #ifndef OFT
+#if defined(__CUDA__) || defined(__aarch64__)
+#define OFT double
+#else
 #define OFT long double
+#endif
 #endif
 
 #define WFT float

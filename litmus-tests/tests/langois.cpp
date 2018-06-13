@@ -131,6 +131,8 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
+
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
@@ -164,6 +166,8 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
+
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
@@ -200,6 +204,8 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
+  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
+
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;

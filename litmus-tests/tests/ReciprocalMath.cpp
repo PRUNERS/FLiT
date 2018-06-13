@@ -81,6 +81,10 @@
  * -- LICENSE END -- */
 #include <flit.h>
 
+#include <vector>
+
+#include <cstdlib>
+
 template <typename T>
 class ReciprocalMath : public flit::TestBase<T> {
 public:
@@ -94,19 +98,27 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    // float division is expensive.  For optimization, the compiler may replace
-    //   a = b / r
-    // with
-    //   recip = 1 / r
-    //   a = b * recip
-    // Usually worthwhile only if you divide by the same value repeatedly
-    T r = ti[4];
-    T a = ti[0] / r;
-    T b = ti[1] / r;
-    T c = ti[2] / r;
-    T d = ti[3] / r;
-    return a + b + c + d;
+    T a = ti[0];
+    T b = ti[1];
+    T c = ti[2];
+    T d = ti[3];
+    T m = ti[4];
+
+    a = a/m;
+    b = b/m;
+    c = c/m;
+    d = d/m;
+
+    const T score = a + b + c + d;
+
+    flit::info_stream << id << ": score  = " << score  << std::endl;
+
+    return score;
   }
+
+protected:
+  using flit::TestBase<T>::id;
 };
+
 
 REGISTER_TYPE(ReciprocalMath)

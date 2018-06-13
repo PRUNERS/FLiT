@@ -89,9 +89,9 @@
 #define FLIT_HELPERS_HPP
 
 #include "InfoStream.h"
+#include "CUHelpers.h"
 
 #include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <ostream>
@@ -114,7 +114,8 @@ const int RAND_VECT_SIZE = 256;
 extern thread_local InfoStream info_stream;
 
 // this section provides a pregenerated random
-// sequence that can be used by tests
+// sequence that can be used by tests, including
+// CUDA
 
 template <typename T>
 const std::vector<T>
@@ -146,6 +147,7 @@ std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
 template <typename F, typename I>
+HOST_DEVICE
 F as_float_impl(I val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
@@ -155,11 +157,13 @@ F as_float_impl(I val) {
   return u.f;
 }
 
+HOST_DEVICE
 inline float
 as_float(uint32_t val) {
   return as_float_impl<float, uint32_t>(val);
 }
 
+HOST_DEVICE
 inline double
 as_float(uint64_t val) {
   return as_float_impl<double, uint64_t>(val);
@@ -171,6 +175,7 @@ as_float(unsigned __int128 val) {
 }
 
 template <typename F, typename I>
+HOST_DEVICE
 I as_int_impl(F val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
@@ -180,11 +185,13 @@ I as_int_impl(F val) {
   return u.i;
 }
 
+HOST_DEVICE
 inline uint32_t
 as_int(float val) {
   return as_int_impl<float, uint32_t>(val);
 }
 
+HOST_DEVICE
 inline uint64_t
 as_int(double val) {
   return as_int_impl<double, uint64_t>(val);
@@ -195,37 +202,6 @@ as_int(long double val) {
   const unsigned __int128 zero = 0;
   const auto temp = as_int_impl<long double, __int128>(val);
   return temp & (~zero >> 48);
-}
-
-/// Opens a file, but on failure, throws std::ios::failure
-/// T must be one of {fstream, ifstream, ofstream}
-template <typename T>
-T _openfile_check(const std::string &filename) {
-  T filestream;
-
-  // turn on exceptions on failure
-  filestream.exceptions(std::ios::failbit);
-
-  // opening will throw if the file does not exist or is not readable
-  filestream.open(filename);
-
-  // turn off all exceptions (back to the default behavior)
-  filestream.exceptions(std::ios::goodbit);
-
-  // This is okay because move constructor and move assignment are implemented
-  return filestream;
-}
-
-/// Opens a file for reading, but on failure, throws std::ios::failure
-inline std::ifstream ifopen(const std::string &filename) {
-  return _openfile_check<std::ifstream>(filename);
-}
-
-/// Opens a file for writing, but on failure, throws std::ios::failure
-inline std::ofstream ofopen(const std::string &filename) {
-  std::ofstream out = _openfile_check<std::ofstream>(filename);
-  out.precision(1000);  // lots of digits of precision
-  return out;
 }
 
 } // end of namespace flit
