@@ -91,7 +91,7 @@ truth answer.
 '''
 
 import argparse
-import csv 
+import csv
 import numpy as np
 import os
 import sqlite3
@@ -142,7 +142,7 @@ def plot_timing(rows, test_names=[], outdir='.'):
         test_names = sorted(all_test_names)
     assert all(x in all_test_names for x in test_names), \
             'unfound test names detected'
-    
+
     # Make sure outdir exists
     try:
         os.makedirs(outdir)

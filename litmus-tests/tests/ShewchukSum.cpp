@@ -91,7 +91,7 @@ template <typename T>
 class ShewchukSum : public flit::TestBase<T> {
 public:
   ShewchukSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
-  
+
   virtual size_t getInputsPerRun() override { return 1000; }
   virtual std::vector<T> getDefaultInput() override;
 

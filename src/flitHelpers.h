@@ -128,7 +128,7 @@ setRandSeq(size_t size, int32_t seed = RAND_SEED){
   for(auto& i: ret) i = T(dist(gen));
   return ret;
 }
-  
+
 const std::vector<uint_fast32_t>
 getShuffleSeq(uint_fast32_t);
 
@@ -231,4 +231,4 @@ inline std::ofstream ofopen(const std::string &filename) {
 } // end of namespace flit
 
 #endif // FLIT_HELPERS_HPP
- 
+

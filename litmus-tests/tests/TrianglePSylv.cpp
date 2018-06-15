@@ -93,7 +93,7 @@ template <typename T>
 T getArea(const T a, const T b, const T c) {
   return pow(T(2.0), T(-2)) *
          sqrt(T((a + (b + c)) *
-                (a + (b - c)) * 
+                (a + (b - c)) *
                 (c + (a - b)) *
                 (c - (a - b))));
 }

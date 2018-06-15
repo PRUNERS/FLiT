@@ -141,7 +141,7 @@ protected:
     auto y = std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size);
     std::vector<T> s(size);
-    s[0] = x[0] * y[0]; 
+    s[0] = x[0] * y[0];
     for(stype i = 1; i < size; ++i){
       s[i] = std::fma(x[i], y[i], s[i-1]);
     }

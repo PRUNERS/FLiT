@@ -84,7 +84,7 @@
 #define FLIT_MATRIX_H
 
 #include "Vector.h"
- 
+
 #include <flit.h>
 
 #include <initializer_list>   // for std::initializer_list

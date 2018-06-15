@@ -116,7 +116,7 @@ const std::vector<float> float_rands = setRandSeq<float>(RAND_VECT_SIZE);
 const std::vector<double> double_rands = setRandSeq<double>(RAND_VECT_SIZE);
 const std::vector<long double> long_rands = setRandSeq<long double>(RAND_VECT_SIZE);
 
-  
+
 thread_local InfoStream info_stream;
 
 std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
@@ -126,7 +126,7 @@ std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
   auto bflags = os.flags();
   os.flags(std::ios::hex & ~std::ios::showbase);
   ost.flags(std::ios::hex & ~std::ios::showbase);
-  ost << lo;    
+  ost << lo;
   os << "0x" << hi;
   for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
     os << "0";
@@ -152,7 +152,7 @@ unsigned __int128 stouint128(const std::string &str) {
   }
   if (copy.size() <= 16) {
     hi = 0;
-    lo = std::stoull(copy, nullptr, 16); 
+    lo = std::stoull(copy, nullptr, 16);
   } else {
     auto mid = copy.end() - 16;
     hi = std::stoull(std::string(copy.begin(), mid), nullptr, 16);
@@ -168,4 +168,4 @@ unsigned __int128 stouint128(const std::string &str) {
 }
 
 } // end of namespace flit
- 
+

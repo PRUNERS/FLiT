@@ -87,7 +87,7 @@
 #include <cmath>
 #include <typeinfo>
 
- 
+
 template <typename T>
 class DoHariGSBasic: public flit::TestBase<T> {
 public:
@@ -159,7 +159,7 @@ std::vector<T> DoHariGSBasic<T>::getDefaultInput() {
     1, e, 0,  // vec b
     1, 0, e,  // vec c
   };
-  
+
   return ti;
 }
 

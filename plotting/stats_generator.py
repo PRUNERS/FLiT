@@ -119,7 +119,7 @@ def main(arguments):
         print(name, len(scores[name]))
     print()
 
-    
+
 
     total_switches = set(x['switches'] for x in rows)
     for switch in total_switches:
@@ -133,7 +133,7 @@ def main(arguments):
         ## TODO-   - the empty switch for gcc
         ## TODO-   - something else
         #for switch in switches:
-        #    switch_counts[switch] += len(set(x['score0'] for x in 
+        #    switch_counts[switch] += len(set(x['score0'] for x in
 
 if __name__ == '__main__':
     main(sys.argv[1:])

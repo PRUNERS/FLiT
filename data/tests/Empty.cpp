@@ -94,7 +94,7 @@ public:
   Empty(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   /** Specify how many floating-point inputs your algorithm takes.
-   * 
+   *
    * Can be zero.  If it is zero, then getDefaultInput should return an empty
    * std::vector, which is as simple as "return {};"
    */

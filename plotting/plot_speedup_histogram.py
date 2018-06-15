@@ -89,7 +89,7 @@ fastest safe compilation) and one bar for all unsafe compilations.
 '''
 
 import argparse
-import csv 
+import csv
 import numpy as np
 import os
 import sqlite3
@@ -117,7 +117,7 @@ def calc_speedups(rows, test_names, baseline=None):
         in test_names.
 
     @return (safe_speedups, unsafe_speedups)
-    
+
     - safe_speedups: (dict{compiler -> list[speedup for test_name i]})
       Safe speedups, defined by row['comparison'] == 0.0
     - unsafe_speedups: (dist{compiler -> list[speedup for test_name i]})
@@ -149,9 +149,9 @@ def calc_speedups(rows, test_names, baseline=None):
         fastest_unsafe = []
         for compiler in compilers:
             compiler_rows = compiler_row_map[compiler]
-            safe_times = [int(x['nanosec']) for x in compiler_rows 
+            safe_times = [int(x['nanosec']) for x in compiler_rows
                           if float(x['comparison']) == 0.0]
-            unsafe_times = [int(x['nanosec']) for x in compiler_rows 
+            unsafe_times = [int(x['nanosec']) for x in compiler_rows
                             if float(x['comparison']) != 0.0]
 
             if len(safe_times) > 0:
@@ -182,7 +182,7 @@ def plot_histogram(rows, test_names=[], outdir='.', baseline=None):
         test_names = sorted(all_test_names)
     assert all(x in all_test_names for x in test_names), \
             'unfound test names detected'
-    
+
     # Make sure outdir exists
     try:
         os.makedirs(outdir)
@@ -242,7 +242,7 @@ def plot_histogram(rows, test_names=[], outdir='.', baseline=None):
 
     dx = 0.5 * (1 - width)
     offset = matplotlib.transforms.ScaledTranslation(dx, 0, fig.dpi_scale_trans)
-    
+
     for label in ax.xaxis.get_majorticklabels():
         label.set_transform(label.get_transform() + offset)
 

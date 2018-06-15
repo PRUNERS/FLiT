@@ -139,23 +139,23 @@ public:
 
 	// Note: this does not set or return the cache.  Only sum() does that.
   T sum2() {
-    T x, y, lo, yr, hi = 0.0; 
+    T x, y, lo, yr, hi = 0.0;
 		auto p = m_partials;
 		auto n = p.size();
 
 		// This code was copied verbatim from Python's math.fsum() implementation
-    if (n > 0) { 
+    if (n > 0) {
       hi = p[--n];
       /* sum_exact(ps, hi) from the top, stop when the sum becomes
          inexact. */
-      while (n > 0) { 
+      while (n > 0) {
         x = hi;
         y = p[--n];
         //assert(fabs(y) < fabs(x));
-        hi = x + y; 
-        yr = hi - x; 
+        hi = x + y;
+        yr = hi - x;
         lo = y - yr;
-        if (lo != 0.0) 
+        if (lo != 0.0)
           break;
       }
       /* Make half-even rounding work across multiple partials.
@@ -165,8 +165,8 @@ public:
          error fixed-up, math.fsum() can guarantee commutativity. */
       if (n > 0 && ((lo < 0.0 && p[n-1] < 0.0) ||
                     (lo > 0.0 && p[n-1] > 0.0))) {
-        y = lo * 2.0; 
-        x = hi + y; 
+        y = lo * 2.0;
+        x = hi + y;
         yr = x - hi;
         if (y == yr) {
           hi = x;

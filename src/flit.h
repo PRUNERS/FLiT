@@ -144,7 +144,7 @@ struct FlitOptions {
   bool timing = true;        // should we run timing?
   int timingLoops = -1;      // < 1 means to auto-determine the timing loops
   int timingRepeats = 3;     // return best of this many timings
-  
+
   bool compareMode = false;  // compare results after running the test
   std::string compareGtFile; // ground truth results to use in compareMode
   std::vector<std::string> compareFiles; // files for compareMode
@@ -514,7 +514,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   // Let's now run the ground-truth comparisons
   if (options.compareMode) {
     TestResultMap comparisonResults;
-  
+
     for (auto fname : options.compareFiles) {
       try {
         comparisonResults.loadfile(fname);

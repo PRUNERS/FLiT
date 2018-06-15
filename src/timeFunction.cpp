@@ -102,7 +102,7 @@ int_fast64_t time_function_impl(const TimingFunction &func, size_t loops = 1,
       func();
     }
     auto end = std::chrono::high_resolution_clock::now();
-    int_fast64_t time = 
+    int_fast64_t time =
         std::chrono::duration_cast<
           std::chrono::duration<int_fast64_t, std::nano>>(end - start).count();
     min_time = std::min(min_time, time);

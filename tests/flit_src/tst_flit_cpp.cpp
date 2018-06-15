@@ -443,11 +443,11 @@ void tst_parseArguments_expects_integers() {
   expected.timingLoops = 123;
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
-  
+
   argList = {"progName", "--timing-loops", "abc"};
   TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
             flit::ParseException);
-  
+
   argList = {"progName", "--timing-repeats", "abc"};
   TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
             flit::ParseException);

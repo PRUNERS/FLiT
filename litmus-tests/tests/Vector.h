@@ -84,7 +84,7 @@
 #define FLIT_VECTOR_H
 
 #include "Matrix.h"
- 
+
 #include <flitHelpers.h>
 
 #include <algorithm>        // for std::generate
@@ -189,7 +189,7 @@ public:
     Vector<T> retVal(size());
     std::vector<T> seq(size());
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
-    
+
     shuffle(seq.begin(), seq.end(), std::mt19937(flit::RAND_SEED));
     //do pairwise swap
     for(uint i = 0; i < size(); i += 2){
@@ -277,7 +277,7 @@ public:
   L2Norm() const {
     Vector<T> squares(size());
     T retVal = 0;
-    std::vector<T> prods(data); 
+    std::vector<T> prods(data);
     reduce(prods, [&retVal](T e){retVal += e*e;});
     return std::sqrt(retVal);
   }
