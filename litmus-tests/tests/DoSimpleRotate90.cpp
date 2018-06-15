@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <typeinfo>
@@ -97,8 +100,8 @@ public:
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    flit::Vector<T> A(ti);
-    flit::Vector<T> expected = {-A[1], A[0], A[2]};
+    Vector<T> A(ti);
+    Vector<T> expected = {-A[1], A[0], A[2]};
     flit::info_stream << "Rotating A: " << A << ", 1/2 PI radians" << std::endl;
     A = A.rotateAboutZ_3d(M_PI/2);
     flit::info_stream << "Resulting vector: " << A << std::endl;

@@ -78,20 +78,22 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
+ * -- LICENSE END -- */
 
 #ifndef FLIT_MATRIX_H
 #define FLIT_MATRIX_H
 
 #include "Vector.h"
+ 
+#include <flit.h>
 
 #include <initializer_list>   // for std::initializer_list
 #include <iostream>           // for std::cout
 #include <ostream>            // for std::ostream
 #include <vector>             // for std::vector
 
-namespace flit {
+
+template<typename T> class Vector;
 
 template<typename T>
 class Matrix {
@@ -123,9 +125,9 @@ public:
     for(uint x = 0; x < data.size(); ++x){
       for(uint y = 0; y < data[0].size(); ++y){
         if(data[x][y] != rhs.data[x][y]){
-          info_stream << "in: " << __func__ << std::endl;
-          info_stream << "for x,y: " << x << ":" << y << std::endl;
-          info_stream << "this = " << data[x][y] << "; rhs = " << rhs.data[x][y] << std::endl;
+          flit::info_stream << "in: " << __func__ << std::endl;
+          flit::info_stream << "for x,y: " << x << ":" << y << std::endl;
+          flit::info_stream << "this = " << data[x][y] << "; rhs = " << rhs.data[x][y] << std::endl;
           retVal = false;
           break;
         }
@@ -213,7 +215,7 @@ public:
   print() const {
     std::cout << *this;
   }
-};
+}; // end of class Matrix
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, Matrix<T> const &m){
@@ -225,7 +227,5 @@ std::ostream& operator<<(std::ostream& os, Matrix<T> const &m){
   }
   return os;
 }
-
-} // end of namespace flit
 
 #endif // FLIT_MATRIX_H

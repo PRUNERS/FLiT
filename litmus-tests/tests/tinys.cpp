@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <string>
@@ -147,9 +150,9 @@ protected:
 
     auto rand = flit::getRandSeq<T>();
 
-    flit::Vector<T> A(std::vector<T>(rand.begin(),
+    Vector<T> A(std::vector<T>(rand.begin(),
 			    rand.begin() + size));
-    flit::Vector<T> B(std::vector<T>(rand.begin() + size,
+    Vector<T> B(std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size));
     return A ^ B;
   }

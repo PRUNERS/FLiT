@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <typeinfo>
@@ -97,12 +100,12 @@ public:
   virtual size_t getInputsPerRun() override { return 3; }
   virtual std::vector<T> getDefaultInput() override {
     auto n = getInputsPerRun();
-    return flit::Vector<T>::getRandomVector(n).getData();
+    return Vector<T>::getRandomVector(n).getData();
   }
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    flit::Vector<T> A = flit::Vector<T>(ti);
+    Vector<T> A(ti);
     auto orig = A;
     T theta = 2 * M_PI / iters;
     flit::info_stream << "Rotate full circle in " << iters

@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <cmath>
@@ -97,9 +100,9 @@ protected:
     long double score = 0.0;
 
     //matrix = {a, b, c};
-    flit::Vector<T> a = {ti[0], ti[1], ti[2]};
-    flit::Vector<T> b = {ti[3], ti[4], ti[5]};
-    flit::Vector<T> c = {ti[6], ti[7], ti[8]};
+    Vector<T> a = {ti[0], ti[1], ti[2]};
+    Vector<T> b = {ti[3], ti[4], ti[5]};
+    Vector<T> c = {ti[6], ti[7], ti[8]};
 
     auto r1 = a.getUnitVector();
     auto r2 = (b - r1 * (b ^ r1)).getUnitVector();

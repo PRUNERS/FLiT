@@ -87,9 +87,7 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
-#include "Matrix.h"
 #include "TestBase.h"
-#include "Vector.h"
 #include "flitHelpers.h"
 
 #include <algorithm>

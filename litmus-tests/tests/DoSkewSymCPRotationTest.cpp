@@ -79,6 +79,10 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Matrix.h"
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <typeinfo>
@@ -94,15 +98,15 @@ public:
   virtual size_t getInputsPerRun() override { return 6; }
   virtual std::vector<T> getDefaultInput() override {
     auto n = getInputsPerRun();
-    return flit::Vector<T>::getRandomVector(n).getData();
+    return Vector<T>::getRandomVector(n).getData();
   }
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     flit::info_stream << "entered " << id << std::endl;
     long double L1Score = 0.0;
-    flit::Vector<T> A = { ti[0], ti[1], ti[2] };
-    flit::Vector<T> B = { ti[3], ti[4], ti[5] };
+    Vector<T> A = { ti[0], ti[1], ti[2] };
+    Vector<T> B = { ti[3], ti[4], ti[5] };
     A = A.getUnitVector();
     B = B.getUnitVector();
     flit::info_stream << "A (unit) is: " << std::endl << A << std::endl;
@@ -115,11 +119,11 @@ protected:
     auto cos = A ^ B;
     //    flit::info_stream << "cosine: " << std::endl << crit << std::endl;
     flit::info_stream << "cosine: " << std::endl << cos << std::endl;
-    auto sscpm = flit::Matrix<T>::SkewSymCrossProdM(cross);
+    auto sscpm = Matrix<T>::SkewSymCrossProdM(cross);
     flit::info_stream << "sscpm: " << std::endl << sscpm << std::endl;
-    auto rMatrix = flit::Matrix<T>::Identity(3) +
+    auto rMatrix = Matrix<T>::Identity(3) +
       sscpm + (sscpm * sscpm) * ((1 - cos)/(sine * sine));
-    // auto rMatrix = flit::Matrix<T>::Identity(3) +
+    // auto rMatrix = Matrix<T>::Identity(3) +
     //   sscpm + (sscpm * sscpm) * ((1 - crit)/(sine * sine));
     auto result = rMatrix * A;
     flit::info_stream << "rotator: " << std::endl << rMatrix << std::endl;

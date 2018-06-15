@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <typeinfo>
@@ -115,8 +118,8 @@ protected:
     // we use a double literal above as a workaround for Intel 15-16 compiler
     // bug:
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    flit::Vector<T> a(ti);
-    flit::Vector<T> b = a.genOrthoVector();
+    Vector<T> a(ti);
+    Vector<T> b = a.genOrthoVector();
 
     T backup;
 
