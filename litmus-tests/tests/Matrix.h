@@ -80,88 +80,152 @@
  *
  * -- LICENSE END -- */
 
+#ifndef FLIT_MATRIX_H
+#define FLIT_MATRIX_H
+
 #include "Vector.h"
 
 #include <flit.h>
 
-#include <cmath>
-#include <typeinfo>
+#include <initializer_list>   // for std::initializer_list
+#include <iostream>           // for std::cout
+#include <ostream>            // for std::ostream
+#include <vector>             // for std::vector
 
 
-template <typename T>
-class DoHariGSBasic: public flit::TestBase<T> {
+template<typename T> class Vector;
+
+template<typename T>
+class Matrix {
+  std::vector<std::vector<T>> data;
 public:
-  DoHariGSBasic(std::string id) : flit::TestBase<T>(std::move(id)){}
-
-  virtual size_t getInputsPerRun() override { return 9; }
-  virtual std::vector<T> getDefaultInput() override;
-
-protected:
-  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    using flit::operator<<;
-
-    long double score = 0.0;
-
-    //matrix = {a, b, c};
-    Vector<T> a = {ti[0], ti[1], ti[2]};
-    Vector<T> b = {ti[3], ti[4], ti[5]};
-    Vector<T> c = {ti[6], ti[7], ti[8]};
-
-    auto r1 = a.getUnitVector();
-    //crit = r1[0];
-    auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
-    //crit =r2[0];
-    auto r3 = (c - r1 * (c ^ r1) -
-               r2 * (c ^ r2)).getUnitVector();
-    //crit = r3[0];
-    T o12 = r1 ^ r2;
-    //crit = o12;
-    T o13 = r1 ^ r3;
-    //crit = o13;
-    T o23 = r2 ^ r3;
-    //crit = 023;
-    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
-      flit::info_stream << id << ": applied gram-schmidt to:" << std::endl;
-      flit::info_stream << id << ":   a: " << a << std::endl;
-      flit::info_stream << id << ":   b: " << b << std::endl;
-      flit::info_stream << id << ":   c: " << c << std::endl;
-      flit::info_stream << id << ": resulting vectors were:" << std::endl;
-      flit::info_stream << id << ":   r1: " << r1 << std::endl;
-      flit::info_stream << id << ":   r2: " << r2 << std::endl;
-      flit::info_stream << id << ":   r3: " << r3 << std::endl;
-      flit::info_stream << id << ": w dot prods:  "
-                              << o12 << ", " << o13 << ", " << o23 << std::endl;
-      flit::info_stream << id << ": score (bits): "
-                              << flit::as_int(score) << std::endl;
-      flit::info_stream << id << ": score (dec):  " << score << std::endl;
+  Matrix(unsigned rows, unsigned cols):
+    data(rows, std::vector<T>(cols, 0)){}
+  Matrix(Matrix<T> const &m):data(m.data){}
+  Matrix(std::initializer_list<std::initializer_list<T>> l):
+    data(l.size(), std::vector<T>(l.begin()->size())){
+    int x = 0; int y = 0;
+    for(auto r: l){
+      for(auto i: r){
+        data[x][y] = i;
+        ++y;
+      }
+      ++x; y = 0;
     }
-    return score;
   }
 
-protected:
-  using flit::TestBase<T>::id;
-};
+  friend class Vector<T>;
+  template<class U>
+  friend std::ostream& operator<<(std::ostream& os, Matrix<U> const &a);
 
-namespace {
-  template <typename T> T getSmallValue();
-  template<> inline float getSmallValue() { return pow(10, -4); }
-  template<> inline double getSmallValue() { return pow(10, -8); }
-  template<> inline long double getSmallValue() { return pow(10, -10); }
-} // end of unnamed namespace
+
+  bool
+  operator==(Matrix<T> const &rhs) const {
+    bool retVal = true;
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y = 0; y < data[0].size(); ++y){
+        if(data[x][y] != rhs.data[x][y]){
+          flit::info_stream << "in: " << __func__ << std::endl;
+          flit::info_stream << "for x,y: " << x << ":" << y << std::endl;
+          flit::info_stream << "this = " << data[x][y] << "; rhs = " << rhs.data[x][y] << std::endl;
+          retVal = false;
+          break;
+        }
+      }
+    }
+    return retVal;
+  }
+
+  Matrix<T>
+  operator*(T const &sca){
+    Matrix<T> retVal(data.size(), data[0].size());
+    for(uint x = 0; x < data.size(); ++x){
+      for(uint y =0; y < data[0].size(); ++y){
+        retVal.data[x][y] = data[x][y] * sca;
+      }
+    }
+    return retVal;
+  }
+
+  //precond: this.w = rhs.h, duh
+  Matrix<T>
+  operator*(Matrix<T> const &rhs){
+    Matrix<T> retVal(data.size(), rhs.data[0].size());
+    for(uint bcol = 0; bcol < rhs.data[0].size(); ++bcol){
+      for(uint x = 0; x < data.size(); ++x){
+        for(uint y = 0; y < data[0].size(); ++y){
+          retVal.data[x][bcol] += data[x][y] * rhs.data[y][bcol];
+        }
+      }
+    }
+    return retVal;
+  }
+
+  //precond: dim(v) == 3
+  static
+  Matrix<T>
+  SkewSymCrossProdM(Vector<T> const &v){
+    return Matrix<T>(
+      {{0, -v[2], v[1]},
+       {v[2], 0, -v[0]},
+       {-v[1], v[0], 0}});
+  }
+
+  static
+  Matrix<T>
+  Identity(size_t dims){
+    Matrix<T> retVal(dims, dims);
+    for(size_t x = 0; x < dims; ++x){
+      for(size_t y =0; y < dims; ++y){
+        if(x == y) retVal.data[x][y] = 1;
+        else retVal.data[x][y] = 0;
+      }
+    }
+    return retVal;
+  }
+
+  Vector<T>
+  operator*(Vector<T> const &v) const {
+    Vector<T> retVal(data.size());
+    int resI = 0;
+    for(auto row: data){
+      for(size_t i = 0; i < row.size(); ++i){
+        retVal[resI] += row[i] * v[i];
+      }
+      ++resI;
+    }
+    return retVal;
+  }
+
+  Matrix<T>
+  operator+(Matrix<T> const&rhs) const{
+    Matrix<T> retVal(rhs);
+    int x = 0; int y = 0;
+    for(auto r: data){
+      for(auto i: r){
+        retVal.data[x][y] = i + rhs.data[x][y];
+        ++y;
+      }
+      y = 0; ++x;
+    }
+    return retVal;
+  }
+
+  void
+  print() const {
+    std::cout << *this;
+  }
+}; // end of class Matrix
 
 template <typename T>
-std::vector<T> DoHariGSBasic<T>::getDefaultInput() {
-  T e = getSmallValue<T>();
-
-  // Just one test
-  std::vector<T> ti = {
-    1, e, e,  // vec a
-    1, e, 0,  // vec b
-    1, 0, e,  // vec c
-  };
-
-  return ti;
+std::ostream& operator<<(std::ostream& os, Matrix<T> const &m){
+  for(auto r: m.data){
+    for(auto i: r){
+      os << i << '\t';
+    }
+    os << std::endl;
+  }
+  return os;
 }
 
-REGISTER_TYPE(DoHariGSBasic)
-
+#endif // FLIT_MATRIX_H

@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <typeinfo>
@@ -93,13 +96,13 @@ public:
 
   virtual size_t getInputsPerRun() override { return 3; }
   virtual std::vector<T> getDefaultInput() override {
-    return flit::Vector<T>::getRandomVector(3).getData();
+    return Vector<T>::getRandomVector(3).getData();
   }
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto theta = M_PI;
-    auto A = flit::Vector<T>(ti);
+    auto A = Vector<T>(ti);
     auto orig = A;
     flit::info_stream << "Rotate and Unrotate by " << theta << " radians, A is: " << A << std::endl;
     A.rotateAboutZ_3d(theta);

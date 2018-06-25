@@ -80,88 +80,20 @@
  *
  * -- LICENSE END -- */
 
-#include "Vector.h"
+#include "RandHelper.h"
 
-#include <flit.h>
+const std::vector<float> float_rands = createRandSeq<float>(RAND_VECT_SIZE);
+const std::vector<double> double_rands = createRandSeq<double>(RAND_VECT_SIZE);
+const std::vector<long double> long_rands = createRandSeq<long double>(RAND_VECT_SIZE);
 
-#include <cmath>
-#include <typeinfo>
+template<>
+const std::vector<float>&
+getRandSeq<float>() { return float_rands; }
 
+template<>
+const std::vector<double>&
+getRandSeq<double>() { return double_rands; }
 
-template <typename T>
-class DoHariGSBasic: public flit::TestBase<T> {
-public:
-  DoHariGSBasic(std::string id) : flit::TestBase<T>(std::move(id)){}
-
-  virtual size_t getInputsPerRun() override { return 9; }
-  virtual std::vector<T> getDefaultInput() override;
-
-protected:
-  virtual flit::Variant run_impl(const std::vector<T>& ti) override {
-    using flit::operator<<;
-
-    long double score = 0.0;
-
-    //matrix = {a, b, c};
-    Vector<T> a = {ti[0], ti[1], ti[2]};
-    Vector<T> b = {ti[3], ti[4], ti[5]};
-    Vector<T> c = {ti[6], ti[7], ti[8]};
-
-    auto r1 = a.getUnitVector();
-    //crit = r1[0];
-    auto r2 = (b - r1 * (b ^ r1)).getUnitVector();
-    //crit =r2[0];
-    auto r3 = (c - r1 * (c ^ r1) -
-               r2 * (c ^ r2)).getUnitVector();
-    //crit = r3[0];
-    T o12 = r1 ^ r2;
-    //crit = o12;
-    T o13 = r1 ^ r3;
-    //crit = o13;
-    T o23 = r2 ^ r3;
-    //crit = 023;
-    if((score = std::abs(o12) + std::abs(o13) + std::abs(o23)) != 0){
-      flit::info_stream << id << ": applied gram-schmidt to:" << std::endl;
-      flit::info_stream << id << ":   a: " << a << std::endl;
-      flit::info_stream << id << ":   b: " << b << std::endl;
-      flit::info_stream << id << ":   c: " << c << std::endl;
-      flit::info_stream << id << ": resulting vectors were:" << std::endl;
-      flit::info_stream << id << ":   r1: " << r1 << std::endl;
-      flit::info_stream << id << ":   r2: " << r2 << std::endl;
-      flit::info_stream << id << ":   r3: " << r3 << std::endl;
-      flit::info_stream << id << ": w dot prods:  "
-                              << o12 << ", " << o13 << ", " << o23 << std::endl;
-      flit::info_stream << id << ": score (bits): "
-                              << flit::as_int(score) << std::endl;
-      flit::info_stream << id << ": score (dec):  " << score << std::endl;
-    }
-    return score;
-  }
-
-protected:
-  using flit::TestBase<T>::id;
-};
-
-namespace {
-  template <typename T> T getSmallValue();
-  template<> inline float getSmallValue() { return pow(10, -4); }
-  template<> inline double getSmallValue() { return pow(10, -8); }
-  template<> inline long double getSmallValue() { return pow(10, -10); }
-} // end of unnamed namespace
-
-template <typename T>
-std::vector<T> DoHariGSBasic<T>::getDefaultInput() {
-  T e = getSmallValue<T>();
-
-  // Just one test
-  std::vector<T> ti = {
-    1, e, e,  // vec a
-    1, e, 0,  // vec b
-    1, 0, e,  // vec c
-  };
-
-  return ti;
-}
-
-REGISTER_TYPE(DoHariGSBasic)
-
+template<>
+const std::vector<long double>&
+getRandSeq<long double>() { return long_rands; }

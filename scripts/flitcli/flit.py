@@ -125,7 +125,7 @@ def generate_help_documentation(subcom_map):
     Generates and returns both the formatted help for the general flit
     executable, but also for the help subcommand.  They are returned as a
     tuple.
-    
+
     >>> help_str, help_subcom_str = generate_help_documentation(dict())
     '''
     parser = argparse.ArgumentParser(
@@ -164,7 +164,7 @@ def main(arguments):
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, script_dir)
     import flitconfig as conf
-    
+
     subcom_map = import_helper_modules(script_dir)
 
     help_str, help_subcommand_str = generate_help_documentation(subcom_map)
@@ -194,7 +194,7 @@ def main(arguments):
         if help_subcommand in ('-h', '--help', 'help'):
             print(help_subcommand_str)
             return 0
-        
+
         elif help_subcommand not in all_subcommands:
             sys.stderr.write('Error: invalid subcommand: {0}.\n' \
                              .format(subcommand))

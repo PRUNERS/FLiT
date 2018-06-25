@@ -278,7 +278,7 @@ extern std::vector<PrimitiveCall> Decisions;
   Simple Convex Hull
  */
 template <typename T = WFT>
-void SimpleComputeConvexhull () { // (FILE *outfile) { 
+void SimpleComputeConvexhull () { // (FILE *outfile) {
   //  assert(outfile != NULL);
 
   std::vector<Edge> chedges;

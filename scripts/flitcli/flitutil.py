@@ -130,7 +130,7 @@ def fill_defaults(vals, defaults=None):
     Given two combinations of dictionaries and lists (such as something
     generated from a json file or a toml file), enforce the defaults where the
     vals has missing values.
-    
+
     - For dictionaries, missing keys will be populated with default values
     - For lists, this will recursively fill the defaults on each list item with
       the first list item in defaults (all other list items in defaults are

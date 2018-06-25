@@ -146,7 +146,7 @@ public:
   }
 
   operator bool() const { return static_cast<bool>(m_in); }
-  
+
 private:
   static CsvRow parseRow(std::istream &in) {
     std::string line;

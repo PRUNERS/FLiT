@@ -122,7 +122,7 @@ runTestbed(const std::string &testName, const std::vector<T> &inputs) {
   auto retval = testbed(testName, inputs);
 
   dlclose(handle);
-  
+
   return retval;
 }
 

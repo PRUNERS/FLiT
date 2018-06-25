@@ -108,39 +108,7 @@
 
 namespace flit {
 
-const int RAND_SEED = 1;
-const int RAND_VECT_SIZE = 256;
-
 extern thread_local InfoStream info_stream;
-
-// this section provides a pregenerated random
-// sequence that can be used by tests
-
-template <typename T>
-const std::vector<T>
-setRandSeq(size_t size, int32_t seed = RAND_SEED){
-  // there may be a bug with float uniform_real_dist
-  // it is giving very different results than double or long double
-  std::vector<T> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<double> dist(-6.0, 6.0);
-  for(auto& i: ret) i = T(dist(gen));
-  return ret;
-}
-  
-const std::vector<uint_fast32_t>
-getShuffleSeq(uint_fast32_t);
-
-extern const std::vector<float> float_rands;
-extern const std::vector<double> double_rands;
-extern const std::vector<long double> long_rands;
-
-extern const std::vector<uint_fast32_t> shuffled_16;
-
-template <typename T>
-std::vector<T> const &
-getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
@@ -231,4 +199,4 @@ inline std::ofstream ofopen(const std::string &filename) {
 } // end of namespace flit
 
 #endif // FLIT_HELPERS_HPP
- 
+

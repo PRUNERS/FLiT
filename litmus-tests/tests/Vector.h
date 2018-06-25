@@ -78,13 +78,15 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
+ * -- LICENSE END -- */
 
 #ifndef FLIT_VECTOR_H
 #define FLIT_VECTOR_H
 
-#include "flitHelpers.h"
+#include "Matrix.h"
+#include "RandHelper.h"
+
+#include <flitHelpers.h>
 
 #include <algorithm>        // for std::generate
 #include <cmath>            // for std::sqrt
@@ -95,10 +97,7 @@
 #include <utility>          // for std::move
 #include <vector>           // for std::vector
 
-namespace flit {
-
-template<typename T>
-class Matrix;
+template<typename T> class Matrix;
 
 template <typename T>
 class Vector {
@@ -191,7 +190,7 @@ public:
     Vector<T> retVal(size());
     std::vector<T> seq(size());
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
-    
+
     shuffle(seq.begin(), seq.end(), std::mt19937(RAND_SEED));
     //do pairwise swap
     for(uint i = 0; i < size(); i += 2){
@@ -208,10 +207,10 @@ public:
     Matrix<T> t = {{(T)cos(rads), (T)-sin(rads), 0},
                    {(T)sin(rads), (T)cos(rads), 0},
                    {0, 0, 1}};
-    info_stream << "rotation matrix is: " << t << std::endl;
+    flit::info_stream << "rotation matrix is: " << t << std::endl;
     Vector<T> tmp(*this);
     tmp = t * tmp;
-    info_stream << "in rotateAboutZ, result is: " << tmp << std::endl;
+    flit::info_stream << "in rotateAboutZ, result is: " << tmp << std::endl;
     return tmp;
   }
 
@@ -279,7 +278,7 @@ public:
   L2Norm() const {
     Vector<T> squares(size());
     T retVal = 0;
-    std::vector<T> prods(data); 
+    std::vector<T> prods(data);
     reduce(prods, [&retVal](T e){retVal += e*e;});
     return std::sqrt(retVal);
   }
@@ -325,7 +324,5 @@ std::ostream& operator<<(std::ostream& os, Vector<T> const &a){
   }
   return os;
 }
-
-} // end of namespace flit
 
 #endif // FLIT_VECTOR_H

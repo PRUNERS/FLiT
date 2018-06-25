@@ -93,8 +93,6 @@ namespace {
   runTestbed_impl(const std::string &testName,
                   const std::vector<T> &inputvals)
   {
-    using flit::Vector;
-
     auto test = flit::getTests()[testName]->get<T>();
     auto scores = test->run(inputvals);
 

@@ -91,11 +91,9 @@ namespace {
   runGroundtruth_impl(std::string testName,
                       std::function<T()> randGen)
   {
-    using flit::Vector;
-
     auto test = flit::getTests()[testName]->get<T>();
     auto input = test->getDefaultInput();
-    input = Vector<T>(test->getInputsPerRun(), randGen).getData();
+    input = std::vector<T>(test->getInputsPerRun(), randGen);
     auto scores = test->run(input);
 
     // Return only the first score.  Ignore the key

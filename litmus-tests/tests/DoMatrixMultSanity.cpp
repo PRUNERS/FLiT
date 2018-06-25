@@ -79,6 +79,10 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Matrix.h"
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <functional>
@@ -95,14 +99,14 @@ public:
   virtual size_t getInputsPerRun() override { return 16; }
 
   virtual std::vector<T> getDefaultInput() override {
-    return flit::Vector<T>::getRandomVector(getInputsPerRun()).getData();
+    return Vector<T>::getRandomVector(getInputsPerRun()).getData();
   }
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     auto dim = ti.size();
-    flit::Vector<T> b(ti);
-    auto c = flit::Matrix<T>::Identity(dim) * b;
+    Vector<T> b(ti);
+    auto c = Matrix<T>::Identity(dim) * b;
     bool eq = (c == b);
     flit::info_stream << id << ": Product is: " << c << std::endl;
     flit::info_stream << id << ": A * b == b? " << eq << std::endl;
