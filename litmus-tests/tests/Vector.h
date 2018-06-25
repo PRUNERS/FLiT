@@ -84,6 +84,7 @@
 #define FLIT_VECTOR_H
 
 #include "Matrix.h"
+#include "RandHelper.h"
 
 #include <flitHelpers.h>
 
@@ -140,7 +141,7 @@ public:
   static
   Vector<T>
   getRandomVector(size_t dim){
-    auto copy = flit::getRandSeq<T>();
+    auto copy = getRandSeq<T>();
     copy.erase(copy.begin() + dim, copy.end());
     // We need to make a copy of the copy because the first copy is
     // std::vector<float>.  We need std::vector<T>.
@@ -190,7 +191,7 @@ public:
     std::vector<T> seq(size());
     iota(seq.begin(), seq.end(), 0); //load with seq beg w 0
 
-    shuffle(seq.begin(), seq.end(), std::mt19937(flit::RAND_SEED));
+    shuffle(seq.begin(), seq.end(), std::mt19937(RAND_SEED));
     //do pairwise swap
     for(uint i = 0; i < size(); i += 2){
       retVal[seq[i]] = data[seq[i+1]];

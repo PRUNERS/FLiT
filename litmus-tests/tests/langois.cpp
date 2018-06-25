@@ -83,6 +83,8 @@
 // an EFT (error-free transformation)
 // see http://perso.ens-lyon.fr/nicolas.louvet/LaLo07b.pdf
 
+#include "RandHelper.h"
+
 #include <flit.h>
 
 #include <tuple>
@@ -135,7 +137,7 @@ protected:
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = flit::getRandSeq<T>();
+    auto rand = getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
@@ -168,7 +170,7 @@ protected:
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = flit::getRandSeq<T>();
+    auto rand = getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
@@ -204,7 +206,7 @@ protected:
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = flit::getRandSeq<T>();
+    auto rand = getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
