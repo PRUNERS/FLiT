@@ -412,11 +412,11 @@ TARGET_OUTS     := $(TARGETS:%=%-out)
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 
 %-out: %
-	./$< $(TEST_RUN_ARGS) --output $@ || touch $@
+	$(RUN_WRAPPER) ./$< $(TEST_RUN_ARGS) --output $@ || touch $@
 
 # specify how to get comparison
 %-out-comparison.csv: %-out $(GT_OUT) $(GT_TARGET)
-	./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
+	$(RUN_WRAPPER) ./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
 #$(RESULTS_DIR)/%_out.csv: $(RESULTS_DIR)/%
 #	$< --output $@
 
@@ -510,7 +510,7 @@ $(OBJ_DIR)/%_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 
 # Ground truth compilation rules
 $(GT_OUT): $(GT_TARGET)
-	./$(GT_TARGET) --output $(GT_OUT) --no-timing
+	$(RUN_WRAPPER) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
