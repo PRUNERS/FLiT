@@ -90,6 +90,8 @@
 #include "TestBase.h"
 #include "flitHelpers.h"
 
+#include <mpi.h>
+
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -413,6 +415,19 @@ private:
 };
 
 inline int runFlitTests(int argc, char* argv[]) {
+
+  struct MPI_Environment {
+    MPI_Environment(int &argc, char** &argv) {
+      MPI_Init(&argc, &argv);
+    }
+    ~MPI_Environment() {
+      MPI_Finalize();
+    }
+  };
+
+  MPI_Environment mpi(argc, argv);
+  FLIT_UNUSED(mpi);
+
   // Argument parsing
   FlitOptions options;
   try {
@@ -584,6 +599,7 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   // Create the main results output
   outputResults(results, *outstream);
+
   return 0;
 }
 
