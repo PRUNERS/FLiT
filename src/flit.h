@@ -90,7 +90,9 @@
 #include "TestBase.h"
 #include "flitHelpers.h"
 
+#ifdef __FLIT_USE_MPI__
 #include <mpi.h>
+#endif // __FLIT_USE_MPI__
 
 #include <algorithm>
 #include <chrono>
@@ -417,6 +419,7 @@ private:
 
 inline int runFlitTests(int argc, char* argv[]) {
 
+#ifdef __FLIT_USE_MPI__
   struct MPI_Environment {
     MPI_Environment(int &argc, char** &argv) {
       MPI_Init(&argc, &argv);
@@ -428,6 +431,7 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   MPI_Environment mpi(argc, argv);
   FLIT_UNUSED(mpi);
+#endif // __FLIT_USE_MPI__
 
   // Argument parsing
   FlitOptions options;

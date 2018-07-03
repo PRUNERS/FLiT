@@ -112,6 +112,7 @@ CC_REQUIRED     += -fno-pie
 CC_REQUIRED     += -std=c++11
 CC_REQUIRED     += -I.
 CC_REQUIRED     += -I$(FLIT_INC_DIR)
+CC_REQUIRED     += -D__FLIT_USE_MPI__
 
 DEV_CFLAGS      += -g
 DEV_CFLAGS      += -Wall
