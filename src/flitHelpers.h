@@ -165,12 +165,14 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
-/// Opens a file, but on failure, throws std::ios::failure
-/// T must be one of {fstream, ifstream, ofstream}
+/** Opens a file, but on failure, throws std::ios::failure
+ *
+ * T must be one of {fstream, ifstream, ofstream}
+ *
+ * The passed in filestream should be an empty-constructed stream
+ */
 template <typename T>
-T _openfile_check(const std::string &filename) {
-  T filestream;
-
+void _openfile_check(T& filestream, const std::string &filename) {
   // turn on exceptions on failure
   filestream.exceptions(std::ios::failbit);
 
@@ -179,21 +181,31 @@ T _openfile_check(const std::string &filename) {
 
   // turn off all exceptions (back to the default behavior)
   filestream.exceptions(std::ios::goodbit);
-
-  // This is okay because move constructor and move assignment are implemented
-  return filestream;
 }
 
-/// Opens a file for reading, but on failure, throws std::ios::failure
-inline std::ifstream ifopen(const std::string &filename) {
-  return _openfile_check<std::ifstream>(filename);
+/** Opens a file for reading, but on failure, throws std::ios::failure
+ *
+ * The passed in filestream should be an empty-constructed stream
+ *
+ * Note: This was changed to pass in the stream rather than return it because
+ * GCC 4.8 failed to compile - it failed to use the move assignment operator
+ * and move constructor, and instead tried to use the copy constructor.
+ */
+inline void ifopen(std::ifstream& in, const std::string &filename) {
+  _openfile_check<std::ifstream>(in, filename);
 }
 
-/// Opens a file for writing, but on failure, throws std::ios::failure
-inline std::ofstream ofopen(const std::string &filename) {
-  std::ofstream out = _openfile_check<std::ofstream>(filename);
+/** Opens a file for writing, but on failure, throws std::ios::failure
+ *
+ * The passed in filestream should be an empty-constructed stream
+ *
+ * Note: this was changed to pass in the stream rather than return it because
+ * GCC 4.8 failed to compile - it failed to use the move assignment operator
+ * and move constructor, and instead tried to use the copy constructor.
+ */
+inline void ofopen(std::ofstream& out, const std::string &filename) {
+  _openfile_check<std::ofstream>(out, filename);
   out.precision(1000);  // lots of digits of precision
-  return out;
 }
 
 } // end of namespace flit

@@ -226,7 +226,8 @@ public:
   using key_type = std::pair<std::string, std::string>;
 
   void loadfile(const std::string &filename) {
-    std::ifstream resultfile = ifopen(filename);
+    std::ifstream resultfile;
+    flit::ifopen(resultfile, filename);
     auto parsed = parseResults(resultfile);
     this->extend(parsed, filename);
   }
@@ -466,7 +467,7 @@ inline int runFlitTests(int argc, char* argv[]) {
     stream_deleter.reset(new std::ofstream());
     outstream = stream_deleter.get();
     try {
-      static_cast<std::ofstream&>(*outstream) = ofopen(options.output);
+      flit::ofopen(static_cast<std::ofstream&>(*outstream), options.output);
     } catch (std::ios::failure &ex) {
       std::cerr << "Error: failed to open " << options.output << std::endl;
       return 1;
@@ -482,7 +483,7 @@ inline int runFlitTests(int argc, char* argv[]) {
     if (!options.compareGtFile.empty()) {
       std::ifstream fin;
       try {
-        fin = ifopen(options.compareGtFile);
+        flit::ifopen(fin, options.compareGtFile);
       } catch (std::ios::failure &ex) {
         std::cerr << "Error: file does not exist: " << options.compareGtFile
                   << std::endl;
@@ -557,7 +558,7 @@ inline int runFlitTests(int argc, char* argv[]) {
       {
         std::ifstream fin;
         try {
-          fin = ifopen(fname);
+          flit::ifopen(fin, fname);
         } catch (std::ios_base::failure &ex) {
           std::cerr << "Error: file does not exist: " << fname << std::endl;
           return 1;
@@ -579,7 +580,7 @@ inline int runFlitTests(int argc, char* argv[]) {
       {
         std::ofstream fout;
         try {
-          fout = ofopen(fname + options.compareSuffix);
+          flit::ofopen(fout, fname + options.compareSuffix);
         } catch (std::ios::failure &ex) {
           std::cerr << "Error: could not write to " << fname << std::endl;
           return 1;
