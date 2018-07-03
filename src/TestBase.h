@@ -271,7 +271,8 @@ public:
       std::string resultfile;
       if (testResult.type() == Variant::Type::String) {
         resultfile = filebase + "_" + name + "_" + typeid(T).name() + ".dat";
-        std::ofstream resultout = ofopen(resultfile);
+        std::ofstream resultout;
+        flit::ofopen(resultout, resultfile);
         resultout << testResult.string();
         testResult = Variant(); // empty the result to release memory
       }
