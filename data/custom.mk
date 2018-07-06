@@ -109,6 +109,6 @@ DEV_LDFLAGS    +=
 # wrapper around the running of the test executable when run through the
 # Makefile.
 # For example, to run a test incorporating MPI, you could use
-#   RUN_WRAPPER := mpirun -n4
+#   RUN_WRAPPER := srun --nodes 1
 RUN_WRAPPER    :=
 

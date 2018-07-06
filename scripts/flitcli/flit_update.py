@@ -176,6 +176,8 @@ def main(arguments, prog=sys.argv[0]):
             'flit_script_dir': conf.script_dir,
             'flit_version': conf.version,
             'test_run_args': test_run_args,
+            'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
+            'mpirun_args': projconf['run']['mpirun_args'],
         },
         overwrite=True)
 
