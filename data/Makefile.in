@@ -116,7 +116,7 @@ RUNWRAP          = $(RUN_WRAPPER)
 ifeq ($(ENABLE_MPI),yes) # If we are using MPI
   $(info MPI is enabled)
   RUNWRAP       += mpirun $(MPIRUN_ARGS)
-  CC_REQUIRED   += -D__FLIT_USE_MPI__
+  CC_REQUIRED   += -DFLIT_USE_MPI
   CC_REQUIRED   += $(shell mpic++ --showme:compile)
   LD_REQUIRED   += $(shell mpic++ --showme:link)
 endif
