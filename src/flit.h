@@ -87,12 +87,9 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
+#include "MpiEnvironment.h"
 #include "TestBase.h"
 #include "flitHelpers.h"
-
-#ifdef FLIT_USE_MPI
-#include <mpi.h>
-#endif // FLIT_USE_MPI
 
 #include <algorithm>
 #include <chrono>
@@ -418,62 +415,61 @@ private:
 };
 
 inline int runFlitTests(int argc, char* argv[]) {
-
-#ifdef FLIT_USE_MPI
-  struct MPI_Environment {
-    MPI_Environment(int &argc, char** &argv) {
-      MPI_Init(&argc, &argv);
-    }
-    ~MPI_Environment() {
-      MPI_Finalize();
-    }
-  };
-
-  MPI_Environment mpi(argc, argv);
-  FLIT_UNUSED(mpi);
-#endif // FLIT_USE_MPI
+  // Now only used for MPI, but basically a boolean to say whether this process
+  // is the main one
+  MpiEnvironment mpi_env(argc, argv);
+  flit::mpi = &mpi_env;
 
   // Argument parsing
   FlitOptions options;
   try {
     options = parseArguments(argc, argv);
   } catch (ParseException &ex) {
-    std::cerr << "Error: " << ex.what() << "\n"
-              << "  Use the --help option for more information\n";
+    if (mpi->is_root()) {
+      std::cerr << "Error: " << ex.what() << "\n"
+                << "  Use the --help option for more information\n";
+    }
     return 1;
   }
 
   if (options.help) {
-    std::cout << usage(argv[0]);
-    return 0;
-  }
-
-  if (options.info) {
-    std::cout << info;
-    return 0;
-  }
-
-  if (options.listTests) {
-    for (auto& test : getKeys(getTests())) {
-      std::cout << test << std::endl;
+    if (mpi->is_root()) {
+      std::cout << usage(argv[0]);
     }
     return 0;
   }
 
-  if (options.verbose) {
+  if (options.info) {
+    if (mpi->is_root()) {
+      std::cout << info;
+    }
+    return 0;
+  }
+
+  if (options.listTests) {
+    if (mpi->is_root()) {
+      for (auto& test : getKeys(getTests())) {
+        std::cout << test << std::endl;
+      }
+    }
+    return 0;
+  }
+
+  if (options.verbose && mpi->is_root()) {
     info_stream.show();
   }
 
   std::unique_ptr<std::ostream> stream_deleter;
   std::ostream *outstream = &std::cout;
   std::string test_result_filebase(FLIT_FILENAME);
-  if (!options.output.empty()) {
+  if (!options.output.empty() && mpi->is_root()) {
     stream_deleter.reset(new std::ofstream());
     outstream = stream_deleter.get();
     try {
       flit::ofopen(static_cast<std::ofstream&>(*outstream), options.output);
     } catch (std::ios::failure &ex) {
       std::cerr << "Error: failed to open " << options.output << std::endl;
+      mpi->abort(1);
       return 1;
     }
     test_result_filebase = options.output;
@@ -532,7 +528,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::sort(results.begin(), results.end(), testComparator);
 
   // Let's now run the ground-truth comparisons
-  if (options.compareMode) {
+  if (options.compareMode && mpi->is_root()) {
     TestResultMap comparisonResults;
 
     for (auto fname : options.compareFiles) {
@@ -540,6 +536,7 @@ inline int runFlitTests(int argc, char* argv[]) {
         comparisonResults.loadfile(fname);
       } catch (std::ios::failure &ex) {
         std::cerr << "Error: failed to open file " << fname << std::endl;
+        mpi->abort(1);
         return 1;
       }
     }
@@ -565,6 +562,7 @@ inline int runFlitTests(int argc, char* argv[]) {
           flit::ifopen(fin, fname);
         } catch (std::ios_base::failure &ex) {
           std::cerr << "Error: file does not exist: " << fname << std::endl;
+          mpi->abort(1);
           return 1;
         }
         metadata = parseMetadata(fin);
@@ -587,6 +585,7 @@ inline int runFlitTests(int argc, char* argv[]) {
           flit::ofopen(fout, fname + options.compareSuffix);
         } catch (std::ios::failure &ex) {
           std::cerr << "Error: could not write to " << fname << std::endl;
+          mpi->abort(1);
           return 1;
         }
         outputResults(
@@ -603,7 +602,9 @@ inline int runFlitTests(int argc, char* argv[]) {
   }
 
   // Create the main results output
-  outputResults(results, *outstream);
+  if (mpi->is_root()) {
+    outputResults(results, *outstream);
+  }
 
   return 0;
 }

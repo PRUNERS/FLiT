@@ -78,39 +78,75 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END -- */
+ * -- LICENSE END --
+ */
 
-#ifndef RAND_HELPER_H
-#define RAND_HELPER_H
+#ifndef MPI_ENVIRONMENT_H
+#define MPI_ENVIRONMENT_H
 
-#include <random>
-#include <vector>
+#include "flitHelpers.h"
 
-static const int RAND_SEED = 1;
-static const int RAND_VECT_SIZE = 256;
+#ifdef FLIT_USE_MPI
+#include <mpi.h>
+#endif // FLIT_USE_MPI
 
-extern const std::vector<float> float_rands;
-extern const std::vector<double> double_rands;
-extern const std::vector<long double> long_rands;
+namespace flit{
 
-template <typename T>
-const std::vector<T>
-createRandSeq(size_t size, int32_t seed = RAND_SEED){
-  // there may be a bug with float uniform_real_dist
-  // it is giving very different results than double or long double
-  std::vector<T> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<double> dist(-6.0, 6.0);
-  for(auto& i: ret) i = T(dist(gen));
-  return ret;
-}
+/** A structure to encompass all necessities of the MPI environment for FLiT
+ *
+ * This is safe to use if MPI is disabled too.  Be sure to read the
+ * documentation to understand how the behavior is different if MPI is
+ * disabled.
+ *
+ * At its construction, this struct initializes the MPI environment, so should
+ * be called as soon as possible to the beginning of the application (such as
+ * at the beginning of main()).  At its destruction, it will call
+ * MPI_Finalize(), meaning the lifetime of this object needs to extend beyond
+ * all usages of the MPI runtime.
+ */
+struct MpiEnvironment {
+  bool enabled;
+  int rank;
+  int size;
 
-// this section provides a pregenerated random
-// sequence that can be used by tests
+  /// If mpi is enabled, initializes MPI, else does nothing
+  MpiEnvironment(int &argc, char** &argv) {
+#ifdef FLIT_USE_MPI
+    enabled = true;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else // not defined(FLIT_USE_MPI)
+    FLIT_UNUSED(argc);
+    FLIT_UNUSED(argv);
+    enabled = false;
+    rank = 0;
+    size = 1;
+#endif // FLIT_USE_MPI
+  }
 
-template <typename T>
-std::vector<T> const &
-getRandSeq();
+  /// If mpi is enabled, calls MPI_Finalize(), else does nothing
+  ~MpiEnvironment() {
+#ifdef FLIT_USE_MPI
+    MPI_Finalize();
+#endif // FLIT_USE_MPI
+  }
 
-#endif // RAND_HELPER_H
+  /// If mpi is enabled, calls MPI_Abort(), else does nothing
+  void abort(int retcode) {
+#ifdef FLIT_USE_MPI
+    MPI_Abort(MPI_COMM_WORLD, retcode);
+#else
+    FLIT_UNUSED(retcode);
+#endif // FLIT_USE_MPI
+  }
+
+  /// Returns true if my rank is zero (i.e. I am the root MPI process)
+  bool is_root() { return rank == 0; }
+};
+
+extern MpiEnvironment *mpi;
+
+} // end of namespace flit
+
+#endif // MPI_ENVIRONMENT_H

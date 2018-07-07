@@ -78,39 +78,14 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END -- */
+ * -- LICENSE END --
+ */
 
-#ifndef RAND_HELPER_H
-#define RAND_HELPER_H
+#include "MpiEnvironment.h"
 
-#include <random>
-#include <vector>
+namespace flit {
 
-static const int RAND_SEED = 1;
-static const int RAND_VECT_SIZE = 256;
+MpiEnvironment *mpi = nullptr;
 
-extern const std::vector<float> float_rands;
-extern const std::vector<double> double_rands;
-extern const std::vector<long double> long_rands;
+} // end of namespace flit
 
-template <typename T>
-const std::vector<T>
-createRandSeq(size_t size, int32_t seed = RAND_SEED){
-  // there may be a bug with float uniform_real_dist
-  // it is giving very different results than double or long double
-  std::vector<T> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<double> dist(-6.0, 6.0);
-  for(auto& i: ret) i = T(dist(gen));
-  return ret;
-}
-
-// this section provides a pregenerated random
-// sequence that can be used by tests
-
-template <typename T>
-std::vector<T> const &
-getRandSeq();
-
-#endif // RAND_HELPER_H
