@@ -463,7 +463,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   // otherwise we could deadlock
   if (mpi->enabled && options.timing && options.timingLoops < 1) {
     if (mpi->is_root()) {
-      std::cout << "Warning: cannot run auto-looping with MPI.  "
+      std::cerr << "Warning: cannot run auto-looping with MPI.  "
                    "looping set to 1\n";
     }
     options.timingLoops = 1;
