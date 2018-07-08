@@ -163,6 +163,9 @@ timing = true
 timing_loops = -1
 timing_repeats = 3
 
+enable_mpi = false
+mpirun_args = ''
+
 
 [[hosts]]
 

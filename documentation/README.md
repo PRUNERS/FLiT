@@ -10,6 +10,7 @@
 * [Writing Test Cases](writing-test-cases.md)
     * [MPI Support](mpi-support.md)
     * [CUDA Support](cuda-support.md)
+    * [Run Wrapper and HPC Support](run-wrapper-and-hpc-support.md)
 * [Compiling Your Tests](compiling-your-tests.md)
 * [Test Executable](test-executable.md)
 * [Benchmarks](benchmarks.md)
