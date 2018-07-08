@@ -4,7 +4,7 @@
 |
 [Table of Contents](README.md)
 |
-[Next](test-executable.md)
+[Next](mpi-support.md)
 
 When you initialize a test directory using `flit init`, a test file called
 `Empty.cpp` will be placed in the `tests` directory.  This test is as the name
@@ -68,4 +68,4 @@ precision taking up space in your results database.
 |
 [Table of Contents](README.md)
 |
-[Next](test-executable.md)
+[Next](mpi-support.md)

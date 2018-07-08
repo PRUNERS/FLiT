@@ -121,9 +121,15 @@ queries on an SQLite3 database.
 
 ## flit bisect
 
-When FLiT runs identify compilations that cause some tests to exhibit variability, one may want to investigate further and understand where the compiler introduced overly aggressive optimizations.
+When FLiT runs identify compilations that cause some tests to exhibit
+variability, one may want to investigate further and understand where the
+compiler introduced overly aggressive optimizations.
 
-The `flit bisect` tool is capable of assigning blame to individual source files and can often go further to assign blame to individual functions within the blamed source files.  You can run `flit bisect` directly giving it a specific compilation, precision, and test case, or you can tell it to automatically run for all differences in a given SQLite3 database.
+The `flit bisect` tool is capable of assigning blame to individual source files
+and can often go further to assign blame to individual functions within the
+blamed source files.  You can run `flit bisect` directly giving it a specific
+compilation, precision, and test case, or you can tell it to automatically run
+for all differences in a given SQLite3 database.
 
 Here is an example of giving a single test case known to show variability:
 

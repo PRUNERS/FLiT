@@ -110,8 +110,8 @@ timing_repeats = 3
 # Warning: FLiT assumes tests are deterministic.  It is your responsability to
 #          ensure that your test will always produce the same result even using
 #          MPI.
-# The mpirun_flags are for any flags passed to mpirun.  For example, you can do
-#   mpirun_flags = '-n 16 --verbose'
+# The mpirun_args are for any flags passed to mpirun.  For example, you can do
+#   mpirun_args = '-n 16 --verbose'
 enable_mpi = false
 mpirun_args = ''
 

@@ -1,6 +1,6 @@
 # Test Executable
 
-[Prev](writing-test-cases.md)
+[Prev](compiling-your-tests.md)
 |
 [Table of Contents](README.md)
 |
