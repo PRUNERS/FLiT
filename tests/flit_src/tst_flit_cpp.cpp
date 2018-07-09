@@ -103,7 +103,10 @@ public:
   std::ofstream out;
   TempFile() {
     char fname_buf[L_tmpnam];
-    std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
+    char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
+    if (s != fname_buf) {
+      throw std::runtime_error("Could not create temporary file");
+    }
 
     name = fname_buf;
     name += "-tst_flit.in";    // this makes the danger much less likely
