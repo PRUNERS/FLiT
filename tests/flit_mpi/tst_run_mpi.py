@@ -166,8 +166,8 @@ The string output files should only be written from rank 0, not rank 1
 Run #2 was with 2 mpi processes only running the test with double precision.
 First make sure that the warning about looping only once is issued.
 
->>> run_str_2[0]
-'Warning: cannot run auto-looping with MPI; Looping set to 1'
+>>> run_str_2.count('Warning: cannot run auto-looping with MPI; Looping set to 1')
+1
 
 Now make sure the test was only run once
 
@@ -179,8 +179,8 @@ Now make sure the test was only run once
 Run #3 was with 1 mpi process only running the test with double precision.
 First make sure that the warning about looping was NOT issued.
 
->>> run_str_3[0]
-'MpiHello: hello from rank 0 of 1'
+>>> run_str_3.count('Warning: cannot run auto-looping with MPI; Looping set to 1')
+0
 
 Make sure the test was run multiple times
 
