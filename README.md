@@ -59,6 +59,7 @@ Contents:
 * [Writing Test Cases](documentation/writing-test-cases.md)
     * [MPI Support](documentation/mpi-support.md)
     * [CUDA Support](documentation/cuda-support.md)
+    * [Run Wrapper and HPC Support](run-wrapper-and-hpc-support.md)
 * [Compiling Your Tests](documentation/compiling-your-tests.md)
 * [Test Executable](documentation/test-executable.md)
 * [Benchmarks](documentation/benchmarks.md)
