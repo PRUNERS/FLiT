@@ -122,7 +122,9 @@ zeroMinusX
 
 ### Execute Only Particular Precisions
 
-In addition to only executing a particular test, you can limit which precision to execute instead of doing all of them.  This is with the option of `--precision`.  There are four potential values for this option,
+In addition to only executing a particular test, you can limit which precision
+to execute instead of doing all of them.  This is with the option of
+`--precision`.  There are four potential values for this option,
 
 - `float`: 32-bit floating-point only
 - `double`: 64-bit floating-point only

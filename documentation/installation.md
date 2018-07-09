@@ -7,12 +7,11 @@
 Instruction Contents:
 
 * [Prerequisites](#prerequisites)
-  * [Shared Prerequisites](#shared-prerequisites)
-  * [Runner Prerequisites](#runner-prerequisites)
-  * [Database Prerequisites](#database-prerequisites)
+  * [Compilers](#compilers)
+  * [Optional Dependencies](#optional-dependencies)
 * [FLiT Setup](#flit-setup)
 * [Database Setup](#database-setup)
-* [SSH Keys (Optional)](#ssh-keys-optional)
+* [Uninstallation](#uninstallation)
 
 ## Prerequisites
 
@@ -61,6 +60,21 @@ install another version of GCC, as well as Clang and the Intel compiler.  If
 you are missing either Clang or the Intel compiler, FLiT will still work as
 expected.
 
+### Optional Dependencies
+
+FLiT has [MPI support](mpi-support.md) which you may want to use.  To compile
+and install FLiT, MPI does not need to be installed.  If you later choose the
+use MPI, you only need it installed when you go to compile the tests that
+require it.
+
+If you choose to use MPI support, you likely know what you need.  FLiT requires
+that both `mpic++` and `mpirun` are found in the system `PATH`.  On Ubuntu,
+OpenMPI is installed with
+
+```bash
+sudo apt install openmpi-bin libopenmpi-dev
+```
+
 ## FLiT Setup
 
 You will need FLiT available and compiled.  It can be optionally installed.
@@ -102,7 +116,9 @@ There should be nothing to setup since `sqlite3` should already be present.
 
 ## Uninstallation
 
-You can also uninstall as easily as you installed.  If you used a custom `PREFIX` value, then that custom `PREFIX` value should also be used.  For example if you installed with
+You can also uninstall as easily as you installed.  If you used a custom
+`PREFIX` value, then that custom `PREFIX` value should also be used.  For
+example if you installed with
 
 ```bash
 make install PREFIX=~/my-installs/
