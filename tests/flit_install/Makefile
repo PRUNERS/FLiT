@@ -16,4 +16,4 @@ build:
 clean:
 
 run_% : %.py
-	@python $<
+	@$(RUNNER) $<
