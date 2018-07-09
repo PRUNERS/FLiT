@@ -14,8 +14,10 @@ BUILD_TARGETS := $(addprefix build__,$(SUB_DIRS))
 .PHONY: build check help clean
 build: $(TESTER) $(BUILD_TARGETS)
 
+include color_out.mk
+
 check: run__$(TESTER) $(CHECK_TARGETS)
-	@echo "All tests pass"
+	@$(call color_out,GREEN,All tests pass)
 
 help:
 	@echo "Makefile for running tests on FLiT framework"
