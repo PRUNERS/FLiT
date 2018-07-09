@@ -128,7 +128,7 @@ def main(arguments, prog=sys.argv[0]):
             declaration at the top of each file copied.
         @return None
         '''
-        for dest, src in dest_to_src.items():
+        for dest, src in sorted(dest_to_src.items()):
             realdest = os.path.join(args.directory, dest)
             print('Creating {0}'.format(realdest))
             if not args.overwrite and os.path.exists(realdest):

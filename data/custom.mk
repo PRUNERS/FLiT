@@ -79,8 +79,8 @@
 #    purposes.
 #
 # -- LICENSE END --
-# This file is included at the end of the copied Makefile.  If you have some
-# things you want to change about the Makefile, it is best to do it here.
+# This file is included by the generated Makefile.  If you have some things you
+# want to change about the Makefile, it is best to do it here.
 
 # additional source files to compile other than what is in '.' and 'tests/'
 # since those directories are added by a wildcard.
@@ -105,4 +105,10 @@ LD_REQUIRED    +=
 # - DEV_LDFLAGS:  linker flags (also not under test)
 DEV_CFLAGS     +=
 DEV_LDFLAGS    +=
+
+# wrapper around the running of the test executable when run through the
+# Makefile.
+# For example, to run a test incorporating MPI, you could use
+#   RUN_WRAPPER := srun --nodes 1
+RUN_WRAPPER    :=
 

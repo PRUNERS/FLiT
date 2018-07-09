@@ -183,13 +183,13 @@ $(GT_LIB_TARGET): $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning we are on a mac
 
 $(GT_LIB_OUT): $(GT_LIB_TARGET)
-	./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
+	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
 
 $(GT_LIB_TARGET): $(GT_OBJ) Makefile custom.mk $(MAKEFILE)
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
 
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_LIB_OUT) $(GT_LIB_TARGET)
-	./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null
+	$(RUNWRAP) ./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null
 
 endif # ifeq ($(BUILD_GT_LOCAL),true): meaning we are making a local gt
 
@@ -199,9 +199,9 @@ endif # ifeq ($(BUILD_GT_LOCAL),true): meaning we are making a local gt
 -include $(SPLIT_DEPS)
 
 $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
-	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
+	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
-	./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
+	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
 $(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED)

@@ -88,10 +88,10 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "flitHelpers.h"
-
-#include "timeFunction.h"
+#include "MpiEnvironment.h"
 #include "Variant.h"
+#include "flitHelpers.h"
+#include "timeFunction.h"
 
 #include <fstream>
 #include <functional>
@@ -261,7 +261,8 @@ public:
         testResult = runner(runInput);
       }
       // If the test returns a dummy value, then do not record this run.
-      if (testResult.type() == Variant::Type::None) {
+      // Also, recording of values is only needed in the MPI root process
+      if (!mpi->is_root() || testResult.type() == Variant::Type::None) {
         continue;
       }
       std::string name = id;

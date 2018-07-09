@@ -38,6 +38,8 @@ supported for the `type`.  The only thing that needs to be specified is
 timing = true
 timing_loops = -1
 timing_repeats = 3
+enable_mpi = false
+mpirun_args = ''
 ```
 
 Here we have information about how to execute the tests.  More specifically
@@ -46,7 +48,8 @@ can change the defaults of the timing if you find it is taking too long to run
 with the default timing procedure.
 
 These options are only for the full run done by either calling `flit make` or
-`make run`.
+`make run`.  Some of these options may be used by `flit bisect` as well, but
+not the timing ones since `flit bisect` does not care so much about timing.
 
 * `timing`: `false` means to turn off the timing feature.  The full test run
   will be much faster with this option.  This is related to the `--timing` and
@@ -58,6 +61,15 @@ These options are only for the full run done by either calling `flit make` or
 * `timing_repeats`: How many times to repeat timing.  The minimum timing value
   will be kept.  This is the same as the `--timing-repeats` option flag from
   [test executable](test-executable.md#Timing).
+* `enable_mpi`: Turns on compiling and running tests with MPI support.  See the
+  [MPI Support](mpi-support.md) page for more information.
+* `mpirun_args`: Arguments to pass to `mpirun`.  This is where you specify how
+  many processes to run, for example `-n 16` to run 16 instances of the tests
+  under MPI.
+
+**A note about MPI:** FLiT requires the tests to be deterministic.  If the
+tests employ MPI, it is the test creator's responsibility to ensure that the
+test produces identical results every time.
 
 ```toml
 [[hosts]]
@@ -150,6 +162,9 @@ filepath = 'results.sqlite'
 timing = true
 timing_loops = -1
 timing_repeats = 3
+
+enable_mpi = false
+mpirun_args = ''
 
 
 [[hosts]]

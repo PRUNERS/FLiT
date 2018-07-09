@@ -78,39 +78,36 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END -- */
+ * -- LICENSE END --
+ */
 
-#ifndef RAND_HELPER_H
-#define RAND_HELPER_H
+#include <flit.h>
 
-#include <random>
-#include <vector>
-
-static const int RAND_SEED = 1;
-static const int RAND_VECT_SIZE = 256;
-
-extern const std::vector<float> float_rands;
-extern const std::vector<double> double_rands;
-extern const std::vector<long double> long_rands;
+#include <string>
+#include <sstream>
 
 template <typename T>
-const std::vector<T>
-createRandSeq(size_t size, int32_t seed = RAND_SEED){
-  // there may be a bug with float uniform_real_dist
-  // it is giving very different results than double or long double
-  std::vector<T> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<double> dist(-6.0, 6.0);
-  for(auto& i: ret) i = T(dist(gen));
-  return ret;
-}
+class MpiHello : public flit::TestBase<T> {
+public:
+  MpiHello(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
-// this section provides a pregenerated random
-// sequence that can be used by tests
+  virtual size_t getInputsPerRun() override { return 1; }
+  virtual std::vector<T> getDefaultInput() override {
+    return { T(flit::mpi->rank) };
+  }
 
-template <typename T>
-std::vector<T> const &
-getRandSeq();
+protected:
+  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
+    std::ostringstream ss;
+    ss
+      << id << ": hello from rank " << flit::mpi->rank
+      << " of " << flit::mpi->size << std::endl;
+    std::cout << ss.str();
+    return ss.str();
+  }
 
-#endif // RAND_HELPER_H
+protected:
+  using flit::TestBase<T>::id;
+};
+
+REGISTER_TYPE(MpiHello)
