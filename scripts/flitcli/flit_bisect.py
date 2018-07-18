@@ -91,7 +91,6 @@ import csv
 import datetime
 import glob
 import hashlib
-import itertools
 import logging
 import multiprocessing as mp
 import os
@@ -507,10 +506,9 @@ def bisect_search(is_bad, elements):
     # Perform a sanity check.  If we have found all of the bad items, then
     # compiling with all but these bad items will cause a good build.
     # This will fail if our hypothesis class is wrong
-    if len(bad_list) > 0:
-        good_list = list(set(elements).difference(bad_list))
-        assert not is_bad(good_list, bad_list), \
-            'Assumption that bad elements are independent was wrong'
+    good_list = list(set(elements).difference(bad_list))
+    assert not is_bad(good_list, bad_list), \
+        'Assumption that bad elements are independent was wrong'
 
     return bad_list
 
@@ -768,10 +766,18 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     return bad_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
-                               bad_sources):
+                               bad_source):
     '''
     Performs the search over the space of symbols within bad source files for
     problems.
+
+    @param args: parsed command-line arguments
+    @param bisect_path: directory where bisect is being performed
+    @param replacements: dictionary of values to use in generating the Makefile
+    @param sources: all source files
+    @param bad_source: the one bad source file to search for bad symbols
+
+    @return a list of identified bad symbols (if any)
     '''
     def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
         '''
@@ -831,17 +837,27 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         return result_is_bad
 
-    print('Searching for bad symbols in the bad sources:')
-    logging.info('Searching for bad symbols in the bad sources')
+    print('Searching for bad symbols in:', bad_source)
+    logging.info('Searching for bad symbols in: %s', bad_source)
     logging.info('Note: inlining disabled to isolate functions')
     logging.info('Note: only searching over globally exported functions')
     logging.debug('Symbols:')
-    symbol_tuples = extract_symbols(bad_sources,
+    symbol_tuples = extract_symbols(bad_source,
                                     os.path.join(args.directory, 'obj'))
     for sym in symbol_tuples:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
         logging.info('%s', message)
+
+    # Check to see if -fPIC destroyed any chance of finding any bad symbols
+    if not bisect_symbol_build_and_check(symbol_tuples, []):
+        message_1 = '  Warning: -fPIC compilation destroyed the optimization'
+        message_2 = '  Cannot find any trouble symbols'
+        print(message_1)
+        print(message_2)
+        logging.warning('%s', message_1)
+        logging.warning('%s', message_2)
+        return []
 
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     return bad_symbols
@@ -1054,23 +1070,37 @@ def run_bisect(arguments, prog=sys.argv[0]):
         logging.info('  None')
 
 
-    try:
-        bad_symbols = search_for_symbol_problems(args, bisect_path,
-                                                 replacements, sources,
-                                                 bad_sources)
-    except subp.CalledProcessError:
-        print()
-        print('  Executable failed to run.')
-        print('Failed to search for bad symbols -- cannot continue')
-        logging.exception('Failed to search for bad symbols.')
-        return bisect_num, bad_libs, bad_sources, None, 1
+    # Search for bad symbols one bad file at a time
+    # This will allow us to maybe find some symbols where crashes before would
+    # cause problems and no symbols would be identified
+    bad_symbols = []
+    for bad_source in bad_sources:
+        try:
+            file_bad_symbols = search_for_symbol_problems(
+                args, bisect_path, replacements, sources, bad_source)
+        except subp.CalledProcessError:
+            print()
+            print('  Executable failed to run.')
+            print('Failed to search for bad symbols in {} -- cannot continue' \
+                    .format(bad_source))
+            logging.exception('Failed to search for bad symbols in %s',
+                              bad_source)
+        bad_symbols.extend(file_bad_symbols)
+        if len(file_bad_symbols) > 0:
+            print('  bad symbols in {}:'.format(bad_source))
+            logging.info('  bad symbols in %s:', bad_source)
+            for sym in file_bad_symbols:
+                message = '    line {sym.lineno} -- {sym.demangled}' \
+                          .format(sym=sym)
+                print(message)
+                logging.info('%s', message)
 
-    print('  bad symbols:')
+    print('All bad symbols:')
     logging.info('BAD SYMBOLS:')
     for sym in bad_symbols:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
-        print('  ' + message)
+        print(message)
         logging.info('%s', message)
     if len(bad_symbols) == 0:
         print('    None')
