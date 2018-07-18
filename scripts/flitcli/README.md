@@ -11,7 +11,8 @@ things:
 
 ## FLiT Subcommands
 
-To add an additional subcommand, there are only a few things you need to do.  For this documentation, let us use the example subcommand of squelch.
+To add an additional subcommand, there are only a few things you need to do.
+For this documentation, let us use the example subcommand of squelch.
 
 1. Create a file in this same directory called `flit_squelch.py`.  The
    subcommand should not be too long in length, otherwise it makes it hard to

@@ -90,52 +90,12 @@ namespace {
 } // end of unnamed namespace
 
 template <typename T>
-DEVICE
-T getCArea(const T a, const T b, const T c) {
-  return flit::cpow(T(2.0), T(-2)) *
-         flit::csqrt(T((a + (b + c)) *
-                       (a + (b - c)) * 
-                       (c + (a - b)) *
-                       (c - (a - b))));
-}
-
-template <typename T>
 T getArea(const T a, const T b, const T c) {
   return pow(T(2.0), T(-2)) *
          sqrt(T((a + (b + c)) *
-                (a + (b - c)) * 
+                (a + (b - c)) *
                 (c + (a - b)) *
                 (c - (a - b))));
-}
-
-template <typename T>
-GLOBAL
-void
-TrianglePSKern(const T* tiList, size_t n, double* results){
-#ifdef __CUDA__
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-  auto idx = 0;
-#endif
-  const T* ti = tiList + (idx*n);
-  T maxval = ti[0];
-  T a = maxval;
-  T b = maxval;
-  T c = maxval * flit::csqrt(T(2.0));
-  const T delta = maxval / T(iters);
-  const T checkVal = T(0.5) * b * a;
-
-  double score = 0.0;
-
-  for(T pos = 0; pos <= a; pos += delta){
-    b = flit::csqrt(flit::cpow(pos, T(2.0)) +
-	      flit::cpow(maxval, T(2.0)));
-    c = flit::csqrt(flit::cpow(a - pos, T(2.0)) +
-	      flit::cpow(maxval, T(2.0)));
-    auto crit = getCArea(a,b,c);
-    score += std::abs(crit - checkVal);
-  }
-  results[idx] = score;
 }
 
 template <typename T>
@@ -149,8 +109,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override {return TrianglePSKern; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     T maxval = ti[0];
     // start as a right triangle

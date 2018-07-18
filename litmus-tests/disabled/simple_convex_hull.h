@@ -97,11 +97,7 @@
 #endif
 
 #ifndef OFT
-#if defined(__CUDA__) || defined(__aarch64__)
-#define OFT double
-#else
 #define OFT long double
-#endif
 #endif
 
 #define WFT float
@@ -282,7 +278,7 @@ extern std::vector<PrimitiveCall> Decisions;
   Simple Convex Hull
  */
 template <typename T = WFT>
-void SimpleComputeConvexhull () { // (FILE *outfile) { 
+void SimpleComputeConvexhull () { // (FILE *outfile) {
   //  assert(outfile != NULL);
 
   std::vector<Edge> chedges;

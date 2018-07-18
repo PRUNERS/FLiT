@@ -83,18 +83,6 @@
 
 #include <string>
 
-template <typename T>
-GLOBAL
-void Empty_kernel(const T* tiList, size_t n, double* results) {
-#ifdef __CUDA__
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-  auto idx = 0;
-#endif
-  const T* ti = tiList + (idx*n);
-  results[idx] = ti[0];
-}
-
 /** An example test class to show how to make FLiT tests
  *
  * You will want to rename this file and rename the class.  Then implement
@@ -106,7 +94,7 @@ public:
   Empty(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   /** Specify how many floating-point inputs your algorithm takes.
-   * 
+   *
    * Can be zero.  If it is zero, then getDefaultInput should return an empty
    * std::vector, which is as simple as "return {};"
    */
@@ -139,9 +127,6 @@ public:
    * Which one is used depends on the type of Variant that is returned from the
    * run_impl function.  The value returned by compare will be the value stored
    * in the database for later analysis.
-   *
-   * Note: when using the CUDA kernel functionality, only long double return
-   * values are valid for now.
    */
   virtual long double compare(long double ground_truth,
                               long double test_results) const override {
@@ -158,20 +143,6 @@ public:
   }
 
 protected:
-  /** Return a kernel pointer to the CUDA kernel equivalent of run_impl
-   *
-   * The default base implementation of this function is simply to return
-   * null_ptr, which will cause it to call run_impl even when compiled under
-   * CUDA.
-   *
-   * If you do not have or do not want to have a CUDA version of your code,
-   * then you can delete this virtual function and use the base implementation.
-   *
-   * See the documentation above Empty_kernel() for details about what the
-   * kernel is expected to have.
-   */
-  virtual flit::KernelFunction<T>* getKernel() override { return Empty_kernel; }
-
   /** Call or implement the algorithm here.
    *
    * You return a flit::Variant which can represent one of a number of

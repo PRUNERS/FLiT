@@ -92,7 +92,22 @@ type = 'sqlite'
 # configuration file.
 filepath = 'results.sqlite'
 
-# For now, only one host is supported, all others are ignored
+
+[run]
+
+# Set this to false to not do any timing at all
+timing = true
+
+# The number of loops to run with the timing.  For values < 0, the number of
+# loops to run will be determined automatically.
+timing_loops = -1
+
+# How many times to repeat the timing.  The minimum of the repeated timings
+# will be kept.
+timing_repeats = 3
+
+
+# For now, only the first host is supported, all others are ignored
 [[hosts]]
 
 # TODO: add documentation here for each element.
@@ -135,7 +150,7 @@ switches = ''
   # database and analysis.
   name = 'g++'
   # TODO: implement these supported types
-  # There are a few supported types: [ gcc, intel, clang, cuda ]
+  # There are a few supported types: [ gcc, intel, clang ]
   type = 'gcc'
   optimization_levels = [
     '-O0',
@@ -156,5 +171,5 @@ switches = ''
     ''
     # ...
   ]
-  
+
 

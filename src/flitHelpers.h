@@ -89,9 +89,9 @@
 #define FLIT_HELPERS_HPP
 
 #include "InfoStream.h"
-#include "CUHelpers.h"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <ostream>
@@ -108,46 +108,12 @@
 
 namespace flit {
 
-const int RAND_SEED = 1;
-const int RAND_VECT_SIZE = 256;
-
 extern thread_local InfoStream info_stream;
-
-// this section provides a pregenerated random
-// sequence that can be used by tests, including
-// CUDA
-
-template <typename T>
-const std::vector<T>
-setRandSeq(size_t size, int32_t seed = RAND_SEED){
-  // there may be a bug with float uniform_real_dist
-  // it is giving very different results than double or long double
-  std::vector<T> ret(size);
-  std::mt19937 gen;
-  gen.seed(seed);
-  std::uniform_real_distribution<double> dist(-6.0, 6.0);
-  for(auto& i: ret) i = T(dist(gen));
-  return ret;
-}
-  
-const std::vector<uint_fast32_t>
-getShuffleSeq(uint_fast32_t);
-
-extern const std::vector<float> float_rands;
-extern const std::vector<double> double_rands;
-extern const std::vector<long double> long_rands;
-
-extern const std::vector<uint_fast32_t> shuffled_16;
-
-template <typename T>
-std::vector<T> const &
-getRandSeq();
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
 template <typename F, typename I>
-HOST_DEVICE
 F as_float_impl(I val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
@@ -157,13 +123,11 @@ F as_float_impl(I val) {
   return u.f;
 }
 
-HOST_DEVICE
 inline float
 as_float(uint32_t val) {
   return as_float_impl<float, uint32_t>(val);
 }
 
-HOST_DEVICE
 inline double
 as_float(uint64_t val) {
   return as_float_impl<double, uint64_t>(val);
@@ -175,7 +139,6 @@ as_float(unsigned __int128 val) {
 }
 
 template <typename F, typename I>
-HOST_DEVICE
 I as_int_impl(F val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
   union {
@@ -185,13 +148,11 @@ I as_int_impl(F val) {
   return u.i;
 }
 
-HOST_DEVICE
 inline uint32_t
 as_int(float val) {
   return as_int_impl<float, uint32_t>(val);
 }
 
-HOST_DEVICE
 inline uint64_t
 as_int(double val) {
   return as_int_impl<double, uint64_t>(val);
@@ -204,7 +165,50 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
+/** Opens a file, but on failure, throws std::ios::failure
+ *
+ * T must be one of {fstream, ifstream, ofstream}
+ *
+ * The passed in filestream should be an empty-constructed stream
+ */
+template <typename T>
+void _openfile_check(T& filestream, const std::string &filename) {
+  // turn on exceptions on failure
+  filestream.exceptions(std::ios::failbit);
+
+  // opening will throw if the file does not exist or is not readable
+  filestream.open(filename);
+
+  // turn off all exceptions (back to the default behavior)
+  filestream.exceptions(std::ios::goodbit);
+}
+
+/** Opens a file for reading, but on failure, throws std::ios::failure
+ *
+ * The passed in filestream should be an empty-constructed stream
+ *
+ * Note: This was changed to pass in the stream rather than return it because
+ * GCC 4.8 failed to compile - it failed to use the move assignment operator
+ * and move constructor, and instead tried to use the copy constructor.
+ */
+inline void ifopen(std::ifstream& in, const std::string &filename) {
+  _openfile_check<std::ifstream>(in, filename);
+}
+
+/** Opens a file for writing, but on failure, throws std::ios::failure
+ *
+ * The passed in filestream should be an empty-constructed stream
+ *
+ * Note: this was changed to pass in the stream rather than return it because
+ * GCC 4.8 failed to compile - it failed to use the move assignment operator
+ * and move constructor, and instead tried to use the copy constructor.
+ */
+inline void ofopen(std::ofstream& out, const std::string &filename) {
+  _openfile_check<std::ofstream>(out, filename);
+  out.precision(1000);  // lots of digits of precision
+}
+
 } // end of namespace flit
 
 #endif // FLIT_HELPERS_HPP
- 
+

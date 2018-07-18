@@ -79,6 +79,9 @@
  *    purposes.
  *
  * -- LICENSE END -- */
+
+#include "Vector.h"
+
 #include <flit.h>
 
 #include <typeinfo>
@@ -89,52 +92,6 @@
 namespace {
   const int iters = 200;
   const int ulp_inc = 1;
-}
-
-template <typename T>
-GLOBAL
-void
-DoOPTKernel(const T* tiList, size_t n, double* results){
-#ifdef __CUDA__
-  auto idx = blockIdx.x * blockDim.x + threadIdx.x;
-#else
-  auto idx = 0;
-#endif
-
-  const T* ti = tiList + (idx*n);
-  double score = 0.0;
-  cuvector<unsigned> orthoCount(n, 0.0);
-  // we use a double literal above as a workaround for Intel 15-16 compiler
-  // bug:
-  // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-  flit::VectorCU<T> a(ti, n);
-  flit::VectorCU<T> b = a.genOrthoVector();
-
-  T backup;
-
-  for(decltype(n) r = 0; r < n; ++r){
-    T &p = a[r];
-    backup = p;
-    for(int i = 0; i < iters; ++i){
-      auto tmp = flit::as_int(p);
-      p = flit::as_float(++tmp); //yeah, this isn't perfect
-      //p = std::nextafter(p, std::numeric_limits<T>::max());
-      auto watchPoint = FLT_MIN;
-      watchPoint = a ^ b;
-
-      bool isOrth = watchPoint == 0; //a.isOrtho(b);
-      if(isOrth){
-        orthoCount[r]++;
-        // score should be perturbed amount
-        if(i != 0) score += std::abs(p - backup);
-      }else{
-        // if falsely not detecting ortho, should be the dot prod
-        if(i == 0) score += std::abs(watchPoint); //a ^ b);  
-      }
-    }
-    p = backup;
-  }
-  results[idx] = score;
 }
 
 template <typename T>
@@ -152,8 +109,6 @@ public:
   }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return DoOPTKernel; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     using flit::operator<<;
 
@@ -163,8 +118,8 @@ protected:
     // we use a double literal above as a workaround for Intel 15-16 compiler
     // bug:
     // https://software.intel.com/en-us/forums/intel-c-compiler/topic/565143
-    flit::Vector<T> a(ti);
-    flit::Vector<T> b = a.genOrthoVector();
+    Vector<T> a(ti);
+    Vector<T> b = a.genOrthoVector();
 
     T backup;
 

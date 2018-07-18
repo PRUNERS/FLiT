@@ -79,15 +79,12 @@
 #    purposes.
 #
 # -- LICENSE END --
-# This file is included at the end of the copied Makefile.  If you have some
-# things you want to change about the Makefile, it is best to do it here.
+# This file is included by the generated Makefile.  If you have some things you
+# want to change about the Makefile, it is best to do it here.
 
 # additional source files to compile other than what is in '.' and 'tests/'
 # since those directories are added by a wildcard.
 SOURCE         +=
-
-# for when cuda is compiled, you can specify different source files
-CUSOURCE       +=
 
 # required compiler flags
 # for example, include directories
@@ -109,12 +106,9 @@ LD_REQUIRED    +=
 DEV_CFLAGS     +=
 DEV_LDFLAGS    +=
 
-# required compiler flags for CUDA
-NVCC_CFLAGS    +=
+# wrapper around the running of the test executable when run through the
+# Makefile.
+# For example, to run a test incorporating MPI, you could use
+#   RUN_WRAPPER := srun --nodes 1
+RUN_WRAPPER    :=
 
-# required link flags for CUDA
-NVCC_LINK      +=
-
-# compiler and linker flags respectively - specifically for a dev cuda build
-DEV_NVCC_CC    +=
-DEV_NVCC_LD    +=

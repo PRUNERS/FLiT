@@ -91,7 +91,7 @@ template <typename T>
 class ShewchukSum : public flit::TestBase<T> {
 public:
   ShewchukSum(std::string id) : flit::TestBase<T>(std::move(id)) {}
-  
+
   virtual size_t getInputsPerRun() override { return 1000; }
   virtual std::vector<T> getDefaultInput() override;
 
@@ -124,9 +124,7 @@ namespace {
   template<typename T> std::vector<T> getToRepeat();
   template<> std::vector<float> getToRepeat() { return { 1.0, 1.0e8, 1.0, -1.0e8 }; }
   template<> std::vector<double> getToRepeat() { return { 1.0, 1.0e100, 1.0, -1.0e100 }; }
-#ifndef __CUDA__
   template<> std::vector<long double> getToRepeat() { return { 1.0, 1.0e200, 1.0, -1.0e200 }; }
-#endif
 } // end of unnamed namespace
 
 template <typename T>

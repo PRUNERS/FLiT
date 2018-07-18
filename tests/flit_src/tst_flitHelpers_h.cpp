@@ -106,30 +106,6 @@ unsigned __int128 combine_to_128(uint64_t left_half, uint64_t right_half) {
 
 } // end of unnamed namespace
 
-template <typename T>
-void tst_setRandSeq() {
-  size_t n = 10;
-  int32_t seed = 5024;
-  auto expected = flit::setRandSeq<T>(n, seed);
-  auto actual = flit::setRandSeq<T>(n, seed);
-  for (decltype(n) i = 0; i < n; i++) {
-    TH_EQUAL(expected[i], actual[i]);
-    TH_VERIFY(expected[i] <= 6.0 && expected[i] >= -6.0);
-  }
-
-  // Changing the seed should give you a different sequence
-  actual = flit::setRandSeq<T>(n, seed + 2);
-  for (decltype(n) i = 0; i < n; i++) {
-    TH_NOT_EQUAL(expected[i], actual[i]);
-  }
-}
-void tst_setRandSeq_float() { tst_setRandSeq<float>(); }
-void tst_setRandSeq_double() { tst_setRandSeq<double>(); }
-void tst_setRandSeq_longdouble() { tst_setRandSeq<long double>(); }
-TH_REGISTER(tst_setRandSeq_float);
-TH_REGISTER(tst_setRandSeq_double);
-TH_REGISTER(tst_setRandSeq_longdouble);
-
 void tst_as_float_32bit() {
   uint32_t val = 1067316150;
   float expected = 1.234;

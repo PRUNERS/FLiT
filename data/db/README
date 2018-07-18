@@ -1,8 +1,0 @@
-This describes how to create the DB Installer script:
-InstallFlitDB.sh.
-
-The installFlitDB.sh script curently has setup_db_host.sh and
-matplotlibrc embedded and is self extracting.
-
-Run './CreateFlitDBInstaller.sh setup_db_host.sh matplotlibrc'
-

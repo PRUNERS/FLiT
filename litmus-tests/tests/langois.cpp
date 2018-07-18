@@ -83,6 +83,8 @@
 // an EFT (error-free transformation)
 // see http://perso.ens-lyon.fr/nicolas.louvet/LaLo07b.pdf
 
+#include "RandHelper.h"
+
 #include <flit.h>
 
 #include <tuple>
@@ -131,19 +133,17 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = flit::getRandSeq<T>();
+    auto rand = getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
 			    rand.begin() + 2*size);
     std::vector<T> s(size);
-    s[0] = x[0] * y[0]; 
+    s[0] = x[0] * y[0];
     for(stype i = 1; i < size; ++i){
       s[i] = std::fma(x[i], y[i], s[i-1]);
     }
@@ -166,13 +166,11 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = flit::getRandSeq<T>();
+    auto rand = getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
@@ -204,13 +202,11 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
 
 protected:
-  virtual flit::KernelFunction<T>* getKernel() override { return nullptr; }
-
   virtual flit::Variant run_impl(const std::vector<T>& ti) override {
     FLIT_UNUSED(ti);
     using stype = typename std::vector<T>::size_type;
     stype size = 16;
-    auto rand = flit::getRandSeq<T>();
+    auto rand = getRandSeq<T>();
     auto x = std::vector<T>(rand.begin(),
 			    rand.begin() + size);
     auto y = std::vector<T>(rand.begin() + size,
