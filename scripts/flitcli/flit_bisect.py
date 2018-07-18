@@ -1081,7 +1081,8 @@ def run_bisect(arguments, prog=sys.argv[0]):
         except subp.CalledProcessError:
             print()
             print('  Executable failed to run.')
-            print('Failed to search for bad symbols in -- cannot continue')
+            print('Failed to search for bad symbols in {} -- cannot continue' \
+                    .format(bad_source))
             logging.exception('Failed to search for bad symbols in %s',
                               bad_source)
         bad_symbols.extend(file_bad_symbols)
