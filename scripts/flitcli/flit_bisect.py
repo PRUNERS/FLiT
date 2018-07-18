@@ -768,10 +768,18 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     return bad_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
-                               bad_sources):
+                               bad_source):
     '''
     Performs the search over the space of symbols within bad source files for
     problems.
+
+    @param args: parsed command-line arguments
+    @param bisect_path: directory where bisect is being performed
+    @param replacements: dictionary of values to use in generating the Makefile
+    @param sources: all source files
+    @param bad_source: the one bad source file to search for bad symbols
+
+    @return a list of identified bad symbols (if any)
     '''
     def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
         '''
@@ -842,6 +850,16 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
         logging.info('%s', message)
+
+    # Check to see if -fPIC destroyed any chance of finding any bad symbols
+    if not bisect_symbol_build_and_check(symbol_tuples, []):
+        message_1 = '  Warning: -fPIC compilation destroyed the optimization'
+        message_2 = '  Cannot find any trouble symbols'
+        print(message_1)
+        print(message_2)
+        logging.warning('%s', message_1)
+        logging.warning('%s', message_2)
+        return []
 
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
     return bad_symbols
