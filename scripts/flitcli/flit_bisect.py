@@ -831,12 +831,12 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         return result_is_bad
 
-    print('Searching for bad symbols in the bad sources:')
-    logging.info('Searching for bad symbols in the bad sources')
+    print('Searching for bad symbols in:', bad_source)
+    logging.info('Searching for bad symbols in: %s', bad_source)
     logging.info('Note: inlining disabled to isolate functions')
     logging.info('Note: only searching over globally exported functions')
     logging.debug('Symbols:')
-    symbol_tuples = extract_symbols(bad_sources,
+    symbol_tuples = extract_symbols(bad_source,
                                     os.path.join(args.directory, 'obj'))
     for sym in symbol_tuples:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
@@ -1054,16 +1054,21 @@ def run_bisect(arguments, prog=sys.argv[0]):
         logging.info('  None')
 
 
-    try:
-        bad_symbols = search_for_symbol_problems(args, bisect_path,
-                                                 replacements, sources,
-                                                 bad_sources)
-    except subp.CalledProcessError:
-        print()
-        print('  Executable failed to run.')
-        print('Failed to search for bad symbols -- cannot continue')
-        logging.exception('Failed to search for bad symbols.')
-        return bisect_num, bad_libs, bad_sources, None, 1
+    # Search for bad symbols one bad file at a time
+    # This will allow us to maybe find some symbols where crashes before would
+    # cause problems and no symbols would be identified
+    bad_symbols = []
+    for bad_source in bad_sources:
+        try:
+            file_bad_symbols = search_for_symbol_problems(
+                args, bisect_path, replacements, sources, bad_source)
+        except subp.CalledProcessError:
+            print()
+            print('  Executable failed to run.')
+            print('Failed to search for bad symbols in -- cannot continue')
+            logging.exception('Failed to search for bad symbols in %s',
+                              bad_source)
+        bad_symbols.extend(file_bad_symbols)
 
     print('  bad symbols:')
     logging.info('BAD SYMBOLS:')
