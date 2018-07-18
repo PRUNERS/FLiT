@@ -91,7 +91,6 @@ import csv
 import datetime
 import glob
 import hashlib
-import itertools
 import logging
 import multiprocessing as mp
 import os
