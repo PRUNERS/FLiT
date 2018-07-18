@@ -507,10 +507,9 @@ def bisect_search(is_bad, elements):
     # Perform a sanity check.  If we have found all of the bad items, then
     # compiling with all but these bad items will cause a good build.
     # This will fail if our hypothesis class is wrong
-    if len(bad_list) > 0:
-        good_list = list(set(elements).difference(bad_list))
-        assert not is_bad(good_list, bad_list), \
-            'Assumption that bad elements are independent was wrong'
+    good_list = list(set(elements).difference(bad_list))
+    assert not is_bad(good_list, bad_list), \
+        'Assumption that bad elements are independent was wrong'
 
     return bad_list
 
