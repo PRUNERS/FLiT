@@ -1085,23 +1085,21 @@ def run_bisect(arguments, prog=sys.argv[0]):
             logging.exception('Failed to search for bad symbols in %s',
                               bad_source)
         bad_symbols.extend(file_bad_symbols)
-        print('  bad symbols in {}:'.format(bad_source))
-        logging.info('  bad symbols in %s:', bad_source)
-        for sym in file_bad_symbols:
-            message = '    line {sym.lineno} -- {sym.demangled}' \
-                      .format(sym=sym)
-            print(message)
-            logging.info('%s', message)
-        if len(file_bad_symbols) == 0:
-            print('    None')
-            logging.info('    None')
+        if len(file_bad_symbols) > 0:
+            print('  bad symbols in {}:'.format(bad_source))
+            logging.info('  bad symbols in %s:', bad_source)
+            for sym in file_bad_symbols:
+                message = '    line {sym.lineno} -- {sym.demangled}' \
+                          .format(sym=sym)
+                print(message)
+                logging.info('%s', message)
 
     print('All bad symbols:')
     logging.info('BAD SYMBOLS:')
     for sym in bad_symbols:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
                   .format(sym=sym)
-        print('  ' + message)
+        print(message)
         logging.info('%s', message)
     if len(bad_symbols) == 0:
         print('    None')
