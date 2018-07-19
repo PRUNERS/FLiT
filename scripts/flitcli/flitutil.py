@@ -349,3 +349,7 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     var_values = output.split('=', maxsplit=1)[1].split()
     return var_values
 
+def printlog(message):
+    'Prints the message to stdout and logs the message at the info level'
+    print(message)
+    logging.info(message)
