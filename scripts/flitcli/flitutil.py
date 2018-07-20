@@ -351,6 +351,19 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     return var_values
 
 def printlog(message):
-    'Prints the message to stdout and logs the message at the info level'
+    '''
+    Prints the message to stdout and then logs the message at the info level.
+    It is expected that the logging module has already been configured using
+    the root logger.
+
+    >>> logger = logging.getLogger()
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    >>> import sys
+    >>> logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    >>> printlog('Danger Will Robinson!')
+    Danger Will Robinson!
+    INFO:root:Danger Will Robinson!
+    '''
     print(message)
     logging.info(message)
