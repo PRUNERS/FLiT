@@ -426,8 +426,8 @@ def bisect_biggest(score_func, elements, k=1):
     Note: The same assumption as bisect_search() is in place.  That is that all
     bad elements are independent.  This means if an element contributes to a
     bad score, then it would contribute to a bad score by itself as well.  This
-    is not always true, bit there is an assertion checking the assumption,
-    meaning if the assumption is violated, then an AssertionError is raised.
+    is not always true, and this function does not verify this assumption.
+    Instead, it will only return the largest singleton offenders.
 
     @param score_func: a function that takes one argument (to_test) and returns
         a number greater than zero if the function is bad.  This value returned
@@ -445,14 +445,10 @@ def bisect_biggest(score_func, elements, k=1):
     @return list of the biggest offenders with their scores
         [(elem, score), ...]
 
-    >>> call_count = 0
     >>> def score_func(x):
-    ...     global call_count
     ...     print('scoring:', x)
-    ...     call_count += 1
     ...     return -2*min(x)
 
-    >>> call_count = 0
     >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], 3)
     scoring: [1, 3, 4, 5, -1, 10, 0, -15, 3]
     scoring: [1, 3, 4, 5]
@@ -467,10 +463,6 @@ def bisect_biggest(score_func, elements, k=1):
     scoring: [10]
     [(-15, 30), (-1, 2)]
 
-    >>> call_count
-    11
-
-    >>> call_count = 0
     >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], 3)
     scoring: [-1, -2, -3, -4, -5]
     scoring: [-1, -2]
@@ -480,9 +472,12 @@ def bisect_biggest(score_func, elements, k=1):
     scoring: [-4]
     scoring: [-5]
     [(-5, 10), (-4, 8), (-3, 6)]
-    >>> call_count
-    7
+
+    >>> bisect_biggest(score_func, [])
+    []
     '''
+    if not elements:
+        return []
     found_list = []
     frontier = []
     push = lambda x: heapq.heappush(frontier, (-score_func(x), x))
