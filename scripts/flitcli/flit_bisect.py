@@ -441,7 +441,7 @@ def bisect_search(is_bad, elements, found_callback=None):
     >>> def is_bad(x,y):
     ...     global call_count
     ...     call_count += 1
-    ...     return min(x) < 0
+    ...     return min(x) < 0 if x else False
     >>> x = bisect_search(is_bad, [1, 3, 4, 5, -1, 10, 0, -15, 3])
     >>> sorted(x)
     [-15, -1]
@@ -450,6 +450,14 @@ def bisect_search(is_bad, elements, found_callback=None):
     low for the is_bad() function.
     >>> call_count
     9
+
+    Test out the found_callback() functionality.
+    >>> s = set()
+    >>> y = bisect_search(is_bad, [-1, -2, -3, -4], found_callback=s.add)
+    >>> sorted(y)
+    [-4, -3, -2, -1]
+    >>> sorted(s)
+    [-4, -3, -2, -1]
 
     See what happens when it has a pair that only show up together and not
     alone.  Only if -6 and 5 are in the list, then is_bad returns true.
@@ -500,13 +508,13 @@ def bisect_search(is_bad, elements, found_callback=None):
         # double check that we found a bad element before declaring it bad
         if last_result or is_bad([bad_element], known_list + quest_list):
             bad_list.append(bad_element)
+            # inform caller that a bad element was found
+            if found_callback != None:
+                found_callback(bad_element)
 
         # add to the known list to not search it again
         known_list.append(bad_element)
 
-        # inform caller that a bad element was found
-        if found_callback != None:
-            found_callback(bad_element)
 
     # Perform a sanity check.  If we have found all of the bad items, then
     # compiling with all but these bad items will cause a good build.
