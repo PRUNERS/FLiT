@@ -87,6 +87,7 @@ Utility functions shared between multiple flit subcommands.
 import flitconfig as conf
 
 import copy
+import logging
 import os
 import socket
 import sqlite3
@@ -349,3 +350,20 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     var_values = output.split('=', maxsplit=1)[1].split()
     return var_values
 
+def printlog(message):
+    '''
+    Prints the message to stdout and then logs the message at the info level.
+    It is expected that the logging module has already been configured using
+    the root logger.
+
+    >>> logger = logging.getLogger()
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    >>> import sys
+    >>> logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    >>> printlog('Danger Will Robinson!')
+    Danger Will Robinson!
+    INFO:root:Danger Will Robinson!
+    '''
+    print(message)
+    logging.info(message)
