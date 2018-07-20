@@ -465,10 +465,18 @@ def bisect_search(is_bad, elements, found_callback=None):
     so this should throw an exception.
     >>> def is_bad(x,y):
     ...     return max(x) - min(x) > 10
-    >>> x = bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
+    >>> bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
     Traceback (most recent call last):
         ...
     AssertionError: Assumption that bad elements are independent was wrong
+
+    Check that the found_callback is not called on false positives.  Here I
+    expect no output since no single element can be found.
+    >>> try:
+    ...     bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
+    ...                   found_callback=print)
+    ... except AssertionError:
+    ...     pass
     '''
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
