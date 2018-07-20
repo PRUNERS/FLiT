@@ -87,6 +87,7 @@ Utility functions shared between multiple flit subcommands.
 import flitconfig as conf
 
 import copy
+import logging
 import os
 import socket
 import sqlite3
