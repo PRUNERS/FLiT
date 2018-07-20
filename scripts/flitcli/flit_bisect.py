@@ -89,6 +89,7 @@ from collections import namedtuple
 import argparse
 import csv
 import datetime
+import heapq
 import glob
 import hashlib
 import logging
@@ -411,6 +412,90 @@ def extract_symbols(file_or_filelist, objdir):
             SymbolTuple(fname, symbol, demangled, deffile, defline))
 
     return symbol_tuples
+
+def bisect_biggest(score_func, elements, k=1):
+    '''
+    Performs the bisect search, attempting to find the biggest offenders.  This
+    is different from bisect_search() in that the function that is passed gives
+    a numerical score of badness of the selection of elements, whereas
+    bisect_search() takes in a function that merely returns True or False.
+
+    We want to not call score_func() very much.  We assume the score_func() is
+    an expensive operation.
+
+    Note: The same assumption as bisect_search() is in place.  That is that all
+    bad elements are independent.  This means if an element contributes to a
+    bad score, then it would contribute to a bad score by itself as well.  This
+    is not always true, bit there is an assertion checking the assumption,
+    meaning if the assumption is violated, then an AssertionError is raised.
+
+    @param score_func: a function that takes one argument (to_test) and returns
+        a number greater than zero if the function is bad.  This value returned
+        is used to compare the elements so that the largest k offenders are
+        found and returned.  If all offenders return the same numerical value,
+        then this will be less efficient than bisect_search.
+        Note: if the set of elements is good, then either return 0 or a
+        negative value.
+    @param elements: the elements to search over.  Subsets of this list will be
+        given to score_func().
+    @param k: number of biggest elements to return.  The default is to return
+        the one biggest offender.  If there are less than k elements that
+        return positive scores, then only the found offenders will be returned.
+
+    @return list of the biggest offenders with their scores
+        [(elem, score), ...]
+
+    >>> call_count = 0
+    >>> def score_func(x):
+    ...     global call_count
+    ...     print('scoring:', x)
+    ...     call_count += 1
+    ...     return -2*min(x)
+
+    >>> call_count = 0
+    >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], 3)
+    scoring: [1, 3, 4, 5, -1, 10, 0, -15, 3]
+    scoring: [1, 3, 4, 5]
+    scoring: [-1, 10, 0, -15, 3]
+    scoring: [-1, 10]
+    scoring: [0, -15, 3]
+    scoring: [0]
+    scoring: [-15, 3]
+    scoring: [-15]
+    scoring: [3]
+    scoring: [-1]
+    scoring: [10]
+    [(-15, 30), (-1, 2)]
+
+    >>> call_count
+    11
+
+    >>> call_count = 0
+    >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], 3)
+    scoring: [-1, -2, -3, -4, -5]
+    scoring: [-1, -2]
+    scoring: [-3, -4, -5]
+    scoring: [-3]
+    scoring: [-4, -5]
+    scoring: [-4]
+    scoring: [-5]
+    [(-5, 10), (-4, 8), (-3, 6)]
+    >>> call_count
+    7
+    '''
+    found_list = []
+    frontier = []
+    push = lambda x: heapq.heappush(frontier, (-score_func(x), x))
+    pop = lambda: heapq.heappop(frontier)
+    push(elements)
+    while frontier and frontier[0][0] < 0 and len(found_list) < k:
+        score, elems = pop()
+        if len(elems) == 1:
+            found_list.append((elems[0], -score))
+        else:
+            push(elems[:len(elems) // 2])
+            push(elems[len(elems) // 2:])
+    return found_list
 
 def bisect_search(is_bad, elements):
     '''
