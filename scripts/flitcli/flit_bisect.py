@@ -309,6 +309,48 @@ def update_gt_results(directory, verbose=False,
     print(' - done')
     logging.info('Finished Updating ground-truth results')
 
+def get_comparison_result(resultfile):
+    '''
+    Returns the floating-point comparison value stored in the flit comparison
+    csv file (resultfile).
+
+    The result is pulled simply from the comparison column (first row).
+
+    >>> from tempfile import NamedTemporaryFile as TFile
+    >>> with TFile(mode='w', delete=False) as fout:
+    ...     _ = fout.write('name,host,compiler,...,comparison,...\\n'
+    ...                    'test,name,clang++,...,15.342,...\\n')
+    ...     fname = fout.name
+    >>> get_comparison_result(fname)
+    15.342
+
+    Make sure NULL values are handled appropriately
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'NULL\\n')
+    >>> print(get_comparison_result(fname))
+    None
+
+    Try out a value that is not a number and not NULL
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'coconut\\n')
+    >>> get_comparison_result(fname)
+    Traceback (most recent call last):
+        ...
+    ValueError: could not convert string to float: 'coconut'
+
+    Delete the file now that we're done with it
+    >>> import os
+    >>> os.remove(fname)
+    '''
+    with open(resultfile, 'r') as fin:
+        parser = csv.DictReader(fin)
+        # should only have one row
+        for row in parser:
+            val = row['comparison']
+            return float(val) if val != 'NULL' else None
+
 def is_result_bad(resultfile):
     '''
     Returns True if the results from the resultfile is considered 'bad',
@@ -316,13 +358,53 @@ def is_result_bad(resultfile):
 
     @param resultfile: path to the results csv file after comparison
     @return True if the result is different from ground-truth
+
+    Try out a positive value
+    >>> from tempfile import NamedTemporaryFile as TFile
+    >>> with TFile(mode='w', delete=False) as fout:
+    ...     _ = fout.write('name,host,compiler,...,comparison,...\\n'
+    ...                    'test,name,clang++,...,15.342,...\\n')
+    ...     fname = fout.name
+    >>> is_result_bad(fname)
+    True
+
+    Try out a value that is less than zero
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    '-1e-34\\n')
+    >>> is_result_bad(fname)
+    True
+
+    Try out a value that is identically zero
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    '0.0\\n')
+    >>> is_result_bad(fname)
+    False
+
+    Make sure NULL values are handled appropriately
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'NULL\\n')
+    >>> is_result_bad(fname)
+    Traceback (most recent call last):
+        ...
+    TypeError: float() argument must be a string or a number, not 'NoneType'
+
+    Try out a value that is not a number and not NULL
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'coconut\\n')
+    >>> is_result_bad(fname)
+    Traceback (most recent call last):
+        ...
+    ValueError: could not convert string to float: 'coconut'
+
+    Delete the file now that we're done with it
+    >>> import os
+    >>> os.remove(fname)
     '''
-    with open(resultfile, 'r') as fin:
-        parser = csv.DictReader(fin)
-        # should only have one row
-        for row in parser:
-            # identical to ground truth means comparison is zero
-            return float(row['comparison']) != 0.0
+    return float(get_comparison_result(resultfile)) != 0.0
 
 SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
