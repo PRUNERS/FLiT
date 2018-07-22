@@ -715,7 +715,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
     print('Searching for bad intel static libraries:')
     logging.info('Searching for bad static libraries included by intel linker:')
-    #bas_library_msg = 'Found bad library {}'
+    #bas_library_msg = '    Found bad library {}'
     #bad_library_callback = lambda filename : \
     #                       util.printlog(bad_library_msg.format(filename))
     #bad_libs = bisect_search(bisect_libs_build_and_check, libs,
@@ -774,7 +774,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
 
-    bad_source_msg = 'Found bad source file {}'
+    bad_source_msg = '    Found bad source file {}'
     bad_source_callback = lambda filename : \
                           util.printlog(bad_source_msg.format(filename))
     bad_sources = bisect_search(bisect_build_and_check, sources,
@@ -876,8 +876,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         logging.warning('%s', message_2)
         return []
 
-    bad_symbol_msg = ('Found bad symbol '
-                      '{sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}')
+    bad_symbol_msg = \
+        '    Found bad symbol on line {sym.lineno} -- {sym.demangled}'
     bad_symbol_callback = lambda sym : \
                           util.printlog(bad_symbol_msg.format(sym=sym))
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples,
