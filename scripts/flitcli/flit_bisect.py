@@ -669,6 +669,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     the libraries included, and checks to see if there are reproducibility
     problems.
     '''
+    memo = {} # for memoization
     def bisect_libs_build_and_check(trouble_libs):
         '''
         Compiles all source files under the ground truth compilation and
@@ -681,6 +682,9 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground-truth compilation.
         '''
+        idx = tuple(trouble_libs)
+        if idx in memo:
+            return memo[idx]
         repl_copy = dict(replacements)
         repl_copy['link_flags'] = list(repl_copy['link_flags'])
         repl_copy['link_flags'].extend(trouble_libs)
@@ -711,6 +715,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         sys.stdout.write(' - {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
+        memo[idx] = result_is_bad
         return result_is_bad
 
     print('Searching for bad intel static libraries:')
@@ -729,6 +734,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
     Performs the search over the space of source files for problems.
     '''
+    memo = {} # for memoization
     def bisect_build_and_check(trouble_src):
         '''
         Compiles the compilation with trouble_src compiled with the trouble
@@ -740,6 +746,9 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
         '''
+        idx = tuple(trouble_src)
+        if idx in memo:
+            return memo[idx]
         gt_src = list(set(sources).difference(trouble_src))
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           trouble_src, dict())
@@ -768,6 +777,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         sys.stdout.write(' - {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
+        memo[idx] = result_is_bad
         return result_is_bad
 
     print('Searching for bad source files:')
@@ -807,6 +817,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
                   .format(sym=sym)
         logging.info('%s', message)
 
+    memo = {} # for memoization
     def bisect_symbol_build_and_check(trouble_symbols):
         '''
         Compiles the compilation with all files compiled under the ground truth
@@ -823,6 +834,9 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
         '''
+        idx = tuple(trouble_symbols)
+        if idx in memo:
+            return memo[idx]
         gt_symbols = list(set(symbol_tuples).difference(trouble_symbols))
         all_sources = list(sources)  # copy the list of all source files
         symbol_sources = [x.src for x in trouble_symbols + gt_symbols]
@@ -864,6 +878,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         sys.stdout.write(' - {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
+        memo[idx] = result_is_bad
         return result_is_bad
 
     # Check to see if -fPIC destroyed any chance of finding any bad symbols
@@ -1367,7 +1382,6 @@ def main(arguments, prog=sys.argv[0]):
 
     _, _, _, _, ret = run_bisect(arguments, prog)
     return ret
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
