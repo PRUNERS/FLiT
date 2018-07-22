@@ -136,35 +136,35 @@ Searching for bad symbols in: tests/file1.cpp
   Created /.../bisect-01/bisect-make-14.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-15.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-16.mk - compiling and running - bad
-    Found bad symbol on line 9 -- file1_func2_PROBLEM()
+    Found bad symbol on line 92 -- file1_func2_PROBLEM()
   Created /.../bisect-01/bisect-make-17.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-18.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-19.mk - compiling and running - bad
-    Found bad symbol on line 17 -- file1_func3_PROBLEM()
+    Found bad symbol on line 100 -- file1_func3_PROBLEM()
   Created /.../bisect-01/bisect-make-20.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-21.mk - compiling and running - bad
-    Found bad symbol on line 25 -- file1_func4_PROBLEM()
+    Found bad symbol on line 108 -- file1_func4_PROBLEM()
   Created /.../bisect-01/bisect-make-22.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-23.mk - compiling and running - good
   bad symbols in tests/file1.cpp:
-    line 9 -- file1_func2_PROBLEM()
-    line 17 -- file1_func3_PROBLEM()
-    line 25 -- file1_func4_PROBLEM()
+    line 92 -- file1_func2_PROBLEM()
+    line 100 -- file1_func3_PROBLEM()
+    line 108 -- file1_func4_PROBLEM()
 Searching for bad symbols in: tests/file3.cpp
   Created /.../bisect-01/bisect-make-24.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-25.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-26.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-27.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-28.mk - compiling and running - bad
-    Found bad symbol on line 9 -- file3_func2_PROBLEM()
+    Found bad symbol on line 92 -- file3_func2_PROBLEM()
   Created /.../bisect-01/bisect-make-29.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-30.mk - compiling and running - bad
-    Found bad symbol on line 20 -- file3_func5_PROBLEM()
+    Found bad symbol on line 103 -- file3_func5_PROBLEM()
   Created /.../bisect-01/bisect-make-31.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-32.mk - compiling and running - good
   bad symbols in tests/file3.cpp:
-    line 9 -- file3_func2_PROBLEM()
-    line 20 -- file3_func5_PROBLEM()
+    line 92 -- file3_func2_PROBLEM()
+    line 103 -- file3_func5_PROBLEM()
 Searching for bad symbols in: tests/file2.cpp
   Created /.../bisect-01/bisect-make-33.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-34.mk - compiling and running - bad
@@ -172,18 +172,18 @@ Searching for bad symbols in: tests/file2.cpp
   Created /.../bisect-01/bisect-make-36.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-37.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-38.mk - compiling and running - bad
-    Found bad symbol on line 8 -- file2_func1_PROBLEM()
+    Found bad symbol on line 91 -- file2_func1_PROBLEM()
   Created /.../bisect-01/bisect-make-39.mk - compiling and running - good
   Created /.../bisect-01/bisect-make-40.mk - compiling and running - good
   bad symbols in tests/file2.cpp:
-    line 8 -- file2_func1_PROBLEM()
+    line 91 -- file2_func1_PROBLEM()
 All bad symbols:
-  /.../tests/file1.cpp:9 ... -- file1_func2_PROBLEM()
-  /.../tests/file1.cpp:17 ... -- file1_func3_PROBLEM()
-  /.../tests/file1.cpp:25 ... -- file1_func4_PROBLEM()
-  /.../tests/file3.cpp:9 ... -- file3_func2_PROBLEM()
-  /.../tests/file3.cpp:20 ... -- file3_func5_PROBLEM()
-  /.../tests/file2.cpp:8 ... -- file2_func1_PROBLEM()
+  /.../tests/file1.cpp:92 ... -- file1_func2_PROBLEM()
+  /.../tests/file1.cpp:100 ... -- file1_func3_PROBLEM()
+  /.../tests/file1.cpp:108 ... -- file1_func4_PROBLEM()
+  /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM()
+  /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM()
+  /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM()
 
 TODO: test the log_contents variable
 '''
