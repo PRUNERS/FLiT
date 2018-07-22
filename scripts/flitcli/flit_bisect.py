@@ -794,6 +794,17 @@ def parse_args(arguments, prog=sys.argv[0]):
                             runbusect-01-out), or the object files (e.g.
                             bisect-01/obj/*).
                             ''')
+    parser.add_argument('-k', '--biggest', metavar='K', type=int, default=None,
+                        help='''
+                            Instead of returning all of the offenders of
+                            variability, only return the largest K offenders,
+                            with their contribution to variability.  If K is
+                            close to the total number of offenders, then this
+                            is a much slower approach than the full algorithm.
+                            It is best if K is small.  This value used comes
+                            from the custom comparison function you provide for
+                            your flit test.
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -913,18 +924,26 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
-        result_is_bad = is_result_bad(resultpath)
+        if args.biggest is None:
+            result = is_result_bad(resultpath)
+            result_str = 'bad' if result_is_bad else 'good'
+        else:
+            result = get_comparison_result(resultpath)
+            result_str = str(result)
 
-        result_str = 'bad' if result_is_bad else 'good'
         sys.stdout.write(' - {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
-        return result_is_bad
+        return result
 
     print('Searching for bad source files:')
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
-    bad_sources = bisect_search(bisect_build_and_check, sources)
+    if args.biggest is None:
+        bad_sources = bisect_search(bisect_build_and_check, sources)
+    else:
+        bad_sources = bisect_biggest(bisect_build_and_check, sources,
+                                     k=args.biggest)
     return bad_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
@@ -991,13 +1010,17 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
-        result_is_bad = is_result_bad(resultpath)
+        if args.biggest is None:
+            result = is_result_bad(resultpath)
+            result_str = 'bad' if result_is_bad else 'good'
+        else:
+            result = get_comparison_result(resultpath)
+            result_str = str(result)
 
-        result_str = 'bad' if result_is_bad else 'good'
         sys.stdout.write(' - {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
-        return result_is_bad
+        return result
 
     print('Searching for bad symbols in:', bad_source)
     logging.info('Searching for bad symbols in: %s', bad_source)
@@ -1021,7 +1044,12 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         logging.warning('%s', message_2)
         return []
 
-    bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples)
+    if args.biggest is None:
+        bad_symbols = bisect_search(bisect_symbol_build_and_check,
+                                    symbol_tuples)
+    else:
+        bad_symbols = bisect_biggest(bisect_symbol_build_and_check,
+                                     symbol_tuples, k=args.biggest)
     return bad_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
