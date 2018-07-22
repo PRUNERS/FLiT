@@ -427,9 +427,9 @@ def bisect_search(is_bad, elements, found_callback=None):
     within the algorithm to verify that this assumption is not vialoated.  If
     the assumption is found to be violated, then an AssertionError is raised.
 
-    @param is_bad: a function that takes two arguments (maybe_bad_list,
-        maybe_good_list) and returns True if the maybe_bad_list has a bad
-        element
+    @param is_bad: a function that takes one argument, the list of elements to
+        test if they are bad.  The function then returns True if the given list
+        has a bad element
     @param elements: contains bad elements, but potentially good elements too
 
     @return minimal bad list of all elements that cause is_bad() to return True
@@ -437,7 +437,7 @@ def bisect_search(is_bad, elements, found_callback=None):
     Here's an example of finding all negative numbers in a list.  Not very
     useful for this particular task, but it is demonstrative of how to use it.
     >>> call_count = 0
-    >>> def is_bad(x,y):
+    >>> def is_bad(x):
     ...     global call_count
     ...     call_count += 1
     ...     return min(x) < 0 if x else False
@@ -462,7 +462,7 @@ def bisect_search(is_bad, elements, found_callback=None):
     alone.  Only if -6 and 5 are in the list, then is_bad returns true.
     The assumption of this algorithm is that bad elements are independent,
     so this should throw an exception.
-    >>> def is_bad(x,y):
+    >>> def is_bad(x):
     ...     return max(x) - min(x) > 10
     >>> bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
     Traceback (most recent call last):
@@ -479,55 +479,41 @@ def bisect_search(is_bad, elements, found_callback=None):
     '''
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
-    known_list = []
 
     bad_list = []
-    while len(quest_list) > 0 and is_bad(quest_list, known_list):
+    while len(quest_list) > 0 and is_bad(quest_list):
 
         # find one bad element
         quest_copy = quest_list
-        no_test = list(known_list)
         last_result = False
         while len(quest_copy) > 1:
             # split the questionable list into two lists
             half_1 = quest_copy[:len(quest_copy) // 2]
             half_2 = quest_copy[len(quest_copy) // 2:]
-            last_result = is_bad(half_1, no_test + half_2)
+            last_result = is_bad(half_1)
             if last_result:
                 quest_copy = half_1
-                no_test.extend(half_2)
-                # TODO: possible optimization.
-                # TODO- if the length of half_2 is big enough, test
-                # TODO-   is_bad(half_2, no_test + half_1)
-                # TODO- and if that returns False, then mark half_2 as known so
-                # TODO- that we don't need to search it again.
             else:
                 # optimization: mark half_1 as known, so that we don't need to
                 # search it again
                 quest_list = quest_list[len(half_1):]
-                known_list.extend(half_1)
                 # update the local search
                 quest_copy = half_2
-                no_test.extend(half_1)
 
         bad_element = quest_list.pop(0)
 
         # double check that we found a bad element before declaring it bad
-        if last_result or is_bad([bad_element], known_list + quest_list):
+        if last_result or is_bad([bad_element]):
             bad_list.append(bad_element)
             # inform caller that a bad element was found
             if found_callback != None:
                 found_callback(bad_element)
 
-        # add to the known list to not search it again
-        known_list.append(bad_element)
-
-
     # Perform a sanity check.  If we have found all of the bad items, then
     # compiling with all but these bad items will cause a good build.
     # This will fail if our hypothesis class is wrong
     good_list = list(set(elements).difference(bad_list))
-    assert not is_bad(good_list, bad_list), \
+    assert not is_bad(good_list), \
         'Assumption that bad elements are independent was wrong'
 
     return bad_list
@@ -683,7 +669,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     the libraries included, and checks to see if there are reproducibility
     problems.
     '''
-    def bisect_libs_build_and_check(trouble_libs, dummy_libs):
+    def bisect_libs_build_and_check(trouble_libs):
         '''
         Compiles all source files under the ground truth compilation and
         statically links in the trouble_libs.
@@ -729,9 +715,13 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
     print('Searching for bad intel static libraries:')
     logging.info('Searching for bad static libraries included by intel linker:')
-    #bad_libs = bisect_search(bisect_libs_build_and_check, libs)
+    #bas_library_msg = 'Found bad library {}'
+    #bad_library_callback = lambda filename : \
+    #                       util.printlog(bad_library_msg.format(filename))
+    #bad_libs = bisect_search(bisect_libs_build_and_check, libs,
+    #                         found_callback=bad_library_callback)
     #return bad_libs
-    if bisect_libs_build_and_check(libs, []):
+    if bisect_libs_build_and_check(libs):
         return libs
     return []
 
@@ -739,7 +729,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
     Performs the search over the space of source files for problems.
     '''
-    def bisect_build_and_check(trouble_src, gt_src):
+    def bisect_build_and_check(trouble_src):
         '''
         Compiles the compilation with trouble_src compiled with the trouble
         compilation and with gt_src compiled with the ground truth compilation.
@@ -750,6 +740,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
         '''
+        gt_src = list(set(sources).difference(trouble_src))
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
@@ -783,11 +774,11 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
 
-    bas_source_msg = 'Found bad source file {}'
+    bad_source_msg = 'Found bad source file {}'
     bad_source_callback = lambda filename : \
                           util.printlog(bad_source_msg.format(filename))
     bad_sources = bisect_search(bisect_build_and_check, sources,
-                                bad_source_callback)
+                                found_callback=bad_source_callback)
     return bad_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
@@ -804,7 +795,19 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
     @return a list of identified bad symbols (if any)
     '''
-    def bisect_symbol_build_and_check(trouble_symbols, gt_symbols):
+    print('Searching for bad symbols in:', bad_source)
+    logging.info('Searching for bad symbols in: %s', bad_source)
+    logging.info('Note: inlining disabled to isolate functions')
+    logging.info('Note: only searching over globally exported functions')
+    logging.debug('Symbols:')
+    symbol_tuples = extract_symbols(bad_source,
+                                    os.path.join(args.directory, 'obj'))
+    for sym in symbol_tuples:
+        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
+                  .format(sym=sym)
+        logging.info('%s', message)
+
+    def bisect_symbol_build_and_check(trouble_symbols):
         '''
         Compiles the compilation with all files compiled under the ground truth
         compilation except for the given symbols for the given files.
@@ -820,6 +823,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
         '''
+        gt_symbols = list(set(symbol_tuples).difference(trouble_symbols))
         all_sources = list(sources)  # copy the list of all source files
         symbol_sources = [x.src for x in trouble_symbols + gt_symbols]
         trouble_src = []
@@ -862,20 +866,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         return result_is_bad
 
-    print('Searching for bad symbols in:', bad_source)
-    logging.info('Searching for bad symbols in: %s', bad_source)
-    logging.info('Note: inlining disabled to isolate functions')
-    logging.info('Note: only searching over globally exported functions')
-    logging.debug('Symbols:')
-    symbol_tuples = extract_symbols(bad_source,
-                                    os.path.join(args.directory, 'obj'))
-    for sym in symbol_tuples:
-        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
-                  .format(sym=sym)
-        logging.info('%s', message)
-
     # Check to see if -fPIC destroyed any chance of finding any bad symbols
-    if not bisect_symbol_build_and_check(symbol_tuples, []):
+    if not bisect_symbol_build_and_check(symbol_tuples):
         message_1 = '  Warning: -fPIC compilation destroyed the optimization'
         message_2 = '  Cannot find any trouble symbols'
         print(message_1)
@@ -889,7 +881,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     bad_symbol_callback = lambda sym : \
                           util.printlog(bad_symbol_msg.format(sym=sym))
     bad_symbols = bisect_search(bisect_symbol_build_and_check, symbol_tuples,
-                                bad_symbol_callback)
+                                found_callback=bad_symbol_callback)
     return bad_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
