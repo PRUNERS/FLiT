@@ -81,6 +81,7 @@
 # -- LICENSE END --
 
 language: cpp
+dist: xenial
 addons:
   apt:
     packages:
