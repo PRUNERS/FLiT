@@ -84,13 +84,11 @@ language: cpp
 os: linux
 addons:
   apt:
-    sources:
-    - ubuntu-toolchain-r-test
     packages:
-    - python3
-    - python3-pip
-    - openmpi-bin
-    - libopenmpi-dev
+      - python3
+      - python3-pip
+      - openmpi-bin
+      - libopenmpi-dev
 
 before_install: pip3 install --user toml
 
