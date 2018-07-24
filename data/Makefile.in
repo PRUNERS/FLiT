@@ -137,7 +137,9 @@ DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
 
 # This flag specifies NOT to link as a position-independent executable
-LD_REQUIRED     += -no-pie
+# Note: this flag does not exist in GCC 4 or GCC 5 so it will fail to compile
+#       we need extra logic to check for this and conditionally add this flag
+#LD_REQUIRED     += -no-pie
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
@@ -147,7 +149,44 @@ else
   LD_REQUIRED   += -Wl,-rpath=$(realpath $(FLIT_LIB_DIR))
 endif
 
-DEV_LDFLAGS     +=
+# Helper functions to determine if the compiler is a particular version of GCC
+
+# Returns the compiler name as output by the --version flag
+# @param 1: executable name or path to compiler
+GET_COMPILER     = $(shell $1 --version | head -n 1 | awk '{{ print $$1 }}')
+
+# Returns 1 if the given compiler is GCC, else 0
+# @param 1: executable name or path to compiler
+IS_GCC           = $(shell expr $(call GET_COMPILER,$(1)) = gcc \| \
+                                $(call GET_COMPILER,$1) = g++)
+
+# Returns the version of the compiler as returned by -dumpversion
+# @param 1: executable name or path to compiler
+GET_COMPILER_VER = $(shell $1 -dumpversion)
+
+# Returns 1 if the major version matches else 0
+# @param 1: executable name or path to compiler
+# @param 2: major version number as an integer
+IS_MAJOR_VER     = $(shell expr substr $(call GET_COMPILER_VER,$1) 1 1 = $2)
+
+# Returns 1 if the compiler is GCC version 4 or version 5
+# @param 1: executable name or path to compiler
+IS_GCC_4_OR_5    = $(shell expr $(call IS_GCC,$1) \& \
+                             \( $(call IS_MAJOR_VER,$1,4) \| \
+                                $(call IS_MAJOR_VER,$1,5) \))
+
+DEV_LDFLAGS      =
+GT_LDFLAGS       =
+
+# if the dev compiler is not an old version of GCC
+ifeq ($(call IS_GCC_4_OR_5,$(DEV_CC)),0)
+  DEV_LDFLAGS   += -no-pie
+endif
+
+# if the gt compiler is not an old version of GCC
+ifeq ($(call IS_GCC_4_OR_5,$(GT_CC)),0)
+  GT_LDFLAGS    += -no-pie
+endif
 
 DEPFLAGS        += -MMD -MF $(patsubst %.o,%.d,$@)
 
@@ -365,6 +404,11 @@ R_DEP           := $(R_OBJ:%.o=%.d)
 .PHONY: rec
 rec: $(R_TARGET)
 
+# if the current compiler is not GCC 4 or 5, then enable -no-pie
+ifeq ($(call IS_GCC_4_OR_5,$($(R_CUR_COMPILER))),0)
+  LD_REQUIRED += -no-pie
+endif
+
 $(R_TARGET): $(R_OBJ)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
@@ -530,7 +574,7 @@ $(GT_OUT): $(GT_TARGET)
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
-	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
+	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
