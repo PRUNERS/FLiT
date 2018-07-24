@@ -93,24 +93,100 @@ and run FLiT bisect
 >>> import os
 >>> import shutil
 >>> import subprocess as subp
+>>> from io import StringIO
 
 >>> with th.tempdir() as temp_dir:
-...     _ = th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
-...     print()
+...     with StringIO() as ostream:
+...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
+...         init_out = ostream.getvalue().splitlines()
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))
-...     _ = th.flit.main(['bisect', '-C', temp_dir, '--precision', 'double',
-...                       'g++ -O3', 'BisectTest']) # doctest:+ELLIPSIS
+...     with StringIO() as ostream:
+...         _ = th.flit.main(['bisect', '-C', temp_dir,
+...                           '--precision', 'double',
+...                           'g++ -O3', 'BisectTest'],
+...                          outstream=ostream)
+...         bisect_out = ostream.getvalue().splitlines()
 ...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
-...         log_contents = fin.read()
+...         log_contents = fin.readlines()
+
+Verify the output of flit init
+>>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
 Creating /.../flit-config.toml
 Creating /.../custom.mk
 Creating /.../main.cpp
 Creating /.../tests/Empty.cpp
 Creating /.../Makefile
-<BLANKLINE>
-Updating ground-truth results - ground-truth.csv - done
+
+Let's see that the ground truth results are updated first
+>>> bisect_out[0]
+'Updating ground-truth results - ground-truth.csv - done'
+
+Verify that all source files were found and output during the search
+>>> sorted([x.split()[-1] for x in bisect_out
+...                       if x.startswith('    Found bad source file')])
+['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
+
+Verify that the three bad sources were output in the "bad sources:" section
+>>> idx = bisect_out.index('  bad sources:')
+>>> sorted(bisect_out[idx+1:idx+4])
+['    tests/file1.cpp', '    tests/file2.cpp', '    tests/file3.cpp']
+>>> bisect_out[idx+4].startswith('Searching for bad symbols in:')
+True
+
+Verify that all three files were searched individually
+>>> sorted([x.split()[-1] for x in bisect_out
+...                       if x.startswith('Searching for bad symbols in:')])
+['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
+
+Verify all functions were identified during the symbol searches
+>>> print('\\n'.join(
+...     sorted([' '.join(x.split()[-4:]) for x in bisect_out
+...             if x.startswith('    Found bad symbol on line')])))
+line 100 -- file1_func3_PROBLEM()
+line 103 -- file3_func5_PROBLEM()
+line 108 -- file1_func4_PROBLEM()
+line 91 -- file2_func1_PROBLEM()
+line 92 -- file1_func2_PROBLEM()
+line 92 -- file3_func2_PROBLEM()
+
+Verify the bad symbols section for file1.cpp
+>>> idx = bisect_out.index('  bad symbols in tests/file1.cpp:')
+>>> print('\\n'.join(sorted(bisect_out[idx+1:idx+4])))
+    line 100 -- file1_func3_PROBLEM()
+    line 108 -- file1_func4_PROBLEM()
+    line 92 -- file1_func2_PROBLEM()
+>>> bisect_out[idx+4].startswith(' ')
+False
+
+Verify the bad symbols section for file2.cpp
+>>> idx = bisect_out.index('  bad symbols in tests/file2.cpp:')
+>>> bisect_out[idx+1]
+'    line 91 -- file2_func1_PROBLEM()'
+>>> bisect_out[idx+2].startswith(' ')
+False
+
+Verify the bad symbols section for file3.cpp
+>>> idx = bisect_out.index('  bad symbols in tests/file3.cpp:')
+>>> print('\\n'.join(sorted(bisect_out[idx+1:idx+3])))
+    line 103 -- file3_func5_PROBLEM()
+    line 92 -- file3_func2_PROBLEM()
+>>> bisect_out[idx+3].startswith(' ')
+False
+
+Test the All bad symbols section of the output
+>>> idx = bisect_out.index('All bad symbols:')
+>>> print('\\n'.join(sorted(bisect_out[idx+1:]))) # doctest:+ELLIPSIS
+  /.../tests/file1.cpp:100 ... -- file1_func3_PROBLEM()
+  /.../tests/file1.cpp:108 ... -- file1_func4_PROBLEM()
+  /.../tests/file1.cpp:92 ... -- file1_func2_PROBLEM()
+  /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM()
+  /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM()
+  /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM()
+
+Example output to be expected:
+
 Searching for bad source files:
   Created /.../bisect-01/bisect-make-01.mk - compiling and running - bad
   Created /.../bisect-01/bisect-make-02.mk - compiling and running - bad

@@ -160,7 +160,26 @@ def generate_help_documentation(subcom_map):
 
     return (parser.format_help(), help_subparser.format_help())
 
-def main(arguments):
+def main(arguments, outstream=sys.stdout):
+    '''
+    Main logic here.
+
+    For ease of use when within python, the stdout can be captured using the
+    optional outstream parameter.  You can use this to capture the stdout that
+    would go to the console and put it into a StringStream or maybe a file.
+    '''
+    if outstream == sys.stdout:
+        return _main_impl(arguments)
+    else:
+        try:
+            oldout = sys.stdout
+            sys.stdout = outstream
+            _main_impl(arguments)
+        finally:
+            sys.stdout = oldout
+
+def _main_impl(arguments):
+    'Implementation of main'
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, script_dir)
     import flitconfig as conf
