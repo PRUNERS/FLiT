@@ -178,16 +178,6 @@ IS_GCC_4_OR_5    = $(shell expr $(call IS_GCC,$1) \& \
 DEV_LDFLAGS      =
 GT_LDFLAGS       =
 
-# if the dev compiler is not an old version of GCC
-ifeq ($(call IS_GCC_4_OR_5,$(DEV_CC)),0)
-  DEV_LDFLAGS   += -no-pie
-endif
-
-# if the gt compiler is not an old version of GCC
-ifeq ($(call IS_GCC_4_OR_5,$(GT_CC)),0)
-  GT_LDFLAGS    += -no-pie
-endif
-
 DEPFLAGS        += -MMD -MF $(patsubst %.o,%.d,$@)
 
 TESTS            = $(wildcard tests/*.cpp)
@@ -428,6 +418,16 @@ $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
+
+# if the dev compiler is not an old version of GCC
+ifeq ($(call IS_GCC_4_OR_5,$(DEV_CC)),0)
+  DEV_LDFLAGS   += -no-pie
+endif
+
+# if the gt compiler is not an old version of GCC
+ifeq ($(call IS_GCC_4_OR_5,$(GT_CC)),0)
+  GT_LDFLAGS    += -no-pie
+endif
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
