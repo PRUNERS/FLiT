@@ -160,7 +160,7 @@ def generate_help_documentation(subcom_map):
 
     return (parser.format_help(), help_subparser.format_help())
 
-def main(arguments, outstream=sys.stdout):
+def main(arguments, outstream=None):
     '''
     Main logic here.
 
@@ -168,7 +168,7 @@ def main(arguments, outstream=sys.stdout):
     optional outstream parameter.  You can use this to capture the stdout that
     would go to the console and put it into a StringStream or maybe a file.
     '''
-    if outstream == sys.stdout:
+    if outstream is None:
         return _main_impl(arguments)
     else:
         try:
