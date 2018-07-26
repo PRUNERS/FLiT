@@ -80,39 +80,24 @@
 #
 # -- LICENSE END --
 
-sudo: required
 language: cpp
-dist: trusty
-# addons:
-#   apt:
-#     packages:
-#     - gcc-5
-#     - g++-5
+os: linux
+addons:
+  apt:
+    packages:
+      - python3
+      - python3-pip
+      - openmpi-bin
+      - libopenmpi-dev
 
-env:
-  global:
-    - LLVM_VERSION=3.9.0
-    - LLVM_ARCHIVE_PATH=$HOME/clang+llvm.tar.xz
-    - export PATH=$HOME/usr/bin:$PATH
-    - export LD_LIBRARY_PATH=$HOME/usr/lib:$LD_LIBRARY_PATH
+before_install: pip3 install --user toml
 
-install:
-  #starts in $HOME/build/PRUNERS/FLiT
-  - cd $HOME/build
-  # Install LLVM/Clang 3.9
-  - wget http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz -O $LLVM_ARCHIVE_PATH
-  - mkdir $HOME/usr
-  - tar xf $LLVM_ARCHIVE_PATH -C $HOME/usr --strip-components 1
-  
-# script:
-  - export CLANG_ONLY=True
-  - cd $HOME/build/PRUNERS/FLiT/src
-  - make -j 4
+script: make -j 4 && make check
 
-notifications:
-  email: false
-  slack:
-    rooms:
-      - pruners:aXHVdiVFtqtMfzNW4IutZNDW
-    on_success: always
-    on_failure: always
+#notifications:
+#  email: false
+#  slack:
+#    rooms:
+#      - pruners:aXHVdiVFtqtMfzNW4IutZNDW
+#    on_success: always
+#    on_failure: always

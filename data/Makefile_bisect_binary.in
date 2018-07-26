@@ -124,6 +124,13 @@ SPLIT_SRC        :=
 {EXTRA_CC_FLAGS}
 {EXTRA_LD_FLAGS}
 
+TROUBLE_LDFLAGS   =
+
+# if the trouble compiler is not GCC 4 or 5, then add -no-pie
+ifeq ($(call IS_GCC_4_OR_5,$(TROUBLE_CC)),0)
+  TROUBLE_LDFLAGS += -no-pie
+endif
+
 BUILD_GT_LOCAL   := {build_gt_local}
 
 TROUBLE_TARGET_OBJ := $(addprefix \
@@ -204,10 +211,10 @@ $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
 	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
 $(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED)
+	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(TROUBLE_CC) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED)
+	$(TROUBLE_CC) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED) $(TROUBLE_LDFLAGS)
 
 .PHONY: trouble trouble-out
 trouble: $(TROUBLE_TARGET)

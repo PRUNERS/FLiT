@@ -121,10 +121,12 @@ PREFIX path
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 ...     prevdir = os.path.realpath(os.curdir)
 ...     os.chdir(temp_dir)
-...     all_files = glob.glob('**', recursive=True)
+...     all_files = [os.path.join(base, name)
+...                  for base, folders, filenames in os.walk('.')
+...                  for name in folders + filenames]
 ...     os.chdir(prevdir)
 >>> sorted(all_files)
-['lib', 'lib/otherlib.so']
+['./lib', './lib/otherlib.so']
 '''
 
 # Test setup before the docstring is run.

@@ -137,15 +137,15 @@ Creating /.../Makefile
 
 Make sure the info statement about MPI being enabled is done at each make call
 
->>> compile_str[1]
-'MPI is enabled'
->>> run_str[1]
-'MPI is enabled'
+>>> 'MPI is enabled' in compile_str
+True
+>>> 'MPI is enabled' in run_str
+True
 
 Make sure the correct arguments are passed to mpirun
 
->>> run_str[2]
-'mpirun -n 2 ./gtrun --output ground-truth.csv --no-timing'
+>>> 'mpirun -n 2 ./gtrun --output ground-truth.csv --no-timing' in run_str
+True
 
 Make sure the console messages are there, but they can be out of order
 
