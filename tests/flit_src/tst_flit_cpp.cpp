@@ -90,6 +90,7 @@
 
 #include <algorithm>
 #include <array>
+#include <ios>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -577,7 +578,7 @@ TH_REGISTER(tst_readFile_exists);
 
 void tst_readFile_doesnt_exist() {
   TH_THROWS(flit::readFile("/this/file/should/not/exist"),
-            std::system_error);
+            std::ios_base::failure);
 }
 TH_REGISTER(tst_readFile_doesnt_exist);
 

@@ -1,3 +1,8 @@
+| branch  | status  |
+|---------|---------|
+| master  | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=master)](https://travis-ci.org/PRUNERS/FLiT) |
+| devel   | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=devel)](https://travis-ci.org/PRUNERS/FLiT) |
+
 # FLiT
 
 [![FLiT Bird](/images/flit-small.png)](https://github.com/PRUNERS/FLiT "FLiT")

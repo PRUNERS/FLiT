@@ -1,7 +1,7 @@
 PREFIX         ?= /usr
 
-#CC             := clang++
-CC             := g++
+#CXX            ?= clang++
+CXX            ?= g++
 FFLAGS         ?=
 LIBDIR         := lib
 SRCDIR         := src
@@ -68,10 +68,10 @@ help:
 
 $(TARGET): $(OBJ)
 	mkdir -p lib
-	$(CC) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
-	$(CC) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
 
 .PRECIOUS: src/%.d
 -include $(SOURCE:%.cpp=%.d)
