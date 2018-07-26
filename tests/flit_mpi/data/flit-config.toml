@@ -1,0 +1,3 @@
+[run]
+enable_mpi = true
+mpirun_args = '-n 2'
