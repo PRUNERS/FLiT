@@ -3,6 +3,9 @@
 | master  | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=master)](https://travis-ci.org/PRUNERS/FLiT) |
 | devel   | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=devel)](https://travis-ci.org/PRUNERS/FLiT) |
 
+![PyPI - License](https://img.shields.io/pypi/l/Django.svg)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+
 # FLiT
 
 [![FLiT Bird](/images/flit-small.png)](https://github.com/PRUNERS/FLiT "FLiT")
