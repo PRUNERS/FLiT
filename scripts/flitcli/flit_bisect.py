@@ -495,6 +495,41 @@ def extract_symbols(file_or_filelist, objdir):
 
     return symbol_tuples
 
+def memoize_strlist_func(func):
+    '''
+    Memoize a function that takes a list of strings and returns a value.  This
+    function returns the memoized version.  It is expected that the list of
+    strings passed in will be in the same order.  This memoization will not
+    work if for instance the input is first shuffled.
+
+    >>> def to_memoize(strlist):
+    ...     print(strlist)
+    ...     return strlist[0]
+    >>> memoized = memoize_strlist_func(to_memoize)
+    >>> memoized([1, 2, 3])
+    [1, 2, 3]
+    1
+    >>> memoized([1, 2, 3])
+    1
+    >>> memoized([3, 2])
+    [3, 2]
+    3
+    >>> memoized([1, 2, 3])
+    1
+    >>> memoized([3, 2])
+    3
+    '''
+    memo = {}
+    def memoized_func(strlist):
+        'func but memoized'
+        idx = tuple(strlist)
+        if idx in memo:
+            return memo[idx]
+        value = func(strlist)
+        memo[idx] = value
+        return value
+    return memoized_func
+
 def bisect_biggest(score_func, elements, k=1):
     '''
     Performs the bisect search, attempting to find the biggest offenders.  This
@@ -888,15 +923,17 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
 
         return result_is_bad
 
+    memoized_checker = memoize_strlist_func(bisect_libs_build_and_check)
+
     print('Searching for bad intel static libraries:')
     logging.info('Searching for bad static libraries included by intel linker:')
     #bas_library_msg = '    Found bad library {}'
     #bad_library_callback = lambda filename : \
     #                       util.printlog(bad_library_msg.format(filename))
-    #bad_libs = bisect_search(bisect_libs_build_and_check, libs,
+    #bad_libs = bisect_search(memoized_checker, libs,
     #                         found_callback=bad_library_callback)
     #return bad_libs
-    if bisect_libs_build_and_check(libs):
+    if memoized_checker(libs):
         return libs
     return []
 
@@ -949,6 +986,8 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
 
         return result
 
+    memoized_checker = memoize_strlist_func(bisect_build_and_check)
+
     print('Searching for bad source files:')
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
@@ -956,10 +995,10 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     bad_source_callback = lambda filename: \
                           util.printlog(bad_source_msg.format(filename))
     if args.biggest is None:
-        bad_sources = bisect_search(bisect_build_and_check, sources,
+        bad_sources = bisect_search(memoized_checker, sources,
                                     found_callback=bad_source_callback)
     else:
-        bad_sources = bisect_biggest(bisect_build_and_check, sources,
+        bad_sources = bisect_biggest(memoized_checker, sources,
                                      k=args.biggest)
     return bad_sources
 
@@ -1052,8 +1091,10 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         return result
 
+    memoized_checker = memoize_strlist_func(bisect_symbol_build_and_check)
+
     # Check to see if -fPIC destroyed any chance of finding any bad symbols
-    if not bisect_symbol_build_and_check(symbol_tuples):
+    if not memoized_checker(symbol_tuples):
         message_1 = '  Warning: -fPIC compilation destroyed the optimization'
         message_2 = '  Cannot find any trouble symbols'
         print(message_1)
@@ -1067,11 +1108,11 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     bad_symbol_callback = lambda sym: \
                           util.printlog(bad_symbol_msg.format(sym=sym))
     if args.biggest is None:
-        bad_symbols = bisect_search(bisect_symbol_build_and_check,
+        bad_symbols = bisect_search(memoized_checker,
                                     symbol_tuples,
                                     found_callback=bad_symbol_callback)
     else:
-        bad_symbols = bisect_biggest(bisect_symbol_build_and_check,
+        bad_symbols = bisect_biggest(memoized_checker,
                                      symbol_tuples, k=args.biggest)
     return bad_symbols
 
@@ -1558,7 +1599,6 @@ def main(arguments, prog=sys.argv[0]):
 
     _, _, _, _, ret = run_bisect(arguments, prog)
     return ret
-
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
