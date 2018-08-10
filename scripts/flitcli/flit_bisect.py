@@ -719,7 +719,7 @@ def bisect_search(score_func, elements, found_callback=None):
 
     bad_list = []
     while len(quest_list) > 0 and score_func(quest_list) > 0:
-        
+
         # find one bad element
         quest_copy = quest_list
         while len(quest_copy) > 1:
@@ -937,31 +937,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
-
-        print('  Create {0} - compiling and running'.format(makepath),
-              end='', flush=True)
-        logging.info('Created %s', makepath)
-        logging.info('Checking:')
-        for lib in trouble_libs:
-            logging.info('  %s', lib)
-
-        try:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs)
-        finally:
-            if args.delete:
-                build_bisect(makepath, args.directory, verbose=args.verbose,
-                             jobs=args.jobs, target='bisect-smallclean')
-        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                           args.directory)[0]
-        resultpath = os.path.join(args.directory, resultfile)
-        result = get_comparison_result(resultpath)
-        result_str = str(result)
-
-        sys.stdout.write(' - score {0}\n'.format(result_str))
-        logging.info('Result was %s', result_str)
-
-        return result
+        return test_makefile(args, makepath, trouble_libs)
 
     memoized_checker = memoize_strlist_func(bisect_libs_build_and_check)
 
@@ -982,6 +958,43 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         return libs
     return []
 
+def test_makefile(args, makepath, testing_list):
+    '''
+    Runs the compilation in the makefile and returns the generated comparison
+    result.
+
+    @param args: parsed command-line arguments (see parse_args())
+    @param makepath (str): absolute or relative path to the Makefile
+    @param testing_list (list(str)): list of items being tested (for logging
+        purposes)
+
+    @return (float) generated comparison result
+    '''
+    print('  Created {0} - compiling and running'.format(makepath), end='',
+          flush=True)
+    logging.info('Created %s', makepath)
+    logging.info('Checking:')
+    for src in testing_list:
+        logging.info('  %s', src)
+
+    try:
+        build_bisect(makepath, args.directory, verbose=args.verbose,
+                     jobs=args.jobs)
+    finally:
+        if args.delete:
+            build_bisect(makepath, args.directory, verbose=args.verbose,
+                         jobs=args.jobs, target='bisect-smallclean')
+    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                       args.directory)[0]
+    resultpath = os.path.join(args.directory, resultfile)
+    result = get_comparison_result(resultpath)
+    result_str = str(result)
+
+    sys.stdout.write(' - score {0}\n'.format(result_str))
+    logging.info('Result was %s', result_str)
+
+    return result
+
 def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
     Performs the search over the space of source files for problems.
@@ -1001,31 +1014,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           trouble_src, dict())
         makepath = os.path.join(bisect_path, makefile)
-
-        print('  Created {0} - compiling and running'.format(makepath), end='',
-              flush=True)
-        logging.info('Created %s', makepath)
-        logging.info('Checking:')
-        for src in trouble_src:
-            logging.info('  %s', src)
-
-        try:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs)
-        finally:
-            if args.delete:
-                build_bisect(makepath, args.directory, verbose=args.verbose,
-                             jobs=args.jobs, target='bisect-smallclean')
-        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                           args.directory)[0]
-        resultpath = os.path.join(args.directory, resultfile)
-        result = get_comparison_result(resultpath)
-        result_str = str(result)
-
-        sys.stdout.write(' - score {0}\n'.format(result_str))
-        logging.info('Result was %s', result_str)
-
-        return result
+        return test_makefile(args, makepath, trouble_src)
 
     memoized_checker = memoize_strlist_func(bisect_build_and_check)
 
@@ -1090,8 +1079,6 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
         @param trouble_symbols: (list of SymbolTuple) symbols to use
             from the trouble compilation
-        @param gt_symbols: (list of SymbolTuple) symbols to use from
-            the ground truth compilation
 
         @return True if the compilation has a non-zero comparison between this
             mixed compilation and the full ground truth compilation.
@@ -1110,34 +1097,11 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           trouble_src, symbol_map)
         makepath = os.path.join(bisect_path, makefile)
-
-        print('  Created {0} - compiling and running'.format(makepath), end='',
-              flush=True)
-        logging.info('Created %s', makepath)
-        logging.info('Checking:')
-        for sym in trouble_symbols:
-            logging.info(
-                '%s',
-                '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
-                .format(sym=sym))
-
-        try:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs)
-        finally:
-            if args.delete:
-                build_bisect(makepath, args.directory, verbose=args.verbose,
-                             jobs=args.jobs, target='bisect-smallclean')
-        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                           args.directory)[0]
-        resultpath = os.path.join(args.directory, resultfile)
-        result = get_comparison_result(resultpath)
-        result_str = str(result)
-
-        sys.stdout.write(' - score {0}\n'.format(result_str))
-        logging.info('Result was %s', result_str)
-
-        return result
+        symbol_strings = [
+            '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
+            .format(sym=sym) for sym in trouble_symbols
+            ]
+        return test_makefile(args, makepath, symbol_strings)
 
     memoized_checker = memoize_strlist_func(bisect_symbol_build_and_check)
 
