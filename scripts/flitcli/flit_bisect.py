@@ -1355,8 +1355,15 @@ def run_bisect(arguments, prog=sys.argv[0]):
         logging.exception('Failed to search for bad sources.')
         return bisect_num, bad_libs, None, None, 1
 
-    print('  bad sources:')
-    logging.info('BAD SOURCES:')
+    if args.biggest is None:
+        print('  all variability inducing source file(s):')
+        logging.info('ALL VARIABILITY INCUDING SOURCE FILE(S):')
+    else:
+        print('  {} highest variability source file{}:'.format(
+            args.biggest, 's' if args.biggest > 1 else ''))
+        logging.info('%d HIGHEST VARIABILITY SOURCE FILE%s:',
+                     args.biggest, 'S' if args.biggest > 1 else '')
+
     for src in bad_sources:
         print('    {} (score {})'.format(src[0], src[1]))
         logging.info('  %s', src)
@@ -1382,8 +1389,13 @@ def run_bisect(arguments, prog=sys.argv[0]):
                               bad_source)
         bad_symbols.extend(file_bad_symbols)
         if len(file_bad_symbols) > 0:
-            print('  bad symbols in {}:'.format(bad_source))
-            logging.info('  bad symbols in %s:', bad_source)
+            if args.biggest is None:
+                message = '  All bad symbols in {}:'.format(bad_source)
+            else:
+                message = '  {} bad symbol{} in {}:'.format(
+                    args.biggest, 's' if args.biggest > 1 else '', bad_source)
+            print(message)
+            logging.info(message)
             for sym, score in file_bad_symbols:
                 message = \
                     '    line {sym.lineno} -- {sym.demangled} (score {score})' \
@@ -1392,8 +1404,17 @@ def run_bisect(arguments, prog=sys.argv[0]):
                 logging.info('%s', message)
 
     bad_symbols.sort(key=lambda x: (-x[1], x[0]))
-    print('All bad symbols:')
-    logging.info('BAD SYMBOLS:')
+
+    if args.biggest is None:
+        print('All variability inducing symbols:')
+        logging.info('ALL VARIABILITY INCUDING SYMBOLS:')
+    else:
+        print('{} highest variability symbol{} from each found source file:'
+              .format(args.biggest, 's' if args.biggest > 1 else ''))
+        logging.info(
+            '%d HIGHEST VARIABILITY INDUCING SYMBOL%s FROM EACH FOUND SOURCE FILE:',
+            args.biggest, 'S' if args.biggest > 1 else '')
+
     for sym, score in bad_symbols:
         message = \
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled} ' \
