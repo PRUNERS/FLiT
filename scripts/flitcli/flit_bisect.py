@@ -414,7 +414,7 @@ def extract_symbols(file_or_filelist, objdir):
 
 def memoize_strlist_func(func):
     '''
-    Memoize a function that takes a list and returns a value.  This
+    Memoize a function that takes a list of strings and returns a value.  This
     function returns the memoized version.  It is expected that the list
     passed in will be in the same order.  This memoization will not
     work if for instance the input is first shuffled.
@@ -423,18 +423,18 @@ def memoize_strlist_func(func):
     ...     print(strlist)
     ...     return strlist[0]
     >>> memoized = memoize_strlist_func(to_memoize)
-    >>> memoized([1, 2, 3])
-    [1, 2, 3]
-    1
-    >>> memoized([1, 2, 3])
-    1
-    >>> memoized([3, 2])
-    [3, 2]
-    3
-    >>> memoized([1, 2, 3])
-    1
-    >>> memoized([3, 2])
-    3
+    >>> memoized(['a', 'b', 'c'])
+    ['a', 'b', 'c']
+    a
+    >>> memoized(['a', 'b', 'c'])
+    a
+    >>> memoized(['e', 'a'])
+    ['e', 'a']
+    e
+    >>> memoized(['a', 'b', 'c'])
+    a
+    >>> memoized(['e', 'a'])
+    e
     '''
     memo = {}
     def memoized_func(strlist):
