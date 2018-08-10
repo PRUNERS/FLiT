@@ -533,12 +533,15 @@ def memoize_strlist_func(func):
 def bisect_biggest(score_func, elements, k=1):
     '''
     Performs the bisect search, attempting to find the biggest offenders.  This
-    is different from bisect_search() in that the function that is passed gives
-    a numerical score of badness of the selection of elements, whereas
-    bisect_search() takes in a function that merely returns True or False.
+    is different from bisect_search() in that this function only tries to
+    identify the top k offenders, not all of them.  If k is less than or equal
+    to the total number of offenders, then bisect_biggest() is more expensive
+    than bisect_search().
 
-    We want to not call score_func() very much.  We assume the score_func() is
-    an expensive operation.
+    We do not want to call score_func() very much.  We assume the score_func() is
+    is an expensive operation.  We could go throught the list one at a time,
+    but that would cause us to potentially call score_func() more than
+    necessary.
 
     Note: The same assumption as bisect_search() is in place.  That is that all
     bad elements are independent.  This means if an element contributes to a
@@ -564,7 +567,7 @@ def bisect_biggest(score_func, elements, k=1):
 
     >>> def score_func(x):
     ...     print('scoring:', x)
-    ...     return -2*min(x)
+    ...     return -2*min(x) if x else 0
 
     >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], 3)
     scoring: [1, 3, 4, 5, -1, 10, 0, -15, 3]
@@ -609,61 +612,84 @@ def bisect_biggest(score_func, elements, k=1):
             push(elems[len(elems) // 2:])
     return found_list
 
-def bisect_search(is_bad, elements, found_callback=None):
+def bisect_search(score_func, elements, found_callback=None):
     '''
-    Performs the bisect search, attempting to minimize the bad list.  We could
-    go through the list one at a time, but that would cause us to call is_bad()
-    more than necessary.  Here we assume that calling is_bad() is expensive, so
-    we want to minimize calls to is_bad().  This function has
-      O(k*log(n))*O(is_bad)
-    where n is the size of the questionable_list and k is
-    the number of bad elements in questionable_list.
+    Performs the bisect search, attempting to find all elements contributing to
+    a positive score.  This score_func() function is intended to identify when
+    there are "bad" elements by returning a positive score.  This is different
+    from bisect_biggest() in that we find all offenders and can therefore do
+    some optimization that bisect_biggest() cannot do.
+
+    We do not want to call score_func() very much.  We assume the score_func()
+    is an expensive operation.  We could go throught the list one at a time,
+    but that would cause us to potentially call score_func() more than
+    necessary.
+
+    This function has complexity
+      O(k*log(n))*O(score_func)
+    where n is the size of the elements and k is the number of bad elements to
+    find.
 
     Note: A key assumption to this algorithm is that all bad elements are
     independent.  That may not always be true, so there are redundant checks
     within the algorithm to verify that this assumption is not vialoated.  If
     the assumption is found to be violated, then an AssertionError is raised.
 
-    @param is_bad: a function that takes one argument, the list of elements to
-        test if they are bad.  The function then returns True if the given list
-        has a bad element
+    @param score_func: a function that takes one argument, the list of elements to
+        test if they are bad.  The function then returns a positive value if
+        the given list has a bad element.  If the given list does not have a
+        bad element, this can return zero or a negative value.
+        Note: this function must be able to handle empty lists.  An empty list
+        should instantly return a non-positive value, as there cannot possibly
+        be a bad element passed to it.
+        It is expected that this function is memoized because it may be called
+        more than once on the same input during the execution of this
+        algorithm.
     @param elements: contains bad elements, but potentially good elements too
     @param found_callback: a callback function to be called on every found bad
-        element
+        element.  Will be given two arguments, the element, and the score from
+        score_func().
 
-    @return minimal bad list of all elements that cause is_bad() to return True
+    @return minimal bad list of all elements that cause score_func() to return
+        positive values, along with their scores, sorted descending by score.
+        [(elem, score), ...]
 
     Here's an example of finding all negative numbers in a list.  Not very
     useful for this particular task, but it is demonstrative of how to use it.
     >>> call_count = 0
-    >>> def is_bad(x):
-    ...     global call_count
-    ...     call_count += 1
-    ...     return min(x) < 0 if x else False
-    >>> x = bisect_search(is_bad, [1, 3, 4, 5, -1, 10, 0, -15, 3])
-    >>> sorted(x)
-    [-15, -1]
+    >>> memo = {}
+    >>> def score_func(x):
+    ...     idx = tuple(sorted(x))
+    ...     if idx not in memo:
+    ...         global call_count
+    ...         call_count += 1
+    ...         memo[idx] = -2*min(x) if x else 0
+    ...     return memo[idx]
+    >>> bisect_search(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3])
+    [(-15, 30), (-1, 2)]
 
     as a rough performance metric, we want to be sure our call count remains
-    low for the is_bad() function.
+    low for the score_func() function.  Note, we implemented memoization in
+    score_func(), so we are only counting unique calls and not duplicate calls
+    to score_func().
     >>> call_count
     9
 
     Test out the found_callback() functionality.
     >>> s = set()
-    >>> y = bisect_search(is_bad, [-1, -2, -3, -4], found_callback=s.add)
-    >>> sorted(y)
-    [-4, -3, -2, -1]
+    >>> bisect_search(score_func, [-1, -2, -3, -4],
+    ...               found_callback=lambda x, y: s.add(x))
+    [(-4, 8), (-3, 6), (-2, 4), (-1, 2)]
     >>> sorted(s)
     [-4, -3, -2, -1]
 
     See what happens when it has a pair that only show up together and not
-    alone.  Only if -6 and 5 are in the list, then is_bad returns true.
-    The assumption of this algorithm is that bad elements are independent,
-    so this should throw an exception.
-    >>> def is_bad(x):
-    ...     return max(x) - min(x) > 10
-    >>> bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
+    alone.  Only if -6 and 5 are in the list, then score_func() returns a
+    positive value.  The assumption of this algorithm is that bad elements are
+    independent, so this should throw an exception.
+    >>> def score_func(x):
+    ...     return max(x) - min(x) - 10 if x else 0
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
     Traceback (most recent call last):
         ...
     AssertionError: Assumption that bad elements are independent was wrong
@@ -671,49 +697,53 @@ def bisect_search(is_bad, elements, found_callback=None):
     Check that the found_callback is not called on false positives.  Here I
     expect no output since no single element can be found.
     >>> try:
-    ...     bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
+    ...     bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
     ...                   found_callback=print)
     ... except AssertionError:
     ...     pass
     '''
+    if not elements:
+        return []
+
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
 
     bad_list = []
-    while len(quest_list) > 0 and is_bad(quest_list):
-
+    while len(quest_list) > 0 and score_func(quest_list) > 0:
+        
         # find one bad element
         quest_copy = quest_list
-        last_result = False
         while len(quest_copy) > 1:
-            # split the questionable list into two lists
             half_1 = quest_copy[:len(quest_copy) // 2]
-            half_2 = quest_copy[len(quest_copy) // 2:]
-            last_result = is_bad(half_1)
-            if last_result:
+            if score_func(half_1) > 0:
                 quest_copy = half_1
             else:
                 # optimization: mark half_1 as known, so that we don't need to
                 # search it again
                 quest_list = quest_list[len(half_1):]
                 # update the local search
-                quest_copy = half_2
+                quest_copy = quest_copy[len(half_1):]
 
+        # since we remove known good elements as we find them, the bad element
+        # will be at the beginning of quest_list.
         bad_element = quest_list.pop(0)
 
         # double check that we found a bad element before declaring it bad
-        if last_result or is_bad([bad_element]):
-            bad_list.append(bad_element)
+        score = score_func([bad_element])
+        if score > 0:
+            bad_list.append((bad_element, score))
             # inform caller that a bad element was found
             if found_callback != None:
-                found_callback(bad_element)
+                found_callback(bad_element, score)
 
     # Perform a sanity check.  If we have found all of the bad items, then
     # compiling with all but these bad items will cause a good build.
     # This will fail if our hypothesis class is wrong
-    good_list = list(set(elements).difference(bad_list))
-    assert not is_bad(good_list), \
+    good_list = list(set(elements).difference(x[0] for x in bad_list))
+    assert score_func(good_list) <= 0, \
         'Assumption that bad elements are independent was wrong'
+
+    bad_list.sort(key=lambda x: -x[1])
 
     return bad_list
 
@@ -915,23 +945,27 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
-        result_is_bad = is_result_bad(resultpath)
+        result = get_comparison_result(resultpath)
+        result_str = str(result)
 
-        result_str = 'bad' if result_is_bad else 'good'
-        sys.stdout.write(' - {0}\n'.format(result_str))
+        sys.stdout.write(' - score {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
-        return result_is_bad
+        return result
 
     memoized_checker = memoize_strlist_func(bisect_libs_build_and_check)
 
     print('Searching for bad intel static libraries:')
     logging.info('Searching for bad static libraries included by intel linker:')
-    #bas_library_msg = '    Found bad library {}'
-    #bad_library_callback = lambda filename : \
-    #                       util.printlog(bad_library_msg.format(filename))
-    #bad_libs = bisect_search(memoized_checker, libs,
-    #                         found_callback=bad_library_callback)
+    #bas_library_msg = '    Found bad library {} (score {})'
+    #bad_library_callback = lambda filename, score: \
+    #    util.printlog(bad_library_msg.format(filename, score))
+    #if args.biggest is None:
+    #    bad_libs = bisect_search(memoized_checker, libs,
+    #                             found_callback=bad_library_callback)
+    #else:
+    #    bad_libs = bisect_biggest(memoized_checker, libs,
+    #                              k=args.biggest)
     #return bad_libs
     if memoized_checker(libs):
         return libs
@@ -974,14 +1008,10 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
-        if args.biggest is None:
-            result = is_result_bad(resultpath)
-            result_str = 'bad' if result else 'good'
-        else:
-            result = get_comparison_result(resultpath)
-            result_str = str(result)
+        result = get_comparison_result(resultpath)
+        result_str = str(result)
 
-        sys.stdout.write(' - {0}\n'.format(result_str))
+        sys.stdout.write(' - score {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
         return result
@@ -991,9 +1021,9 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     print('Searching for bad source files:')
     logging.info('Searching for bad source files under the trouble'
                  ' compilation')
-    bad_source_msg = '    Found bad source file {}'
-    bad_source_callback = lambda filename: \
-                          util.printlog(bad_source_msg.format(filename))
+    bad_source_msg = '    Found bad source file {}: score {}'
+    bad_source_callback = lambda filename, score: \
+        util.printlog(bad_source_msg.format(filename, score))
     if args.biggest is None:
         bad_sources = bisect_search(memoized_checker, sources,
                                     found_callback=bad_source_callback)
@@ -1079,14 +1109,10 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         resultfile = util.extract_make_var('BISECT_RESULT', makepath,
                                            args.directory)[0]
         resultpath = os.path.join(args.directory, resultfile)
-        if args.biggest is None:
-            result = is_result_bad(resultpath)
-            result_str = 'bad' if result else 'good'
-        else:
-            result = get_comparison_result(resultpath)
-            result_str = str(result)
+        result = get_comparison_result(resultpath)
+        result_str = str(result)
 
-        sys.stdout.write(' - {0}\n'.format(result_str))
+        sys.stdout.write(' - score {0}\n'.format(result_str))
         logging.info('Result was %s', result_str)
 
         return result
@@ -1104,9 +1130,10 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         return []
 
     bad_symbol_msg = \
-        '    Found bad symbol on line {sym.lineno} -- {sym.demangled}'
-    bad_symbol_callback = lambda sym: \
-                          util.printlog(bad_symbol_msg.format(sym=sym))
+        '    Found bad symbol on line {sym.lineno} -- ' \
+        '{sym.demangled} (score {score})'
+    bad_symbol_callback = lambda sym, score: \
+        util.printlog(bad_symbol_msg.format(sym=sym, score=score))
     if args.biggest is None:
         bad_symbols = bisect_search(memoized_checker,
                                     symbol_tuples,
@@ -1317,7 +1344,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     print('  bad sources:')
     logging.info('BAD SOURCES:')
     for src in bad_sources:
-        print('    ' + src)
+        print('    {} (score {})'.format(src[0], src[1]))
         logging.info('  %s', src)
     if len(bad_sources) == 0:
         print('    None')
@@ -1328,7 +1355,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     # This will allow us to maybe find some symbols where crashes before would
     # cause problems and no symbols would be identified
     bad_symbols = []
-    for bad_source in bad_sources:
+    for bad_source, _ in bad_sources:
         try:
             file_bad_symbols = search_for_symbol_problems(
                 args, bisect_path, replacements, sources, bad_source)
@@ -1343,17 +1370,19 @@ def run_bisect(arguments, prog=sys.argv[0]):
         if len(file_bad_symbols) > 0:
             print('  bad symbols in {}:'.format(bad_source))
             logging.info('  bad symbols in %s:', bad_source)
-            for sym in file_bad_symbols:
-                message = '    line {sym.lineno} -- {sym.demangled}' \
-                          .format(sym=sym)
+            for sym, score in file_bad_symbols:
+                message = \
+                    '    line {sym.lineno} -- {sym.demangled} (score {score})' \
+                    .format(sym=sym, score=score)
                 print(message)
                 logging.info('%s', message)
 
     print('All bad symbols:')
     logging.info('BAD SYMBOLS:')
-    for sym in bad_symbols:
-        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
-                  .format(sym=sym)
+    for sym, score in bad_symbols:
+        message = \
+            '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled} ' \
+            '(score {score})'.format(sym=sym, score=score)
         print(message)
         logging.info('%s', message)
     if len(bad_symbols) == 0:
