@@ -530,7 +530,7 @@ def memoize_strlist_func(func):
         return value
     return memoized_func
 
-def bisect_biggest(score_func, elements, k=1):
+def bisect_biggest(score_func, elements, found_callback=None, k=1):
     '''
     Performs the bisect search, attempting to find the biggest offenders.  This
     is different from bisect_search() in that this function only tries to
@@ -558,6 +558,9 @@ def bisect_biggest(score_func, elements, k=1):
         negative value.
     @param elements: the elements to search over.  Subsets of this list will be
         given to score_func().
+    @param found_callback: a callback function to be called on every found bad
+        element.  Will be given two arguments, the element, and the score from
+        score_func().
     @param k: number of biggest elements to return.  The default is to return
         the one biggest offender.  If there are less than k elements that
         return positive scores, then only the found offenders will be returned.
@@ -569,7 +572,7 @@ def bisect_biggest(score_func, elements, k=1):
     ...     print('scoring:', x)
     ...     return -2*min(x) if x else 0
 
-    >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], 3)
+    >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], k=3)
     scoring: [1, 3, 4, 5, -1, 10, 0, -15, 3]
     scoring: [1, 3, 4, 5]
     scoring: [-1, 10, 0, -15, 3]
@@ -583,7 +586,8 @@ def bisect_biggest(score_func, elements, k=1):
     scoring: [10]
     [(-15, 30), (-1, 2)]
 
-    >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], 3)
+    >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], k=3,
+    ...                found_callback=print)
     scoring: [-1, -2, -3, -4, -5]
     scoring: [-1, -2]
     scoring: [-3, -4, -5]
@@ -591,6 +595,9 @@ def bisect_biggest(score_func, elements, k=1):
     scoring: [-4, -5]
     scoring: [-4]
     scoring: [-5]
+    -5 10
+    -4 8
+    -3 6
     [(-5, 10), (-4, 8), (-3, 6)]
 
     >>> bisect_biggest(score_func, [])
@@ -607,6 +614,8 @@ def bisect_biggest(score_func, elements, k=1):
         score, elems = pop()
         if len(elems) == 1:
             found_list.append((elems[0], -score))
+            if found_callback is not None:
+                found_callback(elems[0], -score)
         else:
             push(elems[:len(elems) // 2])
             push(elems[len(elems) // 2:])
@@ -966,6 +975,7 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     #                             found_callback=bad_library_callback)
     #else:
     #    bad_libs = bisect_biggest(memoized_checker, libs,
+    #                              found_callback=bad_library_callback,
     #                              k=args.biggest)
     #return bad_libs
     if memoized_checker(libs):
@@ -1030,6 +1040,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
                                     found_callback=bad_source_callback)
     else:
         bad_sources = bisect_biggest(memoized_checker, sources,
+                                     found_callback=bad_source_callback,
                                      k=args.biggest)
     return bad_sources
 
@@ -1141,7 +1152,9 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
                                     found_callback=bad_symbol_callback)
     else:
         bad_symbols = bisect_biggest(memoized_checker,
-                                     symbol_tuples, k=args.biggest)
+                                     symbol_tuples,
+                                     found_callback=bad_symbol_callback,
+                                     k=args.biggest)
     return bad_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
