@@ -743,6 +743,7 @@ def bisect_search(score_func, elements, found_callback=None):
     assert score_func(good_list) <= 0, \
         'Assumption that bad elements are independent was wrong'
 
+    # sort descending by score
     bad_list.sort(key=lambda x: -x[1])
 
     return bad_list
@@ -1377,6 +1378,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
                 print(message)
                 logging.info('%s', message)
 
+    bad_symbols.sort(key=lambda x: (-x[1], x[0]))
     print('All bad symbols:')
     logging.info('BAD SYMBOLS:')
     for sym, score in bad_symbols:
