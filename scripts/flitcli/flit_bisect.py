@@ -175,9 +175,9 @@ def create_bisect_makefile(directory, replacements, gt_src,
     @param trouble_src: (list) which source files would be compiled with the
         trouble compilation within the resulting binary.
     @param split_symbol_map:
-        (dict fname -> list [list good symbols, list bad symbols])
-        Files to compile as a split between good and bad, specifying good and
-        bad symbols for each file.
+        (dict fname -> list [list baseline symbols, list differing symbols])
+        Files to compile as a split between baseline and differing, specifying
+        baseline and differing symbols for each file.
 
     Within replacements, there are some optional fields:
     - cpp_flags: (list) (optional) List of c++ compiler flags to give to
@@ -351,9 +351,9 @@ def get_comparison_result(resultfile):
             val = row['comparison']
             return float(val) if val != 'NULL' else None
 
-def is_result_bad(resultfile):
+def is_result_differing(resultfile):
     '''
-    Returns True if the results from the resultfile is considered 'bad',
+    Returns True if the results from the resultfile is considered 'differing',
     meaning it is a different answer from the ground-truth.
 
     @param resultfile: path to the results csv file after comparison
@@ -365,28 +365,28 @@ def is_result_bad(resultfile):
     ...     _ = fout.write('name,host,compiler,...,comparison,...\\n'
     ...                    'test,name,clang++,...,15.342,...\\n')
     ...     fname = fout.name
-    >>> is_result_bad(fname)
+    >>> is_result_differing(fname)
     True
 
     Try out a value that is less than zero
     >>> with open(fname, 'w') as fout:
     ...     _ = fout.write('comparison\\n'
     ...                    '-1e-34\\n')
-    >>> is_result_bad(fname)
+    >>> is_result_differing(fname)
     True
 
     Try out a value that is identically zero
     >>> with open(fname, 'w') as fout:
     ...     _ = fout.write('comparison\\n'
     ...                    '0.0\\n')
-    >>> is_result_bad(fname)
+    >>> is_result_differing(fname)
     False
 
     Make sure NULL values are handled appropriately
     >>> with open(fname, 'w') as fout:
     ...     _ = fout.write('comparison\\n'
     ...                    'NULL\\n')
-    >>> is_result_bad(fname)
+    >>> is_result_differing(fname)
     Traceback (most recent call last):
         ...
     TypeError: float() argument must be a string or a number, not 'NoneType'
@@ -395,7 +395,7 @@ def is_result_bad(resultfile):
     >>> with open(fname, 'w') as fout:
     ...     _ = fout.write('comparison\\n'
     ...                    'coconut\\n')
-    >>> is_result_bad(fname)
+    >>> is_result_differing(fname)
     Traceback (most recent call last):
         ...
     ValueError: could not convert string to float: 'coconut'
@@ -538,29 +538,31 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
     to the total number of offenders, then bisect_biggest() is more expensive
     than bisect_search().
 
-    We do not want to call score_func() very much.  We assume the score_func() is
-    is an expensive operation.  We could go throught the list one at a time,
+    We do not want to call score_func() very much.  We assume the score_func()
+    is is an expensive operation.  We could go throught the list one at a time,
     but that would cause us to potentially call score_func() more than
     necessary.
 
     Note: The same assumption as bisect_search() is in place.  That is that all
-    bad elements are independent.  This means if an element contributes to a
-    bad score, then it would contribute to a bad score by itself as well.  This
-    is not always true, and this function does not verify this assumption.
-    Instead, it will only return the largest singleton offenders.
+    differing elements are independent.  This means if an element contributes
+    to a differing score, then it would contribute to a differing score by
+    itself as well.  This is not always true, and this function does not verify
+    this assumption.  Instead, it will only return the largest singleton
+    offenders.
 
     @param score_func: a function that takes one argument (to_test) and returns
-        a number greater than zero if the function is bad.  This value returned
-        is used to compare the elements so that the largest k offenders are
-        found and returned.  If all offenders return the same numerical value,
+        a number greater than zero if one of the elements in to_test causes the
+        result to be differing.  This value returned is used to compare the
+        elements so that the largest k differing elements are found and
+        returned.  If all differing elements return the same numerical value,
         then this will be less efficient than bisect_search.
-        Note: if the set of elements is good, then either return 0 or a
-        negative value.
+        Note: if the set of elements is not differing, then either return 0 or
+        a negative value.
     @param elements: the elements to search over.  Subsets of this list will be
         given to score_func().
-    @param found_callback: a callback function to be called on every found bad
-        element.  Will be given two arguments, the element, and the score from
-        score_func().
+    @param found_callback: a callback function to be called on every found
+        differing element.  Will be given two arguments, the element, and the
+        score from score_func().
     @param k: number of biggest elements to return.  The default is to return
         the one biggest offender.  If there are less than k elements that
         return positive scores, then only the found offenders will be returned.
@@ -625,9 +627,9 @@ def bisect_search(score_func, elements, found_callback=None):
     '''
     Performs the bisect search, attempting to find all elements contributing to
     a positive score.  This score_func() function is intended to identify when
-    there are "bad" elements by returning a positive score.  This is different
-    from bisect_biggest() in that we find all offenders and can therefore do
-    some optimization that bisect_biggest() cannot do.
+    there are "differing" elements by returning a positive score.  This is
+    different from bisect_biggest() in that we find all offenders and can
+    therefore do some optimization that bisect_biggest() cannot do.
 
     We do not want to call score_func() very much.  We assume the score_func()
     is an expensive operation.  We could go throught the list one at a time,
@@ -636,31 +638,33 @@ def bisect_search(score_func, elements, found_callback=None):
 
     This function has complexity
       O(k*log(n))*O(score_func)
-    where n is the size of the elements and k is the number of bad elements to
-    find.
+    where n is the size of the elements and k is the number of differing
+    elements to find.
 
-    Note: A key assumption to this algorithm is that all bad elements are
+    Note: A key assumption to this algorithm is that all differing elements are
     independent.  That may not always be true, so there are redundant checks
     within the algorithm to verify that this assumption is not vialoated.  If
     the assumption is found to be violated, then an AssertionError is raised.
 
-    @param score_func: a function that takes one argument, the list of elements to
-        test if they are bad.  The function then returns a positive value if
-        the given list has a bad element.  If the given list does not have a
-        bad element, this can return zero or a negative value.
-        Note: this function must be able to handle empty lists.  An empty list
-        should instantly return a non-positive value, as there cannot possibly
-        be a bad element passed to it.
+    @param score_func: a function that takes one argument, the list of elements
+        to test if they are differing.  The function then returns a positive
+        value if the given list has a differing element.  If the given list
+        does not have a differing element, this can return zero or a negative
+        value.  Note: this function must be able to handle empty lists.  An
+        empty list should instantly return a non-positive value, as there
+        cannot possibly be a differing element passed to it.
         It is expected that this function is memoized because it may be called
         more than once on the same input during the execution of this
         algorithm.
-    @param elements: contains bad elements, but potentially good elements too
-    @param found_callback: a callback function to be called on every found bad
-        element.  Will be given two arguments, the element, and the score from
-        score_func().
+    @param elements: contains differing elements, but potentially non-differing
+        elements too
+    @param found_callback: a callback function to be called on every found
+        differing element.  Will be given two arguments, the element, and the
+        score from score_func().
 
-    @return minimal bad list of all elements that cause score_func() to return
-        positive values, along with their scores, sorted descending by score.
+    @return minimal differing list of all elements that cause score_func() to
+        return positive values, along with their scores, sorted descending by
+        score.
         [(elem, score), ...]
 
     Here's an example of finding all negative numbers in a list.  Not very
@@ -694,14 +698,14 @@ def bisect_search(score_func, elements, found_callback=None):
 
     See what happens when it has a pair that only show up together and not
     alone.  Only if -6 and 5 are in the list, then score_func() returns a
-    positive value.  The assumption of this algorithm is that bad elements are
-    independent, so this should throw an exception.
+    positive value.  The assumption of this algorithm is that differing
+    elements are independent, so this should throw an exception.
     >>> def score_func(x):
     ...     return max(x) - min(x) - 10 if x else 0
     >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
     Traceback (most recent call last):
         ...
-    AssertionError: Assumption that bad elements are independent was wrong
+    AssertionError: Assumption that differing elements are independent was wrong
 
     Check that the found_callback is not called on false positives.  Here I
     expect no output since no single element can be found.
@@ -717,10 +721,10 @@ def bisect_search(score_func, elements, found_callback=None):
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
 
-    bad_list = []
+    differing_list = []
     while len(quest_list) > 0 and score_func(quest_list) > 0:
 
-        # find one bad element
+        # find one differing element
         quest_copy = quest_list
         while len(quest_copy) > 1:
             half_1 = quest_copy[:len(quest_copy) // 2]
@@ -733,29 +737,32 @@ def bisect_search(score_func, elements, found_callback=None):
                 # update the local search
                 quest_copy = quest_copy[len(half_1):]
 
-        # since we remove known good elements as we find them, the bad element
-        # will be at the beginning of quest_list.
-        bad_element = quest_list.pop(0)
+        # since we remove known non-differing elements as we find them, the
+        # differing element will be at the beginning of quest_list.
+        differing_element = quest_list.pop(0)
 
-        # double check that we found a bad element before declaring it bad
-        score = score_func([bad_element])
+        # double check that we found a differing element before declaring it
+        # differing
+        score = score_func([differing_element])
         if score > 0:
-            bad_list.append((bad_element, score))
-            # inform caller that a bad element was found
+            differing_list.append((differing_element, score))
+            # inform caller that a differing element was found
             if found_callback != None:
-                found_callback(bad_element, score)
+                found_callback(differing_element, score)
 
-    # Perform a sanity check.  If we have found all of the bad items, then
-    # compiling with all but these bad items will cause a good build.
+    # Perform a sanity check.  If we have found all of the differing items, then
+    # compiling with all but these differing items will cause a non-differing
+    # build.
     # This will fail if our hypothesis class is wrong
-    good_list = list(set(elements).difference(x[0] for x in bad_list))
-    assert score_func(good_list) <= 0, \
-        'Assumption that bad elements are independent was wrong'
+    non_differing_list = \
+        list(set(elements).difference(x[0] for x in differing_list))
+    assert score_func(non_differing_list) <= 0, \
+        'Assumption that differing elements are independent was wrong'
 
     # sort descending by score
-    bad_list.sort(key=lambda x: -x[1])
+    differing_list.sort(key=lambda x: -x[1])
 
-    return bad_list
+    return differing_list
 
 def parse_args(arguments, prog=sys.argv[0]):
     '''
@@ -1057,19 +1064,20 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     memoized_checker = _gen_bisect_lib_checker(args, bisect_path, replacements,
                                                sources)
 
-    print('Searching for bad intel static libraries:')
-    logging.info('Searching for bad static libraries included by intel linker:')
-    #bas_library_msg = '    Found bad library {} (score {})'
-    #bad_library_callback = lambda filename, score: \
-    #    util.printlog(bad_library_msg.format(filename, score))
+    print('Searching for differing intel static libraries:')
+    logging.info('Searching for differing static libraries included by intel '
+                 'linker:')
+    #differing_library_msg = '    Found differing library {} (score {})'
+    #differing_library_callback = lambda filename, score: \
+    #    util.printlog(differing_library_msg.format(filename, score))
     #if args.biggest is None:
-    #    bad_libs = bisect_search(memoized_checker, libs,
-    #                             found_callback=bad_library_callback)
+    #    differing_libs = bisect_search(
+    #        memoized_checker, libs, found_callback=differing_library_callback)
     #else:
-    #    bad_libs = bisect_biggest(memoized_checker, libs,
-    #                              found_callback=bad_library_callback,
-    #                              k=args.biggest)
-    #return bad_libs
+    #    differing_libs = bisect_biggest(
+    #        memoized_checker, libs, found_callback=differing_library_callback,
+    #        k=args.biggest)
+    #return differing_libs
     if memoized_checker(libs):
         return libs
     return []
@@ -1091,41 +1099,43 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     # TODO- stop as soon as a symbol is less than the kth symbol (after
     # TODO- updating the list of k).
 
-    print('Searching for bad source files:')
-    logging.info('Searching for bad source files under the trouble'
+    print('Searching for differing source files:')
+    logging.info('Searching for differing source files under the trouble'
                  ' compilation')
-    bad_source_msg = '    Found bad source file {}: score {}'
-    bad_source_callback = lambda filename, score: \
-        util.printlog(bad_source_msg.format(filename, score))
+    differing_source_msg = '    Found differing source file {}: score {}'
+    differing_source_callback = lambda filename, score: \
+        util.printlog(differing_source_msg.format(filename, score))
     if args.biggest is None:
-        bad_sources = bisect_search(memoized_checker, sources,
-                                    found_callback=bad_source_callback)
+        differing_sources = bisect_search(
+            memoized_checker, sources,
+            found_callback=differing_source_callback)
     else:
-        bad_sources = bisect_biggest(memoized_checker, sources,
-                                     found_callback=bad_source_callback,
-                                     k=args.biggest)
-    return bad_sources
+        differing_sources = bisect_biggest(
+            memoized_checker, sources,
+            found_callback=differing_source_callback, k=args.biggest)
+    return differing_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
-                               bad_source):
+                               differing_source):
     '''
-    Performs the search over the space of symbols within bad source files for
-    problems.
+    Performs the search over the space of symbols within differing source files
+    for problems.
 
     @param args: parsed command-line arguments
     @param bisect_path: directory where bisect is being performed
     @param replacements: dictionary of values to use in generating the Makefile
     @param sources: all source files
-    @param bad_source: the one bad source file to search for bad symbols
+    @param differing_source: the one differing source file to search for
+        differing symbols
 
-    @return a list of identified bad symbols (if any)
+    @return a list of identified differing symbols (if any)
     '''
-    print('Searching for bad symbols in:', bad_source)
-    logging.info('Searching for bad symbols in: %s', bad_source)
+    print('Searching for differing symbols in:', differing_source)
+    logging.info('Searching for differing symbols in: %s', differing_source)
     logging.info('Note: inlining disabled to isolate functions')
     logging.info('Note: only searching over globally exported functions')
     logging.debug('Symbols:')
-    symbol_tuples = extract_symbols(bad_source,
+    symbol_tuples = extract_symbols(differing_source,
                                     os.path.join(args.directory, 'obj'))
     for sym in symbol_tuples:
         message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
@@ -1135,7 +1145,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     memoized_checker = _gen_bisect_symbol_checker(
         args, bisect_path, replacements, sources, symbol_tuples)
 
-    # Check to see if -fPIC destroyed any chance of finding any bad symbols
+    # Check to see if -fPIC destroyed any chance of finding any differing
+    # symbols
     if not memoized_checker(symbol_tuples):
         message_1 = '  Warning: -fPIC compilation destroyed the optimization'
         message_2 = '  Cannot find any trouble symbols'
@@ -1145,21 +1156,20 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         logging.warning('%s', message_2)
         return []
 
-    bad_symbol_msg = \
-        '    Found bad symbol on line {sym.lineno} -- ' \
+    differing_symbol_msg = \
+        '    Found differing symbol on line {sym.lineno} -- ' \
         '{sym.demangled} (score {score})'
-    bad_symbol_callback = lambda sym, score: \
-        util.printlog(bad_symbol_msg.format(sym=sym, score=score))
+    differing_symbol_callback = lambda sym, score: \
+        util.printlog(differing_symbol_msg.format(sym=sym, score=score))
     if args.biggest is None:
-        bad_symbols = bisect_search(memoized_checker,
-                                    symbol_tuples,
-                                    found_callback=bad_symbol_callback)
+        differing_symbols = bisect_search(
+            memoized_checker, symbol_tuples,
+            found_callback=differing_symbol_callback)
     else:
-        bad_symbols = bisect_biggest(memoized_checker,
-                                     symbol_tuples,
-                                     found_callback=bad_symbol_callback,
-                                     k=args.biggest)
-    return bad_symbols
+        differing_symbols = bisect_biggest(
+            memoized_checker, symbol_tuples,
+            found_callback=differing_symbol_callback, k=args.biggest)
+    return differing_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
                     jobs=mp.cpu_count(), delete=True):
@@ -1284,7 +1294,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
-    bad_libs = []
+    differing_libs = []
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
         warning_message = 'Warning: The intel compiler may not work with bisect'
         logging.info('%s', warning_message)
@@ -1314,26 +1324,27 @@ def run_bisect(arguments, prog=sys.argv[0]):
             os.path.join(intel_lib_dir, 'libsvml.a'),
             ]
         try:
-            bad_libs = search_for_linker_problems(args, bisect_path,
-                                                  replacements, sources, libs)
+            differing_libs = search_for_linker_problems(
+                args, bisect_path, replacements, sources, libs)
         except subp.CalledProcessError:
             print()
             print('  Executable failed to run.')
-            print('Failed to search for bad libraries -- cannot continue.')
+            print('Failed to search for differing libraries'
+                  ' -- cannot continue.')
             return bisect_num, None, None, None, 1
 
-        print('  bad static libraries:')
+        print('  differing static libraries:')
         logging.info('BAD STATIC LIBRARIES:')
-        for lib in bad_libs:
+        for lib in differing_libs:
             print('    ' + lib)
             logging.info('  %s', lib)
-        if len(bad_libs) == 0:
+        if len(differing_libs) == 0:
             print('    None')
             logging.info('  None')
 
         # For now, if the linker was to blame, then say there may be nothing
         # else we can do.
-        if len(bad_libs) > 0:
+        if len(differing_libs) > 0:
             message = 'May not be able to search further, because of intel ' \
                       'optimizations'
             print(message)
@@ -1346,18 +1357,18 @@ def run_bisect(arguments, prog=sys.argv[0]):
         # If the libraries were a problem, then reset what the baseline
         # ground-truth is, especially since we updated the LINK_FLAGS in the
         # generated Makefiles.
-        if len(bad_libs) > 0:
+        if len(differing_libs) > 0:
             replacements['build_gt_local'] = 'true'
 
     try:
-        bad_sources = search_for_source_problems(args, bisect_path,
-                                                 replacements, sources)
+        differing_sources = search_for_source_problems(args, bisect_path,
+                                                       replacements, sources)
     except subp.CalledProcessError:
         print()
         print('  Executable failed to run.')
-        print('Failed to search for bad sources -- cannot continue.')
-        logging.exception('Failed to search for bad sources.')
-        return bisect_num, bad_libs, None, None, 1
+        print('Failed to search for differing sources -- cannot continue.')
+        logging.exception('Failed to search for differing sources.')
+        return bisect_num, differing_libs, None, None, 1
 
     if args.biggest is None:
         print('  all variability inducing source file(s):')
@@ -1368,46 +1379,48 @@ def run_bisect(arguments, prog=sys.argv[0]):
         logging.info('%d HIGHEST VARIABILITY SOURCE FILE%s:',
                      args.biggest, 'S' if args.biggest > 1 else '')
 
-    for src in bad_sources:
+    for src in differing_sources:
         print('    {} (score {})'.format(src[0], src[1]))
         logging.info('  %s', src)
-    if len(bad_sources) == 0:
+    if len(differing_sources) == 0:
         print('    None')
         logging.info('  None')
 
 
-    # Search for bad symbols one bad file at a time
+    # Search for differing symbols one differing file at a time
     # This will allow us to maybe find some symbols where crashes before would
     # cause problems and no symbols would be identified
-    bad_symbols = []
-    for bad_source, _ in bad_sources:
+    differing_symbols = []
+    for differing_source, _ in differing_sources:
         try:
-            file_bad_symbols = search_for_symbol_problems(
-                args, bisect_path, replacements, sources, bad_source)
+            file_differing_symbols = search_for_symbol_problems(
+                args, bisect_path, replacements, sources, differing_source)
         except subp.CalledProcessError:
             print()
             print('  Executable failed to run.')
-            print('Failed to search for bad symbols in {} -- cannot continue' \
-                    .format(bad_source))
-            logging.exception('Failed to search for bad symbols in %s',
-                              bad_source)
-        bad_symbols.extend(file_bad_symbols)
-        if len(file_bad_symbols) > 0:
+            print('Failed to search for differing symbols in {}'
+                  '-- cannot continue'.format(differing_source))
+            logging.exception('Failed to search for differing symbols in %s',
+                              differing_source)
+        differing_symbols.extend(file_differing_symbols)
+        if len(file_differing_symbols) > 0:
             if args.biggest is None:
-                message = '  All bad symbols in {}:'.format(bad_source)
+                message = '  All differing symbols in {}:'\
+                          .format(differing_source)
             else:
-                message = '  {} bad symbol{} in {}:'.format(
-                    args.biggest, 's' if args.biggest > 1 else '', bad_source)
+                message = '  {} differing symbol{} in {}:'.format(
+                    args.biggest, 's' if args.biggest > 1 else '',
+                    differing_source)
             print(message)
             logging.info(message)
-            for sym, score in file_bad_symbols:
+            for sym, score in file_differing_symbols:
                 message = \
                     '    line {sym.lineno} -- {sym.demangled} (score {score})' \
                     .format(sym=sym, score=score)
                 print(message)
                 logging.info('%s', message)
 
-    bad_symbols.sort(key=lambda x: (-x[1], x[0]))
+    differing_symbols.sort(key=lambda x: (-x[1], x[0]))
 
     if args.biggest is None:
         print('All variability inducing symbols:')
@@ -1416,20 +1429,20 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('{} highest variability symbol{} from each found source file:'
               .format(args.biggest, 's' if args.biggest > 1 else ''))
         logging.info(
-            '%d HIGHEST VARIABILITY INDUCING SYMBOL%s FROM EACH FOUND SOURCE FILE:',
-            args.biggest, 'S' if args.biggest > 1 else '')
+            '%d HIGHEST VARIABILITY INDUCING SYMBOL%s FROM EACH FOUND SOURCE '
+            'FILE:', args.biggest, 'S' if args.biggest > 1 else '')
 
-    for sym, score in bad_symbols:
+    for sym, score in differing_symbols:
         message = \
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled} ' \
             '(score {score})'.format(sym=sym, score=score)
         print(message)
         logging.info('%s', message)
-    if len(bad_symbols) == 0:
+    if len(differing_symbols) == 0:
         print('    None')
         logging.info('  None')
 
-    return bisect_num, bad_libs, bad_sources, bad_symbols, 0
+    return bisect_num, differing_libs, differing_sources, differing_symbols, 0
 
 def auto_bisect_worker(arg_queue, result_queue):
     '''
@@ -1451,9 +1464,9 @@ def auto_bisect_worker(arg_queue, result_queue):
         - compiler: (str) compiler used
         - optl: (str) optimization level
         - switches: (str) switches
-        - libs: (list of str) bad libraries found
-        - srcs: (list of str) bad source files found
-        - syms: (list of SymbolTuple) bad symbols found
+        - libs: (list of str) differing libraries found
+        - srcs: (list of str) differing source files found
+        - syms: (list of SymbolTuple) differing symbols found
         - ret: (int) return code of running
 
     @return None

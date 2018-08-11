@@ -125,27 +125,28 @@ Let's see that the ground truth results are updated first
 
 Verify that all source files were found and output during the search
 >>> sorted([x.split(':')[0].split()[-1] for x in bisect_out
-...                       if x.startswith('    Found bad source file')])
+...         if x.startswith('    Found differing source file')])
 ['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
 
-Verify that the three bad sources were output in the "bad sources:" section
+Verify that the three differing sources were output in the "differing sources:"
+section
 >>> idx = bisect_out.index('  all variability inducing source file(s):')
 >>> print('\\n'.join(bisect_out[idx+1:idx+4]))
     tests/file1.cpp (score 10.0)
     tests/file2.cpp (score 7.0)
     tests/file3.cpp (score 4.0)
->>> bisect_out[idx+4].startswith('Searching for bad symbols in:')
+>>> bisect_out[idx+4].startswith('Searching for differing symbols in:')
 True
 
 Verify that all three files were searched individually
 >>> sorted([x.split()[-1] for x in bisect_out
-...                       if x.startswith('Searching for bad symbols in:')])
+...         if x.startswith('Searching for differing symbols in:')])
 ['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
 
 Verify all functions were identified during the symbol searches
 >>> print('\\n'.join(
 ...     sorted([' '.join(x.split()[-6:]) for x in bisect_out
-...             if x.startswith('    Found bad symbol on line')])))
+...             if x.startswith('    Found differing symbol on line')])))
 line 100 -- file1_func3_PROBLEM() (score 2.0)
 line 103 -- file3_func5_PROBLEM() (score 3.0)
 line 108 -- file1_func4_PROBLEM() (score 3.0)
@@ -153,8 +154,8 @@ line 91 -- file2_func1_PROBLEM() (score 7.0)
 line 92 -- file1_func2_PROBLEM() (score 5.0)
 line 92 -- file3_func2_PROBLEM() (score 1.0)
 
-Verify the bad symbols section for file1.cpp
->>> idx = bisect_out.index('  All bad symbols in tests/file1.cpp:')
+Verify the differing symbols section for file1.cpp
+>>> idx = bisect_out.index('  All differing symbols in tests/file1.cpp:')
 >>> print('\\n'.join(bisect_out[idx+1:idx+4]))
     line 92 -- file1_func2_PROBLEM() (score 5.0)
     line 108 -- file1_func4_PROBLEM() (score 3.0)
@@ -162,22 +163,22 @@ Verify the bad symbols section for file1.cpp
 >>> bisect_out[idx+4].startswith(' ')
 False
 
-Verify the bad symbols section for file2.cpp
->>> idx = bisect_out.index('  All bad symbols in tests/file2.cpp:')
+Verify the differing symbols section for file2.cpp
+>>> idx = bisect_out.index('  All differing symbols in tests/file2.cpp:')
 >>> bisect_out[idx+1]
 '    line 91 -- file2_func1_PROBLEM() (score 7.0)'
 >>> bisect_out[idx+2].startswith(' ')
 False
 
-Verify the bad symbols section for file3.cpp
->>> idx = bisect_out.index('  All bad symbols in tests/file3.cpp:')
+Verify the differing symbols section for file3.cpp
+>>> idx = bisect_out.index('  All differing symbols in tests/file3.cpp:')
 >>> print('\\n'.join(bisect_out[idx+1:idx+3]))
     line 103 -- file3_func5_PROBLEM() (score 3.0)
     line 92 -- file3_func2_PROBLEM() (score 1.0)
 >>> bisect_out[idx+3].startswith(' ')
 False
 
-Test the All bad symbols section of the output
+Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
   /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM() (score 7.0)
@@ -188,78 +189,79 @@ Test the All bad symbols section of the output
   /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM() (score 1.0)
 
 Example output to be expected:
-
 Updating ground-truth results - ground-truth.csv - done
-Searching for bad source files:
+Searching for differing source files:
   Created /.../bisect-01/bisect-make-01.mk - compiling and running - score 21.0
-  Created /.../bisect-01/bisect-make-02.mk - compiling and running - score 10.0
+  Created /.../bisect-01/bisect-make-02.mk - compiling and running - score 14.0
   Created /.../bisect-01/bisect-make-03.mk - compiling and running - score 0.0
   Created /.../bisect-01/bisect-make-04.mk - compiling and running - score 10.0
-    Found bad source file tests/file1.cpp: score 10.0
+    Found differing source file tests/file1.cpp: score 10.0
   Created /.../bisect-01/bisect-make-05.mk - compiling and running - score 11.0
   Created /.../bisect-01/bisect-make-06.mk - compiling and running - score 4.0
-    Found bad source file tests/file3.cpp: score 4.0
-  Created /.../bisect-01/bisect-make-07.mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-08.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-09.mk - compiling and running - score 7.0
-    Found bad source file tests/file2.cpp: score 7.0
-  Created /.../bisect-01/bisect-make-10.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-07.mk - compiling and running - score 4.0
+    Found differing source file tests/file3.cpp: score 4.0
+  Created /.../bisect-01/bisect-make-08.mk - compiling and running - score 7.0
+  Created /.../bisect-01/bisect-make-09.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-10.mk - compiling and running - score 7.0
+    Found differing source file tests/file2.cpp: score 7.0
+  Created /.../bisect-01/bisect-make-11.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-12.mk - compiling and running - score 0.0
   all variability inducing source file(s):
     tests/file1.cpp (score 10.0)
     tests/file2.cpp (score 7.0)
     tests/file3.cpp (score 4.0)
-Searching for bad symbols in: tests/file1.cpp
-  Created /.../bisect-01/bisect-make-11.mk - compiling and running - score 10.0
-  Created /.../bisect-01/bisect-make-12.mk - compiling and running - score 5.0
-  Created /.../bisect-01/bisect-make-13.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-14.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-15.mk - compiling and running - score 5.0
-    Found bad symbol on line 92 -- file1_func2_PROBLEM() (score 5.0)
-  Created /.../bisect-01/bisect-make-16.mk - compiling and running - score 5.0
+Searching for differing symbols in: tests/file1.cpp
+  Created /.../bisect-01/bisect-make-13.mk - compiling and running - score 10.0
+  Created /.../bisect-01/bisect-make-14.mk - compiling and running - score 5.0
+  Created /.../bisect-01/bisect-make-15.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-16.mk - compiling and running - score 0.0
   Created /.../bisect-01/bisect-make-17.mk - compiling and running - score 5.0
-  Created /.../bisect-01/bisect-make-18.mk - compiling and running - score 2.0
-    Found bad symbol on line 100 -- file1_func3_PROBLEM() (score 2.0)
-  Created /.../bisect-01/bisect-make-19.mk - compiling and running - score 3.0
-  Created /.../bisect-01/bisect-make-20.mk - compiling and running - score 3.0
-    Found bad symbol on line 108 -- file1_func4_PROBLEM() (score 3.0)
-  Created /.../bisect-01/bisect-make-21.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-22.mk - compiling and running - score 0.0
-  All bad symbols in tests/file1.cpp:
+    Found differing symbol on line 92 -- file1_func2_PROBLEM() (score 5.0)
+  Created /.../bisect-01/bisect-make-18.mk - compiling and running - score 5.0
+  Created /.../bisect-01/bisect-make-19.mk - compiling and running - score 5.0
+  Created /.../bisect-01/bisect-make-20.mk - compiling and running - score 2.0
+    Found differing symbol on line 100 -- file1_func3_PROBLEM() (score 2.0)
+  Created /.../bisect-01/bisect-make-21.mk - compiling and running - score 3.0
+  Created /.../bisect-01/bisect-make-22.mk - compiling and running - score 3.0
+    Found differing symbol on line 108 -- file1_func4_PROBLEM() (score 3.0)
+  Created /.../bisect-01/bisect-make-23.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-24.mk - compiling and running - score 0.0
+  All differing symbols in tests/file1.cpp:
     line 92 -- file1_func2_PROBLEM() (score 5.0)
     line 108 -- file1_func4_PROBLEM() (score 3.0)
     line 100 -- file1_func3_PROBLEM() (score 2.0)
-Searching for bad symbols in: tests/file2.cpp
-  Created /.../bisect-01/bisect-make-23.mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-24.mk - compiling and running - score 0.0
+Searching for differing symbols in: tests/file2.cpp
   Created /.../bisect-01/bisect-make-25.mk - compiling and running - score 7.0
   Created /.../bisect-01/bisect-make-26.mk - compiling and running - score 0.0
   Created /.../bisect-01/bisect-make-27.mk - compiling and running - score 7.0
-    Found bad symbol on line 91 -- file2_func1_PROBLEM() (score 7.0)
   Created /.../bisect-01/bisect-make-28.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-29.mk - compiling and running - score 0.0
-  All bad symbols in tests/file2.cpp:
-    line 91 -- file2_func1_PROBLEM() (score 7.0)
-Searching for bad symbols in: tests/file3.cpp
-  Created /.../bisect-01/bisect-make-30.mk - compiling and running - score 4.0
+  Created /.../bisect-01/bisect-make-29.mk - compiling and running - score 7.0
+    Found differing symbol on line 91 -- file2_func1_PROBLEM() (score 7.0)
+  Created /.../bisect-01/bisect-make-30.mk - compiling and running - score 0.0
   Created /.../bisect-01/bisect-make-31.mk - compiling and running - score 0.0
+  All differing symbols in tests/file2.cpp:
+    line 91 -- file2_func1_PROBLEM() (score 7.0)
+Searching for differing symbols in: tests/file3.cpp
   Created /.../bisect-01/bisect-make-32.mk - compiling and running - score 4.0
-  Created /.../bisect-01/bisect-make-33.mk - compiling and running - score 1.0
-    Found bad symbol on line 92 -- file3_func2_PROBLEM() (score 1.0)
-  Created /.../bisect-01/bisect-make-34.mk - compiling and running - score 3.0
-  Created /.../bisect-01/bisect-make-35.mk - compiling and running - score 3.0
-    Found bad symbol on line 103 -- file3_func5_PROBLEM() (score 3.0)
-  Created /.../bisect-01/bisect-make-36.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-37.mk - compiling and running - score 0.0
-  All bad symbols in tests/file3.cpp:
+  Created /.../bisect-01/bisect-make-33.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-34.mk - compiling and running - score 4.0
+  Created /.../bisect-01/bisect-make-35.mk - compiling and running - score 1.0
+    Found differing symbol on line 92 -- file3_func2_PROBLEM() (score 1.0)
+  Created /.../bisect-01/bisect-make-36.mk - compiling and running - score 3.0
+  Created /.../bisect-01/bisect-make-37.mk - compiling and running - score 3.0
+    Found differing symbol on line 103 -- file3_func5_PROBLEM() (score 3.0)
+  Created /.../bisect-01/bisect-make-38.mk - compiling and running - score 0.0
+  Created /.../bisect-01/bisect-make-39.mk - compiling and running - score 0.0
+  All differing symbols in tests/file3.cpp:
     line 103 -- file3_func5_PROBLEM() (score 3.0)
     line 92 -- file3_func2_PROBLEM() (score 1.0)
 All variability inducing symbols:
-  /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM() (score 7.0)
-  /.../tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
-  /.../tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)
-  /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM() (score 3.0)
-  /.../tests/file1.cpp:100 ... -- file1_func3_PROBLEM() (score 2.0)
-  /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM() (score 1.0)
+  /.../tests/file2.cpp:91 _Z19file2_func1_PROBLEMv -- file2_func1_PROBLEM() (score 7.0)
+  /.../tests/file1.cpp:92 _Z19file1_func2_PROBLEMv -- file1_func2_PROBLEM() (score 5.0)
+  /.../tests/file1.cpp:108 _Z19file1_func4_PROBLEMv -- file1_func4_PROBLEM() (score 3.0)
+  /.../tests/file3.cpp:103 _Z19file3_func5_PROBLEMv -- file3_func5_PROBLEM() (score 3.0)
+  /.../tests/file1.cpp:100 _Z19file1_func3_PROBLEMv -- file1_func3_PROBLEM() (score 2.0)
+  /.../tests/file3.cpp:92 _Z19file3_func2_PROBLEMv -- file3_func2_PROBLEM() (score 1.0)
 
 TODO: test the log_contents variable
 TODO: test the -k flag
