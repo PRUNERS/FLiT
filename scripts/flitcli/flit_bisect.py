@@ -1086,6 +1086,7 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
     Performs the search over the space of source files for problems.
     '''
+
     memoized_checker = _gen_bisect_source_checker(args, bisect_path,
                                                   replacements, sources)
 
@@ -1105,18 +1106,13 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     differing_source_msg = '    Found differing source file {}: score {}'
     differing_source_callback = lambda filename, score: \
         util.printlog(differing_source_msg.format(filename, score))
-    if args.biggest is None:
-        differing_sources = bisect_search(
-            memoized_checker, sources,
-            found_callback=differing_source_callback)
-    else:
-        differing_sources = bisect_biggest(
-            memoized_checker, sources,
-            found_callback=differing_source_callback, k=args.biggest)
+    differing_sources = bisect_search(memoized_checker, sources,
+                                      found_callback=differing_source_callback)
     return differing_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
-                               differing_source):
+                               differing_source, found_callback=None,
+                               indent=''):
     '''
     Performs the search over the space of symbols within differing source files
     for problems.
@@ -1127,29 +1123,40 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     @param sources: all source files
     @param differing_source: the one differing source file to search for
         differing symbols
+    @param found_callback: (optional) a callback to be called on each found
+        symbol
+    @param indent: (optional) indentation to use for the logging and printing
+        messages
 
-    @return a list of identified differing symbols (if any)
+    @return a list of identified differing symbols (if any), with their
+        associated scores
+        [(symbol, score), ...]
     '''
-    print('Searching for differing symbols in:', differing_source)
-    logging.info('Searching for differing symbols in: %s', differing_source)
-    logging.info('Note: inlining disabled to isolate functions')
-    logging.info('Note: only searching over globally exported functions')
-    logging.debug('Symbols:')
+    print('{}Searching for differing symbols in: {}'.format(
+        indent, differing_source))
+    logging.info('%sSearching for differing symbols in: %s', differing_source,
+                 indent)
+    logging.info('%sNote: inlining disabled to isolate functions', indent)
+    logging.info('%sNote: only searching over globally exported functions',
+                 indent)
+    logging.debug('%sSymbols:', indent)
     symbol_tuples = extract_symbols(differing_source,
                                     os.path.join(args.directory, 'obj'))
     for sym in symbol_tuples:
-        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
-                  .format(sym=sym)
-        logging.info('%s', message)
+        message = '{indent}  {sym.fname}:{sym.lineno} {sym.symbol} ' \
+                  '-- {sym.demangled}'.format(indent=indent, sym=sym)
+        logging.debug('%s', message)
 
     memoized_checker = _gen_bisect_symbol_checker(
-        args, bisect_path, replacements, sources, symbol_tuples)
+        args, bisect_path, replacements, sources, symbol_tuples,
+        indent=indent + '  ')
 
     # Check to see if -fPIC destroyed any chance of finding any differing
     # symbols
     if not memoized_checker(symbol_tuples):
-        message_1 = '  Warning: -fPIC compilation destroyed the optimization'
-        message_2 = '  Cannot find any trouble symbols'
+        message_1 = '{}  Warning: -fPIC compilation destroyed the ' \
+            'optimization'.format(indent)
+        message_2 = '{}  Cannot find any trouble symbols'.format(indent)
         print(message_1)
         print(message_2)
         logging.warning('%s', message_1)
@@ -1157,10 +1164,16 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
         return []
 
     differing_symbol_msg = \
-        '    Found differing symbol on line {sym.lineno} -- ' \
+        '{indent}    Found differing symbol on line {sym.lineno} -- ' \
         '{sym.demangled} (score {score})'
-    differing_symbol_callback = lambda sym, score: \
-        util.printlog(differing_symbol_msg.format(sym=sym, score=score))
+
+    def differing_symbol_callback(sym, score):
+        'Prints the finding and calls the registered callback'
+        util.printlog(differing_symbol_msg.format(sym=sym, score=score,
+                                                  indent=indent))
+        if found_callback is not None:
+            found_callback(sym, score)
+
     if args.biggest is None:
         differing_symbols = bisect_search(
             memoized_checker, symbol_tuples,
@@ -1170,6 +1183,86 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
             memoized_checker, symbol_tuples,
             found_callback=differing_symbol_callback, k=args.biggest)
     return differing_symbols
+
+def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
+    '''
+    This function is similar to both search_for_source_problems() and
+    search_for_symbol_problems().  This function will search for source
+    problems AND also symbol problems such that the top k differing functions
+    between the baseline compilation and the variability-inducing optimized
+    compilation.
+
+    @param args: parsed command-line arguments
+    @param bisect_path: directory where bisect is being performed
+    @param replacements: dictionary of values to use in generating the Makefile
+    @param sources: all source files
+
+    @return a list of identified differing symbols (if any), with their
+        associated scores
+        [(symbol, score), ...]
+    '''
+    assert args.biggest is not None
+    assert args.biggest > 0
+
+    util.printlog('Looking for the top {} different symbol(s) by starting with '
+                  'files'.format(args.biggest))
+
+    differing_symbols = []
+    differing_source_msg = '    Found differing source file {}: score {}'
+    differing_sources = []
+
+    class ExitEarlyException(Exception):
+        'Exception used to exit early from bisect search'
+        pass
+
+    def differing_symbol_callback(symbol, score):
+        'captures the symbol and checks for early termination'
+        assert len(differing_symbols) <= args.biggest
+        assert score > 0
+
+        if len(differing_symbols) >= args.biggest and \
+                score < differing_symbols[-1][1]:
+            # exit early because we're done with this file
+            raise ExitEarlyException
+        differing_symbols.append((symbol, score))
+        differing_symbols[:] = sorted(differing_symbols[:args.biggest],
+                                      key=lambda x: -x[1])
+
+    symbol_search = lambda differing_source: \
+        search_for_symbol_problems(
+            args, bisect_path, replacements, sources, differing_source,
+            found_callback=differing_symbol_callback, indent='    ')
+
+    def differing_source_callback(filename, score):
+        '''
+        prints and captures the found source file, and checks for early
+        termination.
+        '''
+        assert len(differing_symbols) <= args.biggest
+        assert score > 0
+
+        util.printlog(differing_source_msg.format(filename, score))
+        differing_sources.append((filename, score))
+        if len(differing_symbols) >= args.biggest and \
+                score < differing_symbols[-1][1]:
+            # exit early because we're done with this file
+            raise ExitEarlyException
+
+        try:
+            symbol_search(filename)
+        except ExitEarlyException:
+            pass
+
+    memoized_source_checker = _gen_bisect_source_checker(
+        args, bisect_path, replacements, sources)
+    try:
+        # Note: ignore return because we already capture found sources
+        bisect_biggest(memoized_source_checker, sources, k=len(sources),
+                       found_callback=differing_source_callback)
+    except ExitEarlyException:
+        pass
+
+    return differing_sources, differing_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
                     jobs=mp.cpu_count(), delete=True):
@@ -1361,8 +1454,13 @@ def run_bisect(arguments, prog=sys.argv[0]):
             replacements['build_gt_local'] = 'true'
 
     try:
-        differing_sources = search_for_source_problems(args, bisect_path,
-                                                       replacements, sources)
+        if args.biggest is not None:
+            differing_sources, differing_symbols = \
+                search_for_k_most_diff_symbols(args, bisect_path,
+                                               replacements, sources)
+        else:
+            differing_sources = search_for_source_problems(
+                args, bisect_path, replacements, sources)
     except subp.CalledProcessError:
         print()
         print('  Executable failed to run.')
@@ -1371,54 +1469,56 @@ def run_bisect(arguments, prog=sys.argv[0]):
         return bisect_num, differing_libs, None, None, 1
 
     if args.biggest is None:
-        print('  all variability inducing source file(s):')
+        print('all variability inducing source file(s):')
         logging.info('ALL VARIABILITY INCUDING SOURCE FILE(S):')
     else:
-        print('  {} highest variability source file{}:'.format(
-            args.biggest, 's' if args.biggest > 1 else ''))
+        print('found highest variability inducing source file{}:'.format(
+            's' if len(differing_sources) > 1 else ''))
         logging.info('%d HIGHEST VARIABILITY SOURCE FILE%s:',
                      args.biggest, 'S' if args.biggest > 1 else '')
 
     for src in differing_sources:
-        print('    {} (score {})'.format(src[0], src[1]))
-        logging.info('  %s', src)
+        util.printlog('  {} (score {})'.format(src[0], src[1]))
     if len(differing_sources) == 0:
-        print('    None')
-        logging.info('  None')
-
+        util.printlog('  None')
 
     # Search for differing symbols one differing file at a time
     # This will allow us to maybe find some symbols where crashes before would
     # cause problems and no symbols would be identified
-    differing_symbols = []
-    for differing_source, _ in differing_sources:
-        try:
-            file_differing_symbols = search_for_symbol_problems(
-                args, bisect_path, replacements, sources, differing_source)
-        except subp.CalledProcessError:
-            print()
-            print('  Executable failed to run.')
-            print('Failed to search for differing symbols in {}'
-                  '-- cannot continue'.format(differing_source))
-            logging.exception('Failed to search for differing symbols in %s',
-                              differing_source)
-        differing_symbols.extend(file_differing_symbols)
-        if len(file_differing_symbols) > 0:
-            if args.biggest is None:
-                message = '  All differing symbols in {}:'\
-                          .format(differing_source)
-            else:
-                message = '  {} differing symbol{} in {}:'.format(
-                    args.biggest, 's' if args.biggest > 1 else '',
+    #
+    # Only do this if we didn't already perform the search above with
+    #   search_for_k_most_diff_symbols()
+    if args.biggest is None:
+        differing_symbols = []
+        for differing_source, _ in differing_sources:
+            try:
+                file_differing_symbols = search_for_symbol_problems(
+                    args, bisect_path, replacements, sources, differing_source)
+            except subp.CalledProcessError:
+                print()
+                print('  Executable failed to run.')
+                print('Failed to search for differing symbols in {}'
+                      '-- cannot continue'.format(differing_source))
+                logging.exception(
+                    'Failed to search for differing symbols in %s',
                     differing_source)
-            print(message)
-            logging.info(message)
-            for sym, score in file_differing_symbols:
-                message = \
-                    '    line {sym.lineno} -- {sym.demangled} (score {score})' \
-                    .format(sym=sym, score=score)
+            differing_symbols.extend(file_differing_symbols)
+            if len(file_differing_symbols) > 0:
+                if args.biggest is None:
+                    message = '  All differing symbols in {}:'\
+                              .format(differing_source)
+                else:
+                    message = '  {} differing symbol{} in {}:'.format(
+                        args.biggest, 's' if args.biggest > 1 else '',
+                        differing_source)
                 print(message)
-                logging.info('%s', message)
+                logging.info(message)
+                for sym, score in file_differing_symbols:
+                    message = \
+                        '    line {sym.lineno} -- {sym.demangled} ' \
+                        '(score {score})'.format(sym=sym, score=score)
+                    print(message)
+                    logging.info('%s', message)
 
     differing_symbols.sort(key=lambda x: (-x[1], x[0]))
 

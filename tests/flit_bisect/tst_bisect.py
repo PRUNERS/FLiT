@@ -130,11 +130,11 @@ Verify that all source files were found and output during the search
 
 Verify that the three differing sources were output in the "differing sources:"
 section
->>> idx = bisect_out.index('  all variability inducing source file(s):')
+>>> idx = bisect_out.index('all variability inducing source file(s):')
 >>> print('\\n'.join(bisect_out[idx+1:idx+4]))
-    tests/file1.cpp (score 10.0)
-    tests/file2.cpp (score 7.0)
-    tests/file3.cpp (score 4.0)
+  tests/file1.cpp (score 10.0)
+  tests/file2.cpp (score 7.0)
+  tests/file3.cpp (score 4.0)
 >>> bisect_out[idx+4].startswith('Searching for differing symbols in:')
 True
 
