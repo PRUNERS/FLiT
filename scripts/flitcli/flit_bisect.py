@@ -940,6 +940,104 @@ def test_makefile(args, makepath, testing_list, indent='  '):
 
     return result
 
+def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
+                            indent='  '):
+    '''
+    Generates and returns the function that builds and check a list of
+    libraries for showing variability.  The returned function is memoized, so
+    no need to be careful to not call it more than once with the same
+    arguments.
+    '''
+    def builder_and_checker(libs):
+        '''
+        Compiles all source files under the ground truth compilation and
+        statically links in the libs.
+
+        @param libs: static libraries to compile in
+
+        @return The comparison value between this mixed compilation and the
+            full baseline compilation.
+        '''
+        repl_copy = dict(replacements)
+        repl_copy['link_flags'] = list(repl_copy['link_flags'])
+        repl_copy['link_flags'].extend(libs)
+        makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
+                                          [], dict())
+        makepath = os.path.join(bisect_path, makefile)
+        return test_makefile(args, makepath, libs, indent=indent)
+
+    return memoize_strlist_func(builder_and_checker)
+
+def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
+                               indent='  '):
+    '''
+    Generates and returns the function that builds and check a list of sources
+    for showing variability.  The returned function is memoized, so no need to
+    be careful to not call it more than once with the same arguments.
+    '''
+    def builder_and_checker(sources_to_optimize):
+        '''
+        Compiles the compilation with sources_to_optimize compiled with the
+        optimized compilation and with everything else compiled with the
+        baseline compilation.
+
+        @param sources_to_optimize: source files to compile with the
+            variability-inducing optimizations
+
+        @return The comparison value between this mixed compilation and the
+            full baseline compilation.
+        '''
+        gt_src = list(set(sources).difference(sources_to_optimize))
+        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
+                                          sources_to_optimize, dict())
+        makepath = os.path.join(bisect_path, makefile)
+        return test_makefile(args, makepath, sources_to_optimize, indent=indent)
+
+    return memoize_strlist_func(builder_and_checker)
+
+def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
+                               symbols, indent='  '):
+    '''
+    Generates and returns the function that builds and check a list of sources
+    for showing variability.  The returned function is memoized, so no need to
+    be careful to not call it more than once with the same arguments.
+    '''
+    def builder_and_checker(symbols_to_optimize):
+        '''
+        Compiles the compilation with all files compiled under the ground truth
+        compilation except for the given symbols for the given files.
+
+        In order to be able to isolate these symbols, the files will need to be
+        compiled with -fPIC, but that is handled by the generated Makefile.
+
+        @param symbols_to_optimize: (list of SymbolTuple) symbols to use
+            from the variability-inducing optimization compilation
+
+        @return The comparison value between this mixed compilation and the
+            full baseline compilation.
+        '''
+        gt_symbols = list(set(symbols).difference(symbols_to_optimize))
+        all_sources = list(sources)  # copy the list of all source files
+        symbol_sources = [x.src for x in symbols_to_optimize + gt_symbols]
+        trouble_src = []
+        gt_src = list(set(all_sources).difference(symbol_sources))
+        symbol_map = {x: [
+            [y.symbol for y in gt_symbols if y.src == x],
+            [z.symbol for z in symbols_to_optimize if z.src == x],
+            ]
+                      for x in symbol_sources}
+
+        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
+                                          trouble_src, symbol_map)
+        makepath = os.path.join(bisect_path, makefile)
+        symbol_strings = [
+            '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
+            .format(sym=sym) for sym in symbols_to_optimize
+            ]
+        return test_makefile(args, makepath, symbol_strings, indent=indent)
+
+    return memoize_strlist_func(builder_and_checker)
+
 def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     '''
     Performs the search over the space of statically linked libraries for
@@ -956,27 +1054,8 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     the libraries included, and checks to see if there are reproducibility
     problems.
     '''
-    def bisect_libs_build_and_check(trouble_libs):
-        '''
-        Compiles all source files under the ground truth compilation and
-        statically links in the trouble_libs.
-
-        @param trouble_libs: static libraries to compile in
-        @param dummy_libs: static libraries to ignore and not include
-            This variable is not used, but necessary for the interface.
-
-        @return True if the compilation has a non-zero comparison between this
-            mixed compilation and the full ground-truth compilation.
-        '''
-        repl_copy = dict(replacements)
-        repl_copy['link_flags'] = list(repl_copy['link_flags'])
-        repl_copy['link_flags'].extend(trouble_libs)
-        makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
-                                          [], dict())
-        makepath = os.path.join(bisect_path, makefile)
-        return test_makefile(args, makepath, trouble_libs)
-
-    memoized_checker = memoize_strlist_func(bisect_libs_build_and_check)
+    memoized_checker = _gen_bisect_lib_checker(args, bisect_path, replacements,
+                                               sources)
 
     print('Searching for bad intel static libraries:')
     logging.info('Searching for bad static libraries included by intel linker:')
@@ -999,24 +1078,8 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
     Performs the search over the space of source files for problems.
     '''
-    def bisect_build_and_check(trouble_src):
-        '''
-        Compiles the compilation with trouble_src compiled with the trouble
-        compilation and with gt_src compiled with the ground truth compilation.
-
-        @param trouble_src: source files to compile with trouble compilation
-        @param gt_src: source files to compile with ground truth compilation
-
-        @return True if the compilation has a non-zero comparison between this
-            mixed compilation and the full ground truth compilation.
-        '''
-        gt_src = list(set(sources).difference(trouble_src))
-        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
-                                          trouble_src, dict())
-        makepath = os.path.join(bisect_path, makefile)
-        return test_makefile(args, makepath, trouble_src)
-
-    memoized_checker = memoize_strlist_func(bisect_build_and_check)
+    memoized_checker = _gen_bisect_source_checker(args, bisect_path,
+                                                  replacements, sources)
 
     # TODO: make a callback that immediately starts the symbol search on the
     # TODO-  first found file.  Do this for  when args.biggest is defined.
@@ -1069,41 +1132,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
                   .format(sym=sym)
         logging.info('%s', message)
 
-    def bisect_symbol_build_and_check(trouble_symbols):
-        '''
-        Compiles the compilation with all files compiled under the ground truth
-        compilation except for the given symbols for the given files.
-
-        In order to be able to isolate these symbols, the files will need to be
-        compiled with -fPIC, but that is handled by the generated Makefile.
-
-        @param trouble_symbols: (list of SymbolTuple) symbols to use
-            from the trouble compilation
-
-        @return True if the compilation has a non-zero comparison between this
-            mixed compilation and the full ground truth compilation.
-        '''
-        gt_symbols = list(set(symbol_tuples).difference(trouble_symbols))
-        all_sources = list(sources)  # copy the list of all source files
-        symbol_sources = [x.src for x in trouble_symbols + gt_symbols]
-        trouble_src = []
-        gt_src = list(set(all_sources).difference(symbol_sources))
-        symbol_map = {x: [
-            [y.symbol for y in gt_symbols if y.src == x],
-            [z.symbol for z in trouble_symbols if z.src == x],
-            ]
-                      for x in symbol_sources}
-
-        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
-                                          trouble_src, symbol_map)
-        makepath = os.path.join(bisect_path, makefile)
-        symbol_strings = [
-            '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
-            .format(sym=sym) for sym in trouble_symbols
-            ]
-        return test_makefile(args, makepath, symbol_strings)
-
-    memoized_checker = memoize_strlist_func(bisect_symbol_build_and_check)
+    memoized_checker = _gen_bisect_symbol_checker(
+        args, bisect_path, replacements, sources, symbol_tuples)
 
     # Check to see if -fPIC destroyed any chance of finding any bad symbols
     if not memoized_checker(symbol_tuples):
