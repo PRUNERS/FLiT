@@ -903,7 +903,7 @@ def parse_args(arguments, prog=sys.argv[0]):
 
     return args
 
-def test_makefile(args, makepath, testing_list):
+def test_makefile(args, makepath, testing_list, indent='  '):
     '''
     Runs the compilation in the makefile and returns the generated comparison
     result.
@@ -915,12 +915,12 @@ def test_makefile(args, makepath, testing_list):
 
     @return (float) generated comparison result
     '''
-    print('  Created {0} - compiling and running'.format(makepath), end='',
-          flush=True)
-    logging.info('Created %s', makepath)
-    logging.info('Checking:')
+    print('{}Created {} - compiling and running'.format(indent, makepath),
+          end='', flush=True)
+    logging.info('%sCreated %s', indent, makepath)
+    logging.info('%sChecking:', indent)
     for src in testing_list:
-        logging.info('  %s', src)
+        logging.info('  %s%s', indent, src)
 
     try:
         build_bisect(makepath, args.directory, verbose=args.verbose,
@@ -936,7 +936,7 @@ def test_makefile(args, makepath, testing_list):
     result_str = str(result)
 
     sys.stdout.write(' - score {0}\n'.format(result_str))
-    logging.info('Result was %s', result_str)
+    logging.info('%sResult was %s', indent, result_str)
 
     return result
 
