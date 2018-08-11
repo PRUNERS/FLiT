@@ -886,14 +886,28 @@ def parse_args(arguments, prog=sys.argv[0]):
                             ''')
     parser.add_argument('-k', '--biggest', metavar='K', type=int, default=None,
                         help='''
-                            Instead of returning all of the offenders of
-                            variability, only return the largest K offenders,
-                            with their contribution to variability.  If K is
-                            close to the total number of offenders, then this
-                            is a much slower approach than the full algorithm.
+                            Instead of finding and returning all symbols that
+                            cause variability, only return the largest K
+                            contributors, with their contribution to
+                            variability.  If K is close to the total number of
+                            total contributing functions, then this is a much
+                            slower approach in general than the full algorithm.
                             It is best if K is small.  This value used comes
                             from the custom comparison function you provide for
                             your flit test.
+
+                            Note: many files (perhaps more than K, although
+                            possibly less than K) may be found during the
+                            search.  This is done to ensure that the symbols
+                            identified are the largest contributors that are
+                            identifiable through this approach.
+
+                            Also note that using the --biggest flag, you
+                            restrict the search space to only singleton
+                            contributors.  That means that if there is a pair
+                            of contributors that only contribute when they are
+                            both compiled with the given compilation, then they
+                            produce a measurable variation.
                             ''')
 
     args = parser.parse_args(arguments)
