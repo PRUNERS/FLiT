@@ -1239,8 +1239,8 @@ def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
             # exit early because we're done with this file
             raise ExitEarlyException
         differing_symbols.append((symbol, score))
-        differing_symbols[:] = sorted(differing_symbols[:args.biggest],
-                                      key=lambda x: -x[1])
+        differing_symbols.sort(key=lambda x: -x[1])
+        differing_symbols[:] = differing_symbols[:args.biggest]
 
     symbol_search = lambda differing_source: \
         search_for_symbol_problems(
@@ -1486,7 +1486,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('all variability inducing source file(s):')
         logging.info('ALL VARIABILITY INCUDING SOURCE FILE(S):')
     else:
-        print('found highest variability inducing source file{}:'.format(
+        print('The found highest variability inducing source file{}:'.format(
             's' if len(differing_sources) > 1 else ''))
         logging.info('%d HIGHEST VARIABILITY SOURCE FILE%s:',
                      args.biggest, 'S' if args.biggest > 1 else '')
@@ -1540,11 +1540,10 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('All variability inducing symbols:')
         logging.info('ALL VARIABILITY INCUDING SYMBOLS:')
     else:
-        print('{} highest variability symbol{} from each found source file:'
+        print('The {} highest variability symbol{}:'
               .format(args.biggest, 's' if args.biggest > 1 else ''))
-        logging.info(
-            '%d HIGHEST VARIABILITY INDUCING SYMBOL%s FROM EACH FOUND SOURCE '
-            'FILE:', args.biggest, 'S' if args.biggest > 1 else '')
+        logging.info('THE %d HIGHEST VARIABILITY INDUCING SYMBOL%s:',
+            args.biggest, 'S' if args.biggest > 1 else '')
 
     for sym, score in differing_symbols:
         message = \
