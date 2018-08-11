@@ -903,6 +903,43 @@ def parse_args(arguments, prog=sys.argv[0]):
 
     return args
 
+def test_makefile(args, makepath, testing_list):
+    '''
+    Runs the compilation in the makefile and returns the generated comparison
+    result.
+
+    @param args: parsed command-line arguments (see parse_args())
+    @param makepath (str): absolute or relative path to the Makefile
+    @param testing_list (list(str)): list of items being tested (for logging
+        purposes)
+
+    @return (float) generated comparison result
+    '''
+    print('  Created {0} - compiling and running'.format(makepath), end='',
+          flush=True)
+    logging.info('Created %s', makepath)
+    logging.info('Checking:')
+    for src in testing_list:
+        logging.info('  %s', src)
+
+    try:
+        build_bisect(makepath, args.directory, verbose=args.verbose,
+                     jobs=args.jobs)
+    finally:
+        if args.delete:
+            build_bisect(makepath, args.directory, verbose=args.verbose,
+                         jobs=args.jobs, target='bisect-smallclean')
+    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                       args.directory)[0]
+    resultpath = os.path.join(args.directory, resultfile)
+    result = get_comparison_result(resultpath)
+    result_str = str(result)
+
+    sys.stdout.write(' - score {0}\n'.format(result_str))
+    logging.info('Result was %s', result_str)
+
+    return result
+
 def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     '''
     Performs the search over the space of statically linked libraries for
@@ -957,43 +994,6 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     if memoized_checker(libs):
         return libs
     return []
-
-def test_makefile(args, makepath, testing_list):
-    '''
-    Runs the compilation in the makefile and returns the generated comparison
-    result.
-
-    @param args: parsed command-line arguments (see parse_args())
-    @param makepath (str): absolute or relative path to the Makefile
-    @param testing_list (list(str)): list of items being tested (for logging
-        purposes)
-
-    @return (float) generated comparison result
-    '''
-    print('  Created {0} - compiling and running'.format(makepath), end='',
-          flush=True)
-    logging.info('Created %s', makepath)
-    logging.info('Checking:')
-    for src in testing_list:
-        logging.info('  %s', src)
-
-    try:
-        build_bisect(makepath, args.directory, verbose=args.verbose,
-                     jobs=args.jobs)
-    finally:
-        if args.delete:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs, target='bisect-smallclean')
-    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                       args.directory)[0]
-    resultpath = os.path.join(args.directory, resultfile)
-    result = get_comparison_result(resultpath)
-    result_str = str(result)
-
-    sys.stdout.write(' - score {0}\n'.format(result_str))
-    logging.info('Result was %s', result_str)
-
-    return result
 
 def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
