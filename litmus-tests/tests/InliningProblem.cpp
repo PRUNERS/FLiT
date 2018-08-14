@@ -93,7 +93,7 @@ public:
   virtual size_t getInputsPerRun() override { return 1; }
 
   virtual std::vector<T> getDefaultInput() override {
-    return { .1, 1.1e3, -.1, -1.1e3, 1/3 };
+    return { .1, 1.1e3, 0.5, 3.14159256, 1/3 };
   }
 
 protected:
