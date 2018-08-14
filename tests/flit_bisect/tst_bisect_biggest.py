@@ -107,7 +107,7 @@ tst_bisect.py.
 ...     filename = 'tests/file{}.cpp'.format(fileno)
 ...     funcname = 'file{}_func{}{}'.format(fileno, funcno, prob_str)
 ...     return Sym(filename,
-...                '_Z19{}z'.format(funcname),
+...                '_Z19{}v'.format(funcname),
 ...                funcname + '()',
 ...                filename,
 ...                lineno)
@@ -125,7 +125,7 @@ tst_bisect.py.
 ...     create_symbol(1, 2,  92,  True): 5.0,
 ...     create_symbol(1, 3, 100,  True): 2.0,
 ...     create_symbol(1, 4, 108,  True): 3.0,
-...     create_symbol(1, 5, 116, False): 5.0,
+...     create_symbol(1, 5, 116, False): 0.0,
 ...     create_symbol(2, 1,  90,  True): 7.0,
 ...     create_symbol(2, 2,  98, False): 0.0,
 ...     create_symbol(2, 3,  99, False): 0.0,
@@ -160,6 +160,7 @@ tst_bisect.py.
 
 >>> def update_gt_results_stub(directory, verbose=False, jobs=4):
 ...     # do nothing
+...     print('Updating ground-truth results - ground-truth.csv - done')
 ...     pass
 
 >>> def extract_symbols_stub(file_or_filelist, objdir):
@@ -169,7 +170,9 @@ tst_bisect.py.
 ...             symbol_tuples.extend(extract_symbols_stub(fname, objdir))
 ...         return symbol_tuples
 ...
-...     return [x for x in all_symbol_scores if x.fname == file_or_filelist]
+...     return sorted([x for x in all_symbol_scores
+...                      if x.fname == file_or_filelist],
+...                   key=lambda x: x.symbol)
 
 >>> flit_bisect.build_bisect = build_bisect_stub
 >>> flit_bisect.update_gt_results = update_gt_results_stub
@@ -221,102 +224,54 @@ Creating /.../Makefile
 Updating ground-truth results - ground-truth.csv - done
 Looking for the top 1 different symbol(s) by starting with files
   Created /.../bisect-01/bisect-make-01.mk - compiling and running - score 21.0
-  Created /.../bisect-01/bisect-make-02.mk - compiling and running - score 14.0
-  Created /.../bisect-01/bisect-make-03.mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-04.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-05.mk - compiling and running - score 14.0
-  Created /.../bisect-01/bisect-make-06.mk - compiling and running - score 10.0
-  Created /.../bisect-01/bisect-make-07.mk - compiling and running - score 4.0
+  ...
     Found differing source file tests/file1.cpp: score 10.0
     Searching for differing symbols in: tests/file1.cpp
       Created ...
       ...
         Found differing symbol on line 92 -- file1_func2_PROBLEM() (score 5.0)
-  Created /.../bisect-01/bisect-make-15.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-16.mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-17.mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-18.mk - compiling and running - score 0.0
+  Created ...
+  ...
     Found differing source file tests/file2.cpp: score 7.0
     Searching for differing symbols in: tests/file2.cpp
       Created ...
       ...
-        Found differing symbol on line 91 -- file2_func1_PROBLEM() (score 7.0)
-    Found differing source file tests/file3.cpp: score 4.0
-found highest variability inducing source files:
-  tests/file1.cpp (score 10.0)
-  tests/file2.cpp (score 7.0)
-  tests/file3.cpp (score 4.0)
-1 highest variability symbol from each found source file:
-  /.../tests/file1.cpp:92 _Z19file1_func2_PROBLEMv -- file1_func2_PROBLEM() (score 5.0)
-
-
->>> print('\\n'.join(bisect_out_1)) # doctest:+ELLIPSIS
-Updating ground-truth results - ground-truth.csv - done
-Looking for the top 1 different symbol(s) by starting with files
-  Created /.../bisect-01/bisect-make-01.mk - compiling and running - score 21.0
-  Created /.../bisect-01/bisect-make-02.mk - compiling and running - score 14.0
-  Created /.../bisect-01/bisect-make-03.mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-04.mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-05.mk - compiling and running - score 14.0
-  Created /.../bisect-01/bisect-make-06.mk - compiling and running - score 10.0
-  Created /.../bisect-01/bisect-make-07.mk - compiling and running - score 4.0
-    Found differing source file tests/file1.cpp: score 10.0
-    Searching for differing symbols in: tests/file1.cpp
-      Created ...
-      ...
-        Found differing symbol on line 92 -- file1_func2_PROBLEM() (score 5.0)
-  Created /.../bisect-01/bisect-make-...mk - compiling and running - score 0.0
-  Created /.../bisect-01/bisect-make-...mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-...mk - compiling and running - score 7.0
-  Created /.../bisect-01/bisect-make-...mk - compiling and running - score 0.0
-    Found differing source file tests/file2.cpp: score 7.0
-    Searching for differing symbols in: tests/file2.cpp
-      Created ...
-      ...
-        Found differing symbol on line 91 -- file2_func1_PROBLEM() (score 7.0)
+        Found differing symbol on line 90 -- file2_func1_PROBLEM() (score 7.0)
     Found differing source file tests/file3.cpp: score 4.0
 The found highest variability inducing source files:
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
   tests/file3.cpp (score 4.0)
 The 1 highest variability symbol:
-  /.../tests/file2.cpp:91 _Z19file2_func1_PROBLEMv -- file2_func1_PROBLEM() (score 7.0)
+  tests/file2.cpp:90 _Z19file2_func1_PROBLEMv -- file2_func1_PROBLEM() (score 7.0)
 
 >>> print('\\n'.join(bisect_out_2)) # doctest:+ELLIPSIS
 Updating ground-truth results - ground-truth.csv - done
 Looking for the top 2 different symbol(s) by starting with files
   Created /.../bisect-02/bisect-make-01.mk - compiling and running - score 21.0
-  Created /.../bisect-02/bisect-make-02.mk - compiling and running - score 14.0
-  Created /.../bisect-02/bisect-make-03.mk - compiling and running - score 7.0
-  Created /.../bisect-02/bisect-make-04.mk - compiling and running - score 0.0
-  Created /.../bisect-02/bisect-make-05.mk - compiling and running - score 14.0
-  Created /.../bisect-02/bisect-make-06.mk - compiling and running - score 10.0
-  Created /.../bisect-02/bisect-make-07.mk - compiling and running - score 4.0
+  ...
     Found differing source file tests/file1.cpp: score 10.0
     Searching for differing symbols in: tests/file1.cpp
       Created ...
       ...
         Found differing symbol on line 92 -- file1_func2_PROBLEM() (score 5.0)
-      Created ...
       ...
         Found differing symbol on line 108 -- file1_func4_PROBLEM() (score 3.0)
-  Created /.../bisect-02/bisect-make-...mk - compiling and running - score 0.0
-  Created /.../bisect-02/bisect-make-...mk - compiling and running - score 7.0
-  Created /.../bisect-02/bisect-make-...mk - compiling and running - score 7.0
-  Created /.../bisect-02/bisect-make-...mk - compiling and running - score 0.0
+  Created ...
+  ...
     Found differing source file tests/file2.cpp: score 7.0
     Searching for differing symbols in: tests/file2.cpp
       Created ...
       ...
-        Found differing symbol on line 91 -- file2_func1_PROBLEM() (score 7.0)
+        Found differing symbol on line 90 -- file2_func1_PROBLEM() (score 7.0)
     Found differing source file tests/file3.cpp: score 4.0
 The found highest variability inducing source files:
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
   tests/file3.cpp (score 4.0)
 The 2 highest variability symbols:
-  /.../tests/file2.cpp:91 _Z19file2_func1_PROBLEMv -- file2_func1_PROBLEM() (score 7.0)
-  /.../tests/file1.cpp:92 _Z19file1_func2_PROBLEMv -- file1_func2_PROBLEM() (score 5.0)
+  tests/file2.cpp:90 _Z19file2_func1_PROBLEMv -- file2_func1_PROBLEM() (score 7.0)
+  tests/file1.cpp:92 _Z19file1_func2_PROBLEMv -- file1_func2_PROBLEM() (score 5.0)
 
 TODO: Test the log_contents variable
 
