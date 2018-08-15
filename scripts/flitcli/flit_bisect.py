@@ -605,14 +605,14 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
     >>> bisect_biggest(score_func, [])
     []
     '''
-    if not elements:
+    if len(elements) == 0:
         return []
     found_list = []
     frontier = []
     push = lambda x: heapq.heappush(frontier, (-score_func(x), x))
     pop = lambda: heapq.heappop(frontier)
     push(elements)
-    while frontier and frontier[0][0] < 0 and len(found_list) < k:
+    while len(frontier) > 0 and frontier[0][0] < 0 and len(found_list) < k:
         score, elems = pop()
         if len(elems) == 1:
             found_list.append((elems[0], -score))
@@ -715,7 +715,7 @@ def bisect_search(score_func, elements, found_callback=None):
     ... except AssertionError:
     ...     pass
     '''
-    if not elements:
+    if len(elements) == 0:
         return []
 
     # copy the incoming list so that we don't modify it
@@ -1167,7 +1167,7 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
     # Check to see if -fPIC destroyed any chance of finding any differing
     # symbols
-    if not memoized_checker(symbol_tuples):
+    if memoized_checker(symbol_tuples) <= 0.0:
         message_1 = '{}  Warning: -fPIC compilation destroyed the ' \
             'optimization'.format(indent)
         message_2 = '{}  Cannot find any trouble symbols'.format(indent)
