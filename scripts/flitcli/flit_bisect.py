@@ -401,7 +401,9 @@ def extract_symbols(file_or_filelist, objdir):
     # generate the symbol tuples
     for symbol_string, demangled_string in zip(symbol_strings,
                                                demangled_symbol_strings):
-        symbol = symbol_string.split(maxsplit=2)[2]
+        symbol_type, symbol = symbol_string.split(maxsplit=2)[1:]
+        if symbol_type == "W": # skip weak symbols
+            continue
         demangled = demangled_string.split(maxsplit=2)[2]
         try:
             deffile, defline = symbol_line_mapping[symbol]
