@@ -81,36 +81,34 @@
  * -- LICENSE END --
  */
 
-#include "file1.h"
-#include "file2.h"
-#include "file3.h"
 #include "file4.h"
 
 #include <flit.h>
 
 #include <string>
 
-#include <cmath>
+int file4_func1() { return 1; }
+int file4_func2() { return 2; }
+int file4_func3() { return 3; }
+int file4_func4() { return 4; }
 
-template <typename T>
-class BisectTest : public flit::TestBase<T> {
-public:
-  BisectTest(std::string id) : flit::TestBase<T>(std::move(id)) {}
-  virtual size_t getInputsPerRun() override { return 0; }
-  virtual std::vector<T> getDefaultInput() override { return {}; }
-  virtual long double compare(long double ground_truth,
-                              long double test_results) const override {
-    return std::abs(test_results - ground_truth);
+template<int i>
+int file4_func5_TEMPLATE_PROBLEM() {
+  if (std::string(FLIT_OPTL) == "-O3") {
+    return 5 + 10;  // variability introduced = 10
+  } else {
+    return 5;
   }
+}
 
-protected:
-  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    FLIT_UNUSED(ti);
-    return file1_all() + file2_all() + file3_all() + file4_all();
-  }
 
-protected:
-  using flit::TestBase<T>::id;
-};
 
-REGISTER_TYPE(BisectTest)
+int file4_all() {
+  return file4_func1()
+       + file4_func2()
+       + file4_func3()
+       + file4_func4()
+       + file4_func5_TEMPLATE_PROBLEM<0>()
+       + file4_func5_TEMPLATE_PROBLEM<1>()
+       + file4_func5_TEMPLATE_PROBLEM<2>();
+}

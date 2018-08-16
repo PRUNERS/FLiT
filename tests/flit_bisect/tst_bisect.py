@@ -109,7 +109,10 @@ and run FLiT bisect
 ...                          outstream=ostream)
 ...         bisect_out = ostream.getvalue().splitlines()
 ...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
-...         log_contents = fin.readlines()
+...         raw_log = fin.readlines()
+...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
+...                         for line in raw_log]
+...         log_contents = [line for line in stripped_log if line.strip() != '']
 
 Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
@@ -126,21 +129,21 @@ Let's see that the ground truth results are updated first
 Verify that all source files were found and output during the search
 >>> sorted([x.split()[-1] for x in bisect_out
 ...                       if x.startswith('    Found bad source file')])
-['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
+['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
 
-Verify that the three bad sources were output in the "bad sources:" section
+Verify that the four bad sources were output in the "bad sources:" section
 >>> idx = bisect_out.index('  bad sources:')
->>> sorted(bisect_out[idx+1:idx+4])
-['    tests/file1.cpp', '    tests/file2.cpp', '    tests/file3.cpp']
->>> bisect_out[idx+4].startswith('Searching for bad symbols in:')
+>>> sorted(bisect_out[idx+1:idx+5])
+['    tests/file1.cpp', '    tests/file2.cpp', '    tests/file3.cpp', '    tests/file4.cpp']
+>>> bisect_out[idx+5].startswith('Searching for bad symbols in:')
 True
 
-Verify that all three files were searched individually
+Verify that all four files were searched individually
 >>> sorted([x.split()[-1] for x in bisect_out
 ...                       if x.startswith('Searching for bad symbols in:')])
-['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
+['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
 
-Verify all functions were identified during the symbol searches
+Verify all non-templated functions were identified during the symbol searches
 >>> print('\\n'.join(
 ...     sorted([' '.join(x.split()[-4:]) for x in bisect_out
 ...             if x.startswith('    Found bad symbol on line')])))
@@ -174,6 +177,13 @@ Verify the bad symbols section for file3.cpp
     line 92 -- file3_func2_PROBLEM()
 >>> bisect_out[idx+3].startswith(' ')
 False
+
+This should be a weak symbol error... But how can that be determined?
+Allow it to say fPIC destroyed the opt even though it is because the weak
+symbols from the ground truth compile were chosen
+>>> idx = bisect_out.index('Searching for bad symbols in: tests/file4.cpp')
+>>> print(bisect_out[idx+2])
+  Warning: -fPIC compilation destroyed the optimization
 
 Test the All bad symbols section of the output
 >>> idx = bisect_out.index('All bad symbols:')
@@ -257,6 +267,15 @@ All bad symbols:
   /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM()
   /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM()
   /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM()
+
+Look for the symbols picked up for file4 in the log
+>>> idx = log_contents.index(' Searching for bad symbols in: tests/file4.cpp')
+>>> print('\\n'.join(log_contents[idx+4 : idx+9])) # doctest:+ELLIPSIS
+   None:None ... -- file4_func1()
+   /.../tests/file4.cpp:91 ... -- file4_func2()
+   /.../tests/file4.cpp:92 ... -- file4_func3()
+   /.../tests/file4.cpp:93 ... -- file4_func4()
+   /.../tests/file4.cpp:106 ... -- file4_all()
 
 TODO: test the log_contents variable
 '''
