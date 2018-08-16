@@ -149,6 +149,7 @@ Verify all non-templated functions were identified during the symbol searches
 ...             if x.startswith('    Found bad symbol on line')])))
 line 100 -- file1_func3_PROBLEM()
 line 103 -- file3_func5_PROBLEM()
+line 106 -- file4_all()
 line 108 -- file1_func4_PROBLEM()
 line 91 -- file2_func1_PROBLEM()
 line 92 -- file1_func2_PROBLEM()
@@ -178,12 +179,12 @@ Verify the bad symbols section for file3.cpp
 >>> bisect_out[idx+3].startswith(' ')
 False
 
-This should be a weak symbol error... But how can that be determined?
-Allow it to say fPIC destroyed the opt even though it is because the weak
-symbols from the ground truth compile were chosen
->>> idx = bisect_out.index('Searching for bad symbols in: tests/file4.cpp')
->>> print(bisect_out[idx+2])
-  Warning: -fPIC compilation destroyed the optimization
+Verify the bad symbols section for file4.cpp
+>>> idx = bisect_out.index('  bad symbols in tests/file4.cpp:')
+>>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
+    line 106 -- file4_all()
+>>> bisect_out[idx+2].startswitch' ')
+True
 
 Test the All bad symbols section of the output
 >>> idx = bisect_out.index('All bad symbols:')
@@ -194,6 +195,7 @@ Test the All bad symbols section of the output
   /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM()
   /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM()
   /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM()
+  /.../tests/file4.cpp:106 ... -- file4_all()
 
 Example output to be expected:
 
