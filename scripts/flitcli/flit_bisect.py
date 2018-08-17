@@ -17,7 +17,7 @@
 # All rights reserved.
 #
 # This file is part of FLiT. For details, see
-#   https://pruners.github.io/flit
+#   https://pruners.github.io/flitK
 # Please also read
 #   https://github.com/PRUNERS/FLiT/blob/master/LICENSE
 #
@@ -534,7 +534,7 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
     '''
     Performs the bisect search, attempting to find the biggest offenders.  This
     is different from bisect_search() in that this function only tries to
-    identify the top k offenders, not all of them.  If k is less than or equal
+    identify the top k offenders, not all of them.  If k is greater than or equal
     to the total number of offenders, then bisect_biggest() is more expensive
     than bisect_search().
 
