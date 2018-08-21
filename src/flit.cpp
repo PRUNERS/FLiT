@@ -101,7 +101,7 @@
 
 namespace {
 
-/** Helper class for Csv.
+/** Helper class for CsvReader.
  *
  * Represents a single row either indexed by number or by column name.
  */
@@ -133,14 +133,14 @@ private:
 };
 
 /** Class for parsing csv files */
-class Csv {
+class CsvReader {
 public:
-  Csv(std::istream &in) : m_header(Csv::parseRow(in)), m_in(in) {
+  CsvReader(std::istream &in) : m_header(CsvReader::parseRow(in)), m_in(in) {
     m_header.setHeader(&m_header);
   }
 
-  Csv& operator>> (CsvRow& row) {
-    row = Csv::parseRow(m_in);
+  CsvReader& operator>> (CsvRow& row) {
+    row = CsvReader::parseRow(m_in);
     row.setHeader(&m_header);
     return *this;
   }
@@ -149,22 +149,76 @@ public:
 
 private:
   static CsvRow parseRow(std::istream &in) {
-    std::string line;
-    std::getline(in, line);
+    enum class State {
+      DEFAULT,
+      IN_STRING,
+    };
+    State state = State::DEFAULT;
 
-    std::stringstream lineStream(line);
-    std::string token;
+    char quote_char = '"';
+    char separator = ',';
+    char line_end = '\n';
 
-    // tokenize on ','
     CsvRow row;
-    while(std::getline(lineStream, token, ',')) {
-      row.emplace_back(token);
+    char current;
+    std::ostringstream running;
+    int running_size = 0;
+    while (in >> current) {
+      if (state == State::DEFAULT) {
+        if (running_size == 0 && current == quote_char) {
+          state = State::IN_STRING;
+        } else if (current == separator) {
+          row.emplace_back(running.str());
+          running.str("");
+          running_size = 0;
+        } else if (current == line_end) {
+          row.emplace_back(running.str());
+          running.str("");
+          running_size = 0;
+          break; // break out of the while loop
+        } else {
+          running << current;
+          running_size++;
+        }
+      } else if (state == State::IN_STRING) {
+        if (current == quote_char) {
+          state = State::DEFAULT;
+        } else {
+          running << current;
+          running_size++;
+        }
+      } else {
+        throw std::runtime_error(
+          "Please contact Michael Bentley, this shouldn't happen...");
+      }
     }
 
-    // check for trailing comma with no data after it
-    if (!lineStream && token.empty()) {
-      row.emplace_back("");
+    // We should not be within a STRING when we exit the while loop
+    if (state != State::DEFAULT) {
+      throw std::runtime_error("Error parsing CSV file");
     }
+
+    // If we stopped because we reached the end of file...
+    if (!in) {
+      row.emplace_back(running.str());
+    }
+
+    //std::string line;
+    //std::getline(in, line);
+
+    //std::stringstream lineStream(line);
+    //std::string token;
+
+    //// tokenize on ','
+    //CsvRow row;
+    //while(std::getline(lineStream, token, ',')) {
+    //  row.emplace_back(token);
+    //}
+
+    //// check for trailing comma with no data after it
+    //if (!lineStream && token.empty()) {
+    //  row.emplace_back("");
+    //}
 
     return row;
   }
@@ -466,7 +520,7 @@ std::string readFile(const std::string &filename) {
 std::vector<TestResult> parseResults(std::istream &in) {
   std::vector<TestResult> results;
 
-  Csv csv(in);
+  CsvReader csv(in);
   CsvRow row;
   while (csv >> row) {
     auto nanosec = std::stol(row["nanosec"]);
@@ -501,7 +555,7 @@ std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
     "file"
   };
 
-  Csv csv(in);
+  CsvReader csv(in);
   CsvRow row;
   if (csv >> row) {
     for (auto key : metadataKeys) {
