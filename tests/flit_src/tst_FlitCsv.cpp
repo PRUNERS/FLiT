@@ -134,6 +134,63 @@ void tst_CsvReader_oneRowAtATime() {
   TH_EQUAL(row, expected_row);
 }
 TH_REGISTER(tst_CsvReader_oneRowAtATime);
+
+void tst_CsvReader_rangeBasedFor() {
+  std::istringstream in(
+      "first,second,third,fourth\n"   // header row
+      "a, b,c,\n"
+      "1,2,3,4,5,6,7\n"
+      "\n"
+      "hello,\"there,my\",friends,\"newline \n"
+      "in quotes\","
+      );
+
+  flit::CsvReader reader(in);
+  flit::CsvRow expected_header {"first", "second", "third", "fourth"};
+  TH_EQUAL(*reader.header(), expected_header);
+
+  std::vector<flit::CsvRow> expected_rows = {
+    {"a", " b", "c", ""},
+    {"1", "2", "3", "4", "5", "6", "7"},
+    {""},
+    {"hello", "there,my", "friends", "newline \nin quotes", ""},
+  };
+  for (auto &row : expected_rows) { row.setHeader(&expected_header); }
+  decltype(expected_rows) rows;
+  auto it = expected_rows.begin();
+  for (flit::CsvRow &row : reader) {
+    TH_EQUAL(row, *it++);
+    rows.push_back(row);
+  }
+  TH_EQUAL(rows, expected_rows);
+}
+TH_REGISTER(tst_CsvReader_rangeBasedFor);
+
+void tst_CsvReader_createRowVector() {
+  std::istringstream in(
+      "first,second,third,fourth\n"   // header row
+      "a, b,c,\n"
+      "1,2,3,4,5,6,7\n"
+      "\n"
+      "hello,\"there,my\",friends,\"newline \n"
+      "in quotes\","
+      );
+
+  flit::CsvReader reader(in);
+  flit::CsvRow expected_header {"first", "second", "third", "fourth"};
+  TH_EQUAL(*reader.header(), expected_header);
+
+  std::vector<flit::CsvRow> expected_rows = {
+    {"a", " b", "c", ""},
+    {"1", "2", "3", "4", "5", "6", "7"},
+    {""},
+    {"hello", "there,my", "friends", "newline \nin quotes", ""},
+  };
+  for (auto &row : expected_rows) { row.setHeader(&expected_header); }
+  decltype(expected_rows) rows (reader.begin(), reader.end());
+  TH_EQUAL(rows, expected_rows);
+}
+
 } // end of namespace tst_CsvReader
 
 
