@@ -208,13 +208,14 @@ void tst_CsvReader_oneRowAtATime() {
   expected_row = {"hello", "there,my", "friends", "newline \nin quotes", ""};
   expected_row.setHeader(&expected_header);
   TH_EQUAL(row, expected_row);
-  TH_VERIFY(!reader);
+  TH_VERIFY(reader);
 
   reader >> row;
   expected_row = {};
   expected_row.setHeader(&expected_header);
   TH_VERIFY(row.empty());
   TH_EQUAL(row, expected_row);
+  TH_VERIFY(!reader);
 }
 TH_REGISTER(tst_CsvReader_oneRowAtATime);
 
@@ -291,14 +292,8 @@ void tst_CsvWriter_write_row_addsNewline() {
   flit::CsvWriter writer(out);
 
   writer.write_row(*reader.header());
-  while (reader) {
-    flit::CsvRow row;
-    reader >> row;
-    if (row.empty()) {
-      break;
-    }
-    writer.write_row(row);
-  }
+  flit::CsvRow row;
+  while (reader >> row) { writer.write_row(row); }
 
   TH_EQUAL(out.str().back(), '\n');
   TH_EQUAL(in.str() + '\n', out.str());
@@ -332,14 +327,8 @@ void tst_CsvWriter_write_row_exactly() {
   flit::CsvWriter writer(out);
 
   writer.write_row(*reader.header());
-  while (reader) {
-    flit::CsvRow row;
-    reader >> row;
-    if (row.empty()) {
-      break;
-    }
-    writer.write_row(row);
-  }
+  flit::CsvRow row;
+  while (reader >> row) { writer.write_row(row); }
 
   TH_EQUAL(in.str(), out.str());
 

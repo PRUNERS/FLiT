@@ -144,15 +144,19 @@ private:
 /** Class for parsing csv files */
 class CsvReader {
 public:
-  CsvReader(std::istream &in) : m_header(CsvReader::parseRow(in)), m_in(in) {}
+  CsvReader(std::istream &in)
+    : m_header(CsvReader::parseRow(in)), m_in(in), m_is_done(!bool(in)) {}
 
-  operator bool() const { return static_cast<bool>(m_in); }
+  operator bool() const { return !m_is_done; }
   CsvRow* header() { return &m_header; }
   std::istream& stream() { return m_in; }
 
   CsvReader& operator>> (CsvRow& row) {
     row = CsvReader::parseRow(m_in);
     row.setHeader(this->header());
+    if (row.empty()) {
+      m_is_done = true;
+    }
     return *this;
   }
 
@@ -176,7 +180,7 @@ public:
         throw std::out_of_range("Went beyond the CSV file");
       }
       *m_reader >> row;
-      if (row.empty()) {
+      if (!*m_reader) {
         m_reader = nullptr;  // mark the iterator as reaching the end
       }
       return *this;
@@ -203,6 +207,7 @@ private:
 private:
   CsvRow m_header;
   std::istream &m_in;
+  bool m_is_done;
 };
 
 class CsvWriter {
