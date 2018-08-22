@@ -31,14 +31,26 @@ CsvRow CsvReader::parseRow(std::istream &in) {
   char separator = ',';
   char line_end = '\n';
 
+  auto transition_state = [&state](State newstate) {
+    //std::cout << "State transitioned from "
+    //          << static_cast<int>(state)
+    //          << " to "
+    //          << static_cast<int>(newstate)
+    //          << std::endl;
+    state = newstate;
+  };
+
   CsvRow row;
   char current;
   std::ostringstream running;
   int running_size = 0;
-  while (in >> current) {
+  while (in.get(current)) {
+    //std::cout << "parsing csv, current char: " << current
+    //          << ", state = " << static_cast<int>(state)
+    //          << std::endl;
     if (state == State::DEFAULT) {
       if (running_size == 0 && current == quote_char) {
-        state = State::IN_STRING;
+        transition_state(State::IN_STRING);
       } else if (current == separator) {
         row.emplace_back(running.str());
         running.str("");
@@ -54,7 +66,7 @@ CsvRow CsvReader::parseRow(std::istream &in) {
       }
     } else if (state == State::IN_STRING) {
       if (current == quote_char) {
-        state = State::DEFAULT;
+        transition_state(State::DEFAULT);
       } else {
         running << current;
         running_size++;
