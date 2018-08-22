@@ -24,6 +24,36 @@ public:
   using std::vector<std::string>::operator[];
   std::string const& operator[](std::string col) const;
 
+  bool operator!=(const CsvRow &other) {
+    // Check the header
+    if (this->header() == nullptr && other.header() != nullptr) {
+      return true;
+    }
+    if (this->header() != nullptr && other.header() == nullptr) {
+      return true;
+    }
+    if (this->header() != nullptr &&
+        other.header() != nullptr &&
+        *this->header() != *other.header())
+    {
+      return true;
+    }
+
+    // Check row contents
+    if (this->size() != other.size()) {
+      return true;
+    }
+    for (CsvRow::size_type i = 0; i < this->size(); i++) {
+      if (this->at(i) != other.at(i)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool operator==(const CsvRow &other) { return !(*this != other); }
+
 private:
   CsvRow* m_header {nullptr};  // not owned by this class
 };
@@ -31,12 +61,7 @@ private:
 /** Class for parsing csv files */
 class CsvReader {
 public:
-  CsvReader(std::istream &in)
-    : m_header(CsvReader::parseRow(in))
-    , m_in(in)
-  {
-    m_header.setHeader(&m_header);
-  }
+  CsvReader(std::istream &in) : m_header(CsvReader::parseRow(in)), m_in(in) {}
 
   operator bool() const { return static_cast<bool>(m_in); }
   CsvRow* header() { return &m_header; }

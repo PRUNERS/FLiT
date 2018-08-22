@@ -87,7 +87,7 @@ TH_REGISTER(tst_CsvRow_operator_brackets_int);
 } // end of namespace tst_CsvRow
 
 namespace tst_CsvReader {
-void tst_CsvReader_general() {
+void tst_CsvReader_oneRowAtATime() {
   std::istringstream in(
       "first,second,third,fourth\n"   // header row
       "a, b,c,\n"
@@ -103,27 +103,37 @@ void tst_CsvReader_general() {
 
   flit::CsvRow row;
   reader >> row;
-  TH_EQUAL(*row.header(), expected_header);
-  TH_EQUAL(row, flit::CsvRow({"a", " b", "c", ""}));
+  flit::CsvRow expected_row;
+  expected_row = {"a", " b", "c", ""};
+  expected_row.setHeader(&expected_header);
+  TH_EQUAL(row, expected_row);
   TH_VERIFY(reader);
 
   reader >> row;
-  TH_EQUAL(*row.header(), expected_header);
-  TH_EQUAL(row, flit::CsvRow({"1", "2", "3", "4", "5", "6", "7"}));
+  expected_row = {"1", "2", "3", "4", "5", "6", "7"};
+  expected_row.setHeader(&expected_header);
+  TH_EQUAL(row, expected_row);
   TH_VERIFY(reader);
 
   reader >> row;
-  TH_EQUAL(*row.header(), expected_header);
-  TH_EQUAL(row, flit::CsvRow({""}));
+  expected_row = {""};
+  expected_row.setHeader(&expected_header);
+  TH_EQUAL(row, expected_row);
   TH_VERIFY(reader);
 
   reader >> row;
-  TH_EQUAL(*row.header(), expected_header);
-  TH_EQUAL(row, flit::CsvRow({"hello", "there,my", "friends",
-                              "newline \nin quotes", ""}));
+  expected_row = {"hello", "there,my", "friends", "newline \nin quotes", ""};
+  expected_row.setHeader(&expected_header);
+  TH_EQUAL(row, expected_row);
   TH_VERIFY(!reader);
+
+  reader >> row;
+  expected_row = {};
+  expected_row.setHeader(&expected_header);
+  TH_VERIFY(row.empty());
+  TH_EQUAL(row, expected_row);
 }
-TH_REGISTER(tst_CsvReader_general);
+TH_REGISTER(tst_CsvReader_oneRowAtATime);
 } // end of namespace tst_CsvReader
 
 
