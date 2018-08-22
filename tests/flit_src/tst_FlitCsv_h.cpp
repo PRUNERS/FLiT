@@ -89,23 +89,32 @@ TH_REGISTER(tst_CsvRow_operator_brackets_int);
 namespace tst_CsvReader {
 void tst_Csv() {
   std::istringstream in(
-      "first,second,third,fourth\n"
+      "first,second,third,fourth\n"   // header row
       "a, b,c,\n"
       "1,2,3,4,5,6,7\n"
       "\n"
+      "hello,\"there,my\",friends,\"newline \n"
+      "in quotes\""
       );
   flit::CsvReader csv(in);
   flit::CsvRow row;
   csv >> row;
-  auto &header = *row.header();
-  TH_EQUAL(header, flit::CsvRow({"first", "second", "third", "fourth"}));
+  flit::CsvRow expected_header {"first", "second", "third", "fourth"};
+  TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({"a", " b", "c", ""}));
 
   csv >> row;
+  TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({"1", "2", "3", "4", "5", "6", "7"}));
 
   csv >> row;
+  TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({""}));
+
+  csv >> row;
+  TH_EQUAL(*row.header(), expected_header);
+  TH_EQUAL(row, flit::CsvRow({"hello", "there,my", "friends",
+                              "newline \nin quotes"}));
 }
 TH_REGISTER(tst_Csv);
 } // end of namespace tst_CsvReader
