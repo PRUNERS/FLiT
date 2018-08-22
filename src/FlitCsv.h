@@ -160,47 +160,6 @@ public:
     return *this;
   }
 
-  class Iterator {
-  public:
-    using difference_type   = long;
-    using value_type        = std::string;
-    using reference         = std::string&;
-    using pointer           = std::string*;
-    using iterator_category = std::input_iterator_tag;
-
-    Iterator() : m_reader(nullptr) {}
-    Iterator(CsvReader* reader) : m_reader(reader) { *reader >> row; }
-    Iterator(const Iterator &other)             = default;
-    Iterator(Iterator &&other)                  = default;
-    Iterator& operator= (const Iterator &other) = default;
-    Iterator& operator= (Iterator &&other)      = default;
-
-    Iterator& operator++() {
-      if (m_reader == nullptr) {
-        throw std::out_of_range("Went beyond the CSV file");
-      }
-      *m_reader >> row;
-      if (!*m_reader) {
-        m_reader = nullptr;  // mark the iterator as reaching the end
-      }
-      return *this;
-    }
-
-    bool operator == (const Iterator& other) const {
-      return this->m_reader == other.m_reader;
-    }
-    bool operator != (const Iterator& other) const { return !(*this == other); }
-
-    CsvRow& operator*() { return row; }
-
-  private:
-    CsvReader *m_reader;
-    CsvRow row;
-  };
-
-  CsvReader::Iterator begin() { return Iterator(this); };
-  CsvReader::Iterator end() { return Iterator(); };
-
 private:
   static CsvRow parseRow(std::istream &in);
 

@@ -395,7 +395,8 @@ std::vector<TestResult> parseResults(std::istream &in) {
   std::vector<TestResult> results;
 
   CsvReader reader(in);
-  for (auto &row : reader) {
+  CsvRow row;
+  for (CsvRow row; reader >> row; ) {
     auto nanosec = std::stol(row["nanosec"]);
     Variant value;
     std::string resultfile;
