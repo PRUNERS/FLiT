@@ -430,7 +430,8 @@ std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
 
   CsvReader csv(in);
   CsvRow row;
-  if (csv >> row) {
+  csv >> row;
+  if (!row.empty()) {
     for (auto key : metadataKeys) {
       metadata.emplace(key, row[key]);
     }
