@@ -58,7 +58,9 @@ private:
 
 class CsvWriter {
 public:
-  CsvWriter(std::ostream &out) : m_out(out), m_is_line_beginning(true) {}
+  explicit CsvWriter(std::ostream &out)
+    : m_out(out), m_is_line_beginning(true) {}
+  virtual ~CsvWriter() {}
 
   template <typename T>
   CsvWriter& operator<< (const T &val) {
@@ -66,37 +68,8 @@ public:
     return *this;
   }
 
-  template <>
-  CsvWriter& operator<< (const std::vector<std::string> &row) {
-    this->write_row(row);
-    return *this;
-  }
-
   template <typename T>
-  void write_val (const T val) {
-    if (!this->m_is_line_beginning) {
-      this->m_out << ',';
-    }
-    this->m_is_line_beginning = false;
-    this->m_out << val;
-  }
-
-  template <>
-  void write_val (const char* val) { write_val<std::string>(val); }
-  
-  template <>
-  void write_val (const std::string &val) {
-    if (!this->m_is_line_beginning) {
-      this->m_out << ',';
-    }
-    this->m_is_line_beginning = false;
-    // if there are offending characters in val, then quote the field
-    if (val.find_first_of(",\r\n") != std::string::npos) {
-      this->m_out << '"' << val << '"';
-    } else {
-      this->m_out << val;
-    }
-  }
+  void write_val (const T val) { append(val); }
 
   void new_row() {
     this->m_out << std::endl;
@@ -115,9 +88,50 @@ public:
   }
 
 private:
+  template <typename T>
+  CsvWriter& append(const T &val) {
+    if (!this->m_is_line_beginning) {
+      this->m_out << ',';
+    }
+    this->m_is_line_beginning = false;
+    this->m_out << val;
+    return *this;
+  }
+
+private:
   std::ostream &m_out;
   bool m_is_line_beginning;
 };
+
+#define CSVWRITER_OPERATOR(type) \
+  inline CsvWriter& operator<< (CsvWriter& out, const type val) { \
+    out.write_val(val); \
+    return out; \
+  }
+
+CSVWRITER_OPERATOR(int);
+CSVWRITER_OPERATOR(long);
+CSVWRITER_OPERATOR(long long);
+CSVWRITER_OPERATOR(unsigned int);
+CSVWRITER_OPERATOR(unsigned long);
+CSVWRITER_OPERATOR(unsigned long long);
+CSVWRITER_OPERATOR(unsigned __int128);
+CSVWRITER_OPERATOR(float);
+CSVWRITER_OPERATOR(double);
+CSVWRITER_OPERATOR(long double);
+
+#undef CSVWRITER_OPERATOR
+
+// handle std::string separately
+inline CsvWriter& operator<< (CsvWriter& out, const std::string &val) {
+  // if there are offending characters in val, then quote the field
+  if (val.find_first_of(",\r\n") != std::string::npos) {
+    out.write_val('"' + val + '"');
+  } else {
+    out.write_val(val);
+  }
+  return out;
+}
 
 } // end of namespace flit
 
