@@ -45,9 +45,6 @@ CsvRow CsvReader::parseRow(std::istream &in) {
   std::ostringstream running;
   int running_size = 0;
   while (in.get(current)) {
-    //std::cout << "parsing csv, current char: " << current
-    //          << ", state = " << static_cast<int>(state)
-    //          << std::endl;
     if (state == State::DEFAULT) {
       if (running_size == 0 && current == quote_char) {
         transition_state(State::IN_STRING);
@@ -87,23 +84,6 @@ CsvRow CsvReader::parseRow(std::istream &in) {
   if (!in && !row.empty()) {
     row.emplace_back(running.str());
   }
-
-  //std::string line;
-  //std::getline(in, line);
-
-  //std::stringstream lineStream(line);
-  //std::string token;
-
-  //// tokenize on ','
-  //CsvRow row;
-  //while(std::getline(lineStream, token, ',')) {
-  //  row.emplace_back(token);
-  //}
-
-  //// check for trailing comma with no data after it
-  //if (!lineStream && token.empty()) {
-  //  row.emplace_back("");
-  //}
 
   return row;
 }

@@ -128,15 +128,6 @@ public:
     : m_out(out), m_is_line_beginning(true) {}
   virtual ~CsvWriter() {}
 
-  template <typename T>
-  CsvWriter& operator<< (const T &val) {
-    this->write_val(val);
-    return *this;
-  }
-
-  template <typename T>
-  void write_val (const T val) { append(val); }
-
   void new_row() {
     this->m_out << std::endl;
     this->m_is_line_beginning = true;
@@ -152,6 +143,36 @@ public:
       *this << elem;
     }
     this->new_row();
+  }
+
+#define FLIT_CSVWRITER_OPERATOR(type) \
+  CsvWriter& operator<< (const type val) { \
+    this->append(val); \
+    return *this; \
+  }
+
+  FLIT_CSVWRITER_OPERATOR(int);
+  FLIT_CSVWRITER_OPERATOR(long);
+  FLIT_CSVWRITER_OPERATOR(long long);
+  FLIT_CSVWRITER_OPERATOR(unsigned int);
+  FLIT_CSVWRITER_OPERATOR(unsigned long);
+  FLIT_CSVWRITER_OPERATOR(unsigned long long);
+  FLIT_CSVWRITER_OPERATOR(unsigned __int128);
+  FLIT_CSVWRITER_OPERATOR(float);
+  FLIT_CSVWRITER_OPERATOR(double);
+  FLIT_CSVWRITER_OPERATOR(long double);
+
+#undef FLIT_CSVWRITER_OPERATOR
+
+  // handle std::string separately
+  CsvWriter& operator<< (const std::string &val) {
+    // if there are offending characters in val, then quote the field
+    if (val.find_first_of(",\r\n") != std::string::npos) {
+      this->append('"' + val + '"');
+    } else {
+      this->append(val);
+    }
+    return *this;
   }
 
 private:
@@ -170,35 +191,7 @@ private:
   bool m_is_line_beginning;
 };
 
-#define CSVWRITER_OPERATOR(type) \
-  inline CsvWriter& operator<< (CsvWriter& out, const type val) { \
-    out.write_val(val); \
-    return out; \
-  }
 
-CSVWRITER_OPERATOR(int);
-CSVWRITER_OPERATOR(long);
-CSVWRITER_OPERATOR(long long);
-CSVWRITER_OPERATOR(unsigned int);
-CSVWRITER_OPERATOR(unsigned long);
-CSVWRITER_OPERATOR(unsigned long long);
-CSVWRITER_OPERATOR(unsigned __int128);
-CSVWRITER_OPERATOR(float);
-CSVWRITER_OPERATOR(double);
-CSVWRITER_OPERATOR(long double);
-
-#undef CSVWRITER_OPERATOR
-
-// handle std::string separately
-inline CsvWriter& operator<< (CsvWriter& out, const std::string &val) {
-  // if there are offending characters in val, then quote the field
-  if (val.find_first_of(",\r\n") != std::string::npos) {
-    out.write_val('"' + val + '"');
-  } else {
-    out.write_val(val);
-  }
-  return out;
-}
 
 } // end of namespace flit
 
