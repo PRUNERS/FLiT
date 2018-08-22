@@ -177,13 +177,12 @@ public:
 
 private:
   template <typename T>
-  CsvWriter& append(const T &val) {
+  void append(const T &val) {
     if (!this->m_is_line_beginning) {
       this->m_out << ',';
     }
     this->m_is_line_beginning = false;
     this->m_out << val;
-    return *this;
   }
 
 private:
