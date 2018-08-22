@@ -83,7 +83,8 @@ CsvRow CsvReader::parseRow(std::istream &in) {
   }
 
   // If we stopped because we reached the end of file...
-  if (!in && running_size > 0) {
+  // (i.e. ignore empty last rows)
+  if (!in && !row.empty()) {
     row.emplace_back(running.str());
   }
 

@@ -394,13 +394,8 @@ std::string readFile(const std::string &filename) {
 std::vector<TestResult> parseResults(std::istream &in) {
   std::vector<TestResult> results;
 
-  CsvReader csv(in);
-  CsvRow row;
-  while (csv) {
-    csv >> row;
-    if (row.empty()) {
-      break;
-    }
+  CsvReader reader(in);
+  for (auto &row : reader) {
     auto nanosec = std::stol(row["nanosec"]);
     Variant value;
     std::string resultfile;

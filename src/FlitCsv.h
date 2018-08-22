@@ -39,14 +39,44 @@ public:
   }
 
   operator bool() const { return static_cast<bool>(m_in); }
-  CsvRow header() { return m_header; }
+  CsvRow* header() { return &m_header; }
   std::istream& stream() { return m_in; }
 
   CsvReader& operator>> (CsvRow& row) {
     row = CsvReader::parseRow(m_in);
-    row.setHeader(&m_header);
+    row.setHeader(this->header());
     return *this;
   }
+
+  class Iterator {
+  public:
+    Iterator() : m_reader(nullptr) {}
+    Iterator(CsvReader* reader) : m_reader(reader) { *reader >> row; }
+
+    Iterator& operator++() {
+      if (m_reader == nullptr) {
+        throw std::out_of_range("Went beyond the CSV file");
+      }
+      *m_reader >> row;
+      if (row.empty()) {
+        m_reader = nullptr;  // mark the iterator as reaching the end
+      }
+      return *this;
+    }
+
+    bool operator != (const Iterator& other) const {
+      return this->m_reader != other.m_reader;
+    }
+
+    CsvRow& operator*() { return row; }
+
+  private:
+    CsvReader *m_reader;
+    CsvRow row;
+  };
+
+  CsvReader::Iterator begin() { return Iterator(this); };
+  CsvReader::Iterator end() { return Iterator(); };
 
 private:
   static CsvRow parseRow(std::istream &in);
@@ -76,13 +106,14 @@ public:
     this->m_is_line_beginning = true;
   }
 
-  void write_row (const std::vector<std::string>& row) {
+  template <typename T>
+  void write_row (const std::vector<T>& row) {
     if (!this->m_is_line_beginning) {
       throw std::runtime_error("Cannot write a row to a partially created "
                                "row.  Call CsvWriter::new_row() first");
     }
-    for (auto &elem : row) {
-      this->write_val(elem);
+    for (const T &elem : row) {
+      *this << elem;
     }
     this->new_row();
   }

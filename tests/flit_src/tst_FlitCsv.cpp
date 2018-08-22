@@ -87,39 +87,123 @@ TH_REGISTER(tst_CsvRow_operator_brackets_int);
 } // end of namespace tst_CsvRow
 
 namespace tst_CsvReader {
-void tst_Csv() {
+void tst_CsvReader_general() {
   std::istringstream in(
       "first,second,third,fourth\n"   // header row
       "a, b,c,\n"
       "1,2,3,4,5,6,7\n"
       "\n"
       "hello,\"there,my\",friends,\"newline \n"
-      "in quotes\""
+      "in quotes\","
       );
-  flit::CsvReader csv(in);
-  flit::CsvRow row;
-  csv >> row;
+
+  flit::CsvReader reader(in);
   flit::CsvRow expected_header {"first", "second", "third", "fourth"};
+  TH_EQUAL(*reader.header(), expected_header);
+
+  flit::CsvRow row;
+  reader >> row;
   TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({"a", " b", "c", ""}));
+  TH_VERIFY(reader);
 
-  csv >> row;
+  reader >> row;
   TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({"1", "2", "3", "4", "5", "6", "7"}));
+  TH_VERIFY(reader);
 
-  csv >> row;
+  reader >> row;
   TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({""}));
+  TH_VERIFY(reader);
 
-  csv >> row;
+  reader >> row;
   TH_EQUAL(*row.header(), expected_header);
   TH_EQUAL(row, flit::CsvRow({"hello", "there,my", "friends",
-                              "newline \nin quotes"}));
+                              "newline \nin quotes", ""}));
+  TH_VERIFY(!reader);
 }
-TH_REGISTER(tst_Csv);
+TH_REGISTER(tst_CsvReader_general);
 } // end of namespace tst_CsvReader
 
+
 namespace tst_CsvWriter {
+
+/// Tests that the CsvWriter will end the file in a newline (if writing rows)
+void tst_CsvWriter_write_row_addsNewline() {
+  std::istringstream in(
+      "first,second,third,fourth\n"   // header row
+      "a, b,c,"
+      );
+  std::ostringstream out;
+
+  flit::CsvReader reader(in);
+  flit::CsvWriter writer(out);
+
+  writer.write_row(*reader.header());
+  while (reader) {
+    flit::CsvRow row;
+    reader >> row;
+    if (row.empty()) {
+      break;
+    }
+    writer.write_row(row);
+  }
+
+  TH_EQUAL(out.str().back(), '\n');
+  TH_EQUAL(in.str() + '\n', out.str());
+
+  // Try the range-based for loop
+  std::istringstream in2(in.str());
+  out.str("");
+  flit::CsvReader reader2(in2);
+
+  writer.write_row(*reader2.header());
+  for (auto &row : reader2) { writer.write_row(row); }
+
+  TH_EQUAL(out.str().back(), '\n');
+  TH_EQUAL(in2.str() + '\n', out.str());
+}
+TH_REGISTER(tst_CsvWriter_write_row_addsNewline);
+
+/// Tests that CsvWriter can write out the exact same csv read in
+void tst_CsvWriter_write_row_exactly() {
+  std::istringstream in(
+      "first,second,third,fourth\n"   // header row
+      "a, b,c,\n"
+      "1,2,3,4,5,6,7\n"
+      "\n"
+      "hello,\"there,my\",friends,\"newline \n"
+      "in quotes\",\n"
+      );
+  std::ostringstream out;
+
+  flit::CsvReader reader(in);
+  flit::CsvWriter writer(out);
+
+  writer.write_row(*reader.header());
+  while (reader) {
+    flit::CsvRow row;
+    reader >> row;
+    if (row.empty()) {
+      break;
+    }
+    writer.write_row(row);
+  }
+
+  TH_EQUAL(in.str(), out.str());
+
+  // Try the range-based for loop
+  std::istringstream in2(in.str());
+  out.str("");
+  flit::CsvReader reader2(in2);
+
+  writer.write_row(*reader2.header());
+  for (auto &row : reader2) { writer.write_row(row); }
+
+  TH_EQUAL(in.str(), out.str());
+}
+TH_REGISTER(tst_CsvWriter_write_row_exactly);
 
 } // end of namespace tst_CsvWriter
 
