@@ -130,14 +130,14 @@
 // Assertion definitions
 #define TH_VERIFY_MSG(x, msg) \
   if (!(x)) { \
-    throw th::AssertionError(__func__, __LINE__, msg);\
+    throw th::AssertionError(__FILE__, __func__, __LINE__, msg);\
   }
 #define TH_VERIFY(x) TH_VERIFY_MSG(x, "TH_VERIFY("#x")")
 #define TH_EQUAL(a, b) TH_VERIFY_MSG((a) == (b), "TH_EQUAL("#a", "#b")")
 #define TH_NOT_EQUAL(a, b) TH_VERIFY_MSG((a) != (b), "TH_NOT_EQUAL("#a", "#b")")
 #define TH_FAIL(msg) \
   TH_VERIFY_MSG(false, std::string("TH_FAIL(\"") + msg + "\")")
-#define TH_SKIP(msg) throw th::SkipError(__func__, __LINE__, msg)
+#define TH_SKIP(msg) throw th::SkipError(__FILE__, __func__, __LINE__, msg)
 #define TH_THROWS(exp, exception)                            \
   try {                                                      \
     exp;                                                     \
@@ -170,18 +170,21 @@ namespace th {
   // Signals an assertion failure
   class AssertionError : public std::exception {
   public:
-    AssertionError(std::string func, long line, std::string msg)
-      : _func(func), _line(line), _msg(msg)
+    AssertionError(std::string file, std::string func, long line,
+                   std::string msg)
+      : _file(file), _func(func), _line(line), _msg(msg)
     {
       std::ostringstream msg_stream;
       msg_stream
-        << "Assertion failure: " << _func << ":" << _line << " - " << _msg;
+        << "Assertion failure: " << _file << ":"
+        << _line << " in " << _func << " - " << _msg;
       _what = msg_stream.str();
     }
     virtual const char* what() const noexcept override {
       return _what.c_str();
     }
   protected:
+    std::string _file;
     std::string _func;
     long _line;
     std::string _msg;
@@ -191,12 +194,13 @@ namespace th {
   // Signals a test that is skipped
   class SkipError : public AssertionError {
   public:
-    SkipError(std::string func, long line, std::string msg)
-      : AssertionError(func, line, msg)
+    SkipError(std::string file, std::string func, long line, std::string msg)
+      : AssertionError(file, func, line, msg)
     {
       std::ostringstream msg_stream;
       msg_stream
-        << "Test skipped: " << _func << ":" << _line << " - " << _msg;
+        << "Test skipped: " << _file << ":"
+        << _line << " in " << _func << " - " << _msg;
       _what = msg_stream.str();
     }
   };
@@ -226,10 +230,10 @@ int main(int argCount, char *argList[]) {
       }
       skipped_tests.emplace_back(test_name);
     } catch (const th::AssertionError &err) {
-      std::cout << test_name << ": " << err.what() << "\n";
+      std::cout << test_name << ":\n  " << err.what() << "\n";
       failed_tests.emplace_back(test_name);
     } catch (const std::exception &err) {
-      std::cout << test_name << ": Uncought exception - "
+      std::cout << test_name << ": Uncought exception\n  "
                 << typeid(err).name() << ": " << err.what() << "\n";
       failed_tests.emplace_back(test_name);
     } catch (...) {
@@ -272,4 +276,3 @@ int main(int argCount, char *argList[]) {
 }
 
 #endif // TEST_HARNESS_H
-

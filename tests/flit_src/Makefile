@@ -14,6 +14,9 @@ HARNESS     := ../test_harness.h
 CFLAGS      += $(addprefix -I,$(dir $(HARNESS)))
 CFLAGS      += -I../../src
 
+DEPFLAGS     = -MD -MF $*.d
+
+
 .PHONY: build check help clean run_%
 build: $(TARGETS)
 
@@ -33,7 +36,10 @@ run_% : %
 	@./$< --quiet
 
 % : %.cpp $(HARNESS) Makefile
-	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
+
+.PRECIOUS: %.d
+-include $(SRC:%.cpp=%.d)
 
 $(TARGETS): $(FLITLIB)
 
