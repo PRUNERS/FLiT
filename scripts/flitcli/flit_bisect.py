@@ -86,6 +86,7 @@ files that cause the variability.
 '''
 
 from collections import namedtuple
+from tempfile import NamedTemporaryFile
 import argparse
 import csv
 import datetime
@@ -280,12 +281,32 @@ def build_bisect(makefilename, directory,
     if jobs is None:
         jobs = mp.cpu_count()
     kwargs = dict()
-    if not verbose:
-        kwargs['stdout'] = subp.DEVNULL
-        kwargs['stderr'] = subp.DEVNULL
-    subp.check_call(
-        ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), target],
-        **kwargs)
+
+    command = [
+        'make',
+        '-C', directory,
+        '-f', makefilename,
+        '-j', str(jobs),
+        target,
+        ]
+
+    with NamedTemporaryFile() as tmpout:
+        try:
+            if not verbose:
+                kwargs['stdout'] = tmpout
+                kwargs['stderr'] = tmpout
+                subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
+            else:
+                ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
+                command = ['tee']
+                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
+        except:
+            tmpout.flush()
+            with open(tmpout.name, 'r') as tmpin:
+                logging.error('make error occurred.  Here is the output:\n' +
+                              tmpin.read())
+            raise
+
 
 def update_gt_results(directory, verbose=False,
                       jobs=mp.cpu_count(), fpic=False):
