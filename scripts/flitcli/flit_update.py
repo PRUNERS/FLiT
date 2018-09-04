@@ -134,8 +134,8 @@ def main(arguments, prog=sys.argv[0]):
     assert len(matching_dev_compilers) < 2, \
             'Multiple compilers with name {0} found'.format(dev_compiler_name)
     dev_compiler_bin = matching_dev_compilers[0]['binary']
-    if '/' in dev_compiler_bin:
-        dev_compiler_bin = os.path.realpath(dev_compiler_bin)
+    #if '/' in dev_compiler_bin:
+    #    dev_compiler_bin = os.path.realpath(dev_compiler_bin)
 
     ground_truth = host['ground_truth']
     gt_compiler_name = ground_truth['compiler_name']
@@ -149,8 +149,8 @@ def main(arguments, prog=sys.argv[0]):
             'Multiple compilers with name {0} found'.format(gt_compiler_names)
     # TODO: use the compiler mnemonic rather than the path
     gt_compiler_bin = matching_gt_compilers[0]['binary']
-    if '/' in dev_compiler_bin:
-        gt_compiler_bin = os.path.realpath(gt_compiler_bin)
+    #if '/' in dev_compiler_bin:
+    #    gt_compiler_bin = os.path.realpath(gt_compiler_bin)
 
     supported_compiler_types = ('clang', 'gcc', 'intel')
     base_compilers = {x: None for x in supported_compiler_types}

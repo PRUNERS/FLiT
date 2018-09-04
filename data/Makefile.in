@@ -235,7 +235,10 @@ COMPILERS       := $(foreach c, GCC INTEL CLANG, \
                      $(if \
                        $(and \
                          $(call not_equal,None,$($(c))),\
-                         $(shell which $($(c)) 2>/dev/null), $c,)))
+                         $(shell which $($(c)) 2>/dev/null)), $c,))
+$(foreach c, $(filter-out $(COMPILERS),GCC INTEL CLANG), \
+  $(if $(call not_equal,None,$($(c))), \
+    $(warning Warning: Could not find compiler $($(c)) of type $(c)),))
 
 HOSTNAME        := $(shell hostname)
 
@@ -243,8 +246,11 @@ RESULTS_DIR     := results
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
+CLANG_REQUIRED  :=
+ifeq ($(findstring GCC,$(COMPILERS)),GCC)
 GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
-CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
+CLANG_REQUIRED  += --gcc-toolchain=$(GCC_TOOLCHAIN)
+endif
 
 # Compiler setting targets
 #   taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
