@@ -89,6 +89,11 @@ GT_OUT          := ground-truth.csv
 
 UNAME_S         := $(shell uname -s)
 
+# will be None if not specified in flit-config.toml
+CLANG           := {clang_compiler}
+INTEL           := {intel_compiler}
+GCC             := {gcc_compiler}
+
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
@@ -220,16 +225,17 @@ DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 
-CLANG           := clang++
-INTEL           := icpc
-GCC             := g++
+# checks for string equality between $1 and $2
+# note: will return false if both $1 and $2 are empty
+equal            = $(and $(findstring $1,$2),$(findstring $2,$1))
+not_equal        = $(if $(call equal,$1,$2),,good)
 
-ifdef CLANG_ONLY
-COMPILERS       := CLANG
-else
+# keep only the compilers that are not None and are in the path
 COMPILERS       := $(foreach c, GCC INTEL CLANG, \
-                     $(if $(shell which $($(c)) 2>/dev/null), $c,))
-endif
+                     $(if \
+                       $(and \
+                         $(call not_equal,None,$($(c))),\
+                         $(shell which $($(c)) 2>/dev/null), $c,)))
 
 HOSTNAME        := $(shell hostname)
 
