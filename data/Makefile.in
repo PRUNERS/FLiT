@@ -89,6 +89,14 @@ GT_OUT          := ground-truth.csv
 
 UNAME_S         := $(shell uname -s)
 
+# will be None if not specified in flit-config.toml
+CLANG           := {clang_compiler}
+INTEL           := {intel_compiler}
+GCC             := {gcc_compiler}
+
+# keep only the compilers that are not None and are in the path
+COMPILERS       := {compilers}
+
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
@@ -220,25 +228,17 @@ DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 
-CLANG           := clang++
-INTEL           := icpc
-GCC             := g++
-
-ifdef CLANG_ONLY
-COMPILERS       := CLANG
-else
-COMPILERS       := $(foreach c, GCC INTEL CLANG, \
-                     $(if $(shell which $($(c)) 2>/dev/null), $c,))
-endif
-
 HOSTNAME        := $(shell hostname)
 
 RESULTS_DIR     := results
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
+CLANG_REQUIRED  :=
+ifeq ($(findstring GCC,$(COMPILERS)),GCC)
 GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
-CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
+CLANG_REQUIRED  += --gcc-toolchain=$(GCC_TOOLCHAIN)
+endif
 
 # Compiler setting targets
 #   taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
