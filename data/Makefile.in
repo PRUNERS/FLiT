@@ -228,11 +228,6 @@ DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 
-# checks for string equality between $1 and $2
-# note: will return false if both $1 and $2 are empty
-equal            = $(and $(findstring $1,$2),$(findstring $2,$1))
-not_equal        = $(if $(call equal,$1,$2),,good)
-
 HOSTNAME        := $(shell hostname)
 
 RESULTS_DIR     := results
