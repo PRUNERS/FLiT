@@ -170,6 +170,8 @@ def main(arguments, prog=sys.argv[0]):
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
 
+    given_compilers = [key.upper() for key, val in base_compilers.items()
+                       if val is not None]
     replacements = {
         'dev_compiler': dev_compiler_bin,
         'dev_optl': dev_optl,
@@ -185,6 +187,7 @@ def main(arguments, prog=sys.argv[0]):
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
+        'compilers': ' '.join(given_compilers),
         }
     replacements.update({key + '_compiler': val
                          for key, val in base_compilers.items()})

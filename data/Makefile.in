@@ -94,6 +94,9 @@ CLANG           := {clang_compiler}
 INTEL           := {intel_compiler}
 GCC             := {gcc_compiler}
 
+# keep only the compilers that are not None and are in the path
+COMPILERS       := {compilers}
+
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
@@ -229,16 +232,6 @@ GT_DEPS          = $(GT_OBJ:%.o=%.d)
 # note: will return false if both $1 and $2 are empty
 equal            = $(and $(findstring $1,$2),$(findstring $2,$1))
 not_equal        = $(if $(call equal,$1,$2),,good)
-
-# keep only the compilers that are not None and are in the path
-COMPILERS       := $(foreach c, GCC INTEL CLANG, \
-                     $(if \
-                       $(and \
-                         $(call not_equal,None,$($(c))),\
-                         $(shell which $($(c)) 2>/dev/null)), $c,))
-$(foreach c, $(filter-out $(COMPILERS),GCC INTEL CLANG), \
-  $(if $(call not_equal,None,$($(c))), \
-    $(warning Warning: Could not find compiler $($(c)) of type $(c)),))
 
 HOSTNAME        := $(shell hostname)
 
