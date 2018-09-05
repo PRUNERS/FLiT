@@ -1516,6 +1516,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
                 logging.exception(
                     'Failed to search for differing symbols in %s',
                     differing_source)
+                return bisect_num, differing_libs, differing_sources, None, 1
             differing_symbols.extend(file_differing_symbols)
             if len(file_differing_symbols) > 0:
                 if args.biggest is None:
@@ -1543,7 +1544,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         print('The {} highest variability symbol{}:'
               .format(args.biggest, 's' if args.biggest > 1 else ''))
         logging.info('THE %d HIGHEST VARIABILITY INDUCING SYMBOL%s:',
-            args.biggest, 'S' if args.biggest > 1 else '')
+                     args.biggest, 'S' if args.biggest > 1 else '')
 
     for sym, score in differing_symbols:
         message = \
