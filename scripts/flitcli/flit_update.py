@@ -146,7 +146,7 @@ def main(arguments, prog=sys.argv[0]):
     assert len(matching_dev_compilers) > 0, \
             'Compiler name {0} not found'.format(gt_compiler_name)
     assert len(matching_dev_compilers) < 2, \
-            'Multiple compilers with name {0} found'.format(gt_compiler_names)
+            'Multiple compilers with name {0} found'.format(gt_compiler_name)
     # TODO: use the compiler mnemonic rather than the path
     gt_compiler_bin = matching_gt_compilers[0]['binary']
     #if '/' in dev_compiler_bin:
@@ -156,7 +156,7 @@ def main(arguments, prog=sys.argv[0]):
     base_compilers = {x: None for x in supported_compiler_types}
     for compiler in host['compilers']:
         assert compiler['type'] in supported_compiler_types, \
-            'Unsupported compiler type: {}'.format(brand)
+            'Unsupported compiler type: {}'.format(compiler['type'])
         assert base_compilers[compiler['type']] is None, \
             'You can only specify one of each type of compiler.'
         base_compilers[compiler['type']] = compiler['binary']
