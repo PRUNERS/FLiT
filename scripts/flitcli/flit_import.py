@@ -147,7 +147,7 @@ def main(arguments, prog=sys.argv[0]):
     try:
         projconf = toml.load('flit-config.toml')
     except FileNotFoundError:
-        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
+        print('Error: flit-config.toml not found.  Run "flit init"',
               file=sys.stderr)
         return 1
     util.fill_defaults(projconf)
