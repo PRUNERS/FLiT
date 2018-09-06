@@ -288,7 +288,7 @@ def build_bisect(makefilename, directory,
         **kwargs)
 
 def update_gt_results(directory, verbose=False,
-                      jobs=mp.cpu_count()):
+                      jobs=mp.cpu_count(), fpic=False):
     '''
     Update the ground-truth.csv results file for FLiT tests within the given
     directory.
@@ -306,6 +306,9 @@ def update_gt_results(directory, verbose=False,
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
     subp.check_call(
         ['make', '-j', str(jobs), '-C', directory, gt_resultfile], **kwargs)
+    if fpic:
+        subp.check_call(
+            ['make', '-j', str(jobs), '-C', directory, 'gt-fpic'], **kwargs)
     print(' - done')
     logging.info('Finished Updating ground-truth results')
 
@@ -909,6 +912,18 @@ def parse_args(arguments, prog=sys.argv[0]):
                             both compiled with the given compilation, then they
                             produce a measurable variation.
                             ''')
+    parser.add_argument('--compile-only', action='store_true',
+                        help='''
+                            Only applicable with the --auto-sqlite-run option.
+                            Only goes through the precompile step and then
+                            exits.
+                            ''')
+    parser.add_argument('--precompile-fpic', action='store_true',
+                        help='''
+                            Only applicable with the --auto-sqlite-run option.
+                            In the precompile phase, also precompiles the fPIC
+                            object files into the top-level obj directory.
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -1279,7 +1294,7 @@ def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
     return differing_sources, differing_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
-                    jobs=mp.cpu_count(), delete=True):
+                    jobs=mp.cpu_count(), delete=True, fpic=False):
     '''
     Compiles the trouble executable for the given arguments.  This is useful to
     compile the trouble executable as it will force the creation of all needed
@@ -1321,6 +1336,9 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
     # Compile the trouble executable simply so that we have the object files
     build_bisect(makepath, directory, verbose=verbose,
                  jobs=jobs, target='trouble')
+    if fpic:
+        build_bisect(makepath, directory, verbose=verbose,
+                     jobs=jobs, target='trouble-fpic')
 
     # Remove this prebuild temporary directory now
     if delete:
@@ -1698,11 +1716,16 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
               flush=True)
         compile_trouble(args.directory, compiler, optl, switches,
                         verbose=args.verbose, jobs=args.jobs,
-                        delete=args.delete)
+                        delete=args.delete, fpic=args.precompile_fpic)
         print('  done', flush=True)
 
     # Update ground-truth results before launching workers
-    update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
+    update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs,
+                      fpic=args.precompile_fpic)
+
+    if args.compile_only:
+        print('Done with precompilation -- exiting')
+        return 0
 
     # Generate the worker queue
     arg_queue = mp.Queue()

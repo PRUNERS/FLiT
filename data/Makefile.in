@@ -227,6 +227,7 @@ DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
+GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
 HOSTNAME        := $(shell hostname)
 
@@ -488,9 +489,10 @@ TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
 DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
-.PHONY: dev gt groundtruth run runbuild
+.PHONY: dev gt gt-fpic groundtruth run runbuild
 dev: $(DEV_TARGET)
 gt: groundtruth
+gt-fpic: $(GT_OBJ_FPIC)
 groundtruth: $(GT_TARGET)
 
 run: $(TARGET_RESULTS) $(TARGET_OUTS)
@@ -578,6 +580,14 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$(GT_CC)"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
+$(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
+	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CC)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
