@@ -172,6 +172,10 @@ def main(arguments, prog=sys.argv[0]):
     if args.dbfile is None:
         args.dbfile = get_dbfile_from_toml('flit-config.toml')
 
+    if os.path.isfile(args.dbfile):
+        print('Appending', args.dbfile)
+    else:
+        print('Creating', args.dbfile)
     db = util.sqlite_open(args.dbfile)
 
     # create a new run and set the args.append run id
