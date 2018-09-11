@@ -18,4 +18,6 @@ build:
 clean:
 
 run_% : %.py
+	@$(call color_out_noline,BROWN,  running)
+	@echo " $<"
 	@$(RUNNER) $<

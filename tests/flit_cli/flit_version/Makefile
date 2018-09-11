@@ -2,6 +2,8 @@ RUNNER        := python3
 SRC           := $(wildcard tst_*.py)
 RUN_TARGETS   := $(SRC:%.py=run_%)
 
+include ../../color_out.mk
+
 .PHONY: check help clean build run_%
 check: $(TARGETS) $(RUN_TARGETS)
 
@@ -16,4 +18,6 @@ build:
 clean:
 
 run_% : %.py
+	@$(call color_out_noline,BROWN,  running)
+	@echo " $<"
 	@$(RUNNER) $<

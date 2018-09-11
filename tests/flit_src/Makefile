@@ -17,6 +17,7 @@ CFLAGS      += -I../../src
 
 DEPFLAGS     = -MD -MF $*.d
 
+include ../color_out.mk
 
 .PHONY: build check help clean run_%
 build: $(TARGETS)
@@ -35,6 +36,8 @@ clean:
 	rm -f $(TARGETS)
 
 run_% : %
+	@$(call color_out_noline,BROWN,  running)
+	@echo " $<"
 	@./$< --quiet
 
 % : %.cpp $(HARNESS) Makefile
