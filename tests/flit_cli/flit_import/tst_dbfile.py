@@ -109,7 +109,7 @@ But here we suppress stderr
 ...     sys.stderr = olderr
 Traceback (most recent call last):
   ...
-TypeError: expected str, bytes or os.PathLike object, not int
+FileNotFoundError: [Errno 2] No such file or directory: 'flit-config.toml'
 
 Test that with --dbfile <filepath>, that it creates and imports into that file
 >>> with th.tempdir() as temp_dir:

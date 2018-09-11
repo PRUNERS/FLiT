@@ -107,7 +107,7 @@ def get_dbfile_from_toml(tomlfile):
     except FileNotFoundError:
         print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
               file=sys.stderr)
-        return 1
+        raise
     util.fill_defaults(projconf)
 
     assert projconf['database']['type'] == 'sqlite', \
