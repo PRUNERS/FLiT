@@ -270,7 +270,7 @@ TODO: test the -k flag
 # Test setup before the docstring is run.
 import sys
 before_path = sys.path[:]
-sys.path.append('..')
+sys.path.append('../..')
 import test_harness as th
 sys.path = before_path
 

@@ -1,8 +1,6 @@
-RUNNER      := python3
-SRC         := $(wildcard tst_*.py)
-RUN_TARGETS := $(SRC:%.py=run_%)
-
-include ../color_out.mk
+RUNNER        := python3
+SRC           := $(wildcard tst_*.py)
+RUN_TARGETS   := $(SRC:%.py=run_%)
 
 .PHONY: check help clean build run_%
 check: $(TARGETS) $(RUN_TARGETS)
