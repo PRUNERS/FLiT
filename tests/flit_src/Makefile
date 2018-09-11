@@ -8,6 +8,7 @@ CFLAGS      += -std=c++11
 LDFLAGS     := -L$(FLITLIBDIR) -lflit
 LDFLAGS     += -Wl,-rpath=$(FLITLIBDIR)
 SRC         := $(wildcard *.cpp)
+DEPS        := $(SRC:%.cpp=%.d)
 TARGETS     := $(SRC:%.cpp=%)
 RUN_TARGETS := $(TARGETS:%=run_%)
 HARNESS     := ../test_harness.h
@@ -30,6 +31,7 @@ help:
 	@echo "  clean    remove all generated files"
 
 clean:
+	rm -f $(DEPS)
 	rm -f $(TARGETS)
 
 run_% : %
@@ -39,7 +41,7 @@ run_% : %
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
 
 .PRECIOUS: %.d
--include $(SRC:%.cpp=%.d)
+-include $(DEPS)
 
 $(TARGETS): $(FLITLIB)
 
