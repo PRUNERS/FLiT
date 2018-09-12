@@ -11,6 +11,7 @@ Instruction Contents:
 * [Prerequisites](#prerequisites)
   * [Compilers](#compilers)
   * [Clang Only](#clang-only)
+  * [Non-Standard GCC Installs](#non-standard-gcc-installs)
   * [Optional Dependencies](#optional-dependencies)
 * [FLiT Setup](#flit-setup)
 * [Database Setup](#database-setup)
@@ -72,10 +73,11 @@ If you install python version 3.0 or later, then you will need to have a
 symbolic link called `python3` in your `PATH` pointing to that python
 executable.
 
+
 ### Compilers
 
 The GCC compiler is the only one required for installation of FLiT since it is
-used to compiler the FLiT shared library.  Other than that, you are free to
+used to compile the FLiT shared library.  Other than that, you are free to
 install another version of GCC, as well as Clang and the Intel compiler.  If
 you are missing either Clang or the Intel compiler, FLiT will still work as
 expected.
@@ -117,6 +119,44 @@ sudo make install
 Then when creating your environment, simply provide only a Clang compiler.
 This setup is largely untested, so if you have trouble, please submit an
 [issue](https://github.com/PRUNERS/FLiT/issues).
+
+
+### Non-Standard GCC Installs
+
+Warning: the FLiT shared library should be compiled with the same version of
+GCC that will be used by the FLiT tests.  If you do not adhere to this, you may
+get linker errors because of using a different implementation of the C++
+standard library (i.e. libstdc++.so).  FLiT uses C++11, so the compiler used
+should be able to compile C++11 code.
+
+If the GCC compiler you want to use is not in the standard installation
+location, you can still use it.  As an example, suppose I do not want to use
+the GCC installed on the system, but instead I want to use the one I compiled
+myself and installed into `$HOME/installs/gcc-5.5.0`.  The way I would compile
+the FLiT shared library would be:
+
+```bash
+CXX="$HOME/installs/gcc-5.5.0/bin/g++" LDFLAGS="-Wl,-rpath=$HOME/installs/gcc-5.5.0/lib64" make
+```
+
+The `CXX` flag could be specified after `make`, but `LDFLAGS` should be
+specified before it so that it prepends the variable rather than completely
+overriding it.  If you were to have done the following instead:
+
+```bash
+make CXX="$HOME/installs/gcc-5.5.0/bin/g++" LDFLAGS="-Wl,-rpath=$HOME/installs/gcc-5.5.0/lib64"
+```
+
+It would delete the other necessary `LDFLAGS` set within the `Makefile`.  This
+would be the approach if you really desired to override the internal settings
+of the variable.
+
+Note that without the `LDFLAGS` variable, the wrong version of `libstdc++.so`
+would be used at runtime, as it would likely find the one from the installed
+GCC rather than the one I compiled myself.  Another solution instead of using
+rpath is to set the `LD_LIBRARY_PATH` before running anything with FLiT, but it
+is recommended to use rpath instead.
+
 
 ### Optional Dependencies
 
