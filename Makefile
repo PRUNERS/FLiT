@@ -2,23 +2,23 @@ PREFIX         ?= /usr
 
 #CXX            ?= clang++
 CXX            ?= g++
-FFLAGS         ?=
+RM             ?= rm -f
+RMDIR          ?= rm -rf
+TARGET         ?= $(LIBDIR)/libflit.so
 LIBDIR         := lib
 SRCDIR         := src
-TARGET         ?= $(LIBDIR)/libflit.so
 
-CPPFLAGS       += $(FFLAGS)
-CPPFLAGS       += -Wuninitialized -g
-CPPFLAGS       += -fPIC
-CPPFLAGS       += -std=c++11
-CPPFLAGS       += -Wno-shift-count-overflow
-CPPFLAGS       += -Wall
-CPPFLAGS       += -Wextra
-CPPFLAGS       += -Werror
-CPPFLAGS       += -I.
+CXXFLAGS       += -Wuninitialized -g
+CXXFLAGS       += -fPIC
+CXXFLAGS       += -std=c++11
+CXXFLAGS       += -Wno-shift-count-overflow
+CXXFLAGS       += -Wall
+CXXFLAGS       += -Wextra
+CXXFLAGS       += -Werror
+CXXFLAGS       += -I.
 
-CPPFLAGS       += $(S3_REQUIRED)
-LINKFLAGS      += -lm -shared
+LDFLAGS        += -shared
+LDLIBS         += -lm
 
 DEPFLAGS       += -MD -MF $(SRCDIR)/$*.d
 
@@ -68,10 +68,10 @@ help:
 
 $(TARGET): $(OBJ)
 	mkdir -p lib
-	$(CXX) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
-	$(CXX) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 .PRECIOUS: src/%.d
 -include $(SOURCE:%.cpp=%.d)
@@ -81,14 +81,14 @@ check: $(TARGET)
 
 .PHONY: clean
 clean:
-	rm -f $(OBJ)
-	rm -f $(DEPS)
+	$(RM) $(OBJ)
+	$(RM) $(DEPS)
 	$(MAKE) clean --directory tests
 
 .PHONY: veryclean distclean
 veryclean: distclean
 distclean: clean
-	rm -f $(TARGET)
+	$(RM) $(TARGET)
 
 .PHONY: install
 install: $(TARGET)
@@ -171,11 +171,11 @@ install: $(TARGET)
 
 .PHONY: uninstall
 uninstall:
-	rm -rf $(PREFIX)/include/flit
-	rm -rf $(PREFIX)/share/flit
-	rm -rf $(PREFIX)/share/licenses/flit
-	rm -f $(PREFIX)/bin/flit
-	rm -f $(PREFIX)/lib/$(notdir $(TARGET))
+	$(RMDIR) $(PREFIX)/include/flit
+	$(RMDIR) $(PREFIX)/share/flit
+	$(RMDIR) $(PREFIX)/share/licenses/flit
+	$(RM) $(PREFIX)/bin/flit
+	$(RM) $(PREFIX)/lib/$(notdir $(TARGET))
 	-rmdir --ignore-fail-on-non-empty $(PREFIX)/include
 	-rmdir --ignore-fail-on-non-empty $(PREFIX)/share/licenses
 	-rmdir --ignore-fail-on-non-empty $(PREFIX)/share
