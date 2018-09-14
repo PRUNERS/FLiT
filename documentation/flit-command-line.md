@@ -119,6 +119,21 @@ the created `litmus-test-run` directory.  You are free to examine the results
 using the `sqlite3` interactive tool or any other method you have for running
 queries on an SQLite3 database.
 
+There is an option to specify a different database file than the one in
+`flit-config.toml`.  Here are three reasons you may want to use this option:
+
+1. run `flit import` outside of an initialized flit test directory
+2. create a database file different from the one in `flit-config.toml`
+3. use the import functionality on a system that does not have the python
+   `toml` package installed
+
+If one of those applies to you, then you can use the `--dbfile` argument to
+`flit import`.
+
+```bash
+flit import --dbfile temporary.sqlite backup/results/*.csv
+```
+
 ## flit bisect
 
 When FLiT runs identify compilations that cause some tests to exhibit

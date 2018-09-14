@@ -84,8 +84,6 @@
 
 import flitutil as util
 
-import toml
-
 import argparse
 import csv
 import datetime
@@ -96,9 +94,25 @@ import sys
 brief_description = 'Import flit results into the configured database'
 
 def _file_check(filename):
+    'Check that a file exists or raise an exception'
     if not os.path.isfile(filename):
         raise argparse.ArgumentTypeError('File does not exist: {0}'.format(filename))
     return filename
+
+def get_dbfile_from_toml(tomlfile):
+    'get and return the database.filepath field'
+    import toml
+    try:
+        projconf = toml.load(tomlfile)
+    except FileNotFoundError:
+        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
+              file=sys.stderr)
+        raise
+    util.fill_defaults(projconf)
+
+    assert projconf['database']['type'] == 'sqlite', \
+            'Only sqlite database supported'
+    return projconf['database']['filepath']
 
 def main(arguments, prog=sys.argv[0]):
     parser = argparse.ArgumentParser(
@@ -142,19 +156,27 @@ def main(arguments, prog=sys.argv[0]):
                             call this program multiple times, each one with
                             --run specified to the next run you want to import.
                             ''')
+    parser.add_argument('-D', '--dbfile', default=None,
+                        help='''
+                            Use this database file rather than the one
+                            specified in flit-config.toml.  This option is
+                            especially useful when you want to import results
+                            but do not have the flit-config.toml file
+                            available, as that is currently the only reason for
+                            flit-config.toml to be read by this command.  It
+                            can also be used when you do not have the toml
+                            python package installed (goodie!).
+                            ''')
     args = parser.parse_args(arguments)
 
-    try:
-        projconf = toml.load('flit-config.toml')
-    except FileNotFoundError:
-        print('Error: flit-config.toml not found.  Run "flit init"',
-              file=sys.stderr)
-        return 1
-    util.fill_defaults(projconf)
+    if args.dbfile is None:
+        args.dbfile = get_dbfile_from_toml('flit-config.toml')
 
-    assert projconf['database']['type'] == 'sqlite', \
-            'Only sqlite database supported'
-    db = util.sqlite_open(projconf['database']['filepath'])
+    if os.path.isfile(args.dbfile):
+        print('Appending', args.dbfile)
+    else:
+        print('Creating', args.dbfile)
+    db = util.sqlite_open(args.dbfile)
 
     # create a new run and set the args.append run id
     if args.append is None:
