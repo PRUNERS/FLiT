@@ -87,8 +87,23 @@ addons:
     packages:
       - python3
       - python3-pip
-      - openmpi-bin
-      - libopenmpi-dev
+
+matrix:
+  include:
+    # Job 1: OpenMPI
+    - addons:
+        apt:
+          packages:
+            - libopenmpi-dev
+            - openmpi-bin
+    # Job 2: No MPI
+    - env: DUMMY=1 # no MPI installed
+    # Job 3: MPICH
+    - addons:
+        apt:
+          packages:
+            - libmpich-dev
+            - mpich
 
 before_install: pip3 install --user toml
 
