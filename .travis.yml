@@ -84,24 +84,32 @@ language: cpp
 os: linux
 addons:
   apt:
-    packages:
+    packages: &native_deps
       - python3
       - python3-pip
 
 matrix:
   include:
     # Job 1: OpenMPI
-    - addons:
+    - env: mpi_type=openmpi
+      addons:
         apt:
           packages:
+            - *native_deps
             - libopenmpi-dev
             - openmpi-bin
     # Job 2: No MPI
-    - env: DUMMY=1 # no MPI installed
-    # Job 3: MPICH
-    - addons:
+    - env: mpi_type=none
+      addons:
         apt:
           packages:
+            - *native_deps
+    # Job 3: MPICH
+    - env: mpi_type=mpich
+      addons:
+        apt:
+          packages:
+            - *native_deps
             - libmpich-dev
             - mpich
 
