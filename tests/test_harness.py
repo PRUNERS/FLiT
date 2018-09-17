@@ -185,24 +185,37 @@ def tempdir(*args, **kwargs):
     ...     print(os.path.isdir(temporary_directory))
     ...
     True
-    >>> print(os.path.isdir(temporary_directory))
+    >>> os.path.isdir(temporary_directory)
     False
-    >>> print(os.path.exists(temporary_directory))
+    >>> os.path.exists(temporary_directory)
     False
 
     Test that an exception is not thrown if it was already deleted
     >>> import shutil
     >>> with tempdir() as new_dir:
     ...     shutil.rmtree(new_dir)
+
+    Test that the directory is still deleted even if an exception is thrown
+    within the with statement.
+    >>> try:
+    ...     with tempdir() as new_dir:
+    ...         temporary_directory = new_dir
+    ...         raise RuntimeError()
+    ... except:
+    ...     pass
+    >>> os.path.isdir(temporary_directory)
+    False
     '''
     import tempfile
     import shutil
     new_dir = tempfile.mkdtemp(*args, **kwargs)
-    yield new_dir
     try:
-        shutil.rmtree(new_dir)
-    except FileNotFoundError:
-        pass
+        yield new_dir
+    finally:
+        try:
+            shutil.rmtree(new_dir)
+        except FileNotFoundError:
+            pass
 
 def touch(filename):
     '''

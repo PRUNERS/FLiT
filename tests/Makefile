@@ -4,6 +4,7 @@ CFLAGS        += -std=c++11
 LDFLAGS       :=
 TESTER_SRC    := harness_tester.cpp
 HARNESS       := test_harness.h
+HARNESS_PY    := test_harness.py
 TESTER        := $(TESTER_SRC:%.cpp=%)
 SUB_MAKES     := $(wildcard */Makefile */makefile)
 SUB_DIRS      := $(patsubst %/,%,$(dir $(SUB_MAKES)))
@@ -16,7 +17,7 @@ build: $(TESTER) $(BUILD_TARGETS)
 
 include color_out.mk
 
-check: run__$(TESTER) $(CHECK_TARGETS)
+check: run__$(TESTER) run_tester_py $(CHECK_TARGETS)
 	@$(call color_out,GREEN,All tests pass)
 
 help:
@@ -29,8 +30,16 @@ help:
 clean: $(CLEAN_TARGETS)
 	rm -f $(TESTER)
 
+.PHONY: run_tester_py
+run_tester_py: $(HARNESS_PY)
+	@$(call color_out_noline,BROWN,  testing)
+	@echo " $(HARNESS_PY)"
+	@python3 -m doctest $(HARNESS_PY)
+
 .PHONY: run__% build__% check__% clean__%
 run__$(TESTER): $(TESTER)
+	@$(call color_out_noline,BROWN,  testing)
+	@echo " $(HARNESS)"
 	@./$(TESTER) | grep "failures: *10" >/dev/null
 
 build__%:
