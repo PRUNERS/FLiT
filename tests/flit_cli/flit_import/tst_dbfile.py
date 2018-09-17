@@ -81,17 +81,63 @@
 # -- LICENSE END --
 
 '''
-Tests flit bisect functionality.
+Tests FLiT's --version argument
+
+The tests are below using doctest
+
+Let's now make a temporary directory and test that flit init populates the
+correct files
+
+TODO: how do I test its behavior when I do not have toml installed?
+
+>>> from io import StringIO
+>>> import os
+>>> import sqlite3
+>>> import subprocess as subp
+>>> import tempfile
+
+>>> datafile = os.path.join('data', 'data1.csv')
+
+Test that if flit-config.toml does not exist, then an error occurs
+But here we suppress stderr
+>>> try:
+...     olderr = sys.stderr
+...     with StringIO() as ostream:
+...         sys.stderr = ostream
+...         th.flit.main(['import', datafile])
+... finally:
+...     sys.stderr = olderr
+Traceback (most recent call last):
+  ...
+FileNotFoundError: [Errno 2] No such file or directory: 'flit-config.toml'
+
+Test that with --dbfile <filepath>, that it creates and imports into that file
+>>> with th.tempdir() as temp_dir:
+...     fname = os.path.join(temp_dir, 'my-results.sqlite')
+...     with StringIO() as ostream:
+...         _ = th.flit.main(['import', '--dbfile', fname, datafile],
+...                          outstream=ostream)
+...         import_out = ostream.getvalue().splitlines()
+...     with sqlite3.connect(fname) as connection:
+...         cursor = connection.execute('select * from tests;')
+...         rows = [row for row in cursor]
+
+>>> print('\\n'.join(import_out)) # doctest:+ELLIPSIS
+Creating /.../my-results.sqlite
+Importing data/data1.csv
+
+>>> len(rows)
+6
 '''
 
 # Test setup before the docstring is run.
 import sys
 before_path = sys.path[:]
-sys.path.append('..')
+sys.path.append('../..')
 import test_harness as th
 sys.path = before_path
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-
+    from doctest import testmod
+    failures, tests = testmod()
+    sys.exit(failures)

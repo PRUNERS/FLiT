@@ -94,7 +94,6 @@ import sqlite3
 import subprocess as subp
 import sys
 import tempfile
-import toml
 
 # cached values
 _default_toml = None
@@ -121,6 +120,7 @@ def get_default_toml():
     Gets the default toml configuration file for FLIT and returns the
     configuration object.
     '''
+    import toml
     global _default_toml
     if _default_toml is None:
         _default_toml = toml.loads(get_default_toml_string())
