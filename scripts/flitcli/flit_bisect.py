@@ -559,7 +559,8 @@ def memoize_strlist_func(func):
         return value
     return memoized_func
 
-def bisect_biggest(score_func, elements, found_callback=None, k=1):
+def bisect_biggest(score_func, elements, found_callback=None, k=1,
+                   skip_verification=False):
     '''
     Performs the bisect search, attempting to find the biggest offenders.  This
     is different from bisect_search() in that this function only tries to
@@ -595,6 +596,8 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
     @param k: number of biggest elements to return.  The default is to return
         the one biggest offender.  If there are less than k elements that
         return positive scores, then only the found offenders will be returned.
+    @param skip_verification: skip the verification assertions for performance
+        reasons.
 
     @return list of the biggest offenders with their scores
         [(elem, score), ...]
@@ -603,7 +606,8 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
     ...     print('scoring:', x)
     ...     return -2*min(x) if x else 0
 
-    >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], k=3)
+    >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], k=3,
+    ...                skip_verification=True)
     scoring: [1, 3, 4, 5, -1, 10, 0, -15, 3]
     scoring: [1, 3, 4, 5]
     scoring: [-1, 10, 0, -15, 3]
@@ -633,6 +637,35 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
 
     >>> bisect_biggest(score_func, [])
     []
+
+    >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], k=1)
+    scoring: [-1, -2, -3, -4, -5]
+    scoring: [-1, -2]
+    scoring: [-3, -4, -5]
+    scoring: [-3]
+    scoring: [-4, -5]
+    scoring: [-4]
+    scoring: [-5]
+    [(-5, 10)]
+
+    Test that verification is performed
+    >>> def score_func(x):
+    ...     return -2*min(x) if len(x) > 1 else 0
+    >>> bisect_biggest(score_func, [-1, -2], k=2)
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that differing elements are independent was wrong
+
+    >>> def score_func(x):
+    ...     score = 0
+    ...     if len(x) == 0: return 0
+    ...     if min(x) < -1: score += max(0, -2*min(x))
+    ...     if len(x) > 1: score += max(0, -2*max(x))
+    ...     return score
+    >>> bisect_biggest(score_func, [-1, -2], k=2)
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that minimal sets are non-overlapping was wrong
     '''
     if len(elements) == 0:
         return []
@@ -650,9 +683,22 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1):
         else:
             push(elems[:len(elems) // 2])
             push(elems[len(elems) // 2:])
+
+    if not skip_verification:
+        if len(frontier) == 0 or frontier[0][0] >= 0:
+            # found everything, so do the traditional assertions
+            non_differing_list = \
+                list(set(elements).difference(x[0] for x in found_list))
+            assert score_func(non_differing_list) <= 0, \
+                'Assumption that differing elements are independent was wrong'
+            assert score_func(elements) == \
+                score_func([x[0] for x in found_list]), \
+                'Assumption that minimal sets are non-overlapping was wrong'
+
     return found_list
 
-def bisect_search(score_func, elements, found_callback=None):
+def bisect_search(score_func, elements, found_callback=None,
+                  skip_verification=False):
     '''
     Performs the bisect search, attempting to find all elements contributing to
     a positive score.  This score_func() function is intended to identify when
@@ -690,6 +736,8 @@ def bisect_search(score_func, elements, found_callback=None):
     @param found_callback: a callback function to be called on every found
         differing element.  Will be given two arguments, the element, and the
         score from score_func().
+    @param skip_verification: skip the verification assertions for performance
+        reasons.  This will run the score_func() two fewer times.
 
     @return minimal differing list of all elements that cause score_func() to
         return positive values, along with their scores, sorted descending by
@@ -734,7 +782,15 @@ def bisect_search(score_func, elements, found_callback=None):
     >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
     Traceback (most recent call last):
         ...
-    AssertionError: Assumption that differing elements are independent was wrong
+    AssertionError: Found element does not cause variability: 5
+
+    Check that the assertion for found element is not turned off with
+    skip_verification.
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
+    ...               skip_verification=True)
+    Traceback (most recent call last):
+        ...
+    AssertionError: Found element does not cause variability: 5
 
     Check that the found_callback is not called on false positives.  Here I
     expect no output since no single element can be found.
@@ -743,6 +799,23 @@ def bisect_search(score_func, elements, found_callback=None):
     ...                   found_callback=print)
     ... except AssertionError:
     ...     pass
+
+    Check that the verification can catch the other case of overlapping minimal
+    sets.
+    >>> def score_func(x):
+    ...     score = 0
+    ...     if len(x) == 0: return score
+    ...     if min(x) < -5: score += 15 - min(x)
+    ...     return score + max(x) - min(x) - 10
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, -5, 5])
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that minimal sets are non-overlapping was wrong
+
+    Check that this is skipped with skip_verification
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, -5, 5],
+    ...               skip_verification=True)
+    [(-6, 11)]
     '''
     if len(elements) == 0:
         return []
@@ -773,22 +846,26 @@ def bisect_search(score_func, elements, found_callback=None):
         # double check that we found a differing element before declaring it
         # differing
         score = score_func([differing_element])
-        if score > 0:
-            differing_list.append((differing_element, score))
-            # inform caller that a differing element was found
-            if found_callback != None:
-                found_callback(differing_element, score)
+        assert score > 0, \
+            'Found element does not cause variability: {}' \
+            .format(differing_element)
+        differing_list.append((differing_element, score))
+        # inform caller that a differing element was found
+        if found_callback != None:
+            found_callback(differing_element, score)
 
-    # Perform a sanity check.  If we have found all of the differing items, then
-    # compiling with all but these differing items will cause a non-differing
-    # build.
-    # This will fail if our hypothesis class is wrong
-    non_differing_list = \
-        list(set(elements).difference(x[0] for x in differing_list))
-    assert score_func(non_differing_list) <= 0, \
-        'Assumption that differing elements are independent was wrong'
-    assert score_func(elements) == score_func([x[0] for x in differing_list]),\
-        'Assumption that minimal sets are non-overlapping was wrong'
+    if not skip_verification:
+        # Perform a sanity check.  If we have found all of the differing items,
+        # then compiling with all but these differing items will cause a
+        # non-differing build.
+        # This will fail if our hypothesis class is wrong
+        non_differing_list = \
+            list(set(elements).difference(x[0] for x in differing_list))
+        assert score_func(non_differing_list) <= 0, \
+            'Assumption that differing elements are independent was wrong'
+        assert score_func(elements) == \
+            score_func([x[0] for x in differing_list]),\
+            'Assumption that minimal sets are non-overlapping was wrong'
 
     # sort descending by score
     differing_list.sort(key=lambda x: -x[1])
@@ -951,6 +1028,14 @@ def parse_args(arguments, prog=sys.argv[0]):
                             Only applicable with the --auto-sqlite-run option.
                             In the precompile phase, also precompiles the fPIC
                             object files into the top-level obj directory.
+                            ''')
+    parser.add_argument('--skip-verification', action='store_true',
+                        help='''
+                            By default, bisect will run some assertions
+                            verifying that the assumptions made to have a
+                            performant algorithm are valid.  This turns off
+                            those assertions so as to not run the tests more
+                            often than necessary.
                             ''')
 
     args = parser.parse_args(arguments)
@@ -1129,11 +1214,12 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     #    util.printlog(differing_library_msg.format(filename, score))
     #if args.biggest is None:
     #    differing_libs = bisect_search(
-    #        memoized_checker, libs, found_callback=differing_library_callback)
+    #        memoized_checker, libs, found_callback=differing_library_callback,
+    #        skip_verification=args.skip_verification)
     #else:
     #    differing_libs = bisect_biggest(
     #        memoized_checker, libs, found_callback=differing_library_callback,
-    #        k=args.biggest)
+    #        k=args.biggest, skip_verification=args.skip_verification)
     #return differing_libs
     if memoized_checker(libs):
         return libs
@@ -1164,7 +1250,8 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     differing_source_callback = lambda filename, score: \
         util.printlog(differing_source_msg.format(filename, score))
     differing_sources = bisect_search(memoized_checker, sources,
-                                      found_callback=differing_source_callback)
+                                      found_callback=differing_source_callback,
+                                      skip_verification=args.skip_verification)
     return differing_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
@@ -1234,11 +1321,13 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     if args.biggest is None:
         differing_symbols = bisect_search(
             memoized_checker, symbol_tuples,
-            found_callback=differing_symbol_callback)
+            found_callback=differing_symbol_callback,
+            skip_verification=args.skip_verification)
     else:
         differing_symbols = bisect_biggest(
             memoized_checker, symbol_tuples,
-            found_callback=differing_symbol_callback, k=args.biggest)
+            found_callback=differing_symbol_callback, k=args.biggest,
+            skip_verification=args.skip_verification)
     return differing_symbols
 
 def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
@@ -1581,15 +1670,17 @@ def run_bisect(arguments, prog=sys.argv[0]):
                     print(message)
                     logging.info('%s', message)
 
-        # Verify that there are no missed files, i.e. those that are more than
-        # singletons and that are to be grouped with one of the found symbols.
-        all_searched_symbols = extract_symbols(
-            [x[0] for x in differing_sources],
-            os.path.join(args.directory, 'obj'))
-        checker = _gen_bisect_symbol_checker(
-            args, bisect_path, replacements, sources, all_searched_symbols)
-        assert checker(all_searched_symbols) == \
-               checker([x[0] for x in differing_symbols])
+        if not args.skip_verification:
+            # Verify that there are no missed files, i.e. those that are more
+            # than singletons and that are to be grouped with one of the found
+            # symbols.
+            all_searched_symbols = extract_symbols(
+                [x[0] for x in differing_sources],
+                os.path.join(args.directory, 'obj'))
+            checker = _gen_bisect_symbol_checker(
+                args, bisect_path, replacements, sources, all_searched_symbols)
+            assert checker(all_searched_symbols) == \
+                   checker([x[0] for x in differing_symbols])
 
     differing_symbols.sort(key=lambda x: (-x[1], x[0]))
 
