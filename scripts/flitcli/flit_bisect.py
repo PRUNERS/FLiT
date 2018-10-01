@@ -442,6 +442,7 @@ attributes:
     lineno:     line number of definition within fname.
 '''
 
+_extract_symbols_memos = {}
 def extract_symbols(file_or_filelist, objdir):
     '''
     Extracts symbols for the given file(s) given.  The corresponding object is
@@ -467,6 +468,9 @@ def extract_symbols(file_or_filelist, objdir):
     fname = file_or_filelist
     fbase = os.path.splitext(os.path.basename(fname))[0]
     fobj = os.path.join(objdir, fbase + '_gt.o')
+
+    if fobj in _extract_symbols_memos:
+        return _extract_symbols_memos[fobj]
 
     # use nm and objdump to get the binary information we need
     symbol_strings = subp.check_output([
@@ -517,6 +521,7 @@ def extract_symbols(file_or_filelist, objdir):
         symbol_tuples.append(
             SymbolTuple(fname, symbol, demangled, deffile, defline))
 
+    _extract_symbols_memos[fobj] = symbol_tuples
     return symbol_tuples
 
 def memoize_strlist_func(func):
