@@ -782,6 +782,8 @@ def bisect_search(score_func, elements, found_callback=None):
         list(set(elements).difference(x[0] for x in differing_list))
     assert score_func(non_differing_list) <= 0, \
         'Assumption that differing elements are independent was wrong'
+    assert score_func(elements) == score_func([x[0] for x in differing_list]),\
+        'Assumption that minimal sets are non-overlapping was wrong'
 
     # sort descending by score
     differing_list.sort(key=lambda x: -x[1])
