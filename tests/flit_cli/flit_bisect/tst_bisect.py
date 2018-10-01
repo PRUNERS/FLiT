@@ -175,7 +175,7 @@ Verify the differing symbols section for file3.cpp
 >>> print('\\n'.join(bisect_out[idx+1:idx+3]))
     line 103 -- file3_func5_PROBLEM() (score 3.0)
     line 92 -- file3_func2_PROBLEM() (score 1.0)
->>> bisect_out[idx+3].startswith(' ')
+>>> bisect_out[idx+3].startswith('    ')
 False
 
 Test the All differing symbols section of the output
