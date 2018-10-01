@@ -1670,7 +1670,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
                     print(message)
                     logging.info('%s', message)
 
-        if not args.skip_verification:
+        if not args.skip_verification and len(differing_sources) > 1:
             # Verify that there are no missed files, i.e. those that are more
             # than singletons and that are to be grouped with one of the found
             # symbols.
