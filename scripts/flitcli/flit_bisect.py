@@ -546,7 +546,7 @@ def memoize_strlist_func(func):
     memo = {}
     def memoized_func(strlist):
         'func but memoized'
-        idx = tuple(strlist)
+        idx = tuple(sorted(strlist))
         if idx in memo:
             return memo[idx]
         value = func(strlist)
