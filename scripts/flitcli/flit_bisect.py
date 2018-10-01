@@ -1582,6 +1582,11 @@ def run_bisect(arguments, prog=sys.argv[0]):
                     logging.info('%s', message)
 
     differing_symbols.sort(key=lambda x: (-x[1], x[0]))
+    all_searched_symbols = extract_symbols([x[0] for x in differing_sources],
+                                           os.path.join(args.directory, 'obj'))
+    checker = _gen_bisect_symbol_checker(
+        args, bisect_path, replacements, sources, all_searched_symbols)
+    assert checker(all_searched_symbols) == checker([x[0] for x in differing_symbols])
 
     if args.biggest is None:
         print('All variability inducing symbols:')
