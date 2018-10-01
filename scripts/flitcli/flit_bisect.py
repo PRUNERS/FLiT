@@ -537,16 +537,16 @@ def memoize_strlist_func(func):
     >>> memoized = memoize_strlist_func(to_memoize)
     >>> memoized(['a', 'b', 'c'])
     ['a', 'b', 'c']
-    a
+    'a'
     >>> memoized(['a', 'b', 'c'])
-    a
+    'a'
     >>> memoized(['e', 'a'])
     ['e', 'a']
-    e
+    'e'
     >>> memoized(['a', 'b', 'c'])
-    a
+    'a'
     >>> memoized(['e', 'a'])
-    e
+    'e'
     '''
     memo = {}
     def memoized_func(strlist):
@@ -715,7 +715,7 @@ def bisect_search(score_func, elements, found_callback=None):
     score_func(), so we are only counting unique calls and not duplicate calls
     to score_func().
     >>> call_count
-    9
+    10
 
     Test out the found_callback() functionality.
     >>> s = set()
