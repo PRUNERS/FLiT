@@ -235,7 +235,7 @@ Looking for the top 1 different symbol(s) by starting with files
       Created ...
       ...
         Found differing symbol on line 90 -- file2_func1_PROBLEM() (score 7.0)
-    Found differing source file tests/file3.cpp: score 4.0
+ ...Found differing source file tests/file3.cpp: score 4.0
 The found highest variability inducing source files:
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
@@ -259,7 +259,7 @@ Looking for the top 2 different symbol(s) by starting with files
       Created ...
       ...
         Found differing symbol on line 90 -- file2_func1_PROBLEM() (score 7.0)
-    Found differing source file tests/file3.cpp: score 4.0
+ ...Found differing source file tests/file3.cpp: score 4.0
 The found highest variability inducing source files:
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
