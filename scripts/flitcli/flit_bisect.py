@@ -1553,7 +1553,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    run_make(directory=args.directory, verbose=verbose, jobs=1,
+    run_make(directory=args.directory, verbose=args.verbose, jobs=1,
              target='Makefile')
 
     # create a unique directory for this bisect run
@@ -1905,7 +1905,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    run_make(directory==args.directory, verbose=verbose, jobs=1,
+    run_make(directory=args.directory, verbose=args.verbose, jobs=1,
              target='Makefile')
 
     print('Before parallel bisect run, compile all object files')
