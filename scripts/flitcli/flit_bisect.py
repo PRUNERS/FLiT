@@ -1836,7 +1836,9 @@ def auto_bisect_worker(arg_queue, result_queue):
         pass
 
     except:
+        # without putting something onto the result_queue, the parent process will deadlock
         result_queue.put((row, -1, None, None, None, 1))
+        raise
 
 def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     '''
