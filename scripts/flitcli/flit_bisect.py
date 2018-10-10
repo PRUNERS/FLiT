@@ -1766,6 +1766,9 @@ def auto_bisect_worker(arg_queue, result_queue):
         # exit the function
         pass
 
+    except:
+        result_queue.put((row, -1, None, None, None, 1))
+
 def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     '''
     Runs bisect in parallel under the auto mode.  This is only applicable if
