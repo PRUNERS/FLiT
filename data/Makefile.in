@@ -186,7 +186,7 @@ IS_GCC_4_OR_5    = $(shell expr $(call IS_GCC,$1) \& \
 DEV_LDFLAGS      =
 GT_LDFLAGS       =
 
-DEPFLAGS        += -MMD -MF $(patsubst %.o,%.d,$@)
+DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
 
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
