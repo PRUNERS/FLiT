@@ -88,6 +88,9 @@ import csv
 import sys
 import argparse
 
+from plot_timing import read_sqlite
+from collections import defaultdict
+
 def main(arguments):
     'Main entry point'
     # Parse arguments
@@ -96,26 +99,74 @@ def main(arguments):
     parser = argparse.ArgumentParser(
         description='''
             Generates statistics from a given test results csv file.  The csv
-            file should have columns "switches", "precision", "sort", "score0",
-            "score0d", "host", "compiler", "name", "score1", "score1d"
+            file should have columns "switches", "precision", "sort", "comparison_hex",
+            "comparison", "host", "compiler", "name", "score1", "score1d"
             ''',
         )
-    parser.add_argument('csvfile')
+    parser.add_argument('-r', '--run', default=None, type=int,
+            help='Which run to use from the sqlite database')
+    parser.add_argument('-b', '--baseline', action='store',
+            help='''
+                Compilation to use as the baseline timing.  The default
+                behavior is to use the slowest speed for each test.  If
+                specified, this should have the compiler, optimization level,
+                and switches in that order.  For example,
+                "g++ -O2 -funsafe-math-optimizations".
+                ''')
+    parser.add_argument('sqlite')
     args = parser.parse_args(args=arguments)
 
-    # Read the csvfile into memory
-    rows = []
-    with open(args.csvfile, 'r') as infile:
-        reader = csv.DictReader(infile)
-        rows = [x for x in reader]
+    # Split the compilation into separate components
+    if args.baseline is not None:
+        split_baseline = args.baseline.strip().split(maxsplit=2)
+        split_baseline.extend([''] * (3 - len(split_baseline)))
+    else:
+        split_baseline = None
+
+    rows = read_sqlite(args.sqlite, args.run)
+
+    names = set(row['name'] for row in rows)
+    compilers = set(row['compiler'] for row in rows)
+    if split_baseline is None:
+        baseline_nanosecs = {name: max([row['nanosec'] for row in rows
+                                        if row['name'] == name])
+                             for name in names}
+    else:
+        baseline_nanosecs = {name: [row['nanosec'] for row in rows
+                                    if row['name'] == name and
+                                    [row['compiler'], row['optl'], row['switches']] == split_baseline]
+                             for name in names}
+        assert all(len(val) == 1 for val in baseline_nanosecs.values())
+        baseline_nanosecs = {key: val[0] for key, val in baseline_nanosecs.items()}
+
+    for row in rows:
+        row['speedup'] = baseline_nanosecs[row['name']] / row['nanosec']
+
+    by_compilation = defaultdict(list)
+    row2comp = lambda x: (x['compiler'], x['optl'], x['switches'])
+    for row in rows:
+        by_compilation[row2comp(row)].append(row)
+    avg_speedup = {comp: sum(x['speedup'] for x in vals) / len(vals)
+                   for comp, vals in by_compilation.items()}
+    best_avgs = {compiler: max([x for x in avg_speedup.items()
+                                if x[0][0] == compiler],
+                               key=lambda x: x[1])
+                 for compiler in compilers}
+
+    print('Best speedup on average by compiler:')
+    for compiler in sorted(compilers):
+        comp, avg = best_avgs[compiler]
+        print('{}:  "{}"  {}'.format(compiler, ' '.join(comp), avg))
+    print()
 
     # Generate statistics
+    print('Different scores per test')
     names = set(x['name'] for x in rows)
     groups = {}
     scores = {}
     for name in names:
         groups[name] = [x for x in rows if x['name'] == name]
-        scores[name] = set(x['score0'] for x in groups[name])
+        scores[name] = set(x['comparison'] for x in groups[name])
         print(name, len(scores[name]))
     print()
 
@@ -133,7 +184,7 @@ def main(arguments):
         ## TODO-   - the empty switch for gcc
         ## TODO-   - something else
         #for switch in switches:
-        #    switch_counts[switch] += len(set(x['score0'] for x in
+        #    switch_counts[switch] += len(set(x['comparison'] for x in
 
 if __name__ == '__main__':
     main(sys.argv[1:])
