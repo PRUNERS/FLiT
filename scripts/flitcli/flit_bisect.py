@@ -332,6 +332,9 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
             else:
                 ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
                 subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
+                ps.communicate()
+                if ps.returncode != 0:
+                    raise subp.CalledProcessError(ps.returncode, command)
         except:
             tmpout.flush()
             with open(tmpout.name, 'r') as tmpin:
