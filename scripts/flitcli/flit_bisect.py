@@ -256,10 +256,96 @@ def create_bisect_makefile(directory, replacements, gt_src,
 
     return makefile
 
+def run_make(makefilename='Makefile', directory='.', verbose=False,
+             jobs=mp.cpu_count(), target=None):
+    '''
+    Runs a make command.  If the build fails, then stdout and stderr will be
+    output into the log.
+
+    @param makefilename: Name of the Makefile (default 'Makefile')
+    @param directory: Path to the directory to run in (default '.')
+    @param verbose: True means echo the output to the console (default False)
+    @param jobs: number of parallel jobs (default #cpus)
+    @param target: Makefile target to build (defaults to GNU Make's default)
+
+    @return None
+
+    @throws subprocess.CalledProcessError on failure
+
+    Configure the logger to spit to stdout instead of stderr
+    >>> import logging
+    >>> logger = logging.getLogger()
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    >>> import sys
+    >>> logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+    Make sure the exception is thrown
+    >>> with NamedTemporaryFile(mode='w') as tmpmakefile:
+    ...     print('.PHONY: default\\n', file=tmpmakefile)
+    ...     print('default:\\n', file=tmpmakefile)
+    ...     print('\\t@echo hello\\n', file=tmpmakefile)
+    ...     print('\\t@false\\n', file=tmpmakefile)
+    ...     tmpmakefile.flush()
+    ...
+    ...     run_make(makefilename=tmpmakefile.name) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    subprocess.CalledProcessError: Command ... returned non-zero exit status 2.
+
+    See what was output to the logger
+    >>> with NamedTemporaryFile(mode='w') as tmpmakefile:
+    ...     print('.PHONY: default\\n', file=tmpmakefile)
+    ...     print('default:\\n', file=tmpmakefile)
+    ...     print('\\t@echo hello\\n', file=tmpmakefile)
+    ...     print('\\t@false\\n', file=tmpmakefile)
+    ...     tmpmakefile.flush()
+    ...
+    ...     try:
+    ...         run_make(makefilename=tmpmakefile.name) #doctest: +ELLIPSIS
+    ...     except:
+    ...         pass
+    ERROR:root:make error occurred.  Here is the output:
+    make: Entering directory `...'
+    hello
+    make: *** [default] Error 1
+    make: Leaving directory `...'
+    <BLANKLINE>
+
+    Undo the logger configurations
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    '''
+    command = [
+        'make',
+        '-C', directory,
+        '-f', makefilename,
+        '-j', str(jobs),
+        ]
+    if target is not None:
+        command.append(target)
+
+    with NamedTemporaryFile() as tmpout:
+        try:
+            if not verbose:
+                subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
+            else:
+                ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
+                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
+                ps.communicate()
+                if ps.returncode != 0:
+                    raise subp.CalledProcessError(ps.returncode, command)
+        except:
+            tmpout.flush()
+            with open(tmpout.name, 'r') as tmpin:
+                logging.error('make error occurred.  Here is the output:\n' +
+                              tmpin.read())
+            raise
+
 def build_bisect(makefilename, directory,
                  target='bisect',
                  verbose=False,
-                 jobs=None):
+                 jobs=mp.cpu_count()):
     '''
     Creates the bisect executable by executing a parallel make.
 
@@ -278,35 +364,12 @@ def build_bisect(makefilename, directory,
     @return None
     '''
     logging.info('Building the bisect executable')
-    if jobs is None:
-        jobs = mp.cpu_count()
-    kwargs = dict()
-
-    command = [
-        'make',
-        '-C', directory,
-        '-f', makefilename,
-        '-j', str(jobs),
-        target,
-        ]
-
-    with NamedTemporaryFile() as tmpout:
-        try:
-            if not verbose:
-                kwargs['stdout'] = tmpout
-                kwargs['stderr'] = tmpout
-                subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
-            else:
-                ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
-                command = ['tee']
-                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
-        except:
-            tmpout.flush()
-            with open(tmpout.name, 'r') as tmpin:
-                logging.error('make error occurred.  Here is the output:\n' +
-                              tmpin.read())
-            raise
-
+    run_make(
+        makefilename=makefilename,
+        directory=directory,
+        verbose=verbose,
+        jobs=jobs,
+        target=target)
 
 def update_gt_results(directory, verbose=False,
                       jobs=mp.cpu_count(), fpic=False):
@@ -316,20 +379,26 @@ def update_gt_results(directory, verbose=False,
 
     @param directory: where to execute make
     @param verbose: False means block output from GNU make and running
+    @param jobs: number of parallel jobs (default #cpus)
+    @param fpic: True means compile the gt-fpic files too (default False)
+
+    @return None
     '''
-    kwargs = dict()
-    if not verbose:
-        kwargs['stdout'] = subp.DEVNULL
-        kwargs['stderr'] = subp.DEVNULL
     gt_resultfile = util.extract_make_var(
         'GT_OUT', os.path.join(directory, 'Makefile'))[0]
     logging.info('Updating ground-truth results - %s', gt_resultfile)
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
-    subp.check_call(
-        ['make', '-j', str(jobs), '-C', directory, gt_resultfile], **kwargs)
+    run_make(
+        directory=directory,
+        verbose=verbose,
+        jobs=jobs,
+        target=gt_resultfile)
     if fpic:
-        subp.check_call(
-            ['make', '-j', str(jobs), '-C', directory, 'gt-fpic'], **kwargs)
+        run_make(
+            directory=directory,
+            verbose=verbose,
+            jobs=jobs,
+            target='gt-fpic')
     print(' - done')
     logging.info('Finished Updating ground-truth results')
 
@@ -1423,8 +1492,11 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+    run_make(
+        directory=directory,
+        verbose=verbose,
+        jobs=1,
+        target='Makefile')
 
     # trouble compilations all happen in the same directory
     trouble_path = os.path.join(directory, 'bisect-precompile')
@@ -1484,8 +1556,8 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+    run_make(directory=args.directory, verbose=args.verbose, jobs=1,
+             target='Makefile')
 
     # create a unique directory for this bisect run
     bisect_dir = create_bisect_dir(args.directory)
@@ -1766,6 +1838,11 @@ def auto_bisect_worker(arg_queue, result_queue):
         # exit the function
         pass
 
+    except:
+        # without putting something onto the result_queue, the parent process will deadlock
+        result_queue.put((row, -1, None, None, None, 1))
+        raise
+
 def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     '''
     Runs bisect in parallel under the auto mode.  This is only applicable if
@@ -1833,8 +1910,8 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+    run_make(directory=args.directory, verbose=args.verbose, jobs=1,
+             target='Makefile')
 
     print('Before parallel bisect run, compile all object files')
     for i, compilation in enumerate(sorted(compilation_set)):
