@@ -3,8 +3,10 @@
 #SBATCH --nodes 1
 #SBATCH --ntasks 28
 #SBATCH --cpus-per-task 1
+#SBATCH --array=1-6
 #SBATCH --account soc-kp
 #SBATCH --partition soc-kp
+
 
 ### % SBATCH --account owner-guest
 ### % SBATCH --partition kingspeak-guest
