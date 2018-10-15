@@ -96,12 +96,14 @@ make ground-truth.csv --touch
 #  --delete
 
 # Run variable-gcc
-cp ~/mfem-results/variable-gcc.csv ./
-sed -i -e 's|,g++,|,./g++-wrap,|g' variable-gcc.csv
-flit import ./variable-gcc.csv -D ./variable-gcc.sqlite
+cp ~/mfem-results/variable-${SLURM_ARRAY_TASK_ID}.csv ./
+sed -i -e 's|,g++,|,./g++-wrap,|g' variable-${SLURM_ARRAY_TASK_ID}.csv
+sed -i -e 's|,clang++,|,./clang++-wrap,|g' variable-${SLURM_ARRAY_TASK_ID}.csv
+sed -i -e 's|,icpc,|,./icpc-wrap,|g' variable-${SLURM_ARRAY_TASK_ID}.csv
+flit import ./variable-${SLURM_ARRAY_TASK_ID}.csv -D ./variable-${SLURM_ARRAY_TASK_ID}.sqlite
 flit bisect \
   --verbose \
-  --auto-sqlite-run variable-gcc.sqlite \
+  --auto-sqlite-run variable-${SLURM_ARRAY_TASK_ID}.sqlite \
   --parallel 28 \
   --jobs 20 \
   --delete
