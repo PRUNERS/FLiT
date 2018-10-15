@@ -21,13 +21,20 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
     status = 0
 
     look_for_libs = False
+    DEFAULT = 1
+    LIBS = 2
+    SRC = 3
+    
+    
+    STATE = default
+    
     with open(fn, "r") as f:
         for line in f:
             assert(line != None)
-            #2018-10-03 14:23:56,052 bisect: Starting the bisect procedure
-            #2018-10-03 14:23:56,052 bisect:   trouble compiler:           "g++"
-            #2018-10-03 14:23:56,052 bisect:   trouble optimization level: "-O2"
-            #2018-10-03 14:23:56,053 bisect:   trouble switches:           "-mavx2 -mfma"
+            # ...: Starting the bisect procedure
+            # ...:   trouble compiler:           "g++"
+            # ...:   trouble optimization level: "-O2"
+            # ...:   trouble switches:           "-mavx2 -mfma"
             m = re.search(r"trouble compiler:           \"(.*)\"", line)
             if m != None:
                 compiler = m.group(1)
@@ -64,8 +71,9 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
                 continue
 
             # Found differing source file /uufs/chpc.utah.edu/common/home/u0692013/FLIT/FLiT_mfem/mfem/linalg/sparsemat.cpp: score 3.452641112552743e-14
+            # ALL VARIABILITY INCUDING SOURCE FILE(S)
             m = re.search("Found differing source file (.*): score", line)
-            if m != None:
+            if 'ALL VARIABILITY INCUDING SOURCE FILE(S)' in line:
                 if srcs == None:
                     srcs = list()
                 srcs.append(m.group(1))
