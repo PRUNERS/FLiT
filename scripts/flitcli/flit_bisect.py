@@ -17,7 +17,7 @@
 # All rights reserved.
 #
 # This file is part of FLiT. For details, see
-#   https://pruners.github.io/flit
+#   https://pruners.github.io/flitK
 # Please also read
 #   https://github.com/PRUNERS/FLiT/blob/master/LICENSE
 #
@@ -86,9 +86,11 @@ files that cause the variability.
 '''
 
 from collections import namedtuple
+from tempfile import NamedTemporaryFile
 import argparse
 import csv
 import datetime
+import heapq
 import glob
 import hashlib
 import logging
@@ -174,9 +176,9 @@ def create_bisect_makefile(directory, replacements, gt_src,
     @param trouble_src: (list) which source files would be compiled with the
         trouble compilation within the resulting binary.
     @param split_symbol_map:
-        (dict fname -> list [list good symbols, list bad symbols])
-        Files to compile as a split between good and bad, specifying good and
-        bad symbols for each file.
+        (dict fname -> list [list baseline symbols, list differing symbols])
+        Files to compile as a split between baseline and differing, specifying
+        baseline and differing symbols for each file.
 
     Within replacements, there are some optional fields:
     - cpp_flags: (list) (optional) List of c++ compiler flags to give to
@@ -254,10 +256,96 @@ def create_bisect_makefile(directory, replacements, gt_src,
 
     return makefile
 
+def run_make(makefilename='Makefile', directory='.', verbose=False,
+             jobs=mp.cpu_count(), target=None):
+    '''
+    Runs a make command.  If the build fails, then stdout and stderr will be
+    output into the log.
+
+    @param makefilename: Name of the Makefile (default 'Makefile')
+    @param directory: Path to the directory to run in (default '.')
+    @param verbose: True means echo the output to the console (default False)
+    @param jobs: number of parallel jobs (default #cpus)
+    @param target: Makefile target to build (defaults to GNU Make's default)
+
+    @return None
+
+    @throws subprocess.CalledProcessError on failure
+
+    Configure the logger to spit to stdout instead of stderr
+    >>> import logging
+    >>> logger = logging.getLogger()
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    >>> import sys
+    >>> logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+
+    Make sure the exception is thrown
+    >>> with NamedTemporaryFile(mode='w') as tmpmakefile:
+    ...     print('.PHONY: default\\n', file=tmpmakefile)
+    ...     print('default:\\n', file=tmpmakefile)
+    ...     print('\\t@echo hello\\n', file=tmpmakefile)
+    ...     print('\\t@false\\n', file=tmpmakefile)
+    ...     tmpmakefile.flush()
+    ...
+    ...     run_make(makefilename=tmpmakefile.name) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    subprocess.CalledProcessError: Command ... returned non-zero exit status 2.
+
+    See what was output to the logger
+    >>> with NamedTemporaryFile(mode='w') as tmpmakefile:
+    ...     print('.PHONY: default\\n', file=tmpmakefile)
+    ...     print('default:\\n', file=tmpmakefile)
+    ...     print('\\t@echo hello\\n', file=tmpmakefile)
+    ...     print('\\t@false\\n', file=tmpmakefile)
+    ...     tmpmakefile.flush()
+    ...
+    ...     try:
+    ...         run_make(makefilename=tmpmakefile.name) #doctest: +ELLIPSIS
+    ...     except:
+    ...         pass
+    ERROR:root:make error occurred.  Here is the output:
+    make: Entering directory `...'
+    hello
+    make: *** [default] Error 1
+    make: Leaving directory `...'
+    <BLANKLINE>
+
+    Undo the logger configurations
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    '''
+    command = [
+        'make',
+        '-C', directory,
+        '-f', makefilename,
+        '-j', str(jobs),
+        ]
+    if target is not None:
+        command.append(target)
+
+    with NamedTemporaryFile() as tmpout:
+        try:
+            if not verbose:
+                subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
+            else:
+                ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
+                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
+                ps.communicate()
+                if ps.returncode != 0:
+                    raise subp.CalledProcessError(ps.returncode, command)
+        except:
+            tmpout.flush()
+            with open(tmpout.name, 'r') as tmpin:
+                logging.error('make error occurred.  Here is the output:\n' +
+                              tmpin.read())
+            raise
+
 def build_bisect(makefilename, directory,
                  target='bisect',
                  verbose=False,
-                 jobs=None):
+                 jobs=mp.cpu_count()):
     '''
     Creates the bisect executable by executing a parallel make.
 
@@ -276,52 +364,140 @@ def build_bisect(makefilename, directory,
     @return None
     '''
     logging.info('Building the bisect executable')
-    if jobs is None:
-        jobs = mp.cpu_count()
-    kwargs = dict()
-    if not verbose:
-        kwargs['stdout'] = subp.DEVNULL
-        kwargs['stderr'] = subp.DEVNULL
-    subp.check_call(
-        ['make', '-C', directory, '-f', makefilename, '-j', str(jobs), target],
-        **kwargs)
+    run_make(
+        makefilename=makefilename,
+        directory=directory,
+        verbose=verbose,
+        jobs=jobs,
+        target=target)
 
 def update_gt_results(directory, verbose=False,
-                      jobs=mp.cpu_count()):
+                      jobs=mp.cpu_count(), fpic=False):
     '''
     Update the ground-truth.csv results file for FLiT tests within the given
     directory.
 
     @param directory: where to execute make
     @param verbose: False means block output from GNU make and running
+    @param jobs: number of parallel jobs (default #cpus)
+    @param fpic: True means compile the gt-fpic files too (default False)
+
+    @return None
     '''
-    kwargs = dict()
-    if not verbose:
-        kwargs['stdout'] = subp.DEVNULL
-        kwargs['stderr'] = subp.DEVNULL
     gt_resultfile = util.extract_make_var(
         'GT_OUT', os.path.join(directory, 'Makefile'))[0]
     logging.info('Updating ground-truth results - %s', gt_resultfile)
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
-    subp.check_call(
-        ['make', '-j', str(jobs), '-C', directory, gt_resultfile], **kwargs)
+    run_make(
+        directory=directory,
+        verbose=verbose,
+        jobs=jobs,
+        target=gt_resultfile)
+    if fpic:
+        run_make(
+            directory=directory,
+            verbose=verbose,
+            jobs=jobs,
+            target='gt-fpic')
     print(' - done')
     logging.info('Finished Updating ground-truth results')
 
-def is_result_bad(resultfile):
+def get_comparison_result(resultfile):
     '''
-    Returns True if the results from the resultfile is considered 'bad',
-    meaning it is a different answer from the ground-truth.
+    Returns the floating-point comparison value stored in the flit comparison
+    csv file (resultfile).
 
-    @param resultfile: path to the results csv file after comparison
-    @return True if the result is different from ground-truth
+    The result is pulled simply from the comparison column (first row).
+
+    >>> from tempfile import NamedTemporaryFile as TFile
+    >>> with TFile(mode='w', delete=False) as fout:
+    ...     _ = fout.write('name,host,compiler,...,comparison,...\\n'
+    ...                    'test,name,clang++,...,15.342,...\\n')
+    ...     fname = fout.name
+    >>> get_comparison_result(fname)
+    15.342
+
+    Make sure NULL values are handled appropriately
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'NULL\\n')
+    >>> print(get_comparison_result(fname))
+    None
+
+    Try out a value that is not a number and not NULL
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'coconut\\n')
+    >>> get_comparison_result(fname)
+    Traceback (most recent call last):
+        ...
+    ValueError: could not convert string to float: 'coconut'
+
+    Delete the file now that we're done with it
+    >>> import os
+    >>> os.remove(fname)
     '''
     with open(resultfile, 'r') as fin:
         parser = csv.DictReader(fin)
         # should only have one row
         for row in parser:
-            # identical to ground truth means comparison is zero
-            return float(row['comparison']) != 0.0
+            val = row['comparison']
+            return float(val) if val != 'NULL' else None
+
+def is_result_differing(resultfile):
+    '''
+    Returns True if the results from the resultfile is considered 'differing',
+    meaning it is a different answer from the ground-truth.
+
+    @param resultfile: path to the results csv file after comparison
+    @return True if the result is different from ground-truth
+
+    Try out a positive value
+    >>> from tempfile import NamedTemporaryFile as TFile
+    >>> with TFile(mode='w', delete=False) as fout:
+    ...     _ = fout.write('name,host,compiler,...,comparison,...\\n'
+    ...                    'test,name,clang++,...,15.342,...\\n')
+    ...     fname = fout.name
+    >>> is_result_differing(fname)
+    True
+
+    Try out a value that is less than zero
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    '-1e-34\\n')
+    >>> is_result_differing(fname)
+    True
+
+    Try out a value that is identically zero
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    '0.0\\n')
+    >>> is_result_differing(fname)
+    False
+
+    Make sure NULL values are handled appropriately
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'NULL\\n')
+    >>> is_result_differing(fname)
+    Traceback (most recent call last):
+        ...
+    TypeError: float() argument must be a string or a number, not 'NoneType'
+
+    Try out a value that is not a number and not NULL
+    >>> with open(fname, 'w') as fout:
+    ...     _ = fout.write('comparison\\n'
+    ...                    'coconut\\n')
+    >>> is_result_differing(fname)
+    Traceback (most recent call last):
+        ...
+    ValueError: could not convert string to float: 'coconut'
+
+    Delete the file now that we're done with it
+    >>> import os
+    >>> os.remove(fname)
+    '''
+    return float(get_comparison_result(resultfile)) != 0.0
 
 SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
@@ -335,6 +511,7 @@ attributes:
     lineno:     line number of definition within fname.
 '''
 
+_extract_symbols_memos = {}
 def extract_symbols(file_or_filelist, objdir):
     '''
     Extracts symbols for the given file(s) given.  The corresponding object is
@@ -360,6 +537,9 @@ def extract_symbols(file_or_filelist, objdir):
     fname = file_or_filelist
     fbase = os.path.splitext(os.path.basename(fname))[0]
     fobj = os.path.join(objdir, fbase + '_gt.o')
+
+    if fobj in _extract_symbols_memos:
+        return _extract_symbols_memos[fobj]
 
     # use nm and objdump to get the binary information we need
     symbol_strings = subp.check_output([
@@ -412,6 +592,7 @@ def extract_symbols(file_or_filelist, objdir):
         symbol_tuples.append(
             SymbolTuple(fname, symbol, demangled, deffile, defline))
 
+    _extract_symbols_memos[fobj] = symbol_tuples
     return symbol_tuples
 
 def memoize_strlist_func(func):
@@ -427,21 +608,21 @@ def memoize_strlist_func(func):
     >>> memoized = memoize_strlist_func(to_memoize)
     >>> memoized(['a', 'b', 'c'])
     ['a', 'b', 'c']
-    a
+    'a'
     >>> memoized(['a', 'b', 'c'])
-    a
+    'a'
     >>> memoized(['e', 'a'])
     ['e', 'a']
-    e
+    'e'
     >>> memoized(['a', 'b', 'c'])
-    a
+    'a'
     >>> memoized(['e', 'a'])
-    e
+    'e'
     '''
     memo = {}
     def memoized_func(strlist):
         'func but memoized'
-        idx = tuple(strlist)
+        idx = tuple(sorted(strlist))
         if idx in memo:
             return memo[idx]
         value = func(strlist)
@@ -449,111 +630,318 @@ def memoize_strlist_func(func):
         return value
     return memoized_func
 
-def bisect_search(is_bad, elements, found_callback=None):
+def bisect_biggest(score_func, elements, found_callback=None, k=1,
+                   skip_verification=False):
     '''
-    Performs the bisect search, attempting to minimize the bad list.  We could
-    go through the list one at a time, but that would cause us to call is_bad()
-    more than necessary.  Here we assume that calling is_bad() is expensive, so
-    we want to minimize calls to is_bad().  This function has
-      O(k*log(n))*O(is_bad)
-    where n is the size of the questionable_list and k is
-    the number of bad elements in questionable_list.
+    Performs the bisect search, attempting to find the biggest offenders.  This
+    is different from bisect_search() in that this function only tries to
+    identify the top k offenders, not all of them.  If k is greater than or equal
+    to the total number of offenders, then bisect_biggest() is more expensive
+    than bisect_search().
 
-    Note: A key assumption to this algorithm is that all bad elements are
+    We do not want to call score_func() very much.  We assume the score_func()
+    is is an expensive operation.  We could go throught the list one at a time,
+    but that would cause us to potentially call score_func() more than
+    necessary.
+
+    Note: The same assumption as bisect_search() is in place.  That is that all
+    differing elements are independent.  This means if an element contributes
+    to a differing score, then it would contribute to a differing score by
+    itself as well.  This is not always true, and this function does not verify
+    this assumption.  Instead, it will only return the largest singleton
+    offenders.
+
+    @param score_func: a function that takes one argument (to_test) and returns
+        a number greater than zero if one of the elements in to_test causes the
+        result to be differing.  This value returned is used to compare the
+        elements so that the largest k differing elements are found and
+        returned.  If all differing elements return the same numerical value,
+        then this will be less efficient than bisect_search.
+        Note: if the set of elements is not differing, then either return 0 or
+        a negative value.
+    @param elements: the elements to search over.  Subsets of this list will be
+        given to score_func().
+    @param found_callback: a callback function to be called on every found
+        differing element.  Will be given two arguments, the element, and the
+        score from score_func().
+    @param k: number of biggest elements to return.  The default is to return
+        the one biggest offender.  If there are less than k elements that
+        return positive scores, then only the found offenders will be returned.
+    @param skip_verification: skip the verification assertions for performance
+        reasons.
+
+    @return list of the biggest offenders with their scores
+        [(elem, score), ...]
+
+    >>> def score_func(x):
+    ...     print('scoring:', x)
+    ...     return -2*min(x) if x else 0
+
+    >>> bisect_biggest(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3], k=3,
+    ...                skip_verification=True)
+    scoring: [1, 3, 4, 5, -1, 10, 0, -15, 3]
+    scoring: [1, 3, 4, 5]
+    scoring: [-1, 10, 0, -15, 3]
+    scoring: [-1, 10]
+    scoring: [0, -15, 3]
+    scoring: [0]
+    scoring: [-15, 3]
+    scoring: [-15]
+    scoring: [3]
+    scoring: [-1]
+    scoring: [10]
+    [(-15, 30), (-1, 2)]
+
+    >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], k=3,
+    ...                found_callback=print)
+    scoring: [-1, -2, -3, -4, -5]
+    scoring: [-1, -2]
+    scoring: [-3, -4, -5]
+    scoring: [-3]
+    scoring: [-4, -5]
+    scoring: [-4]
+    scoring: [-5]
+    -5 10
+    -4 8
+    -3 6
+    [(-5, 10), (-4, 8), (-3, 6)]
+
+    >>> bisect_biggest(score_func, [])
+    []
+
+    >>> bisect_biggest(score_func, [-1, -2, -3, -4, -5], k=1)
+    scoring: [-1, -2, -3, -4, -5]
+    scoring: [-1, -2]
+    scoring: [-3, -4, -5]
+    scoring: [-3]
+    scoring: [-4, -5]
+    scoring: [-4]
+    scoring: [-5]
+    [(-5, 10)]
+
+    Test that verification is performed
+    >>> def score_func(x):
+    ...     return -2*min(x) if len(x) > 1 else 0
+    >>> bisect_biggest(score_func, [-1, -2], k=2)
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that differing elements are independent was wrong
+
+    >>> def score_func(x):
+    ...     score = 0
+    ...     if len(x) == 0: return 0
+    ...     if min(x) < -1: score += max(0, -2*min(x))
+    ...     if len(x) > 1: score += max(0, -2*max(x))
+    ...     return score
+    >>> bisect_biggest(score_func, [-1, -2], k=2)
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that minimal sets are non-overlapping was wrong
+    '''
+    if len(elements) == 0:
+        return []
+    found_list = []
+    frontier = []
+    push = lambda x: heapq.heappush(frontier, (-score_func(x), x))
+    pop = lambda: heapq.heappop(frontier)
+    push(elements)
+    while len(frontier) > 0 and frontier[0][0] < 0 and len(found_list) < k:
+        score, elems = pop()
+        if len(elems) == 1:
+            found_list.append((elems[0], -score))
+            if found_callback is not None:
+                found_callback(elems[0], -score)
+        else:
+            push(elems[:len(elems) // 2])
+            push(elems[len(elems) // 2:])
+
+    if not skip_verification:
+        if len(frontier) == 0 or frontier[0][0] >= 0:
+            # found everything, so do the traditional assertions
+            non_differing_list = \
+                list(set(elements).difference(x[0] for x in found_list))
+            assert score_func(non_differing_list) <= 0, \
+                'Assumption that differing elements are independent was wrong'
+            assert score_func(elements) == \
+                score_func([x[0] for x in found_list]), \
+                'Assumption that minimal sets are non-overlapping was wrong'
+
+    return found_list
+
+def bisect_search(score_func, elements, found_callback=None,
+                  skip_verification=False):
+    '''
+    Performs the bisect search, attempting to find all elements contributing to
+    a positive score.  This score_func() function is intended to identify when
+    there are "differing" elements by returning a positive score.  This is
+    different from bisect_biggest() in that we find all offenders and can
+    therefore do some optimization that bisect_biggest() cannot do.
+
+    We do not want to call score_func() very much.  We assume the score_func()
+    is an expensive operation.  We could go throught the list one at a time,
+    but that would cause us to potentially call score_func() more than
+    necessary.
+
+    This function has complexity
+      O(k*log(n))*O(score_func)
+    where n is the size of the elements and k is the number of differing
+    elements to find.
+
+    Note: A key assumption to this algorithm is that all differing elements are
     independent.  That may not always be true, so there are redundant checks
     within the algorithm to verify that this assumption is not vialoated.  If
     the assumption is found to be violated, then an AssertionError is raised.
 
-    @param is_bad: a function that takes one argument, the list of elements to
-        test if they are bad.  The function then returns True if the given list
-        has a bad element
-    @param elements: contains bad elements, but potentially good elements too
+    @param score_func: a function that takes one argument, the list of elements
+        to test if they are differing.  The function then returns a positive
+        value if the given list has a differing element.  If the given list
+        does not have a differing element, this can return zero or a negative
+        value.  Note: this function must be able to handle empty lists.  An
+        empty list should instantly return a non-positive value, as there
+        cannot possibly be a differing element passed to it.
+        It is expected that this function is memoized because it may be called
+        more than once on the same input during the execution of this
+        algorithm.
+    @param elements: contains differing elements, but potentially non-differing
+        elements too
+    @param found_callback: a callback function to be called on every found
+        differing element.  Will be given two arguments, the element, and the
+        score from score_func().
+    @param skip_verification: skip the verification assertions for performance
+        reasons.  This will run the score_func() two fewer times.
 
-    @return minimal bad list of all elements that cause is_bad() to return True
+    @return minimal differing list of all elements that cause score_func() to
+        return positive values, along with their scores, sorted descending by
+        score.
+        [(elem, score), ...]
 
     Here's an example of finding all negative numbers in a list.  Not very
     useful for this particular task, but it is demonstrative of how to use it.
     >>> call_count = 0
-    >>> def is_bad(x):
-    ...     global call_count
-    ...     call_count += 1
-    ...     return min(x) < 0 if x else False
-    >>> x = bisect_search(is_bad, [1, 3, 4, 5, -1, 10, 0, -15, 3])
-    >>> sorted(x)
-    [-15, -1]
+    >>> memo = {}
+    >>> def score_func(x):
+    ...     idx = tuple(sorted(x))
+    ...     if idx not in memo:
+    ...         global call_count
+    ...         call_count += 1
+    ...         memo[idx] = -2*min(x) if x else 0
+    ...     return memo[idx]
+    >>> bisect_search(score_func, [1, 3, 4, 5, -1, 10, 0, -15, 3])
+    [(-15, 30), (-1, 2)]
 
     as a rough performance metric, we want to be sure our call count remains
-    low for the is_bad() function.
+    low for the score_func() function.  Note, we implemented memoization in
+    score_func(), so we are only counting unique calls and not duplicate calls
+    to score_func().
     >>> call_count
-    9
+    10
 
     Test out the found_callback() functionality.
     >>> s = set()
-    >>> y = bisect_search(is_bad, [-1, -2, -3, -4], found_callback=s.add)
-    >>> sorted(y)
-    [-4, -3, -2, -1]
+    >>> bisect_search(score_func, [-1, -2, -3, -4],
+    ...               found_callback=lambda x, y: s.add(x))
+    [(-4, 8), (-3, 6), (-2, 4), (-1, 2)]
     >>> sorted(s)
     [-4, -3, -2, -1]
 
     See what happens when it has a pair that only show up together and not
-    alone.  Only if -6 and 5 are in the list, then is_bad returns true.
-    The assumption of this algorithm is that bad elements are independent,
-    so this should throw an exception.
-    >>> def is_bad(x):
-    ...     return max(x) - min(x) > 10
-    >>> bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
+    alone.  Only if -6 and 5 are in the list, then score_func() returns a
+    positive value.  The assumption of this algorithm is that differing
+    elements are independent, so this should throw an exception.
+    >>> def score_func(x):
+    ...     return max(x) - min(x) - 10 if x else 0
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5])
     Traceback (most recent call last):
         ...
-    AssertionError: Assumption that bad elements are independent was wrong
+    AssertionError: Found element does not cause variability: 5
+
+    Check that the assertion for found element is not turned off with
+    skip_verification.
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
+    ...               skip_verification=True)
+    Traceback (most recent call last):
+        ...
+    AssertionError: Found element does not cause variability: 5
 
     Check that the found_callback is not called on false positives.  Here I
     expect no output since no single element can be found.
     >>> try:
-    ...     bisect_search(is_bad, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
+    ...     bisect_search(score_func, [-6, 2, 3, -3, -1, 0, 0, -5, 5],
     ...                   found_callback=print)
     ... except AssertionError:
     ...     pass
+
+    Check that the verification can catch the other case of overlapping minimal
+    sets.
+    >>> def score_func(x):
+    ...     score = 0
+    ...     if len(x) == 0: return score
+    ...     if min(x) < -5: score += 15 - min(x)
+    ...     return score + max(x) - min(x) - 10
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, -5, 5])
+    Traceback (most recent call last):
+        ...
+    AssertionError: Assumption that minimal sets are non-overlapping was wrong
+
+    Check that this is skipped with skip_verification
+    >>> bisect_search(score_func, [-6, 2, 3, -3, -1, 0, -5, 5],
+    ...               skip_verification=True)
+    [(-6, 11)]
     '''
+    if len(elements) == 0:
+        return []
+
     # copy the incoming list so that we don't modify it
     quest_list = list(elements)
 
-    bad_list = []
-    while len(quest_list) > 0 and is_bad(quest_list):
+    differing_list = []
+    while len(quest_list) > 0 and score_func(quest_list) > 0:
 
-        # find one bad element
+        # find one differing element
         quest_copy = quest_list
-        last_result = False
         while len(quest_copy) > 1:
-            # split the questionable list into two lists
             half_1 = quest_copy[:len(quest_copy) // 2]
-            half_2 = quest_copy[len(quest_copy) // 2:]
-            last_result = is_bad(half_1)
-            if last_result:
+            if score_func(half_1) > 0:
                 quest_copy = half_1
             else:
                 # optimization: mark half_1 as known, so that we don't need to
                 # search it again
                 quest_list = quest_list[len(half_1):]
                 # update the local search
-                quest_copy = half_2
+                quest_copy = quest_copy[len(half_1):]
 
-        bad_element = quest_list.pop(0)
+        # since we remove known non-differing elements as we find them, the
+        # differing element will be at the beginning of quest_list.
+        differing_element = quest_list.pop(0)
 
-        # double check that we found a bad element before declaring it bad
-        if last_result or is_bad([bad_element]):
-            bad_list.append(bad_element)
-            # inform caller that a bad element was found
-            if found_callback != None:
-                found_callback(bad_element)
+        # double check that we found a differing element before declaring it
+        # differing
+        score = score_func([differing_element])
+        assert score > 0, \
+            'Found element does not cause variability: {}' \
+            .format(differing_element)
+        differing_list.append((differing_element, score))
+        # inform caller that a differing element was found
+        if found_callback != None:
+            found_callback(differing_element, score)
 
-    # Perform a sanity check.  If we have found all of the bad items, then
-    # compiling with all but these bad items will cause a good build.
-    # This will fail if our hypothesis class is wrong
-    good_list = list(set(elements).difference(bad_list))
-    assert not is_bad(good_list), \
-        'Assumption that bad elements are independent was wrong'
+    if not skip_verification:
+        # Perform a sanity check.  If we have found all of the differing items,
+        # then compiling with all but these differing items will cause a
+        # non-differing build.
+        # This will fail if our hypothesis class is wrong
+        non_differing_list = \
+            list(set(elements).difference(x[0] for x in differing_list))
+        assert score_func(non_differing_list) <= 0, \
+            'Assumption that differing elements are independent was wrong'
+        assert score_func(elements) == \
+            score_func([x[0] for x in differing_list]),\
+            'Assumption that minimal sets are non-overlapping was wrong'
 
-    return bad_list
+    # sort descending by score
+    differing_list.sort(key=lambda x: -x[1])
+
+    return differing_list
 
 def parse_args(arguments, prog=sys.argv[0]):
     '''
@@ -675,6 +1063,51 @@ def parse_args(arguments, prog=sys.argv[0]):
                             runbusect-01-out), or the object files (e.g.
                             bisect-01/obj/*).
                             ''')
+    parser.add_argument('-k', '--biggest', metavar='K', type=int, default=None,
+                        help='''
+                            Instead of finding and returning all symbols that
+                            cause variability, only return the largest K
+                            contributors, with their contribution to
+                            variability.  If K is close to the total number of
+                            total contributing functions, then this is a much
+                            slower approach in general than the full algorithm.
+                            It is best if K is small.  This value used comes
+                            from the custom comparison function you provide for
+                            your flit test.
+
+                            Note: many files (perhaps more than K, although
+                            possibly less than K) may be found during the
+                            search.  This is done to ensure that the symbols
+                            identified are the largest contributors that are
+                            identifiable through this approach.
+
+                            Also note that using the --biggest flag, you
+                            restrict the search space to only singleton
+                            contributors.  That means that if there is a pair
+                            of contributors that only contribute when they are
+                            both compiled with the given compilation, then they
+                            produce a measurable variation.
+                            ''')
+    parser.add_argument('--compile-only', action='store_true',
+                        help='''
+                            Only applicable with the --auto-sqlite-run option.
+                            Only goes through the precompile step and then
+                            exits.
+                            ''')
+    parser.add_argument('--precompile-fpic', action='store_true',
+                        help='''
+                            Only applicable with the --auto-sqlite-run option.
+                            In the precompile phase, also precompiles the fPIC
+                            object files into the top-level obj directory.
+                            ''')
+    parser.add_argument('--skip-verification', action='store_true',
+                        help='''
+                            By default, bisect will run some assertions
+                            verifying that the assumptions made to have a
+                            performant algorithm are valid.  This turns off
+                            those assertions so as to not run the tests more
+                            often than necessary.
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -689,6 +1122,141 @@ def parse_args(arguments, prog=sys.argv[0]):
         args.switches = split_compilation[2]
 
     return args
+
+def test_makefile(args, makepath, testing_list, indent='  '):
+    '''
+    Runs the compilation in the makefile and returns the generated comparison
+    result.
+
+    @param args: parsed command-line arguments (see parse_args())
+    @param makepath (str): absolute or relative path to the Makefile
+    @param testing_list (list(str)): list of items being tested (for logging
+        purposes)
+
+    @return (float) generated comparison result
+    '''
+    print('{}Created {} - compiling and running'.format(indent, makepath),
+          end='', flush=True)
+    logging.info('%sCreated %s', indent, makepath)
+    logging.info('%sChecking:', indent)
+    for src in testing_list:
+        logging.info('  %s%s', indent, src)
+
+    try:
+        build_bisect(makepath, args.directory, verbose=args.verbose,
+                     jobs=args.jobs)
+    finally:
+        if args.delete:
+            build_bisect(makepath, args.directory, verbose=args.verbose,
+                         jobs=args.jobs, target='bisect-smallclean')
+    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+                                       args.directory)[0]
+    resultpath = os.path.join(args.directory, resultfile)
+    result = get_comparison_result(resultpath)
+    result_str = str(result)
+
+    sys.stdout.write(' - score {0}\n'.format(result_str))
+    logging.info('%sResult was %s', indent, result_str)
+
+    return result
+
+def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
+                            indent='  '):
+    '''
+    Generates and returns the function that builds and check a list of
+    libraries for showing variability.  The returned function is memoized, so
+    no need to be careful to not call it more than once with the same
+    arguments.
+    '''
+    def builder_and_checker(libs):
+        '''
+        Compiles all source files under the ground truth compilation and
+        statically links in the libs.
+
+        @param libs: static libraries to compile in
+
+        @return The comparison value between this mixed compilation and the
+            full baseline compilation.
+        '''
+        repl_copy = dict(replacements)
+        repl_copy['link_flags'] = list(repl_copy['link_flags'])
+        repl_copy['link_flags'].extend(libs)
+        makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
+                                          [], dict())
+        makepath = os.path.join(bisect_path, makefile)
+        return test_makefile(args, makepath, libs, indent=indent)
+
+    return memoize_strlist_func(builder_and_checker)
+
+def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
+                               indent='  '):
+    '''
+    Generates and returns the function that builds and check a list of sources
+    for showing variability.  The returned function is memoized, so no need to
+    be careful to not call it more than once with the same arguments.
+    '''
+    def builder_and_checker(sources_to_optimize):
+        '''
+        Compiles the compilation with sources_to_optimize compiled with the
+        optimized compilation and with everything else compiled with the
+        baseline compilation.
+
+        @param sources_to_optimize: source files to compile with the
+            variability-inducing optimizations
+
+        @return The comparison value between this mixed compilation and the
+            full baseline compilation.
+        '''
+        gt_src = list(set(sources).difference(sources_to_optimize))
+        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
+                                          sources_to_optimize, dict())
+        makepath = os.path.join(bisect_path, makefile)
+        return test_makefile(args, makepath, sources_to_optimize, indent=indent)
+
+    return memoize_strlist_func(builder_and_checker)
+
+def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
+                               symbols, indent='  '):
+    '''
+    Generates and returns the function that builds and check a list of sources
+    for showing variability.  The returned function is memoized, so no need to
+    be careful to not call it more than once with the same arguments.
+    '''
+    def builder_and_checker(symbols_to_optimize):
+        '''
+        Compiles the compilation with all files compiled under the ground truth
+        compilation except for the given symbols for the given files.
+
+        In order to be able to isolate these symbols, the files will need to be
+        compiled with -fPIC, but that is handled by the generated Makefile.
+
+        @param symbols_to_optimize: (list of SymbolTuple) symbols to use
+            from the variability-inducing optimization compilation
+
+        @return The comparison value between this mixed compilation and the
+            full baseline compilation.
+        '''
+        gt_symbols = list(set(symbols).difference(symbols_to_optimize))
+        all_sources = list(sources)  # copy the list of all source files
+        symbol_sources = [x.src for x in symbols_to_optimize + gt_symbols]
+        trouble_src = []
+        gt_src = list(set(all_sources).difference(symbol_sources))
+        symbol_map = {x: [
+            [y.symbol for y in gt_symbols if y.src == x],
+            [z.symbol for z in symbols_to_optimize if z.src == x],
+            ]
+                      for x in symbol_sources}
+
+        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
+                                          trouble_src, symbol_map)
+        makepath = os.path.join(bisect_path, makefile)
+        symbol_strings = [
+            '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
+            .format(sym=sym) for sym in symbols_to_optimize
+            ]
+        return test_makefile(args, makepath, symbol_strings, indent=indent)
+
+    return memoize_strlist_func(builder_and_checker)
 
 def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     '''
@@ -706,60 +1274,24 @@ def search_for_linker_problems(args, bisect_path, replacements, sources, libs):
     the libraries included, and checks to see if there are reproducibility
     problems.
     '''
-    def bisect_libs_build_and_check(trouble_libs):
-        '''
-        Compiles all source files under the ground truth compilation and
-        statically links in the trouble_libs.
+    memoized_checker = _gen_bisect_lib_checker(args, bisect_path, replacements,
+                                               sources)
 
-        @param trouble_libs: static libraries to compile in
-        @param dummy_libs: static libraries to ignore and not include
-            This variable is not used, but necessary for the interface.
-
-        @return True if the compilation has a non-zero comparison between this
-            mixed compilation and the full ground-truth compilation.
-        '''
-        repl_copy = dict(replacements)
-        repl_copy['link_flags'] = list(repl_copy['link_flags'])
-        repl_copy['link_flags'].extend(trouble_libs)
-        makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
-                                          [], dict())
-        makepath = os.path.join(bisect_path, makefile)
-
-        print('  Create {0} - compiling and running'.format(makepath),
-              end='', flush=True)
-        logging.info('Created %s', makepath)
-        logging.info('Checking:')
-        for lib in trouble_libs:
-            logging.info('  %s', lib)
-
-        try:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs)
-        finally:
-            if args.delete:
-                build_bisect(makepath, args.directory, verbose=args.verbose,
-                             jobs=args.jobs, target='bisect-smallclean')
-        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                           args.directory)[0]
-        resultpath = os.path.join(args.directory, resultfile)
-        result_is_bad = is_result_bad(resultpath)
-
-        result_str = 'bad' if result_is_bad else 'good'
-        sys.stdout.write(' - {0}\n'.format(result_str))
-        logging.info('Result was %s', result_str)
-
-        return result_is_bad
-
-    memoized_checker = memoize_strlist_func(bisect_libs_build_and_check)
-
-    print('Searching for bad intel static libraries:')
-    logging.info('Searching for bad static libraries included by intel linker:')
-    #bas_library_msg = '    Found bad library {}'
-    #bad_library_callback = lambda filename : \
-    #                       util.printlog(bad_library_msg.format(filename))
-    #bad_libs = bisect_search(memoized_checker, libs,
-    #                         found_callback=bad_library_callback)
-    #return bad_libs
+    print('Searching for differing intel static libraries:')
+    logging.info('Searching for differing static libraries included by intel '
+                 'linker:')
+    #differing_library_msg = '    Found differing library {} (score {})'
+    #differing_library_callback = lambda filename, score: \
+    #    util.printlog(differing_library_msg.format(filename, score))
+    #if args.biggest is None:
+    #    differing_libs = bisect_search(
+    #        memoized_checker, libs, found_callback=differing_library_callback,
+    #        skip_verification=args.skip_verification)
+    #else:
+    #    differing_libs = bisect_biggest(
+    #        memoized_checker, libs, found_callback=differing_library_callback,
+    #        k=args.biggest, skip_verification=args.skip_verification)
+    #return differing_libs
     if memoized_checker(libs):
         return libs
     return []
@@ -768,167 +1300,189 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     '''
     Performs the search over the space of source files for problems.
     '''
-    def bisect_build_and_check(trouble_src):
-        '''
-        Compiles the compilation with trouble_src compiled with the trouble
-        compilation and with gt_src compiled with the ground truth compilation.
 
-        @param trouble_src: source files to compile with trouble compilation
-        @param gt_src: source files to compile with ground truth compilation
+    memoized_checker = _gen_bisect_source_checker(args, bisect_path,
+                                                  replacements, sources)
 
-        @return True if the compilation has a non-zero comparison between this
-            mixed compilation and the full ground truth compilation.
-        '''
-        gt_src = list(set(sources).difference(trouble_src))
-        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
-                                          trouble_src, dict())
-        makepath = os.path.join(bisect_path, makefile)
+    # TODO: make a callback that immediately starts the symbol search on the
+    # TODO-  first found file.  Do this for  when args.biggest is defined.
+    # TODO- What we want here is that the first file found triggers a symbol
+    # TODO- search.  Then the top k symbols are found from that file.  We move
+    # TODO- to the next file.  If that file has a greater variance than the kth
+    # TODO- symbol found from the previous set of files, then we're done, else
+    # TODO- run symbol bisect on it to get the top k symbols as well (we can
+    # TODO- stop as soon as a symbol is less than the kth symbol (after
+    # TODO- updating the list of k).
 
-        print('  Created {0} - compiling and running'.format(makepath), end='',
-              flush=True)
-        logging.info('Created %s', makepath)
-        logging.info('Checking:')
-        for src in trouble_src:
-            logging.info('  %s', src)
-
-        try:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs)
-        finally:
-            if args.delete:
-                build_bisect(makepath, args.directory, verbose=args.verbose,
-                             jobs=args.jobs, target='bisect-smallclean')
-        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                           args.directory)[0]
-        resultpath = os.path.join(args.directory, resultfile)
-        result_is_bad = is_result_bad(resultpath)
-
-        result_str = 'bad' if result_is_bad else 'good'
-        sys.stdout.write(' - {0}\n'.format(result_str))
-        logging.info('Result was %s', result_str)
-
-        return result_is_bad
-
-    memoized_checker = memoize_strlist_func(bisect_build_and_check)
-
-    print('Searching for bad source files:')
-    logging.info('Searching for bad source files under the trouble'
+    print('Searching for differing source files:')
+    logging.info('Searching for differing source files under the trouble'
                  ' compilation')
-
-    bad_source_msg = '    Found bad source file {}'
-    bad_source_callback = lambda filename : \
-                          util.printlog(bad_source_msg.format(filename))
-    bad_sources = bisect_search(memoized_checker, sources,
-                                found_callback=bad_source_callback)
-    return bad_sources
+    differing_source_msg = '    Found differing source file {}: score {}'
+    differing_source_callback = lambda filename, score: \
+        util.printlog(differing_source_msg.format(filename, score))
+    differing_sources = bisect_search(memoized_checker, sources,
+                                      found_callback=differing_source_callback,
+                                      skip_verification=args.skip_verification)
+    return differing_sources
 
 def search_for_symbol_problems(args, bisect_path, replacements, sources,
-                               bad_source):
+                               differing_source, found_callback=None,
+                               indent=''):
     '''
-    Performs the search over the space of symbols within bad source files for
-    problems.
+    Performs the search over the space of symbols within differing source files
+    for problems.
 
     @param args: parsed command-line arguments
     @param bisect_path: directory where bisect is being performed
     @param replacements: dictionary of values to use in generating the Makefile
     @param sources: all source files
-    @param bad_source: the one bad source file to search for bad symbols
+    @param differing_source: the one differing source file to search for
+        differing symbols
+    @param found_callback: (optional) a callback to be called on each found
+        symbol
+    @param indent: (optional) indentation to use for the logging and printing
+        messages
 
-    @return a list of identified bad symbols (if any)
+    @return a list of identified differing symbols (if any), with their
+        associated scores
+        [(symbol, score), ...]
     '''
-    print('Searching for bad symbols in:', bad_source)
-    logging.info('Searching for bad symbols in: %s', bad_source)
-    logging.info('Note: inlining disabled to isolate functions')
-    logging.info('Note: only searching over globally exported functions')
-    logging.debug('Symbols:')
-    symbol_tuples = extract_symbols(bad_source,
+    print('{}Searching for differing symbols in: {}'.format(
+        indent, differing_source))
+    logging.info('%sSearching for differing symbols in: %s', differing_source,
+                 indent)
+    logging.info('%sNote: inlining disabled to isolate functions', indent)
+    logging.info('%sNote: only searching over globally exported functions',
+                 indent)
+    logging.debug('%sSymbols:', indent)
+    symbol_tuples = extract_symbols(differing_source,
                                     os.path.join(args.directory, 'obj'))
     for sym in symbol_tuples:
-        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
-                  .format(sym=sym)
-        logging.info('%s', message)
+        message = '{indent}  {sym.fname}:{sym.lineno} {sym.symbol} ' \
+                  '-- {sym.demangled}'.format(indent=indent, sym=sym)
+        logging.debug('%s', message)
 
-    def bisect_symbol_build_and_check(trouble_symbols):
-        '''
-        Compiles the compilation with all files compiled under the ground truth
-        compilation except for the given symbols for the given files.
+    memoized_checker = _gen_bisect_symbol_checker(
+        args, bisect_path, replacements, sources, symbol_tuples,
+        indent=indent + '  ')
 
-        In order to be able to isolate these symbols, the files will need to be
-        compiled with -fPIC, but that is handled by the generated Makefile.
-
-        @param trouble_symbols: (list of SymbolTuple) symbols to use
-            from the trouble compilation
-        @param gt_symbols: (list of SymbolTuple) symbols to use from
-            the ground truth compilation
-
-        @return True if the compilation has a non-zero comparison between this
-            mixed compilation and the full ground truth compilation.
-        '''
-        gt_symbols = list(set(symbol_tuples).difference(trouble_symbols))
-        all_sources = list(sources)  # copy the list of all source files
-        symbol_sources = [x.src for x in trouble_symbols + gt_symbols]
-        trouble_src = []
-        gt_src = list(set(all_sources).difference(symbol_sources))
-        symbol_map = {x: [
-            [y.symbol for y in gt_symbols if y.src == x],
-            [z.symbol for z in trouble_symbols if z.src == x],
-            ]
-                      for x in symbol_sources}
-
-        makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
-                                          trouble_src, symbol_map)
-        makepath = os.path.join(bisect_path, makefile)
-
-        print('  Created {0} - compiling and running'.format(makepath), end='',
-              flush=True)
-        logging.info('Created %s', makepath)
-        logging.info('Checking:')
-        for sym in trouble_symbols:
-            logging.info(
-                '%s',
-                '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
-                .format(sym=sym))
-
-        try:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
-                         jobs=args.jobs)
-        finally:
-            if args.delete:
-                build_bisect(makepath, args.directory, verbose=args.verbose,
-                             jobs=args.jobs, target='bisect-smallclean')
-        resultfile = util.extract_make_var('BISECT_RESULT', makepath,
-                                           args.directory)[0]
-        resultpath = os.path.join(args.directory, resultfile)
-        result_is_bad = is_result_bad(resultpath)
-
-        result_str = 'bad' if result_is_bad else 'good'
-        sys.stdout.write(' - {0}\n'.format(result_str))
-        logging.info('Result was %s', result_str)
-
-        return result_is_bad
-
-    memoized_checker = memoize_strlist_func(bisect_symbol_build_and_check)
-
-    # Check to see if -fPIC destroyed any chance of finding any bad symbols
-    if not memoized_checker(symbol_tuples):
-        message_1 = '  Warning: -fPIC compilation destroyed the optimization'
-        message_2 = '  Cannot find any trouble symbols'
+    # Check to see if -fPIC destroyed any chance of finding any differing
+    # symbols
+    if memoized_checker(symbol_tuples) <= 0.0:
+        message_1 = '{}  Warning: -fPIC compilation destroyed the ' \
+            'optimization'.format(indent)
+        message_2 = '{}  Cannot find any trouble symbols'.format(indent)
         print(message_1)
         print(message_2)
         logging.warning('%s', message_1)
         logging.warning('%s', message_2)
         return []
 
-    bad_symbol_msg = \
-        '    Found bad symbol on line {sym.lineno} -- {sym.demangled}'
-    bad_symbol_callback = lambda sym : \
-                          util.printlog(bad_symbol_msg.format(sym=sym))
-    bad_symbols = bisect_search(memoized_checker, symbol_tuples,
-                                found_callback=bad_symbol_callback)
-    return bad_symbols
+    differing_symbol_msg = \
+        '{indent}    Found differing symbol on line {sym.lineno} -- ' \
+        '{sym.demangled} (score {score})'
+
+    def differing_symbol_callback(sym, score):
+        'Prints the finding and calls the registered callback'
+        util.printlog(differing_symbol_msg.format(sym=sym, score=score,
+                                                  indent=indent))
+        if found_callback is not None:
+            found_callback(sym, score)
+
+    if args.biggest is None:
+        differing_symbols = bisect_search(
+            memoized_checker, symbol_tuples,
+            found_callback=differing_symbol_callback,
+            skip_verification=args.skip_verification)
+    else:
+        differing_symbols = bisect_biggest(
+            memoized_checker, symbol_tuples,
+            found_callback=differing_symbol_callback, k=args.biggest,
+            skip_verification=args.skip_verification)
+    return differing_symbols
+
+def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
+    '''
+    This function is similar to both search_for_source_problems() and
+    search_for_symbol_problems().  This function will search for source
+    problems AND also symbol problems such that the top k differing functions
+    between the baseline compilation and the variability-inducing optimized
+    compilation.
+
+    @param args: parsed command-line arguments
+    @param bisect_path: directory where bisect is being performed
+    @param replacements: dictionary of values to use in generating the Makefile
+    @param sources: all source files
+
+    @return a list of identified differing symbols (if any), with their
+        associated scores
+        [(symbol, score), ...]
+    '''
+    assert args.biggest is not None
+    assert args.biggest > 0
+
+    util.printlog('Looking for the top {} different symbol(s) by starting with '
+                  'files'.format(args.biggest))
+
+    differing_symbols = []
+    differing_source_msg = '    Found differing source file {}: score {}'
+    differing_sources = []
+
+    class ExitEarlyException(Exception):
+        'Exception used to exit early from bisect search'
+        pass
+
+    def differing_symbol_callback(symbol, score):
+        'captures the symbol and checks for early termination'
+        assert len(differing_symbols) <= args.biggest
+        assert score > 0
+
+        if len(differing_symbols) >= args.biggest and \
+                score < differing_symbols[-1][1]:
+            # exit early because we're done with this file
+            raise ExitEarlyException
+        differing_symbols.append((symbol, score))
+        differing_symbols.sort(key=lambda x: -x[1])
+        differing_symbols[:] = differing_symbols[:args.biggest]
+
+    symbol_search = lambda differing_source: \
+        search_for_symbol_problems(
+            args, bisect_path, replacements, sources, differing_source,
+            found_callback=differing_symbol_callback, indent='    ')
+
+    def differing_source_callback(filename, score):
+        '''
+        prints and captures the found source file, and checks for early
+        termination.
+        '''
+        assert len(differing_symbols) <= args.biggest
+        assert score > 0
+
+        util.printlog(differing_source_msg.format(filename, score))
+        differing_sources.append((filename, score))
+        if len(differing_symbols) >= args.biggest and \
+                score < differing_symbols[-1][1]:
+            # exit early because we're done with this file
+            raise ExitEarlyException
+
+        try:
+            symbol_search(filename)
+        except ExitEarlyException:
+            pass
+
+    memoized_source_checker = _gen_bisect_source_checker(
+        args, bisect_path, replacements, sources)
+    try:
+        # Note: ignore return because we already capture found sources
+        bisect_biggest(memoized_source_checker, sources, k=len(sources),
+                       found_callback=differing_source_callback)
+    except ExitEarlyException:
+        pass
+
+    return differing_sources, differing_symbols
 
 def compile_trouble(directory, compiler, optl, switches, verbose=False,
-                    jobs=mp.cpu_count(), delete=True):
+                    jobs=mp.cpu_count(), delete=True, fpic=False):
     '''
     Compiles the trouble executable for the given arguments.  This is useful to
     compile the trouble executable as it will force the creation of all needed
@@ -940,8 +1494,11 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+    run_make(
+        directory=directory,
+        verbose=verbose,
+        jobs=1,
+        target='Makefile')
 
     # trouble compilations all happen in the same directory
     trouble_path = os.path.join(directory, 'bisect-precompile')
@@ -970,6 +1527,9 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
     # Compile the trouble executable simply so that we have the object files
     build_bisect(makepath, directory, verbose=verbose,
                  jobs=jobs, target='trouble')
+    if fpic:
+        build_bisect(makepath, directory, verbose=verbose,
+                     jobs=jobs, target='trouble-fpic')
 
     # Remove this prebuild temporary directory now
     if delete:
@@ -998,8 +1558,8 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+    run_make(directory=args.directory, verbose=args.verbose, jobs=1,
+             target='Makefile')
 
     # create a unique directory for this bisect run
     bisect_dir = create_bisect_dir(args.directory)
@@ -1050,7 +1610,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
     # Find out if the linker is to blame (e.g. intel linker linking mkl libs)
-    bad_libs = []
+    differing_libs = []
     if os.path.basename(args.compiler) in ('icc', 'icpc'):
         warning_message = 'Warning: The intel compiler may not work with bisect'
         logging.info('%s', warning_message)
@@ -1080,26 +1640,27 @@ def run_bisect(arguments, prog=sys.argv[0]):
             os.path.join(intel_lib_dir, 'libsvml.a'),
             ]
         try:
-            bad_libs = search_for_linker_problems(args, bisect_path,
-                                                  replacements, sources, libs)
+            differing_libs = search_for_linker_problems(
+                args, bisect_path, replacements, sources, libs)
         except subp.CalledProcessError:
             print()
             print('  Executable failed to run.')
-            print('Failed to search for bad libraries -- cannot continue.')
+            print('Failed to search for differing libraries'
+                  ' -- cannot continue.')
             return bisect_num, None, None, None, 1
 
-        print('  bad static libraries:')
+        print('  differing static libraries:')
         logging.info('BAD STATIC LIBRARIES:')
-        for lib in bad_libs:
+        for lib in differing_libs:
             print('    ' + lib)
             logging.info('  %s', lib)
-        if len(bad_libs) == 0:
+        if len(differing_libs) == 0:
             print('    None')
             logging.info('  None')
 
         # For now, if the linker was to blame, then say there may be nothing
         # else we can do.
-        if len(bad_libs) > 0:
+        if len(differing_libs) > 0:
             message = 'May not be able to search further, because of intel ' \
                       'optimizations'
             print(message)
@@ -1112,66 +1673,111 @@ def run_bisect(arguments, prog=sys.argv[0]):
         # If the libraries were a problem, then reset what the baseline
         # ground-truth is, especially since we updated the LINK_FLAGS in the
         # generated Makefiles.
-        if len(bad_libs) > 0:
+        if len(differing_libs) > 0:
             replacements['build_gt_local'] = 'true'
 
     try:
-        bad_sources = search_for_source_problems(args, bisect_path,
-                                                 replacements, sources)
+        if args.biggest is not None:
+            differing_sources, differing_symbols = \
+                search_for_k_most_diff_symbols(args, bisect_path,
+                                               replacements, sources)
+        else:
+            differing_sources = search_for_source_problems(
+                args, bisect_path, replacements, sources)
     except subp.CalledProcessError:
         print()
         print('  Executable failed to run.')
-        print('Failed to search for bad sources -- cannot continue.')
-        logging.exception('Failed to search for bad sources.')
-        return bisect_num, bad_libs, None, None, 1
+        print('Failed to search for differing sources -- cannot continue.')
+        logging.exception('Failed to search for differing sources.')
+        return bisect_num, differing_libs, None, None, 1
 
-    print('  bad sources:')
-    logging.info('BAD SOURCES:')
-    for src in bad_sources:
-        print('    ' + src)
-        logging.info('  %s', src)
-    if len(bad_sources) == 0:
-        print('    None')
-        logging.info('  None')
+    if args.biggest is None:
+        print('all variability inducing source file(s):')
+        logging.info('ALL VARIABILITY INCUDING SOURCE FILE(S):')
+    else:
+        print('The found highest variability inducing source file{}:'.format(
+            's' if len(differing_sources) > 1 else ''))
+        logging.info('%d HIGHEST VARIABILITY SOURCE FILE%s:',
+                     args.biggest, 'S' if args.biggest > 1 else '')
 
+    for src in differing_sources:
+        util.printlog('  {} (score {})'.format(src[0], src[1]))
+    if len(differing_sources) == 0:
+        util.printlog('  None')
 
-    # Search for bad symbols one bad file at a time
+    # Search for differing symbols one differing file at a time
     # This will allow us to maybe find some symbols where crashes before would
     # cause problems and no symbols would be identified
-    bad_symbols = []
-    for bad_source in bad_sources:
-        try:
-            file_bad_symbols = search_for_symbol_problems(
-                args, bisect_path, replacements, sources, bad_source)
-        except subp.CalledProcessError:
-            print()
-            print('  Executable failed to run.')
-            print('Failed to search for bad symbols in {} -- cannot continue' \
-                    .format(bad_source))
-            logging.exception('Failed to search for bad symbols in %s',
-                              bad_source)
-        bad_symbols.extend(file_bad_symbols)
-        if len(file_bad_symbols) > 0:
-            print('  bad symbols in {}:'.format(bad_source))
-            logging.info('  bad symbols in %s:', bad_source)
-            for sym in file_bad_symbols:
-                message = '    line {sym.lineno} -- {sym.demangled}' \
-                          .format(sym=sym)
+    #
+    # Only do this if we didn't already perform the search above with
+    #   search_for_k_most_diff_symbols()
+    if args.biggest is None:
+        differing_symbols = []
+        for differing_source, _ in differing_sources:
+            try:
+                file_differing_symbols = search_for_symbol_problems(
+                    args, bisect_path, replacements, sources, differing_source)
+            except subp.CalledProcessError:
+                print()
+                print('  Executable failed to run.')
+                print('Failed to search for differing symbols in {}'
+                      '-- cannot continue'.format(differing_source))
+                logging.exception(
+                    'Failed to search for differing symbols in %s',
+                    differing_source)
+                return bisect_num, differing_libs, differing_sources, None, 1
+            differing_symbols.extend(file_differing_symbols)
+            if len(file_differing_symbols) > 0:
+                if args.biggest is None:
+                    message = '  All differing symbols in {}:'\
+                              .format(differing_source)
+                else:
+                    message = '  {} differing symbol{} in {}:'.format(
+                        args.biggest, 's' if args.biggest > 1 else '',
+                        differing_source)
                 print(message)
-                logging.info('%s', message)
+                logging.info(message)
+                for sym, score in file_differing_symbols:
+                    message = \
+                        '    line {sym.lineno} -- {sym.demangled} ' \
+                        '(score {score})'.format(sym=sym, score=score)
+                    print(message)
+                    logging.info('%s', message)
 
-    print('All bad symbols:')
-    logging.info('BAD SYMBOLS:')
-    for sym in bad_symbols:
-        message = '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}' \
-                  .format(sym=sym)
+        if not args.skip_verification and len(differing_sources) > 1:
+            # Verify that there are no missed files, i.e. those that are more
+            # than singletons and that are to be grouped with one of the found
+            # symbols.
+            all_searched_symbols = extract_symbols(
+                [x[0] for x in differing_sources],
+                os.path.join(args.directory, 'obj'))
+            checker = _gen_bisect_symbol_checker(
+                args, bisect_path, replacements, sources, all_searched_symbols)
+            assert checker(all_searched_symbols) == \
+                   checker([x[0] for x in differing_symbols])
+
+    differing_symbols.sort(key=lambda x: (-x[1], x[0]))
+
+    if args.biggest is None:
+        print('All variability inducing symbols:')
+        logging.info('ALL VARIABILITY INCUDING SYMBOLS:')
+    else:
+        print('The {} highest variability symbol{}:'
+              .format(args.biggest, 's' if args.biggest > 1 else ''))
+        logging.info('THE %d HIGHEST VARIABILITY INDUCING SYMBOL%s:',
+                     args.biggest, 'S' if args.biggest > 1 else '')
+
+    for sym, score in differing_symbols:
+        message = \
+            '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled} ' \
+            '(score {score})'.format(sym=sym, score=score)
         print(message)
         logging.info('%s', message)
-    if len(bad_symbols) == 0:
+    if len(differing_symbols) == 0:
         print('    None')
         logging.info('  None')
 
-    return bisect_num, bad_libs, bad_sources, bad_symbols, 0
+    return bisect_num, differing_libs, differing_sources, differing_symbols, 0
 
 def auto_bisect_worker(arg_queue, result_queue):
     '''
@@ -1193,9 +1799,9 @@ def auto_bisect_worker(arg_queue, result_queue):
         - compiler: (str) compiler used
         - optl: (str) optimization level
         - switches: (str) switches
-        - libs: (list of str) bad libraries found
-        - srcs: (list of str) bad source files found
-        - syms: (list of SymbolTuple) bad symbols found
+        - libs: (list of str) differing libraries found
+        - srcs: (list of str) differing source files found
+        - syms: (list of SymbolTuple) differing symbols found
         - ret: (int) return code of running
 
     @return None
@@ -1233,6 +1839,11 @@ def auto_bisect_worker(arg_queue, result_queue):
     except queue.Empty:
         # exit the function
         pass
+
+    except:
+        # without putting something onto the result_queue, the parent process will deadlock
+        result_queue.put((row, -1, None, None, None, 1))
+        raise
 
 def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     '''
@@ -1301,8 +1912,8 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
-    subp.check_call(['make', '-C', args.directory, 'Makefile'],
-                    stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+    run_make(directory=args.directory, verbose=args.verbose, jobs=1,
+             target='Makefile')
 
     print('Before parallel bisect run, compile all object files')
     for i, compilation in enumerate(sorted(compilation_set)):
@@ -1313,11 +1924,16 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
               flush=True)
         compile_trouble(args.directory, compiler, optl, switches,
                         verbose=args.verbose, jobs=args.jobs,
-                        delete=args.delete)
+                        delete=args.delete, fpic=args.precompile_fpic)
         print('  done', flush=True)
 
     # Update ground-truth results before launching workers
-    update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
+    update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs,
+                      fpic=args.precompile_fpic)
+
+    if args.compile_only:
+        print('Done with precompilation -- exiting')
+        return 0
 
     # Generate the worker queue
     arg_queue = mp.Queue()

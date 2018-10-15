@@ -134,8 +134,8 @@ def main(arguments, prog=sys.argv[0]):
     assert len(matching_dev_compilers) < 2, \
             'Multiple compilers with name {0} found'.format(dev_compiler_name)
     dev_compiler_bin = matching_dev_compilers[0]['binary']
-    if '/' in dev_compiler_bin:
-        dev_compiler_bin = os.path.realpath(dev_compiler_bin)
+    #if '/' in dev_compiler_bin:
+    #    dev_compiler_bin = os.path.realpath(dev_compiler_bin)
 
     ground_truth = host['ground_truth']
     gt_compiler_name = ground_truth['compiler_name']
@@ -146,11 +146,20 @@ def main(arguments, prog=sys.argv[0]):
     assert len(matching_dev_compilers) > 0, \
             'Compiler name {0} not found'.format(gt_compiler_name)
     assert len(matching_dev_compilers) < 2, \
-            'Multiple compilers with name {0} found'.format(gt_compiler_names)
+            'Multiple compilers with name {0} found'.format(gt_compiler_name)
     # TODO: use the compiler mnemonic rather than the path
     gt_compiler_bin = matching_gt_compilers[0]['binary']
-    if '/' in dev_compiler_bin:
-        gt_compiler_bin = os.path.realpath(gt_compiler_bin)
+    #if '/' in dev_compiler_bin:
+    #    gt_compiler_bin = os.path.realpath(gt_compiler_bin)
+
+    supported_compiler_types = ('clang', 'gcc', 'intel')
+    base_compilers = {x: None for x in supported_compiler_types}
+    for compiler in host['compilers']:
+        assert compiler['type'] in supported_compiler_types, \
+            'Unsupported compiler type: {}'.format(compiler['type'])
+        assert base_compilers[compiler['type']] is None, \
+            'You can only specify one of each type of compiler.'
+        base_compilers[compiler['type']] = compiler['binary']
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -160,26 +169,31 @@ def main(arguments, prog=sys.argv[0]):
             '--timing-loops', str(projconf['run']['timing_loops']),
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
-    flitutil.process_in_file(
-        os.path.join(conf.data_dir, 'Makefile.in'),
-        makefile,
-        {
-            'dev_compiler': dev_compiler_bin,
-            'dev_optl': dev_optl,
-            'dev_switches': dev_switches,
-            'ground_truth_compiler': gt_compiler_bin,
-            'ground_truth_optl': gt_optl,
-            'ground_truth_switches': gt_switches,
-            'flit_include_dir': conf.include_dir,
-            'flit_lib_dir': conf.lib_dir,
-            'flit_data_dir': conf.data_dir,
-            'flit_script_dir': conf.script_dir,
-            'flit_version': conf.version,
-            'test_run_args': test_run_args,
-            'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
-            'mpirun_args': projconf['run']['mpirun_args'],
-        },
-        overwrite=True)
+
+    given_compilers = [key.upper() for key, val in base_compilers.items()
+                       if val is not None]
+    replacements = {
+        'dev_compiler': dev_compiler_bin,
+        'dev_optl': dev_optl,
+        'dev_switches': dev_switches,
+        'ground_truth_compiler': gt_compiler_bin,
+        'ground_truth_optl': gt_optl,
+        'ground_truth_switches': gt_switches,
+        'flit_include_dir': conf.include_dir,
+        'flit_lib_dir': conf.lib_dir,
+        'flit_data_dir': conf.data_dir,
+        'flit_script_dir': conf.script_dir,
+        'flit_version': conf.version,
+        'test_run_args': test_run_args,
+        'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
+        'mpirun_args': projconf['run']['mpirun_args'],
+        'compilers': ' '.join(given_compilers),
+        }
+    replacements.update({key + '_compiler': val
+                         for key, val in base_compilers.items()})
+
+    flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
+                             makefile, replacements, overwrite=True)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

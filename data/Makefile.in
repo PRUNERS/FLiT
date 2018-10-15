@@ -89,6 +89,14 @@ GT_OUT          := ground-truth.csv
 
 UNAME_S         := $(shell uname -s)
 
+# will be None if not specified in flit-config.toml
+CLANG           := {clang_compiler}
+INTEL           := {intel_compiler}
+GCC             := {gcc_compiler}
+
+# keep only the compilers that are not None and are in the path
+COMPILERS       := {compilers}
+
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
@@ -178,7 +186,7 @@ IS_GCC_4_OR_5    = $(shell expr $(call IS_GCC,$1) \& \
 DEV_LDFLAGS      =
 GT_LDFLAGS       =
 
-DEPFLAGS        += -MMD -MF $(patsubst %.o,%.d,$@)
+DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
 
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
@@ -219,17 +227,7 @@ DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
-
-CLANG           := clang++
-INTEL           := icpc
-GCC             := g++
-
-ifdef CLANG_ONLY
-COMPILERS       := CLANG
-else
-COMPILERS       := $(foreach c, GCC INTEL CLANG, \
-                     $(if $(shell which $($(c)) 2>/dev/null), $c,))
-endif
+GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
 HOSTNAME        := $(shell hostname)
 
@@ -237,8 +235,11 @@ RESULTS_DIR     := results
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
+CLANG_REQUIRED  :=
+ifeq ($(findstring GCC,$(COMPILERS)),GCC)
 GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
-CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
+CLANG_REQUIRED  += --gcc-toolchain=$(GCC_TOOLCHAIN)
+endif
 
 # Compiler setting targets
 #   taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
@@ -488,9 +489,10 @@ TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
 DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
-.PHONY: dev gt groundtruth run runbuild
+.PHONY: dev gt gt-fpic groundtruth run runbuild
 dev: $(DEV_TARGET)
 gt: groundtruth
+gt-fpic: $(GT_OBJ_FPIC)
 groundtruth: $(GT_TARGET)
 
 run: $(TARGET_RESULTS) $(TARGET_OUTS)
@@ -578,6 +580,14 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$(GT_CC)"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
+$(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
+	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CC)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \

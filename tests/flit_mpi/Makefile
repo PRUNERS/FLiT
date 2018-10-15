@@ -1,8 +1,8 @@
-RUNNER        := python3
-SRC           := $(wildcard tst_*.py)
-RUN_TARGETS   := $(SRC:%.py=run_%)
-MPIRUN        := $(shell command -v mpirun 2>/dev/null)
-MPICXX        := $(shell command -v mpic++ 2>/dev/null)
+RUNNER      := python3
+SRC         := $(wildcard tst_*.py)
+RUN_TARGETS := $(SRC:%.py=run_%)
+MPIRUN      := $(shell command -v mpirun 2>/dev/null)
+MPICXX      := $(shell command -v mpic++ 2>/dev/null)
 
 include ../color_out.mk
 
@@ -28,4 +28,6 @@ build:
 clean:
 
 run_% : %.py
+	@$(call color_out_noline,BROWN,  running)
+	@echo " $<"
 	@$(RUNNER) $<
