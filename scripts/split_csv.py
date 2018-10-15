@@ -29,13 +29,19 @@ def level_load(rows, by, splitcount):
         idx, _ = argmin(splitload)
         split[idx].append(row)
         splitload[idx] += row[by]
+    print('Split counts and time:')
+    for i, rowlist in enumerate(split):
+        print('  #{}: {} ({} sec)'.format(i, len(rowlist), splitload[i] / 1.0e9))
     return split
 
 def split_val(rows, by):
     'Split by unique values in the by column'
     split = {val: [x for x in rows if x[by] == val]
              for val in {x[by] for x in rows}}
-    return [val for key, val in sorted(split.items())]
+    print('Split counts:')
+    for val, rowlist in sorted(split.items()):
+        print('  {}: {}'.format(val, len(rowlist)))
+    return [val for _, val in sorted(split.items())]
 
 def main(arguments):
     'Main logic here'
