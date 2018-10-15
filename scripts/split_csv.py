@@ -21,6 +21,8 @@ def parse_args(arguments):
 
 def level_load(rows, by, splitcount):
     'Split by level load'
+    for row in rows:
+        row[by] = float(row[by])
     argmin = lambda arr: min(enumerate(arr), key=lambda x: x[1])
     rows.sort(key=lambda x: -x[by])
     split = [[] for _ in range(splitcount)]
@@ -31,7 +33,8 @@ def level_load(rows, by, splitcount):
         splitload[idx] += row[by]
     print('Split counts and time:')
     for i, rowlist in enumerate(split):
-        print('  #{}: {} ({} sec)'.format(i, len(rowlist), splitload[i] / 1.0e9))
+        print('  #{:02}: {} ({} sec)' \
+              .format(i + 1, len(rowlist), splitload[i] / 1.0e9))
     return split
 
 def split_val(rows, by):
