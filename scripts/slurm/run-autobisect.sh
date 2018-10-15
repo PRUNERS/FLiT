@@ -4,6 +4,7 @@
 #SBATCH --ntasks 28
 #SBATCH --cpus-per-task 1
 #SBATCH --array=1-6
+#SBATCH --output=autobisect-%A_%a.log
 #SBATCH --account soc-kp
 #SBATCH --partition soc-kp
 
