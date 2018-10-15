@@ -109,7 +109,10 @@ and run FLiT bisect
 ...                          outstream=ostream)
 ...         bisect_out = ostream.getvalue().splitlines()
 ...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
-...         log_contents = fin.readlines()
+...         raw_log = fin.readlines()
+...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
+...                         for line in raw_log]
+...         log_contents = [line for line in stripped_log if line.strip() != '']
 
 Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
@@ -126,29 +129,31 @@ Let's see that the ground truth results are updated first
 Verify that all source files were found and output during the search
 >>> sorted([x.split(':')[0].split()[-1] for x in bisect_out
 ...         if x.startswith('    Found differing source file')])
-['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
+['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
 
-Verify that the three differing sources were output in the "differing sources:"
+Verify that the four differing sources were output in the "differing sources:"
 section
 >>> idx = bisect_out.index('all variability inducing source file(s):')
->>> print('\\n'.join(bisect_out[idx+1:idx+4]))
+>>> print('\\n'.join(bisect_out[idx+1:idx+5]))
+  tests/file4.cpp (score 30.0)
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
   tests/file3.cpp (score 4.0)
->>> bisect_out[idx+4].startswith('Searching for differing symbols in:')
+>>> bisect_out[idx+5].startswith('Searching for differing symbols in:')
 True
 
-Verify that all three files were searched individually
+Verify that all four files were searched individually
 >>> sorted([x.split()[-1] for x in bisect_out
 ...         if x.startswith('Searching for differing symbols in:')])
-['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp']
+['tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
 
-Verify all functions were identified during the symbol searches
+Verify all non-templated functions were identified during the symbol searches
 >>> print('\\n'.join(
 ...     sorted([' '.join(x.split()[-6:]) for x in bisect_out
 ...             if x.startswith('    Found differing symbol on line')])))
 line 100 -- file1_func3_PROBLEM() (score 2.0)
 line 103 -- file3_func5_PROBLEM() (score 3.0)
+line 106 -- file4_all() (score 30.0)
 line 108 -- file1_func4_PROBLEM() (score 3.0)
 line 91 -- file2_func1_PROBLEM() (score 7.0)
 line 92 -- file1_func2_PROBLEM() (score 5.0)
@@ -178,9 +183,17 @@ Verify the differing symbols section for file3.cpp
 >>> bisect_out[idx+3].startswith('    ')
 False
 
+Verify the bad symbols section for file4.cpp
+>>> idx = bisect_out.index('  All differing symbols in tests/file4.cpp:')
+>>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
+    line 106 -- file4_all() (score 30.0)
+>>> bisect_out[idx+2].startswith(' ')
+False
+
 Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
+  /.../tests/file4.cpp:106 ... -- file4_all() (score 30.0)
   /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM() (score 7.0)
   /.../tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
   /.../tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)

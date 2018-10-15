@@ -118,6 +118,7 @@ tst_bisect.py.
 ...     'tests/file1.cpp': 10.0,
 ...     'tests/file2.cpp': 7.0,
 ...     'tests/file3.cpp': 4.0,
+...     'tests/file4.cpp': 0.0,
 ...     }
 
 >>> all_symbol_scores = {
@@ -136,6 +137,7 @@ tst_bisect.py.
 ...     create_symbol(3, 3, 100, False): 0.0,
 ...     create_symbol(3, 4, 101, False): 0.0,
 ...     create_symbol(3, 5, 103,  True): 3.0,
+...     create_symbol(4, 1, 103, False): 0.0,
 ...     }
 
 >>> def build_bisect_stub(makepath, directory, target='bisect', verbose=False,
