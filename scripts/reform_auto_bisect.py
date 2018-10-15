@@ -1,13 +1,29 @@
 #!/usr/bin/env python3
 
+import csv
 import glob
 import re
+import sys
+
+writer = csv.writer(sys.stdout)
+writer.writerow([
+    'bisectnum',
+    'bisectcount',
+    'compiler',
+    'optl',
+    'switches',
+    'precision',
+    'testcase',
+    'type',
+    'name',
+    'return',
+    ])
 
 for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
-
     m = re.match("output/test_([0-9]*)/bisect-([0-9]*)/bisect.log", fn)
     testcase = "ex{}_Test".format(m.group(1))
     bisect_num = m.group(2)
+    bisect_count = len(glob.glob('output/test_{}/bisect-{}/bisect-make-*.mk'.format(m.group(1), m.group(2))))
 
     compiler = None
     optl = None
@@ -124,9 +140,9 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
             if state == SYM:
                 if "None" in line:
                     break
-                m = re.search("\.cpp:[0-9]* (.*) \(score", line)
+                m = re.search(r".*\..*:[0-9]* *(.*) *\(score", line)
                 assert(m != None)
-                sym = m.group()[1]
+                sym = m.group(1)
                 syms.append(sym)
 
                 continue
@@ -138,8 +154,9 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
     if libs != None:
         completed.append("lib")
         for lib in libs:
-            print('{},{},{},"{}",{},{},{},"{}",{}'.format(
+            writer.writerow([
                 bisect_num,
+                bisect_count,
                 compiler,
                 optl,
                 switches,
@@ -147,13 +164,15 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
                 testcase,
                 "lib",
                 lib,
-                status))
+                status,
+                ])
 
     if srcs != None:
         completed.append("src")
         for source in srcs:
-            print('{},{},{},"{}",{},{},{},"{}",{}'.format(
+            writer.writerow([
                 bisect_num,
+                bisect_count,
                 compiler,
                 optl,
                 switches,
@@ -161,13 +180,15 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
                 testcase,
                 "src",
                 source,
-                status))
+                status,
+                ])
 
     if syms != None:
         completed.append("sym")
         for sym in syms:
-            print('{},{},{},"{}",{},{},{},"{}",{}'.format(
+            writer.writerow([
                 bisect_num,
+                bisect_count,
                 compiler,
                 optl,
                 switches,
@@ -175,10 +196,12 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
                 testcase,
                 "sym",
                 sym,
-                status))
+                status,
+                ])
 
-    print('{},{},{},"{}",{},{},{},"{}",{}'.format(
+    writer.writerow([
         bisect_num,
+        bisect_count,
         compiler,
         optl,
         switches,
@@ -186,4 +209,5 @@ for fn in glob.glob("output/test_*/bisect-*/bisect.log"):
         testcase,
         "completed",
         ','.join(completed),
-        status))
+        status,
+        ])
