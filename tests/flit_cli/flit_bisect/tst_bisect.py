@@ -134,12 +134,12 @@ Verify that all source files were found and output during the search
 Verify that the four differing sources were output in the "differing sources:"
 section
 >>> idx = bisect_out.index('all variability inducing source file(s):')
->>> print('\\n'.join(bisect_out[idx+1:idx+4]))
+>>> print('\\n'.join(bisect_out[idx+1:idx+5]))
+  tests/file4.cpp (score 30.0)
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
   tests/file3.cpp (score 4.0)
-  tests/file4.cpp (score )
->>> bisect_out[idx+4].startswith('Searching for differing symbols in:')
+>>> bisect_out[idx+5].startswith('Searching for differing symbols in:')
 True
 
 Verify that all four files were searched individually
@@ -153,11 +153,11 @@ Verify all non-templated functions were identified during the symbol searches
 ...             if x.startswith('    Found differing symbol on line')])))
 line 100 -- file1_func3_PROBLEM() (score 2.0)
 line 103 -- file3_func5_PROBLEM() (score 3.0)
+line 106 -- file4_all() (score 30.0)
 line 108 -- file1_func4_PROBLEM() (score 3.0)
 line 91 -- file2_func1_PROBLEM() (score 7.0)
 line 92 -- file1_func2_PROBLEM() (score 5.0)
 line 92 -- file3_func2_PROBLEM() (score 1.0)
-line 106 - file4_all() (score )
 
 Verify the differing symbols section for file1.cpp
 >>> idx = bisect_out.index('  All differing symbols in tests/file1.cpp:')
@@ -184,22 +184,22 @@ Verify the differing symbols section for file3.cpp
 False
 
 Verify the bad symbols section for file4.cpp
->>> idx = bisect_out.index('  bad symbols in tests/file4.cpp:')
+>>> idx = bisect_out.index('  All differing symbols in tests/file4.cpp:')
 >>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
-    line 106 -- file4_all() (score )
+    line 106 -- file4_all() (score 30.0)
 >>> bisect_out[idx+2].startswith(' ')
 False
 
 Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
+  /.../tests/file4.cpp:106 ... -- file4_all() (score 30.0)
   /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM() (score 7.0)
   /.../tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
   /.../tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)
   /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM() (score 3.0)
   /.../tests/file1.cpp:100 ... -- file1_func3_PROBLEM() (score 2.0)
   /.../tests/file3.cpp:92 ... -- file3_func2_PROBLEM() (score 1.0)
-  /.../tests/file4.cpp:106 ... -- file4_all() (score )
 
 Example output to be expected:
 Updating ground-truth results - ground-truth.csv - done
@@ -275,15 +275,6 @@ All variability inducing symbols:
   /.../tests/file3.cpp:103 _Z19file3_func5_PROBLEMv -- file3_func5_PROBLEM() (score 3.0)
   /.../tests/file1.cpp:100 _Z19file1_func3_PROBLEMv -- file1_func3_PROBLEM() (score 2.0)
   /.../tests/file3.cpp:92 _Z19file3_func2_PROBLEMv -- file3_func2_PROBLEM() (score 1.0)
-
-Look for the symbols picked up for file4 in the log
->>> idx = log_contents.index(' Searching for bad symbols in: tests/file4.cpp')
->>> print('\\n'.join(log_contents[idx+4 : idx+9])) # doctest:+ELLIPSIS
-   None:None ... -- file4_func1()
-   /.../tests/file4.cpp:91 ... -- file4_func2()
-   /.../tests/file4.cpp:92 ... -- file4_func3()
-   /.../tests/file4.cpp:93 ... -- file4_func4()
-   /.../tests/file4.cpp:106 ... -- file4_all()
 
 TODO: test the log_contents variable
 TODO: test the -k flag
