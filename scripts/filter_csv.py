@@ -15,12 +15,25 @@ def parse_args(arguments):
                         help='''
                             filter by this column.  Can specify more than once.
                             ''')
-    return parser.parse_args(arguments)
+    parser.add_argument('-e', '--exclude', action='store_true',
+                        help='''
+                            Invert the selection.  Instead of keeping those
+                            that match, throw away those that match.
+                            ''')
+    parser.add_argument('-o', '--output', default=None,
+                        help='''
+                            output to this file instead of the default of
+                            <base>-filtered.csv
+                            ''')
+    args = parser.parse_args(arguments)
+    if args.output is None:
+        base, ext = os.path.splitext(args.incsv)
+        args.output = '{}-filtered{}'.format(base, ext)
+    return args
 
 def main(arguments):
     'Main logic here'
     args = parse_args(arguments)
-    base, ext = os.path.splitext(args.csv)
     with open(args.incsv, 'r') as csv_in:
         reader = csv.DictReader(csv_in)
         rows = list(reader)
@@ -30,10 +43,13 @@ def main(arguments):
     matching = [row for row in rows
                 if any(all(row[x] == other[x] for x in args.by)
                        for other in filterrows)]
-    with open('{}-filtered{}'.format(base, ext), 'w') as csv_out:
+    tokeep = matching
+    if args.exclude:
+        tokeep = [row for row in rows if row not in matching]
+    with open(args.output, 'w') as csv_out:
         writer = csv.DictWriter(csv_out, rows[0].keys())
         writer.writeheader()
-        writer.writerows(matching)
+        writer.writerows(tokeep)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
