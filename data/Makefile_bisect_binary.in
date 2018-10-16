@@ -101,7 +101,7 @@ TROUBLE_CXX      := {trouble_cxx}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
 TROUBLE_CXX_TYPE := {trouble_type}
-BISECT_LINK      := $(GT_CXX)
+BISECT_LINK      := {bisect_linker}
 
 TROUBLE_ID       := {trouble_id}
 
@@ -217,8 +217,9 @@ $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
 $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
 	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
+# TODO: What to replace GT_LDFLAGS with?
 $(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(GT_CXX) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
+	$(BISECT_LINK) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	$(TROUBLE_CXX) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED) $(TROUBLE_LDFLAGS)

@@ -200,15 +200,17 @@ def create_bisect_makefile(directory, replacements, gt_src,
                                             for x in gt_src])
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
+    repl_copy['EXTRA_LD_FLAGS'] = ''
     if 'cpp_flags' in repl_copy:
         repl_copy['EXTRA_CC_FLAGS'] = '\n'.join([
             'CC_REQUIRED      += {0}'.format(x)
             for x in repl_copy['cpp_flags']])
         del repl_copy['cpp_flags']
-    if 'link_flags' in repl_copy:
-        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join([
-            'LD_REQUIRED      += {0}'.format(x)
-            for x in repl_copy['link_flags']])
+    if 'link_flags' in repl_copy and len(repl_copy['link_flags']) > 0:
+        #repl_copy['EXTRA_LD_FLAGS'] = '\n'.join([
+        #    'LD_REQUIRED      += {0}'.format(x)
+        #    for x in repl_copy['link_flags']])
+        repl_copy['bisect_linker'] = '$(TROUBLE_CC)'
         del repl_copy['link_flags']
 
 
@@ -1454,6 +1456,7 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
         'link_flags': [],
         'cpp_flags': [],
         'build_gt_local': 'false',
+        'bisect_linker': '$(GT_CC)'
         }
     makefile = create_bisect_makefile(trouble_path, replacements, [])
     makepath = os.path.join(trouble_path, makefile)
@@ -1540,6 +1543,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'link_flags': [],
         'cpp_flags': [],
         'build_gt_local': 'false',
+        'bisect_linker': '$(GT_CC)'
         }
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
