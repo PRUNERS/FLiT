@@ -863,7 +863,6 @@ def bisect_search(score_func, elements, found_callback=None,
         if score > 0:
             differing_list.append((differing_element, score))
             # inform caller that a differing element was found
-            differing_list.append((differing_element, score))
             if found_callback != None:
                 found_callback(differing_element, score)
         else:
