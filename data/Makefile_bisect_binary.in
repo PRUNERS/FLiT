@@ -200,7 +200,7 @@ $(GT_LIB_OUT): $(GT_LIB_TARGET)
 	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
 
 $(GT_LIB_TARGET): $(GT_OBJ) Makefile custom.mk $(MAKEFILE)
-	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
+	$(BISECT_LINK) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
 
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_LIB_OUT) $(GT_LIB_TARGET)
 	$(RUNWRAP) ./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null

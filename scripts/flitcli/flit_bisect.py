@@ -1456,7 +1456,7 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
         'link_flags': [],
         'cpp_flags': [],
         'build_gt_local': 'false',
-        'bisect_linker': '$(GT_CC)'
+        'bisect_linker': '$(TROUBLE_CC)'
         }
     makefile = create_bisect_makefile(trouble_path, replacements, [])
     makepath = os.path.join(trouble_path, makefile)
@@ -1543,7 +1543,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'link_flags': [],
         'cpp_flags': [],
         'build_gt_local': 'false',
-        'bisect_linker': '$(GT_CC)'
+        'bisect_linker': '$(TROUBLE_CC)'
         }
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
