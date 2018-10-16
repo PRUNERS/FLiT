@@ -3,7 +3,7 @@
 #SBATCH --nodes 1
 #SBATCH --ntasks 28
 #SBATCH --cpus-per-task 1
-#SBATCH --array=1-6
+#SBATCH --array=1-18%6
 #SBATCH --output=autobisect-%A_%a.log
 #SBATCH --account soc-kp
 #SBATCH --partition soc-kp
@@ -20,11 +20,12 @@ ml singularity
 ml binutils
 ml
 
+input="${HOME}/mfem-results/runs/run-${SLURM_ARRAY_TASK_ID}.csv"
 scratch=/scratch/kingspeak/serial/u0415196
 sexec="singularity exec $HOME/singularity/archflit-mfem.simg"
 
 function finish {
-  local resultsdir="$HOME/mfem-results-$SLURM_JOB_ID"
+  local resultsdir="$HOME/mfem-results-${SLURM_JOB_ID}-${SLURM_ARRAY_TASK_ID}"
   cd /tmp/mfem/flit_tests
   mkdir -p "$resultsdir/gt"
   find . -maxdepth 1 -type f -name ground-truth\* -exec cp {} "$resultsdir/gt/" \;
@@ -99,14 +100,16 @@ make ground-truth.csv --touch
 #  --delete
 
 # Run variable-gcc
-cp ~/mfem-results/variable-${SLURM_ARRAY_TASK_ID}.csv ./
-sed -i -e 's|,g++,|,./g++-wrap,|g' variable-${SLURM_ARRAY_TASK_ID}.csv
-sed -i -e 's|,clang++,|,./clang++-wrap,|g' variable-${SLURM_ARRAY_TASK_ID}.csv
-sed -i -e 's|,icpc,|,./icpc-wrap,|g' variable-${SLURM_ARRAY_TASK_ID}.csv
-flit import ./variable-${SLURM_ARRAY_TASK_ID}.csv -D ./variable-${SLURM_ARRAY_TASK_ID}.sqlite
+cp "${input}" ./
+inputname=$(basename "${input}")
+inputbase=$(basename "${input}" .csv)
+sed -i -e 's|,g++,|,./g++-wrap,|g' "${inputname}"
+sed -i -e 's|,clang++,|,./clang++-wrap,|g' "${inputname}"
+sed -i -e 's|,icpc,|,./icpc-wrap,|g' "${inputname}"
+flit import "${inputname}" -D "${inputbase}".sqlite
 flit bisect \
   --verbose \
-  --auto-sqlite-run variable-${SLURM_ARRAY_TASK_ID}.sqlite \
+  --auto-sqlite-run "${inputbase}".sqlite \
   --parallel 28 \
   --jobs 20 \
   --delete
