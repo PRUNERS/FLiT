@@ -763,10 +763,6 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1,
     if not skip_verification:
         if len(frontier) == 0 or frontier[0][0] >= 0:
             # found everything, so do the traditional assertions
-            non_differing_list = \
-                list(set(elements).difference(x[0] for x in found_list))
-            assert score_func(non_differing_list) <= 0, \
-                'Assumption that differing elements are independent was wrong'
             assert score_func(elements) == \
                 score_func([x[0] for x in found_list]), \
                 'Assumption that minimal sets are non-overlapping was wrong'
@@ -922,13 +918,15 @@ def bisect_search(score_func, elements, found_callback=None,
         # double check that we found a differing element before declaring it
         # differing
         score = score_func([differing_element])
-        assert score > 0, \
-            'Found element does not cause variability: {}' \
-            .format(differing_element)
-        differing_list.append((differing_element, score))
-        # inform caller that a differing element was found
-        if found_callback is not None:
-            found_callback(differing_element, score)
+        if score > 0:
+            differing_list.append((differing_element, score))
+            # inform caller that a differing element was found
+            differing_list.append((differing_element, score))
+            if found_callback != None:
+                found_callback(differing_element, score)
+        else:
+            print('Warning: found element does not cause variability:',
+                  differing_element)
 
     if not skip_verification:
         # Perform a sanity check.  If we have found all of the differing items,
@@ -937,11 +935,9 @@ def bisect_search(score_func, elements, found_callback=None,
         # This will fail if our hypothesis class is wrong
         non_differing_list = \
             list(set(elements).difference(x[0] for x in differing_list))
-        assert score_func(non_differing_list) <= 0, \
-            'Assumption that differing elements are independent was wrong'
         assert score_func(elements) == \
             score_func([x[0] for x in differing_list]),\
-            'Assumption that minimal sets are non-overlapping was wrong'
+            'Assumption that minimal sets are independant was wrong'
 
     # sort descending by score
     differing_list.sort(key=lambda x: -x[1])
@@ -1777,10 +1773,11 @@ def run_bisect(arguments, prog=sys.argv[0]):
             checker = _gen_bisect_symbol_checker(
                 args, bisect_path, replacements, sources, fsymbol_tuples,
                 remaining_symbols)
-            assert checker(fsymbol_tuples) == \
-                   checker([x[0] for x in differing_symbols]), \
-                   'Assumption about independent symbols is False, ' \
-                   'false negative results are possible'
+            all_found_symbols = [x[0] for x in differing_symbols]
+            if checker(all_searched_symbols) == checker(all_found_symbols):
+                util.printlog('Warning: assumption that symbols are independent'
+                              ' was wrong')
+                util.printlog('Warning: found symbols list is not complete')
 
     differing_symbols.sort(key=lambda x: (-x[1], x[0]))
 
