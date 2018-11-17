@@ -173,11 +173,11 @@ tst_bisect.py.
 ...     if not isinstance(file_or_filelist, str):
 ...         for fname in file_or_filelist:
 ...             symbol_tuples.extend(extract_symbols_stub(fname, objdir))
-...         return symbol_tuples
+...         return symbol_tuples, []
 ...
 ...     return sorted([x for x in all_symbol_scores
 ...                      if x.fname == file_or_filelist],
-...                   key=lambda x: x.symbol)
+...                   key=lambda x: x.symbol), []
 
 >>> flit_bisect.build_bisect = build_bisect_stub
 >>> flit_bisect.update_gt_results = update_gt_results_stub

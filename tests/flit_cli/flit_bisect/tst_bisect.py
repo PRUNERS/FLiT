@@ -162,7 +162,7 @@ line 100 -- file1_func3_PROBLEM() (score 2.0)
 line 103 -- file3_func5_PROBLEM() (score 3.0)
 line 106 -- file4_all() (score 30.0)
 line 108 -- file1_func4_PROBLEM() (score 3.0)
-line 91 -- file2_func1_PROBLEM() (score 7.0)
+line 90 -- file2_func1_PROBLEM() (score 7.0)
 line 92 -- file1_func2_PROBLEM() (score 5.0)
 line 92 -- file3_func2_PROBLEM() (score 1.0)
 line 95 -- A::fileA_method1_PROBLEM() (score 2.0)
@@ -179,7 +179,7 @@ False
 Verify the differing symbols section for file2.cpp
 >>> idx = bisect_out.index('  All differing symbols in tests/file2.cpp:')
 >>> bisect_out[idx+1]
-'    line 91 -- file2_func1_PROBLEM() (score 7.0)'
+'    line 90 -- file2_func1_PROBLEM() (score 7.0)'
 >>> bisect_out[idx+2].startswith(' ')
 False
 
@@ -209,7 +209,7 @@ Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
   /.../tests/file4.cpp:106 ... -- file4_all() (score 30.0)
-  /.../tests/file2.cpp:91 ... -- file2_func1_PROBLEM() (score 7.0)
+  /.../tests/file2.cpp:90 ... -- file2_func1_PROBLEM() (score 7.0)
   /.../tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
   /.../tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)
   /.../tests/file3.cpp:103 ... -- file3_func5_PROBLEM() (score 3.0)

@@ -96,7 +96,6 @@ import hashlib
 import logging
 import multiprocessing as mp
 import os
-import re
 import shutil
 import sqlite3
 import subprocess as subp
@@ -338,8 +337,9 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
         except:
             tmpout.flush()
             with open(tmpout.name, 'r') as tmpin:
-                logging.error('make error occurred.  Here is the output:\n' +
-                              tmpin.read())
+                msg = 'make error occurred.  Here is the output:\n' \
+                      + tmpin.read()
+                logging.error('%s', msg)
             raise
 
 def build_bisect(makefilename, directory,
@@ -523,15 +523,21 @@ def extract_symbols(file_or_filelist, objdir):
     @param objdir: (str) directory where object files are compiled for the
         given files.
 
-    @return a list of SymbolTuple objects
+    @return two lists of SymbolTuple objects (funcsyms, remaining).
+        The first is the list of exported functions that are strong symbols and
+        have a filename and line number where they are defined.  The second is
+        all remaining symbols that are strong, exported, and defined.
     '''
-    symbol_tuples = []
+    funcsym_tuples = []
+    remainingsym_tuples = []
 
     # if it is not a string, then assume it is a list of strings
     if not isinstance(file_or_filelist, str):
         for fname in file_or_filelist:
-            symbol_tuples.extend(extract_symbols(fname, objdir))
-        return symbol_tuples
+            funcsyms, remaining = extract_symbols(fname, objdir)
+            funcsym_tuples.extend(funcsyms)
+            remainingsym_tuples.extend(remaining)
+        return (funcsym_tuples, remainingsym_tuples)
 
     # now we know it is a string, so assume it is a filename
     fname = file_or_filelist
@@ -546,6 +552,7 @@ def extract_symbols(file_or_filelist, objdir):
         'nm',
         '--extern-only',
         '--defined-only',
+        '--line-numbers',
         fobj,
         ]).decode('utf-8').splitlines()
     demangled_symbol_strings = subp.check_output([
@@ -555,45 +562,27 @@ def extract_symbols(file_or_filelist, objdir):
         '--demangle',
         fobj,
         ]).decode('utf-8').splitlines()
-    objdump_strings = subp.check_output([
-        'objdump', '--disassemble-all', '--line-numbers', fobj,
-        ]).decode('utf-8').splitlines()
-
-    # create the symbol -> (fname, lineno) map
-    symbol_line_mapping = dict()
-    symbol = None
-    for line in objdump_strings:
-        if len(line.strip()) == 0:      # skip empty lines
-            continue
-        if line[0].isdigit():           # we are at a symbol
-            symbol = line.split()[1][1:-2]
-            continue
-        if symbol is None:              # if we don't have an active symbol
-            continue                    # then skip
-        srcmatch = re.search(':[0-9]+$', line)
-        if srcmatch is not None:
-            deffile = line[:srcmatch.start()]
-            defline = int(line[srcmatch.start()+1:])
-            symbol_line_mapping[symbol] = (deffile, defline)
-            symbol = None               # deactivate the symbol to not overwrite
-
 
     # generate the symbol tuples
     for symbol_string, demangled_string in zip(symbol_strings,
                                                demangled_symbol_strings):
         symbol_type, symbol = symbol_string.split(maxsplit=2)[1:]
-        if symbol_type != "T": # only look at strong symbols in the text section
-            continue
         demangled = demangled_string.split(maxsplit=2)[2]
-        try:
-            deffile, defline = symbol_line_mapping[symbol]
-        except KeyError:
-            deffile, defline = None, None
-        symbol_tuples.append(
-            SymbolTuple(fname, symbol, demangled, deffile, defline))
 
-    _extract_symbols_memos[fobj] = symbol_tuples
-    return symbol_tuples
+        if symbol_type == 'W':  # skip weak symbols
+            continue
+
+        if '\t' in symbol:  # if filename and linenumber are specified
+            deffile, defline = symbol.split('\t', maxsplit=1)[1].split(':')
+            defline = int(defline)
+            funcsym_tuples.append(
+                SymbolTuple(fname, symbol, demangled, deffile, defline))
+        else:
+            remainingsym_tuples.append(
+                SymbolTuple(fname, symbol, demangled, None, None))
+
+    _extract_symbols_memos[fobj] = (funcsym_tuples, remainingsym_tuples)
+    return funcsym_tuples, remainingsym_tuples
 
 def memoize_strlist_func(func):
     '''
@@ -922,7 +911,7 @@ def bisect_search(score_func, elements, found_callback=None,
             .format(differing_element)
         differing_list.append((differing_element, score))
         # inform caller that a differing element was found
-        if found_callback != None:
+        if found_callback is not None:
             found_callback(differing_element, score)
 
     if not skip_verification:
@@ -1216,7 +1205,7 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
     return memoize_strlist_func(builder_and_checker)
 
 def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
-                               symbols, indent='  '):
+                               fsymbols, remainingsymbols, indent='  '):
     '''
     Generates and returns the function that builds and check a list of sources
     for showing variability.  The returned function is memoized, so no need to
@@ -1236,7 +1225,8 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
         @return The comparison value between this mixed compilation and the
             full baseline compilation.
         '''
-        gt_symbols = list(set(symbols).difference(symbols_to_optimize))
+        gt_symbols = list(set(fsymbols + remainingsymbols)
+                          .difference(symbols_to_optimize))
         all_sources = list(sources)  # copy the list of all source files
         symbol_sources = [x.src for x in symbols_to_optimize + gt_symbols]
         trouble_src = []
@@ -1355,20 +1345,20 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     logging.info('%sNote: only searching over globally exported functions',
                  indent)
     logging.debug('%sSymbols:', indent)
-    symbol_tuples = extract_symbols(differing_source,
-                                    os.path.join(args.directory, 'obj'))
-    for sym in symbol_tuples:
+    fsymbol_tuples, remaining_symbols = \
+        extract_symbols(differing_source, os.path.join(args.directory, 'obj'))
+    for sym in fsymbol_tuples:
         message = '{indent}  {sym.fname}:{sym.lineno} {sym.symbol} ' \
                   '-- {sym.demangled}'.format(indent=indent, sym=sym)
         logging.debug('%s', message)
 
     memoized_checker = _gen_bisect_symbol_checker(
-        args, bisect_path, replacements, sources, symbol_tuples,
-        indent=indent + '  ')
+        args, bisect_path, replacements, sources, fsymbol_tuples,
+        remaining_symbols, indent=indent + '  ')
 
     # Check to see if -fPIC destroyed any chance of finding any differing
     # symbols
-    if memoized_checker(symbol_tuples) <= 0.0:
+    if memoized_checker(fsymbol_tuples) <= 0.0:
         message_1 = '{}  Warning: -fPIC compilation destroyed the ' \
             'optimization'.format(indent)
         message_2 = '{}  Cannot find any trouble symbols'.format(indent)
@@ -1391,12 +1381,12 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
     if args.biggest is None:
         differing_symbols = bisect_search(
-            memoized_checker, symbol_tuples,
+            memoized_checker, fsymbol_tuples,
             found_callback=differing_symbol_callback,
             skip_verification=args.skip_verification)
     else:
         differing_symbols = bisect_biggest(
-            memoized_checker, symbol_tuples,
+            memoized_checker, fsymbol_tuples,
             found_callback=differing_symbol_callback, k=args.biggest,
             skip_verification=args.skip_verification)
     return differing_symbols
