@@ -1748,13 +1748,19 @@ def run_bisect(arguments, prog=sys.argv[0]):
             # Verify that there are no missed files, i.e. those that are more
             # than singletons and that are to be grouped with one of the found
             # symbols.
-            all_searched_symbols = extract_symbols(
-                [x[0] for x in differing_sources],
-                os.path.join(args.directory, 'obj'))
+            message = 'Verifying assumption about independent symbols'
+            print(message)
+            logging.info('%s', message)
+            fsymbol_tuples, remaining_symbols = \
+                extract_symbols([x[0] for x in differing_sources],
+                                os.path.join(args.directory, 'obj'))
             checker = _gen_bisect_symbol_checker(
-                args, bisect_path, replacements, sources, all_searched_symbols)
-            assert checker(all_searched_symbols) == \
-                   checker([x[0] for x in differing_symbols])
+                args, bisect_path, replacements, sources, fsymbol_tuples,
+                remaining_symbols)
+            assert checker(fsymbol_tuples) == \
+                   checker([x[0] for x in differing_symbols]), \
+                   'Assumption about independent symbols is False, ' \
+                   'false negative results are possible'
 
     differing_symbols.sort(key=lambda x: (-x[1], x[0]))
 
