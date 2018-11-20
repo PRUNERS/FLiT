@@ -174,7 +174,7 @@ def main(arguments, outstream=None):
         try:
             oldout = sys.stdout
             sys.stdout = outstream
-            _main_impl(arguments)
+            return _main_impl(arguments)
         finally:
             sys.stdout = oldout
 

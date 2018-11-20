@@ -161,7 +161,7 @@ def main(arguments, prog=sys.argv[0]):
                 litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
         copy_files(litmus_to_copy)
 
-    flit_update.main(['--directory', args.directory])
+    return flit_update.main(['--directory', args.directory])
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

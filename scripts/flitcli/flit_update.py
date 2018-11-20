@@ -195,5 +195,7 @@ def main(arguments, prog=sys.argv[0]):
     flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                              makefile, replacements, overwrite=True)
 
+    return 0
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
