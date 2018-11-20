@@ -81,37 +81,26 @@
  * -- LICENSE END --
  */
 
-#include "file1.h"
-#include "file2.h"
-#include "file3.h"
-#include "file4.h"
 #include "A.h"
 
 #include <flit.h>
 
 #include <string>
 
-#include <cmath>
+int A::offset = 2;
 
-template <typename T>
-class BisectTest : public flit::TestBase<T> {
-public:
-  BisectTest(std::string id) : flit::TestBase<T>(std::move(id)) {}
-  virtual size_t getInputsPerRun() override { return 0; }
-  virtual std::vector<T> getDefaultInput() override { return {}; }
-  virtual long double compare(long double ground_truth,
-                              long double test_results) const override {
-    return std::abs(test_results - ground_truth);
+A::A() {}
+A::~A() {}
+
+int A::fileA_method1_PROBLEM() {
+  if (std::string(FLIT_OPTL) == "-O3") {
+    return 3 + offset;  // variability introduced = offset = 2
+  } else {
+    return 3;
   }
+}
 
-protected:
-  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    FLIT_UNUSED(ti);
-    return file1_all() + file2_all() + file3_all() + file4_all() + fileA_all();
-  }
-
-protected:
-  using flit::TestBase<T>::id;
-};
-
-REGISTER_TYPE(BisectTest)
+int fileA_all() {
+  A a;
+  return a.fileA_method1_PROBLEM();
+}
