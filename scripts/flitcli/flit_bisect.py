@@ -573,7 +573,8 @@ def extract_symbols(file_or_filelist, objdir):
             continue
 
         if '\t' in symbol:  # if filename and linenumber are specified
-            deffile, defline = symbol.split('\t', maxsplit=1)[1].split(':')
+            symbol, definition = symbol.split('\t', maxsplit=1)
+            deffile, defline = definition.split(':')
             defline = int(defline)
             funcsym_tuples.append(
                 SymbolTuple(fname, symbol, demangled, deffile, defline))
