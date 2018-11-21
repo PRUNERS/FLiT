@@ -2,6 +2,7 @@
 #   https://github.com/eliben/pyelftools.git
 
 from collections import namedtuple
+import subprocess as subp
 import sys
 
 from elftools.common.py3compat import bytes2str
@@ -62,22 +63,22 @@ def extract_symbols(objfile, srcfile):
 
         # TODO: demangle all symbols
         p = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
-        out, _ = p.communicate('\n'.join([sym.name for sym in fsyms]))
+        out, _ = p.communicate('\n'.join([sym.name for sym in fsyms]).encode())
         fdemangled = out.decode('utf8').splitlines()
 
         p = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
-        out, _ = p.communicate('\n'.join([sym.name for sym in rsyms]))
+        out, _ = p.communicate('\n'.join([sym.name for sym in rsyms]).encode())
         rdemangled = out.decode('utf8').splitlines()
 
         from pprint import pprint
-        print('demangled = ', end='')
-        pprint(demangled)
+        print('fdemangled = ', end='')
+        pprint(fdemangled)
 
-        assert len(demangled) == len(fsyms)
+        assert len(fdemangled) == len(fsyms)
         funcsym_tuples = [SymbolTuple(srcfile, fsyms[i].name, fdemangled[i],
                                       locs[i][0], locs[i][1])
                           for i in range(len(fsyms))]
-        remaining_tuples = [SymbolTuples(srcfile, rsyms[i].name, rdemangled[i],
+        remaining_tuples = [SymbolTuple(srcfile, rsyms[i].name, rdemangled[i],
                                          None, None)
                             for i in range(len(rsyms))]
 
@@ -187,22 +188,26 @@ def _locate_symbols(elffile, symbols):
             in mangled_names
         }
 
-    from pprint import pprint
-    print('die_map = ', end='')
-    pprint(die_map)
-    print('mangled_names = ', end='')
-    pprint(mangled_names)
-    assert len(die_map) == len(mangled_names)
+    #from pprint import pprint
+    #print('die_map = ', end='')
+    #pprint(die_map)
+    #print('mangled_names = ', end='')
+    #pprint(mangled_names)
+    #assert len(die_map) == len(mangled_names)
 
     locations = []
     for name in mangled_names:
         location = [None, None]
-        die = die_map[name]
-        if 'DW_AT_decl_line' in die.attributes:
-            location[1] = die.attributes['DW_AT_decl_line']
-        if 'DW_AT_decl_file' in die.attributes:
-            fno = die.attributes['DW_AT_decl_file']
-            # TODO: find the filename in the line number information table
+        try:
+            die = die_map[name]
+        except KeyError:
+            pass
+        else:
+            if 'DW_AT_decl_line' in die.attributes:
+                location[1] = die.attributes['DW_AT_decl_line'].value
+            if 'DW_AT_decl_file' in die.attributes:
+                fno = die.attributes['DW_AT_decl_file'].value
+                # TODO: find the filename in the line number information table
         locations.append(location)
 
     return locations
