@@ -105,7 +105,7 @@ import flitconfig as conf
 import flitutil as util
 try:
     import flitelf as elf
-except ModuleNotFoundError:
+except ImportError:
     elf = None
 
 
