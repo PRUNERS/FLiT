@@ -41,10 +41,10 @@ For Debian-based systems:
 ```bash
 sudo apt install \
   bash binutils build-essential coreutils git hostname \
-  python3 python3-toml python3-pyelftools
+  python3
 ```
 
-The python modules can also be installed with `apt`
+The python modules can be installed with `apt`
 
 ```bash
 sudo apt install python3-toml python3-pyelftools
