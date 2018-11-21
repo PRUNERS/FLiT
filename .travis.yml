@@ -113,7 +113,7 @@ matrix:
           packages:
             - *native_deps
 
-before_install: pip3 install --user toml
+before_install: pip3 install --user toml pyelftools
 
 script: make -j 4 && make check
 
