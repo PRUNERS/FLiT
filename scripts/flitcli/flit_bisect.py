@@ -103,6 +103,7 @@ import sys
 
 import flitconfig as conf
 import flitutil as util
+import flitelf as elf
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
@@ -499,22 +500,10 @@ def is_result_differing(resultfile):
     '''
     return float(get_comparison_result(resultfile)) != 0.0
 
-SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
-SymbolTuple.__doc__ = '''
-Tuple containing information about the symbols in a file.  Has the following
-attributes:
-    src:        source file that was compiled
-    symbol:     mangled symbol in the compiled version
-    demangled:  demangled version of symbol
-    fname:      filename where the symbol is actually defined.  This usually
-                will be equal to src, but may not be in some situations.
-    lineno:     line number of definition within fname.
-'''
-
 _extract_symbols_memos = {}
 def extract_symbols(file_or_filelist, objdir):
     '''
-    Extracts symbols for the given file(s) given.  The corresponding object is
+    Extracts symbols for the given source file(s).  The corresponding object is
     assumed to be in the objdir with the filename replaced with the GNU Make
     pattern %.cpp=%_gt.o.
 
@@ -528,11 +517,11 @@ def extract_symbols(file_or_filelist, objdir):
         have a filename and line number where they are defined.  The second is
         all remaining symbols that are strong, exported, and defined.
     '''
-    funcsym_tuples = []
-    remainingsym_tuples = []
 
     # if it is not a string, then assume it is a list of strings
     if not isinstance(file_or_filelist, str):
+        funcsym_tuples = []
+        remainingsym_tuples = []
         for fname in file_or_filelist:
             funcsyms, remaining = extract_symbols(fname, objdir)
             funcsym_tuples.extend(funcsyms)
@@ -547,43 +536,8 @@ def extract_symbols(file_or_filelist, objdir):
     if fobj in _extract_symbols_memos:
         return _extract_symbols_memos[fobj]
 
-    # use nm and objdump to get the binary information we need
-    symbol_strings = subp.check_output([
-        'nm',
-        '--extern-only',
-        '--defined-only',
-        '--line-numbers',
-        fobj,
-        ]).decode('utf-8').splitlines()
-    demangled_symbol_strings = subp.check_output([
-        'nm',
-        '--extern-only',
-        '--defined-only',
-        '--demangle',
-        fobj,
-        ]).decode('utf-8').splitlines()
-
-    # generate the symbol tuples
-    for symbol_string, demangled_string in zip(symbol_strings,
-                                               demangled_symbol_strings):
-        symbol_type, symbol = symbol_string.split(maxsplit=2)[1:]
-        demangled = demangled_string.split(maxsplit=2)[2]
-
-        if symbol_type == 'W':  # skip weak symbols
-            continue
-
-        if '\t' in symbol:  # if filename and linenumber are specified
-            symbol, definition = symbol.split('\t', maxsplit=1)
-            deffile, defline = definition.split(':')
-            defline = int(defline)
-            funcsym_tuples.append(
-                SymbolTuple(fname, symbol, demangled, deffile, defline))
-        else:
-            remainingsym_tuples.append(
-                SymbolTuple(fname, symbol, demangled, None, None))
-
-    _extract_symbols_memos[fobj] = (funcsym_tuples, remainingsym_tuples)
-    return funcsym_tuples, remainingsym_tuples
+    _extract_symbols_memos[fobj] = elf.extract_symbols(fobj, fname)
+    return _extract_symbols_memos[fobj]
 
 def memoize_strlist_func(func):
     '''
