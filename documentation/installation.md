@@ -26,8 +26,11 @@ Stuff you may need to get
 
 * [git](https://git-scm.com)
 * [python3](https://www.python.org)
-  * The [toml](https://github.com/uiri/toml) module (for
+  * [toml](https://github.com/uiri/toml) module (for
     [TOML](https://github.com/toml-lang/toml) configuration files)
+  * (optional) [pyelftools](https://github.com/eliben/pyelftools) module for
+    parsing ELF files.  This is used for `flit bisect`; all other functionality
+    will work without it.
 * [make](https://www.gnu.org/software/make)
 * [gcc](https://gcc.gnu.org) version 4.9 or higher
 * [sqlite3](https://sqlite.org) version 3.0 or higher.
@@ -38,14 +41,27 @@ For Debian-based systems:
 ```bash
 sudo apt install \
   bash binutils build-essential coreutils git hostname \
-  python3 python3-toml
+  python3 python3-toml python3-pyelftools
+```
+
+The python modules can also be installed with `apt`
+
+```bash
+sudo apt install python3-toml python3-pyelftools
+```
+
+or with `pip`
+
+```bash
+sudo apt install python3-pip
+pip3 install --user toml pyelftools
 ```
 
 For homebrew on OSX (besides installing [Xcode](https://developer.apple.com/xcode))
 
 ```bash
 brew install make python3 gcc git
-pip3 install toml
+pip3 install toml pyelftools
 ```
 
 If you install python version 3.0 or later, then you will need to have a
