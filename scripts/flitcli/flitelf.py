@@ -4,6 +4,7 @@
 from collections import namedtuple
 import subprocess as subp
 import sys
+import os
 
 from elftools.common.py3compat import bytes2str
 from elftools.dwarf.descriptions import describe_form_class
@@ -176,40 +177,55 @@ def _locate_symbols(elffile, symbols):
     if not elffile.has_dwarf_info():
         raise RuntimeError('Elf file has no DWARF info')
 
-    dwarf = elffile.get_dwarf_info()
-    mangled_names = [x.name for x in symbols]
-
-    dies = [x for cu in dwarf.iter_CUs() for x in cu.iter_DIEs()]
-    die_map= {
-        x.attributes['DW_AT_linkage_name'].value.decode('utf8'): x
-        for x in dies
-        if 'DW_AT_linkage_name' in x.attributes
-        and x.attributes['DW_AT_linkage_name'].value.decode('utf8')
-            in mangled_names
-        }
-
-    #from pprint import pprint
-    #print('die_map = ', end='')
-    #pprint(die_map)
-    #print('mangled_names = ', end='')
-    #pprint(mangled_names)
-    #assert len(die_map) == len(mangled_names)
+    dwarfinfo = elffile.get_dwarf_info()
+    fltable = _gen_file_line_table(dwarfinfo)
 
     locations = []
-    for name in mangled_names:
-        location = [None, None]
-        try:
-            die = die_map[name]
-        except KeyError:
-            pass
+    for sym in symbols:
+        for fname, lineno, start, end in fltable:
+            if start <= sym.entry['st_value'] < end:
+                locations.append((fname.decode('utf8'), lineno))
+                break
         else:
-            if 'DW_AT_decl_line' in die.attributes:
-                location[1] = die.attributes['DW_AT_decl_line'].value
-            if 'DW_AT_decl_file' in die.attributes:
-                fno = die.attributes['DW_AT_decl_file'].value
-                # TODO: find the filename in the line number information table
-        locations.append(location)
+            locations.append((None, None))
 
     return locations
-    #function_name = 
 
+def _gen_file_line_table(dwarfinfo):
+    '''
+    Generates and returns a list of (filename, lineno, startaddr, endaddr).
+    '''
+    # generate the table
+    table = []
+    for cu in dwarfinfo.iter_CUs():
+        lineprog = dwarfinfo.line_program_for_CU(cu)
+        prevstate = None
+        for entry in lineprog.get_entries():
+            # We're interested in those entries where a new state is assigned
+            if entry.state is None or entry.state.end_sequence:
+                continue
+            # Looking for a range of addresses in two consecutive states that
+            # contain a required address.
+            if prevstate is not None:
+                print(lineprog)
+                filename = lineprog['file_entry'][prevstate.file - 1].name
+                dirno = lineprog['file_entry'][prevstate.file - 1].dir_index
+                filepath = os.path.join(lineprog['include_directory'][dirno - 1], filename)
+                line = prevstate.line
+                fromaddr = prevstate.address
+                toaddr = max(fromaddr, entry.state.address)
+                table.append((filepath, line, fromaddr, toaddr))
+            prevstate = entry.state
+
+    # consolidate the table
+    consolidated = []
+    prev = table[0]
+    for entry in table[1:]:
+        if prev[1] == entry[1] and prev[3] == entry[2]:
+            prev = (prev[0], prev[1], prev[2], entry[3])
+        else:
+            consolidated.append(prev)
+            prev = entry
+    consolidated.append(prev)
+
+    return consolidated
