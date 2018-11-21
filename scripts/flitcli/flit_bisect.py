@@ -85,7 +85,6 @@ Implements the bisect subcommand, identifying the problematic subset of source
 files that cause the variability.
 '''
 
-from collections import namedtuple
 from tempfile import NamedTemporaryFile
 import argparse
 import csv
@@ -1252,16 +1251,6 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
 
     memoized_checker = _gen_bisect_source_checker(args, bisect_path,
                                                   replacements, sources)
-
-    # TODO: make a callback that immediately starts the symbol search on the
-    # TODO-  first found file.  Do this for  when args.biggest is defined.
-    # TODO- What we want here is that the first file found triggers a symbol
-    # TODO- search.  Then the top k symbols are found from that file.  We move
-    # TODO- to the next file.  If that file has a greater variance than the kth
-    # TODO- symbol found from the previous set of files, then we're done, else
-    # TODO- run symbol bisect on it to get the top k symbols as well (we can
-    # TODO- stop as soon as a symbol is less than the kth symbol (after
-    # TODO- updating the list of k).
 
     print('Searching for differing source files:')
     logging.info('Searching for differing source files under the trouble'

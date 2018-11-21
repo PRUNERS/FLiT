@@ -85,7 +85,6 @@
 import argparse
 import os
 import shutil
-import socket
 import sys
 
 import flitconfig as conf
@@ -95,6 +94,7 @@ import flit_update
 brief_description = 'Initializes a flit test directory for use'
 
 def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
     parser = argparse.ArgumentParser(
         prog=prog,
         description='''
