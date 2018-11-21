@@ -1,9 +1,95 @@
 # Much of this is copied from the examples given in
 #   https://github.com/eliben/pyelftools.git
 
+# -- LICENSE BEGIN --
+#
+# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+#
+# Produced at the Lawrence Livermore National Laboratory
+#
+# Written by
+#   Michael Bentley (mikebentley15@gmail.com),
+#   Geof Sawaya (fredricflinstone@gmail.com),
+#   and Ian Briggs (ian.briggs@utah.edu)
+# under the direction of
+#   Ganesh Gopalakrishnan
+#   and Dong H. Ahn.
+#
+# LLNL-CODE-743137
+#
+# All rights reserved.
+#
+# This file is part of FLiT. For details, see
+#   https://pruners.github.io/flit
+# Please also read
+#   https://github.com/PRUNERS/FLiT/blob/master/LICENSE
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+# - Redistributions of source code must retain the above copyright
+#   notice, this list of conditions and the disclaimer below.
+#
+# - Redistributions in binary form must reproduce the above
+#   copyright notice, this list of conditions and the disclaimer
+#   (as noted below) in the documentation and/or other materials
+#   provided with the distribution.
+#
+# - Neither the name of the LLNS/LLNL nor the names of its
+#   contributors may be used to endorse or promote products derived
+#   from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL LAWRENCE LIVERMORE NATIONAL
+# SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+# IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+# THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Additional BSD Notice
+#
+# 1. This notice is required to be provided under our contract
+#    with the U.S. Department of Energy (DOE). This work was
+#    produced at Lawrence Livermore National Laboratory under
+#    Contract No. DE-AC52-07NA27344 with the DOE.
+#
+# 2. Neither the United States Government nor Lawrence Livermore
+#    National Security, LLC nor any of their employees, makes any
+#    warranty, express or implied, or assumes any liability or
+#    responsibility for the accuracy, completeness, or usefulness of
+#    any information, apparatus, product, or process disclosed, or
+#    represents that its use would not infringe privately-owned
+#    rights.
+#
+# 3. Also, reference herein to any specific commercial products,
+#    process, or services by trade name, trademark, manufacturer or
+#    otherwise does not necessarily constitute or imply its
+#    endorsement, recommendation, or favoring by the United States
+#    Government or Lawrence Livermore National Security, LLC. The
+#    views and opinions of authors expressed herein do not
+#    necessarily state or reflect those of the United States
+#    Government or Lawrence Livermore National Security, LLC, and
+#    shall not be used for advertising or product endorsement
+#    purposes.
+#
+# -- LICENSE END --
+
+'''
+Utility functions for dealing with ELF binary files.  This file requires the
+pyelftools package to be installed (i.e. module elftools).
+'''
+
 from collections import namedtuple
 import subprocess as subp
-import sys
 import os
 
 from elftools.elf.elffile import ELFFile
@@ -32,13 +118,9 @@ def extract_symbols(objfile, srcfile):
         have a filename and line number where they are defined.  The second is
         all remaining symbols that are strong, exported, and defined.
     '''
-    funcsym_tuples = []
-    remainingsym_tuples = []
-
     with open(objfile, 'rb') as fin:
         elffile = ELFFile(fin)
 
-        #symtabs = [elffile.get_section_by_name('.symtab')]
         symtabs = [x for x in elffile.iter_sections()
                    if isinstance(x, SymbolTableSection)]
         if len(symtabs) == 0:
@@ -47,11 +129,11 @@ def extract_symbols(objfile, srcfile):
 
         # get globally exported defined symbols
         syms = [sym for symtab in symtabs
-                    for sym in symtab.iter_symbols()
-                    if _is_symbol(sym) and
-                       _is_extern(sym) and
-                       _is_strong(sym) and
-                       _is_defined(sym)]
+                for sym in symtab.iter_symbols()
+                if _is_symbol(sym)
+                and _is_extern(sym)
+                and _is_strong(sym)
+                and _is_defined(sym)]
 
         # split symbols into functions and non-functions
         fsyms = [sym for sym in syms if _is_func(sym)] # functions
@@ -61,27 +143,17 @@ def extract_symbols(objfile, srcfile):
         locs = _locate_symbols(elffile, fsyms)
 
         # demangle all symbols
-        p = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
-        out, _ = p.communicate('\n'.join([sym.name for sym in fsyms]).encode())
-        fdemangled = out.decode('utf8').splitlines()
+        fdemangled = _demangle([sym.name for sym in fsyms])
+        rdemangled = _demangle([sym.name for sym in rsyms])
 
-        p = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
-        out, _ = p.communicate('\n'.join([sym.name for sym in rsyms]).encode())
-        rdemangled = out.decode('utf8').splitlines()
-
-        from pprint import pprint
-        print('fdemangled = ', end='')
-        pprint(fdemangled)
-
-        assert len(fdemangled) == len(fsyms)
         funcsym_tuples = [SymbolTuple(srcfile, fsyms[i].name, fdemangled[i],
                                       locs[i][0], locs[i][1])
                           for i in range(len(fsyms))]
         remaining_tuples = [SymbolTuple(srcfile, rsyms[i].name, rdemangled[i],
-                                         None, None)
+                                        None, None)
                             for i in range(len(rsyms))]
 
-    return funcsym_tuples, remaining_tuples
+        return funcsym_tuples, remaining_tuples
 
 def _symbols(symtab):
     'Returns all symbols from the given symbol table'
@@ -110,6 +182,14 @@ def _is_defined(sym):
 def _is_func(sym):
     'Returns True if elf.sections.Symbol is a function'
     return sym['st_info']['type'] == 'STT_FUNC'
+
+def _demangle(symbol_list):
+    'Demangles each C++ name in the given list'
+    proc = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
+    out, _ = proc.communicate('\n'.join(symbol_list).encode())
+    demangled = out.decode('utf8').splitlines()
+    assert len(demangled) == len(symbol_list)
+    return demangled
 
 def _locate_symbols(elffile, symbols):
     '''
@@ -146,8 +226,8 @@ def _gen_file_line_table(dwarfinfo):
     '''
     # generate the table
     table = []
-    for cu in dwarfinfo.iter_CUs():
-        lineprog = dwarfinfo.line_program_for_CU(cu)
+    for unit in dwarfinfo.iter_CUs():
+        lineprog = dwarfinfo.line_program_for_CU(unit)
         prevstate = None
         for entry in lineprog.get_entries():
             # We're interested in those entries where a new state is assigned
@@ -156,7 +236,6 @@ def _gen_file_line_table(dwarfinfo):
             # Looking for a range of addresses in two consecutive states that
             # contain a required address.
             if prevstate is not None:
-                print(lineprog)
                 filename = lineprog['file_entry'][prevstate.file - 1].name
                 dirno = lineprog['file_entry'][prevstate.file - 1].dir_index
                 filepath = os.path.join(lineprog['include_directory'][dirno - 1], filename)
