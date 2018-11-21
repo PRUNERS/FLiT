@@ -91,7 +91,9 @@ addons:
 matrix:
   include:
     # Job 1: OpenMPI
-    - env: mpi_type=openmpi
+    - env:
+      - mpi_type=openmpi
+      - extra_pip=pyelftools
       addons:
         apt:
           packages:
@@ -107,13 +109,15 @@ matrix:
     #        - libmpich-dev
     #        - mpich
     # Job 3: No MPI
-    - env: mpi_type=none
+    - env:
+      - mpi_type=none
+      - extra_pip=
       addons:
         apt:
           packages:
             - *native_deps
 
-before_install: pip3 install --user toml pyelftools
+before_install: pip3 install --user toml $extra_pip
 
 script: make -j 4 && make check
 
