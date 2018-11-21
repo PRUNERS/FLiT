@@ -84,6 +84,14 @@
 Implements the bisect subcommand, identifying the problematic subset of source
 files that cause the variability.
 '''
+import sys
+
+try:
+    import flitelf as elf
+except ModuleNotFoundError:
+    print('Error: pyelftools is not installed, bisect disabled',
+          file=sys.stderr)
+    sys.exit(1)
 
 from collections import namedtuple
 from tempfile import NamedTemporaryFile
@@ -99,11 +107,11 @@ import os
 import shutil
 import sqlite3
 import subprocess as subp
-import sys
 
 import flitconfig as conf
 import flitutil as util
 import flitelf as elf
+
 
 brief_description = 'Bisect compilation to identify problematic source code'
 

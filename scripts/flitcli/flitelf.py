@@ -6,8 +6,6 @@ import subprocess as subp
 import sys
 import os
 
-from elftools.common.py3compat import bytes2str
-from elftools.dwarf.descriptions import describe_form_class
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import SymbolTableSection
 
@@ -59,10 +57,10 @@ def extract_symbols(objfile, srcfile):
         fsyms = [sym for sym in syms if _is_func(sym)] # functions
         rsyms = list(set(syms).difference(fsyms))      # remaining
 
-        # TODO: find filename and line numbers for each relevant func symbol
+        # find filename and line numbers for each relevant func symbol
         locs = _locate_symbols(elffile, fsyms)
 
-        # TODO: demangle all symbols
+        # demangle all symbols
         p = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
         out, _ = p.communicate('\n'.join([sym.name for sym in fsyms]).encode())
         fdemangled = out.decode('utf8').splitlines()
@@ -84,55 +82,6 @@ def extract_symbols(objfile, srcfile):
                             for i in range(len(rsyms))]
 
     return funcsym_tuples, remaining_tuples
-
-#    # use nm and objdump to get the binary information we need
-#    symbol_strings = subp.check_output([
-#        'nm',
-#        '--extern-only',
-#        '--defined-only',
-#        '--line-numbers',
-#        objfile,
-#        ]).decode('utf-8').splitlines()
-#    demangled_symbol_strings = subp.check_output([
-#        'nm',
-#        '--extern-only',
-#        '--defined-only',
-#        '--demangle',
-#        objfile,
-#        ]).decode('utf-8').splitlines()
-#
-#    print('extract_symbols({})'.format(fname))
-#    if fname == 'tests/A.cpp':
-#        from pprint import pprint
-#        print('A.cpp: symbol strings:')
-#        pprint(symbol_strings)
-#        print('A.cpp: demangled symbol strings:')
-#        pprint(demangled_symbol_strings)
-#
-#    # generate the symbol tuples
-#    for symbol_string, demangled_string in zip(symbol_strings,
-#                                               demangled_symbol_strings):
-#        symbol_type, symbol = symbol_string.split(maxsplit=2)[1:]
-#        demangled = demangled_string.split(maxsplit=2)[2]
-#
-#        if symbol_type == 'W':  # skip weak symbols
-#            continue
-#
-#        if '\t' in symbol:  # if filename and linenumber are specified
-#            symbol, definition = symbol.split('\t', maxsplit=1)
-#            deffile, defline = definition.split(':')
-#            defline = int(defline)
-#            symtuple = SymbolTuple(fname, symbol, demangled, deffile, defline))
-#            if symbol_type == 'T':
-#                funcsym_tuples.append(symtuple)
-#            else:
-#                remainingsym_tuples.append(symtuple)
-#        else:
-#            remainingsym_tuples.append(
-#                SymbolTuple(fname, symbol, demangled, None, None))
-#
-#    _extract_symbols_memos[objfile] = (funcsym_tuples, remainingsym_tuples)
-#    return funcsym_tuples, remainingsym_tuples
 
 def _symbols(symtab):
     'Returns all symbols from the given symbol table'
