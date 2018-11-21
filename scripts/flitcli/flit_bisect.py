@@ -84,14 +84,6 @@
 Implements the bisect subcommand, identifying the problematic subset of source
 files that cause the variability.
 '''
-import sys
-
-try:
-    import flitelf as elf
-except ModuleNotFoundError:
-    print('Error: pyelftools is not installed, bisect disabled',
-          file=sys.stderr)
-    sys.exit(1)
 
 from collections import namedtuple
 from tempfile import NamedTemporaryFile
@@ -107,10 +99,14 @@ import os
 import shutil
 import sqlite3
 import subprocess as subp
+import sys
 
 import flitconfig as conf
 import flitutil as util
-import flitelf as elf
+try:
+    import flitelf as elf
+except ModuleNotFoundError:
+    elf = None
 
 
 brief_description = 'Bisect compilation to identify problematic source code'
@@ -1979,6 +1975,11 @@ def main(arguments, prog=sys.argv[0]):
     A wrapper around the bisect program.  This checks for the --auto-sqlite-run
     stuff and runs the run_bisect multiple times if so.
     '''
+
+    if elf is None:
+        print('Error: pyelftools is not installed, bisect disabled',
+              file=sys.stderr)
+        return 1
 
     if '-a' in arguments or '--auto-sqlite-run' in arguments:
         return parallel_auto_bisect(arguments, prog)
