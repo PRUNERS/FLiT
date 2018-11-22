@@ -122,7 +122,6 @@ LD_REQUIRED     :=
 
 RUNWRAP          = $(RUN_WRAPPER)
 ifeq ($(ENABLE_MPI),yes) # If we are using MPI
-  $(info MPI is enabled)
   RUNWRAP       += mpirun $(MPIRUN_ARGS)
   CC_REQUIRED   += -DFLIT_USE_MPI
   CC_REQUIRED   += $(shell mpic++ --showme:compile)
@@ -165,8 +164,12 @@ GET_COMPILER     = $(shell $1 --version | head -n 1 | awk '{{ print $$1 }}')
 
 # Returns 1 if the given compiler is GCC, else 0
 # @param 1: executable name or path to compiler
-IS_GCC           = $(shell expr $(call GET_COMPILER,$(1)) = gcc \| \
+IS_GCC           = $(shell expr $(call GET_COMPILER,$1) = gcc \| \
                                 $(call GET_COMPILER,$1) = g++)
+
+# Returns 1 if the given compiler is CLANG, else 0
+# @param 1: executable name or path to compiler
+IS_CLANG         = $(shell expr $(call GET_COMPILER,$1) = clang)
 
 # Returns the version of the compiler as returned by -dumpversion
 # @param 1: executable name or path to compiler
@@ -395,8 +398,12 @@ R_DEP           := $(R_OBJ:%.o=%.d)
 .PHONY: rec
 rec: $(R_TARGET)
 
-# if the current compiler is not GCC 4 or 5, then enable -no-pie
-ifeq ($(call IS_GCC_4_OR_5,$($(R_CUR_COMPILER))),0)
+# clang's flag is -nopie
+# else if the current compiler is not GCC 4 or 5, then enable -no-pie
+# GCC 4 and 5 do not need -no-pie since that is the default
+ifeq ($(call IS_CLANG,$($(R_CUR_COMPILER))),1)
+  LD_REQUIRED += -nopie
+else ifeq ($(call IS_GCC_4_OR_5,$($(R_CUR_COMPILER))),0)
   LD_REQUIRED += -no-pie
 endif
 
@@ -420,13 +427,19 @@ $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
 
-# if the dev compiler is not an old version of GCC
-ifeq ($(call IS_GCC_4_OR_5,$(DEV_CC)),0)
+# clang's flag is -nopie
+# else if the current compiler is not GCC 4 or 5, then enable -no-pie
+# GCC 4 and 5 do not need -no-pie since that is the default
+ifeq ($(call IS_CLANG,$(DEV_CC)),1)
+  DEV_LDFLAGS   += -nopie
+else ifeq ($(call IS_GCC_4_OR_5,$(DEV_CC)),0)
   DEV_LDFLAGS   += -no-pie
 endif
 
-# if the gt compiler is not an old version of GCC
-ifeq ($(call IS_GCC_4_OR_5,$(GT_CC)),0)
+# same for the gt compiler
+ifeq ($(call IS_CLANG,$(GT_CC)),1)
+  GT_LDFLAGS    += -nopie
+else ifeq ($(call IS_GCC_4_OR_5,$(GT_CC)),0)
   GT_LDFLAGS    += -no-pie
 endif
 
@@ -441,13 +454,13 @@ $(RESULTS_DIR):
 
 # Set these as empty "simply-expanded variables".  This affects the "+=" operator.
 # see https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html
-TARGET_OUTS     :=
+TARGET_OUTS :=
 
 # @param 1: compiler variable name (e.g. CLANG)
 # @param 2: optimization level variable name (e.g. O2)
 # @param 3: switches variable name (e.g. USEFASTM)
 define RECURSION_RULE
-TARGETS         += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
+TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 # TODO: use the variable $$(MAKECMDGOALS) to get the original make target
 # TODO- or see if it is even necessary
