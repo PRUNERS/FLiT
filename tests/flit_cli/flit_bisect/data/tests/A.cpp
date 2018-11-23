@@ -81,8 +81,26 @@
  * -- LICENSE END --
  */
 
-#include "flit.h"
+#include "A.h"
 
-int main(int argCount, char* argList[]) {
-  return flit::runFlitTests(argCount, argList);
+#include <flit.h>
+
+#include <string>
+
+int A::offset = 2;
+
+A::A() {}
+A::~A() {}
+
+int A::fileA_method1_PROBLEM() {
+  if (std::string(FLIT_OPTL) == "-O3") {
+    return 3 + offset;  // variability introduced = offset = 2
+  } else {
+    return 3;
+  }
+}
+
+int fileA_all() {
+  A a;
+  return a.fileA_method1_PROBLEM();
 }

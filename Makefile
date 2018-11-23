@@ -109,6 +109,7 @@ install: $(TARGET)
 	install -m 0755 $(SCRIPT_DIR)/flit.py $(PREFIX)/share/flit/scripts/
 	install -m 0755 $(SCRIPT_DIR)/flit_*.py $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(SCRIPT_DIR)/flitutil.py $(PREFIX)/share/flit/scripts/
+	install -m 0644 $(SCRIPT_DIR)/flitelf.py $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(SCRIPT_DIR)/README.md $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(DOC_DIR)/*.md $(PREFIX)/share/flit/doc/
 	install -m 0644 $(DATA_DIR)/Makefile.in $(PREFIX)/share/flit/data/

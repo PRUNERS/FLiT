@@ -93,13 +93,14 @@ import flit_import
 brief_description = 'Runs the make and adds to the database'
 
 def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
     parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                This command runs the full set of tests and adds the results
-                to the configured database.
-                ''',
-            )
+        prog=prog,
+        description='''
+            This command runs the full set of tests and adds the results
+            to the configured database.
+            ''',
+        )
     processors = multiprocessing.cpu_count()
     parser.add_argument('-j', '--jobs', type=int, default=processors,
                         help='''
@@ -142,26 +143,24 @@ def main(arguments, prog=sys.argv[0]):
     # TODO: can we make a progress bar here?
     print('Calling GNU Make for the runbuild')
     subprocess.check_call([
-            'make',
-            'runbuild',
-            '-j{0}'.format(args.jobs),
-        ] + make_args,
-        **check_call_kwargs
-        )
+        'make',
+        'runbuild',
+        '-j{0}'.format(args.jobs),
+        ] + make_args, **check_call_kwargs)
     print('Calling GNU Make to execute the tests')
     subprocess.check_call([
-            'make',
-            'run',
-            '-j{0}'.format(args.exec_jobs),
-        ] + make_args,
-        **check_call_kwargs
-        )
+        'make',
+        'run',
+        '-j{0}'.format(args.exec_jobs),
+        ] + make_args, **check_call_kwargs)
     print('Importing into the database')
     # TODO: find a way to not import over again if called multiple times
     status = flit_import.main(['--label', args.label] +
                               glob.glob('results/*_out.csv'))
     if status != 0:
         return status
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

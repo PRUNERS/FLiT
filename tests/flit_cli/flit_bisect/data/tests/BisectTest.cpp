@@ -85,6 +85,7 @@
 #include "file2.h"
 #include "file3.h"
 #include "file4.h"
+#include "A.h"
 
 #include <flit.h>
 
@@ -106,7 +107,7 @@ public:
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
     FLIT_UNUSED(ti);
-    return file1_all() + file2_all() + file3_all() + file4_all();
+    return file1_all() + file2_all() + file3_all() + file4_all() + fileA_all();
   }
 
 protected:

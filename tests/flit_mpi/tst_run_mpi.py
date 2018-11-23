@@ -93,12 +93,20 @@ and run the FLiT test with MPI
 >>> import shutil
 >>> import subprocess as subp
 
+>>> class TestError(RuntimeError): pass
+
 >>> with th.tempdir() as temp_dir:
-...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     retval = th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     if retval != 0:
+...         raise TestError('Main #1 returned with {}, failed to initialize'
+...                         .format(retval))
 ...     _ = shutil.copy(os.path.join('data', 'MpiHello.cpp'),
 ...                     os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copy(os.path.join('data', 'flit-config.toml'), temp_dir)
-...     th.flit.main(['update', '-C', temp_dir])
+...     retval = th.flit.main(['update', '-C', temp_dir])
+...     if retval != 0:
+...         raise TestError('Main #2 returned with {}, failed to update'
+...                         .format(retval))
 ...     compile_str = subp.check_output(['make', '-C', temp_dir, 'gt'],
 ...                                     stderr=subp.STDOUT)
 ...     run_str = subp.check_output(['make', '-C', temp_dir, 'ground-truth.csv'],
