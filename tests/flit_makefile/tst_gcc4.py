@@ -81,9 +81,9 @@
 # -- LICENSE END --
 
 '''
-Tests FLiT's capabilities with compiling against older versions of Clang
+Tests FLiT's capabilities with compiling against older versions of GCC
 
-Let's now make a temporary directory and test that using the fake clang, we can
+Let's now make a temporary directory and test that using the fake gcc, we can
 verify correct usage.
 
 >>> from io import StringIO
@@ -100,14 +100,14 @@ verify correct usage.
 ...     with open(os.path.join(temp_dir, 'flit-config.toml'), 'w') as conf:
 ...         _ = conf.write('[[hosts]]\\n')
 ...         _ = conf.write('[hosts.dev_build]\\n')
-...         _ = conf.write("compiler_name = 'fake-clang'\\n")
+...         _ = conf.write("compiler_name = 'fake-gcc'\\n")
 ...         _ = conf.write('[hosts.ground_truth]\\n')
-...         _ = conf.write("compiler_name = 'fake-clang'\\n")
+...         _ = conf.write("compiler_name = 'fake-gcc'\\n")
 ...         _ = conf.write('[[hosts.compilers]]\\n')
-...         _ = conf.write("binary = './fake_clang34.py'\\n")
-...         _ = conf.write("name = 'fake-clang'\\n")
-...         _ = conf.write("type = 'clang'\\n")
-...     _ = shutil.copy('fake_clang34.py', temp_dir)
+...         _ = conf.write("binary = './fake_gcc4.py'\\n")
+...         _ = conf.write("name = 'fake-gcc'\\n")
+...         _ = conf.write("type = 'gcc'\\n")
+...     _ = shutil.copy('fake_gcc4.py', temp_dir)
 ...     _ = subp.check_output(['make', '--always-make', 'Makefile', '-C', temp_dir])
 ...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir])
 ...     make_out = make_out.decode('utf8').splitlines()
@@ -123,8 +123,8 @@ Creating .../Makefile
 Check the output of Make
 >>> any(['-no-pie' in x for x in make_out])
 False
->>> len([1 for x in make_out if '-nopie' in x])
-1
+>>> any(['-nopie' in x for x in make_out])
+False
 '''
 
 # Test setup before the docstring is run.

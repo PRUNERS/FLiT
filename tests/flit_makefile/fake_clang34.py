@@ -133,10 +133,6 @@ def main(arguments):
         '-O',
         ]
 
-    with open('fake_clang.log', 'a') as log:
-        log.write('*' * 80 + '\n')
-        log.write('\n'.join(arguments) + '\n')
-
     if '--version' in arguments:
         print_version()
         return 0
