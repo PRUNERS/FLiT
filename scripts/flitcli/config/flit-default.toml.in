@@ -156,14 +156,44 @@ switches = ''
   binary = 'g++'
   name = 'g++'
   type = 'gcc'
+  optimization_levels = [
+    '-O0',
+    '-O1',
+    '-O2',
+    '-O3',
+  ]
+  switches = [
+    '-funsafe-math-optimizations',
+    ''
+  ]
 
   [[hosts.compilers]]
   binary = 'clang++'
   name = 'clang++'
   type = 'clang'
+  optimization_levels = [
+    '-O0',
+    '-O1',
+    '-O2',
+    '-O3',
+  ]
+  switches = [
+    '-funsafe-math-optimizations',
+    ''
+  ]
 
   [[hosts.compilers]]
   binary = 'icpc'
   name = 'icpc'
   type = 'intel'
+  optimization_levels = [
+    '-O0',
+    '-O1',
+    '-O2',
+    '-O3',
+  ]
+  switches = [
+    '-funsafe-math-optimizations',
+    ''
+  ]
 
