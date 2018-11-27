@@ -93,7 +93,6 @@ verify correct usage.
 >>> import subprocess as subp
 
 >>> with th.tempdir() as temp_dir:
-...     temp_dir = 'tmp'
 ...     with StringIO() as ostream:
 ...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
 ...         init_out = ostream.getvalue().splitlines()
@@ -109,7 +108,7 @@ verify correct usage.
 ...         _ = conf.write("name = 'fake-clang'\\n")
 ...         _ = conf.write("type = 'clang'\\n")
 ...     _ = shutil.copy('fake_clang34.py', temp_dir)
-...     _ = subp.call(['make', '--always-make', 'Makefile', '-C', temp_dir])
+...     _ = subp.check_output(['make', '--always-make', 'Makefile', '-C', temp_dir])
 ...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir])
 ...     make_out = make_out.decode('utf8').splitlines()
 ...     with open(os.path.join(temp_dir, 'fake_clang.log'), 'r') as log:
@@ -117,20 +116,17 @@ verify correct usage.
 
 Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
-Creating /.../flit-config.toml
-Creating /.../custom.mk
-Creating /.../main.cpp
-Creating /.../tests/Empty.cpp
-Creating /.../Makefile
+Creating .../flit-config.toml
+Creating .../custom.mk
+Creating .../main.cpp
+Creating .../tests/Empty.cpp
+Creating .../Makefile
 
 Check the output of Make
 >>> any(['-no-pie' in x for x in make_out])
 False
->>> len(['-nopie' in x for x in make_out])
-3
-
->>> print('\\n'.join(make_out))
-
+>>> len([1 for x in make_out if '-nopie' in x])
+1
 '''
 
 # Test setup before the docstring is run.

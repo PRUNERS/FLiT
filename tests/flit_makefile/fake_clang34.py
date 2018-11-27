@@ -93,7 +93,6 @@ def print_version():
 
 def main(arguments):
     'Main logic here'
-    print('fake_clang34.py {}'.format(arguments), file=sys.stderr)
 
     recognized_arguments = [
         '-fno-pie',
@@ -142,10 +141,13 @@ def main(arguments):
         print_version()
         return 0
 
+    if '-dumpversion' in arguments:
+        print('3.4.0')
+        return 0
+
     for arg in arguments:
         canonical = arg.split('=', maxsplit=1)[0]
         if canonical.startswith('-'):
-            print(canonical, file=sys.stderr)
             recognized = canonical in recognized_arguments or \
                 any(canonical.startswith(x) for x in recognized_beginnings)
             if not recognized:
