@@ -100,20 +100,24 @@ and run FLiT bisect
 >>> with th.tempdir() as temp_dir:
 ...     with StringIO() as ostream:
 ...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
+...         if retval != 0:
+...             raise BisectTestError(
+...                 'Could not initialize (retval={0}):\\n'.format(retval) +
+...                 ostream.getvalue())
 ...         init_out = ostream.getvalue().splitlines()
-...     if retval != 0:
-...         raise BisectTestError('Main #1 returned {}'.format(retval))
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))
 ...     with StringIO() as ostream:
 ...         retval = th.flit.main(['bisect', '-C', temp_dir,
-...                           '--precision', 'double',
-...                           'g++ -O3', 'BisectTest'],
-...                          outstream=ostream)
+...                                '--precision', 'double',
+...                                'g++ -O3', 'BisectTest'],
+...                               outstream=ostream)
+...         if retval != 0:
+...             raise BisectTestError(
+...                 'Could not bisect (retval={0}):\\n'.format(retval) +
+...                 ostream.getvalue())
 ...         bisect_out = ostream.getvalue().splitlines()
-...     if retval != 0:
-...         raise BisectTestError('Main #2 returned {}'.format(retval))
 ...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
 ...         raw_log = fin.readlines()
 ...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
