@@ -82,14 +82,13 @@
 
 'Implements the import subcommand, importing results into a database'
 
-import flitutil as util
-
 import argparse
 import csv
 import datetime
 import os
-import sqlite3
 import sys
+
+import flitutil as util
 
 brief_description = 'Import flit results into the configured database'
 
@@ -115,23 +114,24 @@ def get_dbfile_from_toml(tomlfile):
     return projconf['database']['filepath']
 
 def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
     parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                Import flit results into the configured database.  The
-                configured database is found from the settings in
-                flit-config.toml.  You can import either exported results or
-                results from manually running the tests.  Note that importing
-                the same thing twice will result in having two copies of it
-                in the database.
-                ''',
-            )
+        prog=prog,
+        description='''
+            Import flit results into the configured database.  The configured
+            database is found from the settings in flit-config.toml.  You can
+            import either exported results or results from manually running the
+            tests.  Note that importing the same thing twice will result in
+            having two copies of it in the database.
+            ''',
+        )
     parser.add_argument('importfile', nargs='+', type=_file_check,
                         help='''
                             File(s) to import into the database.  These files
                             may be csv files or sqlite3 databases.
                             ''')
-    parser.add_argument('-a', '--append', type=int, default=None, metavar='RUN_ID',
+    parser.add_argument('-a', '--append', type=int, default=None,
+                        metavar='RUN_ID',
                         help='''
                             Append the import to the specified run id.  The
                             default behavior is to add a new run to include the
@@ -182,9 +182,10 @@ def main(arguments, prog=sys.argv[0]):
     if args.append is None:
         # Create a new run to use in import
         db.execute('insert into runs(rdate,label) values (?,?)',
-                (datetime.datetime.now(), args.label))
+                   (datetime.datetime.now(), args.label))
         db.commit()
-        args.append = db.execute('select id from runs order by id').fetchall()[-1]['id']
+        args.append = \
+            db.execute('select id from runs order by id').fetchall()[-1]['id']
 
     # Make sure the run id exists.
     run_ids = [x['id'] for x in db.execute('select id from runs')]
@@ -250,6 +251,8 @@ def main(arguments, prog=sys.argv[0]):
             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', to_insert)
     db.commit()
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

@@ -85,7 +85,6 @@ Implements the bisect subcommand, identifying the problematic subset of source
 files that cause the variability.
 '''
 
-from collections import namedtuple
 from tempfile import NamedTemporaryFile
 import argparse
 import csv
@@ -96,7 +95,6 @@ import hashlib
 import logging
 import multiprocessing as mp
 import os
-import re
 import shutil
 import sqlite3
 import subprocess as subp
@@ -104,6 +102,11 @@ import sys
 
 import flitconfig as conf
 import flitutil as util
+try:
+    import flitelf as elf
+except ImportError:
+    elf = None
+
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
@@ -338,8 +341,9 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
         except:
             tmpout.flush()
             with open(tmpout.name, 'r') as tmpin:
-                logging.error('make error occurred.  Here is the output:\n' +
-                              tmpin.read())
+                msg = 'make error occurred.  Here is the output:\n' \
+                      + tmpin.read()
+                logging.error('%s', msg)
             raise
 
 def build_bisect(makefilename, directory,
@@ -499,22 +503,10 @@ def is_result_differing(resultfile):
     '''
     return float(get_comparison_result(resultfile)) != 0.0
 
-SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
-SymbolTuple.__doc__ = '''
-Tuple containing information about the symbols in a file.  Has the following
-attributes:
-    src:        source file that was compiled
-    symbol:     mangled symbol in the compiled version
-    demangled:  demangled version of symbol
-    fname:      filename where the symbol is actually defined.  This usually
-                will be equal to src, but may not be in some situations.
-    lineno:     line number of definition within fname.
-'''
-
 _extract_symbols_memos = {}
 def extract_symbols(file_or_filelist, objdir):
     '''
-    Extracts symbols for the given file(s) given.  The corresponding object is
+    Extracts symbols for the given source file(s).  The corresponding object is
     assumed to be in the objdir with the filename replaced with the GNU Make
     pattern %.cpp=%_gt.o.
 
@@ -523,15 +515,21 @@ def extract_symbols(file_or_filelist, objdir):
     @param objdir: (str) directory where object files are compiled for the
         given files.
 
-    @return a list of SymbolTuple objects
+    @return two lists of SymbolTuple objects (funcsyms, remaining).
+        The first is the list of exported functions that are strong symbols and
+        have a filename and line number where they are defined.  The second is
+        all remaining symbols that are strong, exported, and defined.
     '''
-    symbol_tuples = []
 
     # if it is not a string, then assume it is a list of strings
     if not isinstance(file_or_filelist, str):
+        funcsym_tuples = []
+        remainingsym_tuples = []
         for fname in file_or_filelist:
-            symbol_tuples.extend(extract_symbols(fname, objdir))
-        return symbol_tuples
+            funcsyms, remaining = extract_symbols(fname, objdir)
+            funcsym_tuples.extend(funcsyms)
+            remainingsym_tuples.extend(remaining)
+        return (funcsym_tuples, remainingsym_tuples)
 
     # now we know it is a string, so assume it is a filename
     fname = file_or_filelist
@@ -541,59 +539,8 @@ def extract_symbols(file_or_filelist, objdir):
     if fobj in _extract_symbols_memos:
         return _extract_symbols_memos[fobj]
 
-    # use nm and objdump to get the binary information we need
-    symbol_strings = subp.check_output([
-        'nm',
-        '--extern-only',
-        '--defined-only',
-        fobj,
-        ]).decode('utf-8').splitlines()
-    demangled_symbol_strings = subp.check_output([
-        'nm',
-        '--extern-only',
-        '--defined-only',
-        '--demangle',
-        fobj,
-        ]).decode('utf-8').splitlines()
-    objdump_strings = subp.check_output([
-        'objdump', '--disassemble-all', '--line-numbers', fobj,
-        ]).decode('utf-8').splitlines()
-
-    # create the symbol -> (fname, lineno) map
-    symbol_line_mapping = dict()
-    symbol = None
-    for line in objdump_strings:
-        if len(line.strip()) == 0:      # skip empty lines
-            continue
-        if line[0].isdigit():           # we are at a symbol
-            symbol = line.split()[1][1:-2]
-            continue
-        if symbol is None:              # if we don't have an active symbol
-            continue                    # then skip
-        srcmatch = re.search(':[0-9]+$', line)
-        if srcmatch is not None:
-            deffile = line[:srcmatch.start()]
-            defline = int(line[srcmatch.start()+1:])
-            symbol_line_mapping[symbol] = (deffile, defline)
-            symbol = None               # deactivate the symbol to not overwrite
-
-
-    # generate the symbol tuples
-    for symbol_string, demangled_string in zip(symbol_strings,
-                                               demangled_symbol_strings):
-        symbol_type, symbol = symbol_string.split(maxsplit=2)[1:]
-        if symbol_type != "T": # only look at strong symbols in the text section
-            continue
-        demangled = demangled_string.split(maxsplit=2)[2]
-        try:
-            deffile, defline = symbol_line_mapping[symbol]
-        except KeyError:
-            deffile, defline = None, None
-        symbol_tuples.append(
-            SymbolTuple(fname, symbol, demangled, deffile, defline))
-
-    _extract_symbols_memos[fobj] = symbol_tuples
-    return symbol_tuples
+    _extract_symbols_memos[fobj] = elf.extract_symbols(fobj, fname)
+    return _extract_symbols_memos[fobj]
 
 def memoize_strlist_func(func):
     '''
@@ -922,7 +869,7 @@ def bisect_search(score_func, elements, found_callback=None,
             .format(differing_element)
         differing_list.append((differing_element, score))
         # inform caller that a differing element was found
-        if found_callback != None:
+        if found_callback is not None:
             found_callback(differing_element, score)
 
     if not skip_verification:
@@ -1216,7 +1163,7 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
     return memoize_strlist_func(builder_and_checker)
 
 def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
-                               symbols, indent='  '):
+                               fsymbols, remainingsymbols, indent='  '):
     '''
     Generates and returns the function that builds and check a list of sources
     for showing variability.  The returned function is memoized, so no need to
@@ -1236,7 +1183,8 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
         @return The comparison value between this mixed compilation and the
             full baseline compilation.
         '''
-        gt_symbols = list(set(symbols).difference(symbols_to_optimize))
+        gt_symbols = list(set(fsymbols + remainingsymbols)
+                          .difference(symbols_to_optimize))
         all_sources = list(sources)  # copy the list of all source files
         symbol_sources = [x.src for x in symbols_to_optimize + gt_symbols]
         trouble_src = []
@@ -1304,16 +1252,6 @@ def search_for_source_problems(args, bisect_path, replacements, sources):
     memoized_checker = _gen_bisect_source_checker(args, bisect_path,
                                                   replacements, sources)
 
-    # TODO: make a callback that immediately starts the symbol search on the
-    # TODO-  first found file.  Do this for  when args.biggest is defined.
-    # TODO- What we want here is that the first file found triggers a symbol
-    # TODO- search.  Then the top k symbols are found from that file.  We move
-    # TODO- to the next file.  If that file has a greater variance than the kth
-    # TODO- symbol found from the previous set of files, then we're done, else
-    # TODO- run symbol bisect on it to get the top k symbols as well (we can
-    # TODO- stop as soon as a symbol is less than the kth symbol (after
-    # TODO- updating the list of k).
-
     print('Searching for differing source files:')
     logging.info('Searching for differing source files under the trouble'
                  ' compilation')
@@ -1355,20 +1293,20 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
     logging.info('%sNote: only searching over globally exported functions',
                  indent)
     logging.debug('%sSymbols:', indent)
-    symbol_tuples = extract_symbols(differing_source,
-                                    os.path.join(args.directory, 'obj'))
-    for sym in symbol_tuples:
+    fsymbol_tuples, remaining_symbols = \
+        extract_symbols(differing_source, os.path.join(args.directory, 'obj'))
+    for sym in fsymbol_tuples:
         message = '{indent}  {sym.fname}:{sym.lineno} {sym.symbol} ' \
                   '-- {sym.demangled}'.format(indent=indent, sym=sym)
         logging.debug('%s', message)
 
     memoized_checker = _gen_bisect_symbol_checker(
-        args, bisect_path, replacements, sources, symbol_tuples,
-        indent=indent + '  ')
+        args, bisect_path, replacements, sources, fsymbol_tuples,
+        remaining_symbols, indent=indent + '  ')
 
     # Check to see if -fPIC destroyed any chance of finding any differing
     # symbols
-    if memoized_checker(symbol_tuples) <= 0.0:
+    if memoized_checker(fsymbol_tuples) <= 0.0:
         message_1 = '{}  Warning: -fPIC compilation destroyed the ' \
             'optimization'.format(indent)
         message_2 = '{}  Cannot find any trouble symbols'.format(indent)
@@ -1391,12 +1329,12 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
 
     if args.biggest is None:
         differing_symbols = bisect_search(
-            memoized_checker, symbol_tuples,
+            memoized_checker, fsymbol_tuples,
             found_callback=differing_symbol_callback,
             skip_verification=args.skip_verification)
     else:
         differing_symbols = bisect_biggest(
-            memoized_checker, symbol_tuples,
+            memoized_checker, fsymbol_tuples,
             found_callback=differing_symbol_callback, k=args.biggest,
             skip_verification=args.skip_verification)
     return differing_symbols
@@ -1748,13 +1686,19 @@ def run_bisect(arguments, prog=sys.argv[0]):
             # Verify that there are no missed files, i.e. those that are more
             # than singletons and that are to be grouped with one of the found
             # symbols.
-            all_searched_symbols = extract_symbols(
-                [x[0] for x in differing_sources],
-                os.path.join(args.directory, 'obj'))
+            message = 'Verifying assumption about independent symbols'
+            print(message)
+            logging.info('%s', message)
+            fsymbol_tuples, remaining_symbols = \
+                extract_symbols([x[0] for x in differing_sources],
+                                os.path.join(args.directory, 'obj'))
             checker = _gen_bisect_symbol_checker(
-                args, bisect_path, replacements, sources, all_searched_symbols)
-            assert checker(all_searched_symbols) == \
-                   checker([x[0] for x in differing_symbols])
+                args, bisect_path, replacements, sources, fsymbol_tuples,
+                remaining_symbols)
+            assert checker(fsymbol_tuples) == \
+                   checker([x[0] for x in differing_symbols]), \
+                   'Assumption about independent symbols is False, ' \
+                   'false negative results are possible'
 
     differing_symbols.sort(key=lambda x: (-x[1], x[0]))
 
@@ -2020,6 +1964,11 @@ def main(arguments, prog=sys.argv[0]):
     A wrapper around the bisect program.  This checks for the --auto-sqlite-run
     stuff and runs the run_bisect multiple times if so.
     '''
+
+    if elf is None:
+        print('Error: pyelftools is not installed, bisect disabled',
+              file=sys.stderr)
+        return 1
 
     if '-a' in arguments or '--auto-sqlite-run' in arguments:
         return parallel_auto_bisect(arguments, prog)
