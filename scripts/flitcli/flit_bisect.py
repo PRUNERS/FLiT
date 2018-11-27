@@ -309,10 +309,10 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
     ...     except:
     ...         pass
     ERROR:root:make error occurred.  Here is the output:
-    make: Entering directory `...'
+    make: Entering directory ...
     hello
-    make: *** [default] Error 1
-    make: Leaving directory `...'
+    make: *** [...default] Error 1
+    make: Leaving directory ...
     <BLANKLINE>
 
     Undo the logger configurations
