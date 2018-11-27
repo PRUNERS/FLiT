@@ -18,7 +18,7 @@ Instruction Contents:
 Stuff you should already have:
 
 * [bash](https://www.gnu.org/software/bash)
-* [binutils](https://www.gnu.org/software/binutils)
+* [binutils](https://www.gnu.org/software/binutils) version 2.26 or higher
 * [coreutils](https://www.gnu.org/software/coreutils/coreutils.html)
 * hostname
 
