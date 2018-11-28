@@ -92,6 +92,23 @@ import flitutil
 
 brief_description = 'Updates the Makefile based on flit-config.toml'
 
+def flag_name(flag):
+    name = flag.upper()
+    if name == '':
+        print('Ignoring empty flag.')
+        return ''
+    if name[0] == '-': 
+        name = name[1:]
+    name = name.replace(' ', '_')
+    name = name.replace('-', '_')
+    name = name.replace('=', '_')
+    return name
+
+def generate_assignments(flags):
+    name_assignments = [name + ' := ' + flags[name] 
+                        for name in flags.keys() if name != '']
+    return '\n'.join(name_assignments)
+
 def main(arguments, prog=sys.argv[0]):
     parser = argparse.ArgumentParser(
             prog=prog,
@@ -156,14 +173,22 @@ def main(arguments, prog=sys.argv[0]):
     base_compilers = {x: None for x in supported_compiler_types}
     compiler_flags = {x: None for x in supported_compiler_types}
     compiler_op_levels = {x: None for x in supported_compiler_types}
+    all_op_levels = {}
+    all_switches = {}
     for compiler in host['compilers']:
         assert compiler['type'] in supported_compiler_types, \
             'Unsupported compiler type: {}'.format(compiler['type'])
         assert base_compilers[compiler['type']] is None, \
             'You can only specify one of each type of compiler.'
         base_compilers[compiler['type']] = compiler['binary']
-        compiler_flags[compiler['type']] = compiler['switches']
-        compiler_op_levels[compiler['type']] = compiler['optimization_levels']
+        
+        switches = {flag_name(flag): flag for flag in compiler['switches']}
+        compiler_flags[compiler['type']] = switches.keys()
+        all_switches.update(switches)
+
+        op_levels = {flag_name(flag): flag for flag in compiler['optimization_levels']}
+        compiler_op_levels[compiler['type']] = op_levels.keys()
+        all_op_levels.update(op_levels)
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -192,6 +217,8 @@ def main(arguments, prog=sys.argv[0]):
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
         'compilers': ' '.join([c.upper() for c in given_compilers]),
+        'opcodes_definitions': generate_assignments(all_op_levels),
+        'switches_definitions': generate_assignments(all_switches),
         }
     replacements.update({key + '_compiler': val
                          for key, val in base_compilers.items()})

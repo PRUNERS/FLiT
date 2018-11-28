@@ -162,9 +162,24 @@ switches = ''
     '-O2',
     '-O3',
   ]
+  ## NOTE: gcc disables -fassociative-math @ O0
   switches = [
+    '-fassociative-math',
+    '-mavx',
+    '-fexcess-precision=fast',
+    '-ffinite-math-only',
+    '-mavx2 -mfma',
+    '-fcx-fortran-rules',
+    '-ffp-contract=on',
+    '-ffloat-store',
+    '-fcx-limited-range',
+    '-fmerge-all-constants',
+    '-fno-trapping-math',
+    '-freciprocal-math',
+    '-frounding-math',
+    '-fsignaling-nans',
+    '-mfpmath=sse -mtune=native',
     '-funsafe-math-optimizations',
-    ''
   ]
 
   [[hosts.compilers]]
@@ -177,9 +192,26 @@ switches = ''
     '-O2',
     '-O3',
   ]
+  ##NOTE: Clang not honoring -fassociative-math (issues warning with 3.9)
+  ## see: https://llvm.org/bugs/show_bug.cgi?id=27372
   switches = [
+    '-fassociative-math',
+    '-mavx',
+    '-fexcess-precision=fast',
+    '-ffinite-math-only',
+    '-mavx2 -mfma',
+    '-march=core-avx2',
+    '-ffp-contract=on',
+    '-ffloat-store',
+    '-fmerge-all-constants',
+    '-fno-trapping-math',
+    '-freciprocal-math',
+    '-frounding-math',
+    '-fsignaling-nans',
+    '-fsingle-precision-constant',
+    '-mfpmath=sse -mtune=native',
+    '-fexcess-precision=standard',
     '-funsafe-math-optimizations',
-    ''
   ]
 
   [[hosts.compilers]]
@@ -193,7 +225,30 @@ switches = ''
     '-O3',
   ]
   switches = [
-    '-funsafe-math-optimizations',
-    ''
+    '-mavx',
+    '-mp1',
+    '-no-fma',
+    '-fma',
+    '-ftz',
+    '-mavx2 -mfma',
+    '-march=core-avx2',
+    '-fp-model=double',
+    '-fp-model=extended',
+    '-fp-model fast=1',
+    '-fp-model fast=2',
+    '-fp-model=precise',
+    '-fp-model=source',
+    '-fp-model=strict',
+    '-ffloat-store',
+    '-fcx-limited-range',
+    '-fmerge-all-constants',
+    '-no-ftz',
+    '-no-prec-div',
+    '-prec-div',
+    '-frounding-math',
+    '-fp-port',
+    '-fsingle-precision-constant',
+    '-mfpmath=sse -mtune=native',
+    '--use_fast_math',
   ]
 
