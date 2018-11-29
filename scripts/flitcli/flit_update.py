@@ -193,6 +193,37 @@ def generate_assignments(flags):
                         for name in flags.keys() if name != '']
     return '\n'.join(name_assignments)
 
+def gen_optl_switches(compiler):
+    '''
+    From the compiler specification, generate Makefile strings for optimization
+    levels and switches.
+
+    @param compiler {'type': str,
+                     'optimization_levels': list,
+                     'switches_list': list}
+
+    @return string to insert into the Makefile
+
+    >>> gen_optl_switches({
+    ...     'type': 'clang',
+    ...     'optimization_levels': ['-O2', '-O3'],
+    ...     'switches_list': ['-hi there', '-hello', '']
+    ...     })
+    CLANG_OPTL01    := -O2
+    CLANG_OPTL02    := -O3
+    CLANG_SWITCH01  := -hi there
+    CLANG_SWITCH02  := -hello
+    CLANG_SWITCH03  := 
+    OPCODES_CLANG   :=
+    OPCODES_CLANG   += CLANG_OPTL01
+    OPCODES_CLANG   += CLANG_OPTL02
+    SWITCHES_CLANG  :=
+    SWITCHES_CLANG  += CLANG_SWITCH01
+    SWITCHES_CLANG  += CLANG_SWITCH02
+    SWITCHES_CLANG  += CLANG_SWITCH03
+    '''
+    pass
+
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     args = parse_args(arguments, prog=prog)
