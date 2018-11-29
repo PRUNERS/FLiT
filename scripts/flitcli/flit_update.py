@@ -312,10 +312,16 @@ def main(arguments, prog=sys.argv[0]):
         }
     replacements.update({key + '_compiler': val
                          for key, val in base_compilers.items()})
-    replacements.update({'opcodes_' + compiler: ' '.join(compiler_op_levels[compiler])
-                for compiler in given_compilers})
+    replacements.update({'opcodes_' + x: ' '.join(compiler_op_levels[x])
+                         for x in given_compilers})
+    replacements.update({'opcodes_' + x: None
+                         for x in _supported_compiler_types
+                         if x not in given_compilers})
     replacements.update({'switches_' + compiler: ' '.join(compiler_flags[compiler])
-                for compiler in given_compilers})
+                         for compiler in given_compilers})
+    replacements.update({'switches_' + x: None
+                         for x in _supported_compiler_types
+                         if x not in given_compilers})
 
     flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                              makefile, replacements, overwrite=True)
