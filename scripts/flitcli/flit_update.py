@@ -318,25 +318,9 @@ def main(arguments, prog=sys.argv[0]):
             'Multiple compilers with name {0} found' \
             .format(ground_truth['compiler_name'])
 
-    _supported_compiler_types = ('clang', 'gcc', 'intel')
     base_compilers = {x.upper(): None for x in _supported_compiler_types}
-    compiler_flags = {x.upper(): None for x in _supported_compiler_types}
-    compiler_op_levels = {x.upper(): None for x in _supported_compiler_types}
-    all_op_levels = {}
-    all_switches = {}
-    for compiler in projconf['compiler']:
-        assert compiler['type'] in _supported_compiler_types, \
-            'Unsupported compiler type: {}'.format(compiler['type'])
-        base_compilers[compiler['type'].upper()] = compiler['binary']
-
-        switches = {flag_name(flag): flag for flag in compiler['switches_list']}
-        compiler_flags[compiler['type'].upper()] = switches.keys()
-        all_switches.update(switches)
-
-        op_levels = {flag_name(flag): flag
-                     for flag in compiler['optimization_levels']}
-        compiler_op_levels[compiler['type'].upper()] = op_levels.keys()
-        all_op_levels.update(op_levels)
+    base_compilers.update({compiler['type'].upper(): compiler['binary']
+                           for compiler in projconf['compiler']})
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -363,17 +347,27 @@ def main(arguments, prog=sys.argv[0]):
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
         'compiler_defs': gen_assignments({
-            key.upper(): val for key, val in base_compilers.items()}),
-        'compilers': ' '.join([x.upper() for x in base_compilers
-                               if base_compilers[x] is not None]),
-        'opcodes_definitions': gen_assignments(all_op_levels),
-        'switches_definitions': gen_assignments(all_switches),
+            key: val for key, val in base_compilers.items()}),
+        'compilers': ' '.join([compiler['type'].upper()
+                               for compiler in projconf['compiler']]),
+        'opcodes_definitions': gen_assignments({
+            flag_name(x): x
+            for compiler in projconf['compiler']
+            for x in compiler['optimization_levels']}),
+        'switches_definitions': gen_assignments({
+            flag_name(x): x
+            for compiler in projconf['compiler']
+            for x in compiler['switches_list']}),
         'compiler_opcodes': '\n\n'.join([
-            gen_multi_assignment('OPCODES_' + key, vals)
-            for key, vals in compiler_op_levels.items()]),
+            gen_multi_assignment(
+                'OPCODES_' + compiler['type'].upper(),
+                [flag_name(x) for x in compiler['optimization_levels']])
+            for compiler in projconf['compiler']]),
         'compiler_switches': '\n\n'.join([
-            gen_multi_assignment('SWITCHES_' + key, vals)
-            for key, vals in compiler_flags.items()]),
+            gen_multi_assignment(
+                'SWITCHES_' + compiler['type'].upper(),
+                [flag_name(x) for x in compiler['switches_list']])
+            for compiler in projconf['compiler']]),
         }
 
     flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
