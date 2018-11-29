@@ -84,6 +84,7 @@
 
 import argparse
 import os
+import re
 import sys
 import toml
 
@@ -177,15 +178,12 @@ def load_projconf(directory):
     return projconf
 
 def flag_name(flag):
-    name = flag.upper()
-    if name == '':
-        print('Ignoring empty flag.')
-        return ''
-    if name[0] == '-': 
-        name = name[1:]
-    name = name.replace(' ', '_')
-    name = name.replace('-', '_')
-    name = name.replace('=', '_')
+    if flag == '':
+        return 'NO_FLAGS'
+    name = re.sub('[^0-9A-Za-z]', '_', flag.upper().strip('-'))
+    assert re.match('^[0-9]', name) is None, \
+        'Error: cannot handle flag that starts with a number'
+    assert len(name) > 0, 'Error: cannot handle flag only made of dashes'
     return name
 
 def generate_assignments(flags):

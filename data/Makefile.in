@@ -255,16 +255,15 @@ endif
 
 ## switches
 
-DEFFLAGS :=
 {switches_definitions}
 
 OPCODES_GCC := {opcodes_gcc}
 OPCODES_CLANG := {opcodes_clang}
 OPCODES_INTEL := {opcodes_intel}
 
-SWITCHES_GCC := DEFFLAGS
-SWITCHES_CLANG := DEFFLAGS
-SWITCHES_INTEL := DEFFLAGS
+SWITCHES_GCC :=
+SWITCHES_CLANG :=
+SWITCHES_INTEL :=
 
 SWITCHES_GCC += {switches_gcc}
 SWITCHES_CLANG += {switches_clang}
