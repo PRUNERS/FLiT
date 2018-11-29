@@ -178,6 +178,32 @@ def load_projconf(directory):
     return projconf
 
 def flag_name(flag):
+    '''
+    Returns an associated Makefile variable name for the given compiler flag
+
+    @param flag: (str) switches for the compiler
+
+    @return (str) a valid Makefile variable unique to the given flag
+
+    >>> flag_name('')
+    'NO_FLAGS'
+
+    >>> flag_name('-')
+    Traceback (most recent call last):
+      ...
+    AssertionError: Error: cannot handle flag only made of dashes
+
+    >>> flag_name('----')
+    Traceback (most recent call last):
+      ...
+    AssertionError: Error: cannot handle flag only made of dashes
+
+    >>> flag_name('-funsafe-math-optimizations')
+    'FUNSAFE_MATH_OPTIMIZATIONS'
+
+    >>> flag_name('-Ofast -march=32bit')
+    'OFAST__MARCH_32BIT'
+    '''
     if flag == '':
         return 'NO_FLAGS'
     name = re.sub('[^0-9A-Za-z]', '_', flag.upper().strip('-'))
@@ -186,41 +212,45 @@ def flag_name(flag):
     assert len(name) > 0, 'Error: cannot handle flag only made of dashes'
     return name
 
-def generate_assignments(flags):
-    name_assignments = [name + ' := ' + flags[name] 
-                        for name in flags.keys() if name != '']
+def gen_assignments(flag_map):
+    '''
+    Given a mapping of Makefile variable name to value, create a single string
+    of assignments suitable for placing within a Makefile
+
+    @note no checking is performed on the keys of the map.  They are assumed to
+        be valid Makefile variables
+
+    @param flag_map: ({str: str}) mapping from Makefile variable name to
+        Makefile value.
+    @return (str) The string to insert into a Makefile to create the
+        assignments
+
+    >>> gen_assignments({})
+    ''
+
+    >>> gen_assignments({'single_name': 'single_value'})
+    'single_name     := single_value'
+
+    Here we use an OrderedDict for the test to be robust.  If we used a normal
+    dict, then the output lines could show up in a different order.
+    >>> from collections import OrderedDict
+    >>> print(gen_assignments(
+    ...     OrderedDict([('hello', 'there'), ('my', 'friend')])))
+    hello           := there
+    my              := friend
+
+    >>> print(gen_assignments(OrderedDict([
+    ...     ('REALLY_A_VERY_LONG_VARIABLE_NAME_HERE', 'bob'),
+    ...     ('not_so_long_32', 'harry'),
+    ...     ('short', 'very long value here'),
+    ...     ])))
+    REALLY_A_VERY_LONG_VARIABLE_NAME_HERE := bob
+    not_so_long_32  := harry
+    short           := very long value here
+    '''
+    name_assignments = ['{} := {}'.format(name.ljust(15), flag)
+                        for name, flag in flag_map.items()]
     return '\n'.join(name_assignments)
-
-def gen_optl_switches(compiler):
-    '''
-    From the compiler specification, generate Makefile strings for optimization
-    levels and switches.
-
-    @param compiler {'type': str,
-                     'optimization_levels': list,
-                     'switches_list': list}
-
-    @return string to insert into the Makefile
-
-    >>> gen_optl_switches({
-    ...     'type': 'clang',
-    ...     'optimization_levels': ['-O2', '-O3'],
-    ...     'switches_list': ['-hi there', '-hello', '']
-    ...     })
-    CLANG_OPTL01    := -O2
-    CLANG_OPTL02    := -O3
-    CLANG_SWITCH01  := -hi there
-    CLANG_SWITCH02  := -hello
-    CLANG_SWITCH03  := 
-    OPCODES_CLANG   :=
-    OPCODES_CLANG   += CLANG_OPTL01
-    OPCODES_CLANG   += CLANG_OPTL02
-    SWITCHES_CLANG  :=
-    SWITCHES_CLANG  += CLANG_SWITCH01
-    SWITCHES_CLANG  += CLANG_SWITCH02
-    SWITCHES_CLANG  += CLANG_SWITCH03
-    '''
-    pass
 
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
@@ -270,7 +300,7 @@ def main(arguments, prog=sys.argv[0]):
         assert base_compilers[compiler['type']] is None, \
             'You can only specify one of each type of compiler.'
         base_compilers[compiler['type']] = compiler['binary']
-        
+
         switches = {flag_name(flag): flag for flag in compiler['switches_list']}
         compiler_flags[compiler['type']] = switches.keys()
         all_switches.update(switches)
@@ -307,8 +337,8 @@ def main(arguments, prog=sys.argv[0]):
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
         'compilers': ' '.join([c.upper() for c in given_compilers]),
-        'opcodes_definitions': generate_assignments(all_op_levels),
-        'switches_definitions': generate_assignments(all_switches),
+        'opcodes_definitions': gen_assignments(all_op_levels),
+        'switches_definitions': gen_assignments(all_switches),
         }
     replacements.update({key + '_compiler': val
                          for key, val in base_compilers.items()})
@@ -317,8 +347,8 @@ def main(arguments, prog=sys.argv[0]):
     replacements.update({'opcodes_' + x: None
                          for x in _supported_compiler_types
                          if x not in given_compilers})
-    replacements.update({'switches_' + compiler: ' '.join(compiler_flags[compiler])
-                         for compiler in given_compilers})
+    replacements.update({'switches_' + x: ' '.join(compiler_flags[x])
+                         for x in given_compilers})
     replacements.update({'switches_' + x: None
                          for x in _supported_compiler_types
                          if x not in given_compilers})
