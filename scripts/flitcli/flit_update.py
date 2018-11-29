@@ -333,6 +333,7 @@ def main(arguments, prog=sys.argv[0]):
 
     replacements = {
         'uname': os.uname().sysname,
+        'hostname': os.uname().nodename,
         'dev_compiler': matching_dev_compilers[0]['binary'],
         'dev_optl': dev_build['optimization_level'],
         'dev_switches': dev_build['switches'],

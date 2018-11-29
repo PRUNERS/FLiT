@@ -227,7 +227,7 @@ GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
-HOSTNAME        := $(shell hostname)
+HOSTNAME        := {hostname}
 
 RESULTS_DIR     := results
 
