@@ -92,6 +92,23 @@ import flitutil
 
 brief_description = 'Updates the Makefile based on flit-config.toml'
 
+def flag_name(flag):
+    name = flag.upper()
+    if name == '':
+        print('Ignoring empty flag.')
+        return ''
+    if name[0] == '-': 
+        name = name[1:]
+    name = name.replace(' ', '_')
+    name = name.replace('-', '_')
+    name = name.replace('=', '_')
+    return name
+
+def generate_assignments(flags):
+    name_assignments = [name + ' := ' + flags[name] 
+                        for name in flags.keys() if name != '']
+    return '\n'.join(name_assignments)
+
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     parser = argparse.ArgumentParser(
@@ -154,12 +171,24 @@ def main(arguments, prog=sys.argv[0]):
 
     supported_compiler_types = ('clang', 'gcc', 'intel')
     base_compilers = {x: None for x in supported_compiler_types}
+    compiler_flags = {x: None for x in supported_compiler_types}
+    compiler_op_levels = {x: None for x in supported_compiler_types}
+    all_op_levels = {}
+    all_switches = {}
     for compiler in projconf['compiler']:
         assert compiler['type'] in supported_compiler_types, \
             'Unsupported compiler type: {}'.format(compiler['type'])
         assert base_compilers[compiler['type']] is None, \
             'You can only specify one of each type of compiler.'
         base_compilers[compiler['type']] = compiler['binary']
+        
+        switches = {flag_name(flag): flag for flag in compiler['switches']}
+        compiler_flags[compiler['type']] = switches.keys()
+        all_switches.update(switches)
+
+        op_levels = {flag_name(flag): flag for flag in compiler['optimization_levels']}
+        compiler_op_levels[compiler['type']] = op_levels.keys()
+        all_op_levels.update(op_levels)
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -170,7 +199,7 @@ def main(arguments, prog=sys.argv[0]):
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
 
-    given_compilers = [key.upper() for key, val in base_compilers.items()
+    given_compilers = [key for key, val in base_compilers.items()
                        if val is not None]
     replacements = {
         'dev_compiler': dev_compiler_bin,
@@ -187,10 +216,16 @@ def main(arguments, prog=sys.argv[0]):
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
-        'compilers': ' '.join(given_compilers),
+        'compilers': ' '.join([c.upper() for c in given_compilers]),
+        'opcodes_definitions': generate_assignments(all_op_levels),
+        'switches_definitions': generate_assignments(all_switches),
         }
     replacements.update({key + '_compiler': val
                          for key, val in base_compilers.items()})
+    replacements.update({'opcodes_' + compiler: ' '.join(compiler_op_levels[compiler])
+                for compiler in given_compilers})
+    replacements.update({'switches_' + compiler: ' '.join(compiler_flags[compiler])
+                for compiler in given_compilers})
 
     flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                              makefile, replacements, overwrite=True)

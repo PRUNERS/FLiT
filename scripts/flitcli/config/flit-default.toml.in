@@ -145,12 +145,12 @@ compiler_name = 'g++'
 optimization_level = '-O0'
 switches = ''
 
-# List of compilers.
+# This host's list of compilers.
 # - binary: can be an absolute path, relative path, or binary name (found in
 #   PATH).  If you want to specify a compiler in the same directory as this
 #   config file, prepend with a "./" (e.g. "./my-compiler")
 # - name: can be any string.  Used to recognize in the other options such as
-#   in [dev_build] and [ground_truth]
+#   dev_build and ground_truth
 # - type: the brand of the compiler.  We support ('gcc', 'clang', 'intel')
 #   Currently, only one of each type may be specified.
 # Note that these are all defaulted to use g++, clang++, and icpc from the
@@ -162,14 +162,98 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+## NOTE: gcc disables -fassociative-math @ O0
+switches = [
+  '-fassociative-math',
+  '-mavx',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-mavx2 -mfma',
+  '-fcx-fortran-rules',
+  '-ffp-contract=on',
+  '-ffloat-store',
+  '-fcx-limited-range',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-mfpmath=sse -mtune=native',
+  '-funsafe-math-optimizations',
+]
 
 [[compiler]]
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+##NOTE: Clang not honoring -fassociative-math (issues warning with 3.9)
+## see: https://llvm.org/bugs/show_bug.cgi?id=27372
+switches = [
+  '-fassociative-math',
+  '-mavx',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-mavx2 -mfma',
+  '-march=core-avx2',
+  '-ffp-contract=on',
+  '-ffloat-store',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-fsingle-precision-constant',
+  '-mfpmath=sse -mtune=native',
+  '-fexcess-precision=standard',
+  '-funsafe-math-optimizations',
+]
 
 [[compiler]]
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
-
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches = [
+  '-mavx',
+  '-mp1',
+  '-no-fma',
+  '-fma',
+  '-ftz',
+  '-mavx2 -mfma',
+  '-march=core-avx2',
+  '-fp-model=double',
+  '-fp-model=extended',
+  '-fp-model fast=1',
+  '-fp-model fast=2',
+  '-fp-model=precise',
+  '-fp-model=source',
+  '-fp-model=strict',
+  '-ffloat-store',
+  '-fcx-limited-range',
+  '-fmerge-all-constants',
+  '-no-ftz',
+  '-no-prec-div',
+  '-prec-div',
+  '-frounding-math',
+  '-fp-port',
+  '-fsingle-precision-constant',
+  '-mfpmath=sse -mtune=native',
+  '--use_fast_math',
+]
