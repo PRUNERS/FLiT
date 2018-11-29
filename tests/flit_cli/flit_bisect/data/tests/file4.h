@@ -81,8 +81,15 @@
  * -- LICENSE END --
  */
 
-#include "flit.h"
+#ifndef FILE4_H
+#define FILE4_H
 
-int main(int argCount, char* argList[]) {
-  return flit::runFlitTests(argCount, argList);
-}
+int file4_func1();
+int file4_func2();
+int file4_func3();
+int file4_func4();
+template <int i>
+int file4_func5_TEMPLATE_PTOBLEM();  // variability = 10
+int file4_all();
+
+#endif // FILE4_H

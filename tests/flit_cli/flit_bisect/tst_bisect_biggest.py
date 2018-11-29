@@ -101,7 +101,7 @@ tst_bisect.py.
 
 >>> flit_bisect = th._path_import(th._script_dir, 'flit_bisect')
 >>> util = th._path_import(th._script_dir, 'flitutil')
->>> Sym = flit_bisect.SymbolTuple
+>>> Sym = flit_bisect.elf.SymbolTuple
 >>> def create_symbol(fileno, funcno, lineno, isproblem):
 ...     prob_str = '_PROBLEM' if isproblem else ''
 ...     filename = 'tests/file{}.cpp'.format(fileno)
@@ -118,6 +118,8 @@ tst_bisect.py.
 ...     'tests/file1.cpp': 10.0,
 ...     'tests/file2.cpp': 7.0,
 ...     'tests/file3.cpp': 4.0,
+...     'tests/file4.cpp': 0.0,
+...     'tests/A.cpp': 2.0,
 ...     }
 
 >>> all_symbol_scores = {
@@ -136,6 +138,9 @@ tst_bisect.py.
 ...     create_symbol(3, 3, 100, False): 0.0,
 ...     create_symbol(3, 4, 101, False): 0.0,
 ...     create_symbol(3, 5, 103,  True): 3.0,
+...     create_symbol(4, 1, 103, False): 0.0,
+...     Sym('tests/A.cpp', '_ZN1A21fileA_method1_PROBLEMEv',
+...         'A::fileA_method1_PROBLEM()', 'tests/A.cpp', 95): 2.0,
 ...     }
 
 >>> def build_bisect_stub(makepath, directory, target='bisect', verbose=False,
@@ -168,11 +173,11 @@ tst_bisect.py.
 ...     if not isinstance(file_or_filelist, str):
 ...         for fname in file_or_filelist:
 ...             symbol_tuples.extend(extract_symbols_stub(fname, objdir))
-...         return symbol_tuples
+...         return symbol_tuples, []
 ...
 ...     return sorted([x for x in all_symbol_scores
 ...                      if x.fname == file_or_filelist],
-...                   key=lambda x: x.symbol)
+...                   key=lambda x: x.symbol), []
 
 >>> flit_bisect.build_bisect = build_bisect_stub
 >>> flit_bisect.update_gt_results = update_gt_results_stub
@@ -223,7 +228,7 @@ Creating /.../Makefile
 >>> print('\\n'.join(bisect_out_1)) # doctest:+ELLIPSIS
 Updating ground-truth results - ground-truth.csv - done
 Looking for the top 1 different symbol(s) by starting with files
-  Created /.../bisect-01/bisect-make-01.mk - compiling and running - score 21.0
+  Created /.../bisect-01/bisect-make-01.mk - compiling and running - score 23.0
   ...
     Found differing source file tests/file1.cpp: score 10.0
     Searching for differing symbols in: tests/file1.cpp
@@ -235,7 +240,7 @@ Looking for the top 1 different symbol(s) by starting with files
       Created ...
       ...
         Found differing symbol on line 90 -- file2_func1_PROBLEM() (score 7.0)
-    Found differing source file tests/file3.cpp: score 4.0
+ ...Found differing source file tests/file3.cpp: score 4.0
 The found highest variability inducing source files:
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
@@ -246,7 +251,7 @@ The 1 highest variability symbol:
 >>> print('\\n'.join(bisect_out_2)) # doctest:+ELLIPSIS
 Updating ground-truth results - ground-truth.csv - done
 Looking for the top 2 different symbol(s) by starting with files
-  Created /.../bisect-02/bisect-make-01.mk - compiling and running - score 21.0
+  Created /.../bisect-02/bisect-make-01.mk - compiling and running - score 23.0
   ...
     Found differing source file tests/file1.cpp: score 10.0
     Searching for differing symbols in: tests/file1.cpp
@@ -259,7 +264,7 @@ Looking for the top 2 different symbol(s) by starting with files
       Created ...
       ...
         Found differing symbol on line 90 -- file2_func1_PROBLEM() (score 7.0)
-    Found differing source file tests/file3.cpp: score 4.0
+ ...Found differing source file tests/file3.cpp: score 4.0
 The found highest variability inducing source files:
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)

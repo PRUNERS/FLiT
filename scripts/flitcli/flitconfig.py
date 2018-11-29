@@ -89,7 +89,7 @@ file will replace this version when an installation takes place.
 
 import os
 
-all = [
+__all__ = [
     'version',
     'script_dir',
     'doc_dir',
@@ -123,4 +123,3 @@ data_dir = os.path.join(script_dir, '..', '..', 'data')
 
 # directory containing litmus tests
 litmus_test_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'litmus-tests', 'tests'))
-

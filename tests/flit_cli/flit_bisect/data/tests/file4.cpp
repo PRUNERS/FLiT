@@ -81,8 +81,34 @@
  * -- LICENSE END --
  */
 
-#include "flit.h"
+#include "file4.h"
 
-int main(int argCount, char* argList[]) {
-  return flit::runFlitTests(argCount, argList);
+#include <flit.h>
+
+#include <string>
+
+int file4_func1() { return 1; }
+int file4_func2() { return 2; }
+int file4_func3() { return 3; }
+int file4_func4() { return 4; }
+
+template<int i>
+int file4_func5_TEMPLATE_PROBLEM() {
+  if (std::string(FLIT_OPTL) == "-O3") {
+    return 5 + 10;  // variability introduced = 10
+  } else {
+    return 5;
+  }
+}
+
+
+
+int file4_all() {
+  return file4_func1()
+       + file4_func2()
+       + file4_func3()
+       + file4_func4()
+       + file4_func5_TEMPLATE_PROBLEM<0>()
+       + file4_func5_TEMPLATE_PROBLEM<1>()
+       + file4_func5_TEMPLATE_PROBLEM<2>();
 }

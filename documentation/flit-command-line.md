@@ -136,6 +136,11 @@ flit import --dbfile temporary.sqlite backup/results/*.csv
 
 ## flit bisect
 
+There is an additional optional dependency in order to run `flit bisect`.  That
+is [pyelftools](https://github.com/eliben/pyelftools) as discussed in [FLiT
+Installation](installation.md).  If `pyelftools` is not installed, then
+`bisect` is disabled.
+
 When FLiT runs identify compilations that cause some tests to exhibit
 variability, one may want to investigate further and understand where the
 compiler introduced overly aggressive optimizations.

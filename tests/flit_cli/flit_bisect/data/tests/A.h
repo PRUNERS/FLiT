@@ -81,8 +81,17 @@
  * -- LICENSE END --
  */
 
-#include "flit.h"
+#ifndef A_H
+#define A_H
 
-int main(int argCount, char* argList[]) {
-  return flit::runFlitTests(argCount, argList);
-}
+class A {
+public:
+  static int offset; // is a global strong symbol that is not a function
+  A();
+  virtual ~A();
+  virtual int fileA_method1_PROBLEM();
+};
+
+int fileA_all();
+
+#endif // A_H

@@ -87,10 +87,15 @@ The tests are below using doctest
 
 Let's now make a temporary directory and test that flit init populates the
 correct files
+
+>>> class TestError(RuntimeError): pass
+
 >>> import glob
 >>> import os
 >>> with th.tempdir() as temp_dir:
-...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     retval = th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     if retval != 0:
+...         raise TestError('Main returned {}'.format(retval))
 ...     files = os.listdir(temp_dir)
 Creating /.../flit-config.toml
 Creating /.../custom.mk
