@@ -252,6 +252,36 @@ def gen_assignments(flag_map):
                         for name, flag in flag_map.items()]
     return '\n'.join(name_assignments)
 
+def gen_multi_assignment(name, values):
+    '''
+    Generates a multi-line assignment string for a Makefile
+
+    @note no checking is done on the name or values to see if they are valid to
+        place within a Makefile.
+
+    @param name: (str) Makefile variable name
+    @param values: (iter(str)) iterable of values to assign, one per line
+
+    @return (str) a single string with the multi-line assignment suitable for a
+        Makefile.
+
+    >>> gen_multi_assignment('CLANG', None)
+    'CLANG           :='
+
+    >>> gen_multi_assignment('CLANG', [])
+    'CLANG           :='
+
+    >>> print(gen_multi_assignment('hello_there', ['my friend', 'my enemy']))
+    hello_there     :=
+    hello_there     += my friend
+    hello_there     += my enemy
+    '''
+    values = values or tuple() # if None, set to an empty tuple
+    justified = name.ljust(15)
+    beginning = justified + ' :='
+    return '\n'.join(
+        [beginning] + ['{} += {}'.format(justified, x) for x in values])
+
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     args = parse_args(arguments, prog=prog)
@@ -289,25 +319,23 @@ def main(arguments, prog=sys.argv[0]):
             .format(ground_truth['compiler_name'])
 
     _supported_compiler_types = ('clang', 'gcc', 'intel')
-    base_compilers = {x: None for x in _supported_compiler_types}
-    compiler_flags = {x: None for x in _supported_compiler_types}
-    compiler_op_levels = {x: None for x in _supported_compiler_types}
+    base_compilers = {x.upper(): None for x in _supported_compiler_types}
+    compiler_flags = {x.upper(): None for x in _supported_compiler_types}
+    compiler_op_levels = {x.upper(): None for x in _supported_compiler_types}
     all_op_levels = {}
     all_switches = {}
     for compiler in projconf['compiler']:
         assert compiler['type'] in _supported_compiler_types, \
             'Unsupported compiler type: {}'.format(compiler['type'])
-        assert base_compilers[compiler['type']] is None, \
-            'You can only specify one of each type of compiler.'
-        base_compilers[compiler['type']] = compiler['binary']
+        base_compilers[compiler['type'].upper()] = compiler['binary']
 
         switches = {flag_name(flag): flag for flag in compiler['switches_list']}
-        compiler_flags[compiler['type']] = switches.keys()
+        compiler_flags[compiler['type'].upper()] = switches.keys()
         all_switches.update(switches)
 
         op_levels = {flag_name(flag): flag
                      for flag in compiler['optimization_levels']}
-        compiler_op_levels[compiler['type']] = op_levels.keys()
+        compiler_op_levels[compiler['type'].upper()] = op_levels.keys()
         all_op_levels.update(op_levels)
 
     test_run_args = ''
@@ -319,8 +347,6 @@ def main(arguments, prog=sys.argv[0]):
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
 
-    given_compilers = [key for key, val in base_compilers.items()
-                       if val is not None]
     replacements = {
         'dev_compiler': matching_dev_compilers[0]['binary'],
         'dev_optl': dev_build['optimization_level'],
@@ -336,22 +362,19 @@ def main(arguments, prog=sys.argv[0]):
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
-        'compilers': ' '.join([c.upper() for c in given_compilers]),
+        'compiler_defs': gen_assignments({
+            key.upper(): val for key, val in base_compilers.items()}),
+        'compilers': ' '.join([x.upper() for x in base_compilers
+                               if base_compilers[x] is not None]),
         'opcodes_definitions': gen_assignments(all_op_levels),
         'switches_definitions': gen_assignments(all_switches),
+        'compiler_opcodes': '\n\n'.join([
+            gen_multi_assignment('OPCODES_' + key, vals)
+            for key, vals in compiler_op_levels.items()]),
+        'compiler_switches': '\n\n'.join([
+            gen_multi_assignment('SWITCHES_' + key, vals)
+            for key, vals in compiler_flags.items()]),
         }
-    replacements.update({key + '_compiler': val
-                         for key, val in base_compilers.items()})
-    replacements.update({'opcodes_' + x: ' '.join(compiler_op_levels[x])
-                         for x in given_compilers})
-    replacements.update({'opcodes_' + x: None
-                         for x in _supported_compiler_types
-                         if x not in given_compilers})
-    replacements.update({'switches_' + x: ' '.join(compiler_flags[x])
-                         for x in given_compilers})
-    replacements.update({'switches_' + x: None
-                         for x in _supported_compiler_types
-                         if x not in given_compilers})
 
     flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                              makefile, replacements, overwrite=True)

@@ -90,9 +90,7 @@ GT_OUT          := ground-truth.csv
 UNAME_S         := $(shell uname -s)
 
 # will be None if not specified in flit-config.toml
-CLANG           := {clang_compiler}
-INTEL           := {intel_compiler}
-GCC             := {gcc_compiler}
+{compiler_defs}
 
 # keep only the compilers that are not None and are in the path
 COMPILERS       := {compilers}
@@ -257,17 +255,9 @@ endif
 
 {switches_definitions}
 
-OPCODES_GCC := {opcodes_gcc}
-OPCODES_CLANG := {opcodes_clang}
-OPCODES_INTEL := {opcodes_intel}
+{compiler_opcodes}
 
-SWITCHES_GCC :=
-SWITCHES_CLANG :=
-SWITCHES_INTEL :=
-
-SWITCHES_GCC += {switches_gcc}
-SWITCHES_CLANG += {switches_clang}
-SWITCHES_INTEL += {switches_intel}
+{compiler_switches}
 
 ##########################################################
 #
