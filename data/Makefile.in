@@ -87,12 +87,10 @@ DEV_TARGET      ?= devrun
 GT_TARGET       ?= gtrun
 GT_OUT          := ground-truth.csv
 
-UNAME_S         := $(shell uname -s)
+UNAME_S         := {uname}
 
 # will be None if not specified in flit-config.toml
-CLANG           := {clang_compiler}
-INTEL           := {intel_compiler}
-GCC             := {gcc_compiler}
+{compiler_defs}
 
 # keep only the compilers that are not None and are in the path
 COMPILERS       := {compilers}
@@ -229,7 +227,7 @@ GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
-HOSTNAME        := $(shell hostname)
+HOSTNAME        := {hostname}
 
 RESULTS_DIR     := results
 
@@ -255,20 +253,11 @@ endif
 
 ## switches
 
-DEFFLAGS :=
 {switches_definitions}
 
-OPCODES_GCC := {opcodes_gcc}
-OPCODES_CLANG := {opcodes_clang}
-OPCODES_INTEL := {opcodes_intel}
+{compiler_opcodes}
 
-SWITCHES_GCC := DEFFLAGS
-SWITCHES_CLANG := DEFFLAGS
-SWITCHES_INTEL := DEFFLAGS
-
-SWITCHES_GCC += {switches_gcc}
-SWITCHES_CLANG += {switches_clang}
-SWITCHES_INTEL += {switches_intel}
+{compiler_switches}
 
 ##########################################################
 #

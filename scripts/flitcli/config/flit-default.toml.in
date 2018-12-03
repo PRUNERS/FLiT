@@ -132,6 +132,8 @@ mpirun_args = ''
 [dev_build]
 
 # compiler_name must be found in the [[compiler]] list under the name attribute
+# The optimization level and switches need not match those found in the
+# associated [[compiler]]
 compiler_name = 'g++'
 optimization_level = '-O2'
 switches = '-funsafe-math-optimizations'
@@ -141,6 +143,8 @@ switches = '-funsafe-math-optimizations'
 [ground_truth]
 
 # compiler_name must be found in the [[compiler]] list under the name attribute
+# The optimization level and switches need not match those found in the
+# associated [[compiler]]
 compiler_name = 'g++'
 optimization_level = '-O0'
 switches = ''
@@ -162,98 +166,117 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+# search space of optimization levels
 optimization_levels = [
   '-O0',
   '-O1',
   '-O2',
   '-O3',
 ]
-## NOTE: gcc disables -fassociative-math @ O0
-switches = [
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+# Note: gcc disables -fassociative-math @ O0
+switches_list = [
   '-fassociative-math',
-  '-mavx',
+  '-fcx-fortran-rules',
+  '-fcx-limited-range',
   '-fexcess-precision=fast',
   '-ffinite-math-only',
-  '-mavx2 -mfma',
-  '-fcx-fortran-rules',
-  '-ffp-contract=on',
   '-ffloat-store',
-  '-fcx-limited-range',
+  '-ffp-contract=on',
   '-fmerge-all-constants',
   '-fno-trapping-math',
   '-freciprocal-math',
   '-frounding-math',
   '-fsignaling-nans',
-  '-mfpmath=sse -mtune=native',
   '-funsafe-math-optimizations',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
 ]
 
 [[compiler]]
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+# search space of optimization levels
 optimization_levels = [
   '-O0',
   '-O1',
   '-O2',
   '-O3',
 ]
-##NOTE: Clang not honoring -fassociative-math (issues warning with 3.9)
-## see: https://llvm.org/bugs/show_bug.cgi?id=27372
-switches = [
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+# Note: Clang not honoring -fassociative-math (issues warning with 3.9)
+#       see: https://llvm.org/bugs/show_bug.cgi?id=27372
+switches_list = [
   '-fassociative-math',
-  '-mavx',
   '-fexcess-precision=fast',
+  '-fexcess-precision=standard',
   '-ffinite-math-only',
-  '-mavx2 -mfma',
-  '-march=core-avx2',
-  '-ffp-contract=on',
   '-ffloat-store',
+  '-ffp-contract=on',
   '-fmerge-all-constants',
   '-fno-trapping-math',
   '-freciprocal-math',
   '-frounding-math',
   '-fsignaling-nans',
   '-fsingle-precision-constant',
-  '-mfpmath=sse -mtune=native',
-  '-fexcess-precision=standard',
   '-funsafe-math-optimizations',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
 ]
 
 [[compiler]]
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+# search space of optimization levels
 optimization_levels = [
   '-O0',
   '-O1',
   '-O2',
   '-O3',
 ]
-switches = [
-  '-mavx',
-  '-mp1',
-  '-no-fma',
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+switches_list = [
+  '--use_fast_math',
+  '-fcx-limited-range',
+  '-ffloat-store',
   '-fma',
-  '-ftz',
-  '-mavx2 -mfma',
-  '-march=core-avx2',
-  '-fp-model=double',
-  '-fp-model=extended',
+  '-fmerge-all-constants',
   '-fp-model fast=1',
   '-fp-model fast=2',
+  '-fp-model=double',
+  '-fp-model=except',
+  '-fp-model=extended',
   '-fp-model=precise',
   '-fp-model=source',
   '-fp-model=strict',
-  '-ffloat-store',
-  '-fcx-limited-range',
-  '-fmerge-all-constants',
+  '-fp-port',
+  '-frounding-math',
+  '-fsingle-precision-constant',
+  '-ftz',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  '-mp1',
+  '-no-fma',
   '-no-ftz',
   '-no-prec-div',
   '-prec-div',
-  '-frounding-math',
-  '-fp-port',
-  '-fsingle-precision-constant',
-  '-mfpmath=sse -mtune=native',
-  '--use_fast_math',
+  ''
 ]

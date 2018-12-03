@@ -84,6 +84,7 @@
 
 import argparse
 import os
+import re
 import sys
 import toml
 
@@ -91,26 +92,10 @@ import flitconfig as conf
 import flitutil
 
 brief_description = 'Updates the Makefile based on flit-config.toml'
+_supported_compiler_types = ('clang', 'gcc', 'intel')
 
-def flag_name(flag):
-    name = flag.upper()
-    if name == '':
-        print('Ignoring empty flag.')
-        return ''
-    if name[0] == '-': 
-        name = name[1:]
-    name = name.replace(' ', '_')
-    name = name.replace('-', '_')
-    name = name.replace('=', '_')
-    return name
-
-def generate_assignments(flags):
-    name_assignments = [name + ' := ' + flags[name] 
-                        for name in flags.keys() if name != '']
-    return '\n'.join(name_assignments)
-
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
+def parse_args(arguments, prog=sys.argv[0]):
+    'Return parsed arugments'
     parser = argparse.ArgumentParser(
         prog=prog,
         description='''
@@ -124,15 +109,190 @@ def main(arguments, prog=sys.argv[0]):
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
     args = parser.parse_args(arguments)
+    return args
 
-    tomlfile = os.path.join(args.directory, 'flit-config.toml')
+def load_projconf(directory):
+    '''
+    Loads and returns the project configuration found in the given tomlfile.
+    This function checks for validity of that tomlfile and fills it with
+    default values.
+
+    @param directory: directory containing 'flit-config.toml'.
+
+    @return project configuration as a struct of dicts and lists depending on
+    the structure of the given tomlfile.
+    '''
+    tomlfile = os.path.join(directory, 'flit-config.toml')
     try:
         projconf = toml.load(tomlfile)
     except FileNotFoundError:
         print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
               file=sys.stderr)
+        raise
+
+    defaults = flitutil.get_default_toml()
+
+    if 'compiler' in projconf:
+        assert isinstance(projconf['compiler'], list), \
+            'flit-config.toml improperly configured, ' \
+            'needs [[compiler]] section'
+
+        default_type_map = {c['type']: c for c in defaults['compiler']}
+        type_map = {} # type -> compiler
+        name_map = {} # name -> compiler
+        for compiler in projconf['compiler']:
+
+            # make sure each compiler has a name, type, and binary
+            for field in ('name', 'type', 'binary'):
+                assert field in compiler, \
+                    'flit-config.toml: compiler "{0}"'.format(compiler) + \
+                    ' is missing the "{0}" field'.format(field)
+
+            # check that the type is valid
+            assert compiler['type'] in _supported_compiler_types, \
+                'flit-config.toml: unsupported compiler type "{0}"' \
+                .format(compiler['type'])
+
+            # check that we only have one of each type specified
+            assert compiler['type'] not in type_map, \
+                'flit-config.toml: cannot have multiple compilers of the ' \
+                'same type ({0})'.format(compiler['type'])
+            type_map[compiler['type']] = compiler
+
+            # check that we only have one of each name specified
+            assert compiler['name'] not in name_map, \
+                'flit-config.toml: cannot have multiple compilers of the ' \
+                'same name ({0})'.format(compiler['name'])
+            name_map[compiler['name']] = compiler
+
+            # if optimization_levels or switches_list are missing for any
+            # compiler, put in the default flags for that compiler
+            default = default_type_map[compiler['type']]
+            for field in ('optimization_levels', 'switches_list'):
+                if field not in compiler:
+                    compiler[field] = default[field]
+
+    # Fill in the rest of the default values
+    flitutil.fill_defaults(projconf, defaults)
+
+    return projconf
+
+def flag_name(flag):
+    '''
+    Returns an associated Makefile variable name for the given compiler flag
+
+    @param flag: (str) switches for the compiler
+
+    @return (str) a valid Makefile variable unique to the given flag
+
+    >>> flag_name('')
+    'NO_FLAGS'
+
+    >>> flag_name('-')
+    Traceback (most recent call last):
+      ...
+    AssertionError: Error: cannot handle flag only made of dashes
+
+    >>> flag_name('----')
+    Traceback (most recent call last):
+      ...
+    AssertionError: Error: cannot handle flag only made of dashes
+
+    >>> flag_name('-funsafe-math-optimizations')
+    'FUNSAFE_MATH_OPTIMIZATIONS'
+
+    >>> flag_name('-Ofast -march=32bit')
+    'OFAST__MARCH_32BIT'
+    '''
+    if flag == '':
+        return 'NO_FLAGS'
+    name = re.sub('[^0-9A-Za-z]', '_', flag.upper().strip('-'))
+    assert re.match('^[0-9]', name) is None, \
+        'Error: cannot handle flag that starts with a number'
+    assert len(name) > 0, 'Error: cannot handle flag only made of dashes'
+    return name
+
+def gen_assignments(flag_map):
+    '''
+    Given a mapping of Makefile variable name to value, create a single string
+    of assignments suitable for placing within a Makefile
+
+    @note no checking is performed on the keys of the map.  They are assumed to
+        be valid Makefile variables
+
+    @param flag_map: ({str: str}) mapping from Makefile variable name to
+        Makefile value.
+    @return (str) The string to insert into a Makefile to create the
+        assignments
+
+    >>> gen_assignments({})
+    ''
+
+    >>> gen_assignments({'single_name': 'single_value'})
+    'single_name     := single_value'
+
+    Here we use an OrderedDict for the test to be robust.  If we used a normal
+    dict, then the output lines could show up in a different order.
+    >>> from collections import OrderedDict
+    >>> print(gen_assignments(
+    ...     OrderedDict([('hello', 'there'), ('my', 'friend')])))
+    hello           := there
+    my              := friend
+
+    >>> print(gen_assignments(OrderedDict([
+    ...     ('REALLY_A_VERY_LONG_VARIABLE_NAME_HERE', 'bob'),
+    ...     ('not_so_long_32', 'harry'),
+    ...     ('short', 'very long value here'),
+    ...     ])))
+    REALLY_A_VERY_LONG_VARIABLE_NAME_HERE := bob
+    not_so_long_32  := harry
+    short           := very long value here
+    '''
+    name_assignments = ['{} := {}'.format(name.ljust(15), flag)
+                        for name, flag in flag_map.items()]
+    return '\n'.join(name_assignments)
+
+def gen_multi_assignment(name, values):
+    '''
+    Generates a multi-line assignment string for a Makefile
+
+    @note no checking is done on the name or values to see if they are valid to
+        place within a Makefile.
+
+    @param name: (str) Makefile variable name
+    @param values: (iter(str)) iterable of values to assign, one per line
+
+    @return (str) a single string with the multi-line assignment suitable for a
+        Makefile.
+
+    >>> gen_multi_assignment('CLANG', None)
+    'CLANG           :='
+
+    >>> gen_multi_assignment('CLANG', [])
+    'CLANG           :='
+
+    >>> print(gen_multi_assignment('hello_there', ['my friend', 'my enemy']))
+    hello_there     :=
+    hello_there     += my friend
+    hello_there     += my enemy
+    '''
+    values = values or tuple() # if None, set to an empty tuple
+    justified = name.ljust(15)
+    beginning = justified + ' :='
+    return '\n'.join(
+        [beginning] + ['{} += {}'.format(justified, x) for x in values])
+
+def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
+    args = parse_args(arguments, prog=prog)
+
+    try:
+        projconf = load_projconf(args.directory)
+    except FileNotFoundError:
         return 1
-    flitutil.fill_defaults(projconf)
+    except AssertionError as ex:
+        print('Error: ' + ex.args[0], file=sys.stderr)
+        return 1
 
     makefile = os.path.join(args.directory, 'Makefile')
     if os.path.exists(makefile):
@@ -141,54 +301,26 @@ def main(arguments, prog=sys.argv[0]):
         print('Creating {0}'.format(makefile))
 
     dev_build = projconf['dev_build']
-    dev_compiler_name = dev_build['compiler_name']
-    dev_optl = dev_build['optimization_level']
-    dev_switches = dev_build['switches']
     matching_dev_compilers = [x for x in projconf['compiler']
-                              if x['name'] == dev_compiler_name]
+                              if x['name'] == dev_build['compiler_name']]
     assert len(matching_dev_compilers) > 0, \
-            'Compiler name {0} not found'.format(dev_compiler_name)
+            'Compiler name {0} not found'.format(dev_build['compiler_name'])
     assert len(matching_dev_compilers) < 2, \
-            'Multiple compilers with name {0} found'.format(dev_compiler_name)
-    dev_compiler_bin = matching_dev_compilers[0]['binary']
-    #if '/' in dev_compiler_bin:
-    #    dev_compiler_bin = os.path.realpath(dev_compiler_bin)
+            'Multiple compilers with name {0} found' \
+            .format(dev_build['compiler_name'])
 
     ground_truth = projconf['ground_truth']
-    gt_compiler_name = ground_truth['compiler_name']
-    gt_optl = ground_truth['optimization_level']
-    gt_switches = ground_truth['switches']
     matching_gt_compilers = [x for x in projconf['compiler']
-                             if x['name'] == gt_compiler_name]
-    assert len(matching_dev_compilers) > 0, \
-            'Compiler name {0} not found'.format(gt_compiler_name)
-    assert len(matching_dev_compilers) < 2, \
-            'Multiple compilers with name {0} found'.format(gt_compiler_name)
-    # TODO: use the compiler mnemonic rather than the path
-    gt_compiler_bin = matching_gt_compilers[0]['binary']
-    #if '/' in dev_compiler_bin:
-    #    gt_compiler_bin = os.path.realpath(gt_compiler_bin)
+                             if x['name'] == ground_truth['compiler_name']]
+    assert len(matching_gt_compilers) > 0, \
+            'Compiler name {0} not found'.format(ground_truth['compiler_name'])
+    assert len(matching_gt_compilers) < 2, \
+            'Multiple compilers with name {0} found' \
+            .format(ground_truth['compiler_name'])
 
-    supported_compiler_types = ('clang', 'gcc', 'intel')
-    base_compilers = {x: None for x in supported_compiler_types}
-    compiler_flags = {x: None for x in supported_compiler_types}
-    compiler_op_levels = {x: None for x in supported_compiler_types}
-    all_op_levels = {}
-    all_switches = {}
-    for compiler in projconf['compiler']:
-        assert compiler['type'] in supported_compiler_types, \
-            'Unsupported compiler type: {}'.format(compiler['type'])
-        assert base_compilers[compiler['type']] is None, \
-            'You can only specify one of each type of compiler.'
-        base_compilers[compiler['type']] = compiler['binary']
-        
-        switches = {flag_name(flag): flag for flag in compiler['switches']}
-        compiler_flags[compiler['type']] = switches.keys()
-        all_switches.update(switches)
-
-        op_levels = {flag_name(flag): flag for flag in compiler['optimization_levels']}
-        compiler_op_levels[compiler['type']] = op_levels.keys()
-        all_op_levels.update(op_levels)
+    base_compilers = {x.upper(): None for x in _supported_compiler_types}
+    base_compilers.update({compiler['type'].upper(): compiler['binary']
+                           for compiler in projconf['compiler']})
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -199,15 +331,15 @@ def main(arguments, prog=sys.argv[0]):
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
 
-    given_compilers = [key for key, val in base_compilers.items()
-                       if val is not None]
     replacements = {
-        'dev_compiler': dev_compiler_bin,
-        'dev_optl': dev_optl,
-        'dev_switches': dev_switches,
-        'ground_truth_compiler': gt_compiler_bin,
-        'ground_truth_optl': gt_optl,
-        'ground_truth_switches': gt_switches,
+        'uname': os.uname().sysname,
+        'hostname': os.uname().nodename,
+        'dev_compiler': matching_dev_compilers[0]['binary'],
+        'dev_optl': dev_build['optimization_level'],
+        'dev_switches': dev_build['switches'],
+        'ground_truth_compiler': matching_gt_compilers[0]['binary'],
+        'ground_truth_optl': ground_truth['optimization_level'],
+        'ground_truth_switches': ground_truth['switches'],
         'flit_include_dir': conf.include_dir,
         'flit_lib_dir': conf.lib_dir,
         'flit_data_dir': conf.data_dir,
@@ -216,16 +348,29 @@ def main(arguments, prog=sys.argv[0]):
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
-        'compilers': ' '.join([c.upper() for c in given_compilers]),
-        'opcodes_definitions': generate_assignments(all_op_levels),
-        'switches_definitions': generate_assignments(all_switches),
+        'compiler_defs': gen_assignments({
+            key: val for key, val in base_compilers.items()}),
+        'compilers': ' '.join([compiler['type'].upper()
+                               for compiler in projconf['compiler']]),
+        'opcodes_definitions': gen_assignments({
+            flag_name(x): x
+            for compiler in projconf['compiler']
+            for x in compiler['optimization_levels']}),
+        'switches_definitions': gen_assignments({
+            flag_name(x): x
+            for compiler in projconf['compiler']
+            for x in compiler['switches_list']}),
+        'compiler_opcodes': '\n\n'.join([
+            gen_multi_assignment(
+                'OPCODES_' + compiler['type'].upper(),
+                [flag_name(x) for x in compiler['optimization_levels']])
+            for compiler in projconf['compiler']]),
+        'compiler_switches': '\n\n'.join([
+            gen_multi_assignment(
+                'SWITCHES_' + compiler['type'].upper(),
+                [flag_name(x) for x in compiler['switches_list']])
+            for compiler in projconf['compiler']]),
         }
-    replacements.update({key + '_compiler': val
-                         for key, val in base_compilers.items()})
-    replacements.update({'opcodes_' + compiler: ' '.join(compiler_op_levels[compiler])
-                for compiler in given_compilers})
-    replacements.update({'switches_' + compiler: ' '.join(compiler_flags[compiler])
-                for compiler in given_compilers})
 
     flitutil.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                              makefile, replacements, overwrite=True)
