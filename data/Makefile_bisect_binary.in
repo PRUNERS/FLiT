@@ -97,10 +97,10 @@
 PRECISION        := {precision}
 TEST_CASE        := {test_case}
 
-TROUBLE_CC       := {trouble_cc}
+TROUBLE_CXX      := {trouble_cc}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
-BISECT_LINK      := $(GT_CC)
+BISECT_LINK      := $(GT_CXX)
 
 TROUBLE_ID       := {trouble_id}
 
@@ -127,7 +127,7 @@ SPLIT_SRC        :=
 TROUBLE_LDFLAGS   =
 
 # if the trouble compiler is not GCC 4 or 5, then add -no-pie
-ifeq ($(call IS_GCC_4_OR_5,$(TROUBLE_CC)),0)
+ifeq ($(call IS_GCC_4_OR_5,$(TROUBLE_CXX)),0)
   TROUBLE_LDFLAGS += -no-pie
 endif
 
@@ -194,7 +194,7 @@ $(GT_LIB_OUT): $(GT_LIB_TARGET)
 	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
 
 $(GT_LIB_TARGET): $(GT_OBJ) Makefile custom.mk $(MAKEFILE)
-	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
+	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
 
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_LIB_OUT) $(GT_LIB_TARGET)
 	$(RUNWRAP) ./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null
@@ -212,10 +212,10 @@ $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
 	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
 $(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(GT_CC) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
+	$(GT_CXX) $(CC_REQUIRED) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(TROUBLE_CC) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED) $(TROUBLE_LDFLAGS)
+	$(TROUBLE_CXX) $(CC_REQUIRED) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED) $(TROUBLE_LDFLAGS)
 
 .PHONY: trouble trouble-out trouble-fpic
 trouble: $(TROUBLE_TARGET)
@@ -270,9 +270,9 @@ $(BISECT_OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(BISECT_OBJ_DIR)
 	if [ -f "$(OBJ_DIR)/$*_gt_fPIC.o" ]; then \
 	  ln -s "../../$(OBJ_DIR)/$*_gt_fPIC.o" "$@"; \
 	else \
-	  $(GT_CC) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	  $(GT_CXX) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	    -DFLIT_HOST='"$(HOSTNAME)"' \
-	    -DFLIT_COMPILER='"$(GT_CC)"' \
+	    -DFLIT_COMPILER='"$(GT_CXX)"' \
 	    -DFLIT_OPTL='"$(GT_OPTL)"' \
 	    -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
 	    -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'; \
@@ -281,9 +281,9 @@ $(BISECT_OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(BISECT_OBJ_DIR)
 
 # specify how to build the troublesome ones
 $(OBJ_DIR)/%_bisect_$(TROUBLE_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CC) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(TROUBLE_CC)"' \
+	  -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
 	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
 	  -DFLIT_FILENAME='"bisect-default-out"'
@@ -293,9 +293,9 @@ $(BISECT_OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(BI
 	if [ -f "$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" ]; then \
 	  ln -s "../../$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" "$@"; \
 	else \
-		$(TROUBLE_CC) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+		$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 			-DFLIT_HOST='"$(HOSTNAME)"' \
-			-DFLIT_COMPILER='"$(TROUBLE_CC)"' \
+			-DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
 			-DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
 			-DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
 			-DFLIT_FILENAME='"bisect-default-out"'; \
@@ -303,9 +303,9 @@ $(BISECT_OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(BI
 
 # and the fPIC variant
 $(OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CC) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(TROUBLE_CC)"' \
+	  -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
 	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
 	  -DFLIT_FILENAME='"bisect-default-out"'

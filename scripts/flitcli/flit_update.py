@@ -135,6 +135,7 @@ def main(arguments, prog=sys.argv[0]):
     assert len(matching_dev_compilers) < 2, \
             'Multiple compilers with name {0} found'.format(dev_compiler_name)
     dev_compiler_bin = matching_dev_compilers[0]['binary']
+    dev_compiler_type = matching_dev_compilers[0]['type']
     #if '/' in dev_compiler_bin:
     #    dev_compiler_bin = os.path.realpath(dev_compiler_bin)
 
@@ -150,6 +151,7 @@ def main(arguments, prog=sys.argv[0]):
             'Multiple compilers with name {0} found'.format(gt_compiler_name)
     # TODO: use the compiler mnemonic rather than the path
     gt_compiler_bin = matching_gt_compilers[0]['binary']
+    gt_compiler_type = matching_gt_compilers[0]['type']
     #if '/' in dev_compiler_bin:
     #    gt_compiler_bin = os.path.realpath(gt_compiler_bin)
 
@@ -175,9 +177,11 @@ def main(arguments, prog=sys.argv[0]):
                        if val is not None]
     replacements = {
         'dev_compiler': dev_compiler_bin,
+        'dev_type': dev_compiler_type,
         'dev_optl': dev_optl,
         'dev_switches': dev_switches,
         'ground_truth_compiler': gt_compiler_bin,
+        'ground_truth_type': gt_compiler_type,
         'ground_truth_optl': gt_optl,
         'ground_truth_switches': gt_switches,
         'flit_include_dir': conf.include_dir,
