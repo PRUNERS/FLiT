@@ -8,10 +8,10 @@
    optimization levels gives the default values
 3. `tst_noswitches.py`: Test that specifying a compiler, but not specifying the
    switches list gives the default values
-[ ] 4. Test that the provided list of optimization levels and switches are
-       used, and nothing more.
-[ ] 5. Test that by only specifying one or two compilers, only those specified
-       are used
+4. `tst_onlyprovidedoptlswitches.py`: Test that the provided list of
+   optimization levels and switches are used, and nothing more.
+5. `tst_onlyprovidedcompilers.py`: Test that by only specifying one compiler,
+   only that specified compiler is used
 [ ] 6. Test error cases, such as specifying more than one type of a compiler
 
 # Needed tests
