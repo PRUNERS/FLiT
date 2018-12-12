@@ -100,10 +100,6 @@ Test that only the provided optimization levels and switches are used
 ...     return default_compiler[0]
 
 >>> with th.tempdir() as temp_dir:
-...     temp_dir = 'tmp'
-...     if os.path.exists(temp_dir):
-...         shutil.rmtree(temp_dir)
-...     os.mkdir(temp_dir)
 ...     with StringIO() as ostream:
 ...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
 ...         init_out = ostream.getvalue().splitlines()
