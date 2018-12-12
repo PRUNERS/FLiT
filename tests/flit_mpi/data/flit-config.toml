@@ -1,3 +1,5 @@
 [run]
 enable_mpi = true
 mpirun_args = '-n 2'
+
+# Use default for all other options

@@ -123,12 +123,11 @@ def main(arguments, prog=sys.argv[0]):
     else:
         print('Creating {0}'.format(makefile))
 
-    host = projconf['hosts'][0]
-    dev_build = host['dev_build']
+    dev_build = projconf['dev_build']
     dev_compiler_name = dev_build['compiler_name']
     dev_optl = dev_build['optimization_level']
     dev_switches = dev_build['switches']
-    matching_dev_compilers = [x for x in host['compilers']
+    matching_dev_compilers = [x for x in projconf['compiler']
                               if x['name'] == dev_compiler_name]
     assert len(matching_dev_compilers) > 0, \
             'Compiler name {0} not found'.format(dev_compiler_name)
@@ -139,11 +138,11 @@ def main(arguments, prog=sys.argv[0]):
     #if '/' in dev_compiler_bin:
     #    dev_compiler_bin = os.path.realpath(dev_compiler_bin)
 
-    ground_truth = host['ground_truth']
+    ground_truth = projconf['ground_truth']
     gt_compiler_name = ground_truth['compiler_name']
     gt_optl = ground_truth['optimization_level']
     gt_switches = ground_truth['switches']
-    matching_gt_compilers = [x for x in host['compilers']
+    matching_gt_compilers = [x for x in projconf['compiler']
                              if x['name'] == gt_compiler_name]
     assert len(matching_dev_compilers) > 0, \
             'Compiler name {0} not found'.format(gt_compiler_name)
@@ -157,7 +156,7 @@ def main(arguments, prog=sys.argv[0]):
 
     supported_compiler_types = ('clang', 'gcc', 'intel')
     base_compilers = {x: None for x in supported_compiler_types}
-    for compiler in host['compilers']:
+    for compiler in projconf['compiler']:
         assert compiler['type'] in supported_compiler_types, \
             'Unsupported compiler type: {}'.format(compiler['type'])
         assert base_compilers[compiler['type']] is None, \
