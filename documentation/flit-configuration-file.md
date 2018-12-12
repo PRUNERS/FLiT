@@ -21,7 +21,7 @@ to delete or comment out the values, which will cause the default values to be
 used._
 
 ```toml
-[hosts]
+[host]
 name = 'my.hostname.com'
 flit_path = '/usr/bin/flit'
 config_dir = '/usr/share/flit/config'

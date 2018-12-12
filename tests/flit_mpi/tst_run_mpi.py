@@ -143,13 +143,6 @@ Creating /.../Makefile
 >>> run_str_2 = run_str_2.decode('utf-8').strip().splitlines()
 >>> run_str_3 = run_str_3.decode('utf-8').strip().splitlines()
 
-Make sure the info statement about MPI being enabled is done at each make call
-
->>> 'MPI is enabled' in compile_str
-True
->>> 'MPI is enabled' in run_str
-True
-
 Make sure the correct arguments are passed to mpirun
 
 >>> 'mpirun -n 2 ./gtrun --output ground-truth.csv --no-timing' in run_str
