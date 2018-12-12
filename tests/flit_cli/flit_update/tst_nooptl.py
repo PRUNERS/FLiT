@@ -81,14 +81,13 @@
 # -- LICENSE END --
 
 '''
-Tests that specifying no compilers results in the default compilers with the
-default flags.
+Test that missing optimization levels causes the defaults to be used
 
 >>> from io import StringIO
 >>> import os
 >>> import shutil
 
->>> testconf = 'data/nocompilers.toml'
+>>> testconf = 'data/nooptl.toml'
 >>> class UpdateTestError(RuntimeError): pass
 
 >>> def deref_makelist(name):
@@ -116,7 +115,6 @@ default flags.
 ...     makevars = th.util.extract_make_vars(directory=temp_dir)
 
 Get default values for each compiler from the default configuration
-
 >>> default_gcc = get_default_compiler('gcc')
 >>> default_clang = get_default_compiler('clang')
 >>> default_intel = get_default_compiler('intel')
@@ -131,28 +129,6 @@ Creating .../Makefile
 >>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
 Updating .../Makefile
 
-Check that the compiler binaries are the default values
->>> gcc = makevars['GCC']
->>> len(gcc) == 1
-True
->>> gcc[0] == default_gcc['binary']
-True
-
->>> clang = makevars['CLANG']
->>> len(clang) == 1
-True
->>> clang[0] == default_clang['binary']
-True
-
->>> intel = makevars['INTEL']
->>> len(intel) == 1
-True
->>> intel[0] == default_intel['binary']
-True
-
->>> sorted(makevars['COMPILERS'])
-['CLANG', 'GCC', 'INTEL']
-
 >>> deref_makelist('OPCODES_GCC') == sorted(default_gcc['optimization_levels'])
 True
 
@@ -162,15 +138,6 @@ True
 
 >>> deref_makelist('OPCODES_INTEL') == \\
 ...     sorted(default_intel['optimization_levels'])
-True
-
->>> deref_makelist('SWITCHES_GCC') == sorted(default_gcc['switches_list'])
-True
-
->>> deref_makelist('SWITCHES_CLANG') == sorted(default_clang['switches_list'])
-True
-
->>> deref_makelist('SWITCHES_INTEL') == sorted(default_intel['switches_list'])
 True
 '''
 

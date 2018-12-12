@@ -2,12 +2,12 @@
 
 ## Tests covering `[[compiler]]` section
 
-[ ] 1. `tst_nocompilers.py`: Test that not specifying the `[[compiler]]`
-       section gives the default values
-[ ] 2. Test that specifying a compiler, but not specifying the optimization
-       levels gives the default values
-[ ] 3. Test that specifying a compiler, but not specifying the switches list
-       gives the default values
+1. `tst_nocompilers.py`: Test that not specifying the `[[compiler]]` section
+   gives the default values
+2. `tst_nooptl.py`: Test that specifying a compiler, but not specifying the
+   optimization levels gives the default values
+3. `tst_noswitches.py`: Test that specifying a compiler, but not specifying the
+   switches list gives the default values
 [ ] 4. Test that the provided list of optimization levels and switches are
        used, and nothing more.
 [ ] 5. Test that by only specifying one or two compilers, only those specified
