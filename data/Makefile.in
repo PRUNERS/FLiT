@@ -98,17 +98,27 @@ GCC_TYPE        := gcc
 # keep only the compilers that are not None and are in the path
 COMPILERS       := {compilers}
 
+COLLECTIONS     := {comipler_collections}
+
+{compiler_collection_compilers}
+# E.G. if GCC was the collection
+#
+# GCC_CXX = g++
+# GCC_FXX = gfortran
+
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
-DEV_CXX         ?= {dev_compiler}
+DEV_COLLECTION  ?= {dev_compiler_collection}
+DEV_CXX         ?= $(DEV_COLLECTION)_CXX
 DEV_CXX_TYPE    ?= {dev_type}
 DEV_OPTL        ?= {dev_optl}
 DEV_SWITCHES    ?= {dev_switches}
 
-GT_CXX          := {ground_truth_compiler}
+GT_COLLECTION   := {ground_truth_compiler_collection}
+GT_CXX          := $(GT_COLLECTION)_CXX
 GT_CXX_TYPE     := {ground_truth_type}
 GT_OPTL         := {ground_truth_optl}
 GT_SWITCHES     := {ground_truth_switches}
@@ -139,6 +149,8 @@ CC_REQUIRED     += -fno-pie
 CC_REQUIRED     += -std=c++11
 CC_REQUIRED     += -I.
 CC_REQUIRED     += -I$(FLIT_INC_DIR)
+
+F_REQUIRED      := 
 
 DEV_CFLAGS      += -g
 DEV_CFLAGS      += -Wall
@@ -187,6 +199,7 @@ DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
 SOURCE          += $(TESTS)
+F_SOURCE         = $(wildcard *.f90)
 
 VPATH            = $(dir $(SOURCE))
 
@@ -220,8 +233,10 @@ help:
 VPATH           := $(sort $(VPATH))
 
 DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
+DEV_OBJ         += $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.f90=%_dev.o)))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
+GT_OBJ          += $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.f90=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
@@ -265,7 +280,7 @@ endif
 
 # will be set internally when doing recursive calls.  Get set to variable names
 # containing the information (e.g. R_CUR_COMPILER=CLANG)
-R_CUR_COMPILER  ?=
+R_CUR_COLLECTION  ?=
 R_CUR_OPTL      ?=
 R_CUR_SWITCHES  ?=
 
@@ -275,6 +290,7 @@ ifdef R_IS_RECURSED
 R_ID            := $(R_CUR_COMPILER)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
 R_TARGET        := $(RESULTS_DIR)/$(R_ID)
 R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(R_ID).o)))
+R_OBJ           += $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.f90=%_$(R_ID).o)))
 R_DEP           := $(R_OBJ:%.o=%.d)
 
 -include $(R_DEP)
@@ -294,22 +310,32 @@ endif
 endif
 
 $(R_TARGET): $(R_OBJ)
-	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	$($($(R_CUR_COLLECTION)_CXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
 	  $(R_OBJ) -o $@ \
 	  $(LD_REQUIRED)
-
+#if fortran, change cpp to fortran
 $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
-	  -c $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
+	$($($(R_CUR_COLLECTION)_CXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	  -c $($($(R_CUR_COLLECTION)_CXX)_REQUIRED) $(F_REQUIRED) \
 	  $< -o $@ \
 	  $(DEPFLAGS) \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$($(R_CUR_COMPILER))"' \
+	  -DFLIT_COMPILER='"$($($(R_CUR_COLLECTION)_CXX))"' \
 	  -DFLIT_OPTL='"$($(R_CUR_OPTL))"' \
 	  -DFLIT_SWITCHES='"$($(R_CUR_SWITCHES))"' \
 	  -DFLIT_FILENAME='"$(R_ID)"'
 
+$(OBJ_DIR)/%_$(R_ID).o: %.f90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(R_CUR_COLLECTION)_FXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	  -c $($($(R_CUR_COLLECTION)_FXX)_REQUIRED) $(CC_REQUIRED) \
+	  $< -o $@ \
+	  $(DEPFLAGS) \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(R_CUR_COLLECTION)_FXX))"' \
+	  -DFLIT_OPTL='"$($(R_CUR_OPTL))"' \
+	  -DFLIT_SWITCHES='"$($(R_CUR_SWITCHES))"' \
+	  -DFLIT_FILENAME='"$(R_ID)"'
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
 
@@ -362,16 +388,16 @@ TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RESULTS_DIR)
 	-$$(MAKE) rec \
 	  R_IS_RECURSED=True \
-	  R_CUR_COMPILER=$(strip $1) \
+	  R_CUR_COLLECTION=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
 	  R_CUR_SWITCHES=$(strip $3)
 	-test -f $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 endef
 
-$(foreach c, $(COMPILERS),                 \
-  $(foreach s, $(SWITCHES_$(strip $c)),    \
-    $(foreach o, $(OPCODES_$(strip $c)),               \
+$(foreach c, $(COLLECTIONS),                 \
+  $(foreach s, $(SWITCHES_$(strip $($(c)_CXX))),    \
+    $(foreach o, $(OPCODES_$(strip $($(c)_CXX))),               \
       $(eval $(call RECURSION_RULE, $c, $o, $s)))))
 TARGET_OUTS     := $(TARGETS:%=%-out)
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
