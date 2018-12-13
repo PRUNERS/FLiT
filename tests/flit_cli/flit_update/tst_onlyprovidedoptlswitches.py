@@ -87,32 +87,12 @@ Test that only the provided optimization levels and switches are used
 >>> import shutil
 >>> import os
 
+>>> from tst_common_funcs import (
+...     deref_makelist, get_default_compiler, runconfig)
+
 >>> testconf = 'data/onlyprovidedoptlswitches.toml'
->>> class UpdateTestError(RuntimeError): pass
-
->>> def deref_makelist(name):
-...     return sorted([' '.join(makevars[x]) for x in makevars[name]])
->>> def get_default_compiler(typename):
-...     defaults = th.util.get_default_toml()
-...     default_compiler = [x for x in defaults['compiler']
-...                         if x['type'] == typename]
-...     assert len(default_compiler) == 1
-...     return default_compiler[0]
-
->>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         init_out = ostream.getvalue().splitlines()
-...     if retval != 0:
-...         raise UpdateTestError('Failed to initialize flit directory')
-...     _ = shutil.copy(testconf, os.path.join(temp_dir, 'flit-config.toml'))
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['update', '-C', temp_dir],
-...                               outstream=ostream)
-...         update_out = ostream.getvalue().splitlines()
-...     if retval != 0:
-...         raise UpdateTestError('Failed to update Makefile')
-...     makevars = th.util.extract_make_vars(directory=temp_dir)
+>>> with open(testconf, 'r') as fin:
+...     init_out, update_out, makevars = runconfig(fin.read())
 
 Get default values for each compiler from the default configuration
 
@@ -130,22 +110,22 @@ Creating .../Makefile
 >>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
 Updating .../Makefile
 
->>> deref_makelist('OPCODES_GCC')
+>>> deref_makelist('OPCODES_GCC', makevars)
 ['-O2', '-O3']
 
->>> deref_makelist('OPCODES_CLANG')
+>>> deref_makelist('OPCODES_CLANG', makevars)
 ['-O0', '-O1']
 
->>> deref_makelist('OPCODES_INTEL')
+>>> deref_makelist('OPCODES_INTEL', makevars)
 ['-Ofast', '-Og']
 
->>> deref_makelist('SWITCHES_GCC')
+>>> deref_makelist('SWITCHES_GCC', makevars)
 ['', '-funsafe-math-optimizations', '-mavx']
 
->>> deref_makelist('SWITCHES_CLANG')
+>>> deref_makelist('SWITCHES_CLANG', makevars)
 ['-ffinite-math-only', '-ffloat-store']
 
->>> deref_makelist('SWITCHES_INTEL')
+>>> deref_makelist('SWITCHES_INTEL', makevars)
 ['-DUSE_MPI', '-fmerge-all-constants', '-fp-model fast=1', '-fp-model fast=2']
 '''
 

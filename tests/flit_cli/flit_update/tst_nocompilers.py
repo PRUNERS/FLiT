@@ -88,32 +88,12 @@ default flags.
 >>> import os
 >>> import shutil
 
+>>> from tst_common_funcs import (
+...     deref_makelist, get_default_compiler, runconfig)
+
 >>> testconf = 'data/nocompilers.toml'
->>> class UpdateTestError(RuntimeError): pass
-
->>> def deref_makelist(name):
-...     return sorted([' '.join(makevars[x]) for x in makevars[name]])
->>> def get_default_compiler(typename):
-...     defaults = th.util.get_default_toml()
-...     default_compiler = [x for x in defaults['compiler']
-...                         if x['type'] == typename]
-...     assert len(default_compiler) == 1
-...     return default_compiler[0]
-
->>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         init_out = ostream.getvalue().splitlines()
-...     if retval != 0:
-...         raise UpdateTestError('Failed to initialize flit directory')
-...     _ = shutil.copy(testconf, os.path.join(temp_dir, 'flit-config.toml'))
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['update', '-C', temp_dir],
-...                               outstream=ostream)
-...         update_out = ostream.getvalue().splitlines()
-...     if retval != 0:
-...         raise UpdateTestError('Failed to update Makefile')
-...     makevars = th.util.extract_make_vars(directory=temp_dir)
+>>> with open(testconf, 'r') as fin:
+...     init_out, update_out, makevars = runconfig(fin.read())
 
 Get default values for each compiler from the default configuration
 
@@ -153,24 +133,28 @@ True
 >>> sorted(makevars['COMPILERS'])
 ['CLANG', 'GCC', 'INTEL']
 
->>> deref_makelist('OPCODES_GCC') == sorted(default_gcc['optimization_levels'])
+>>> deref_makelist('OPCODES_GCC', makevars) == \\
+...     sorted(default_gcc['optimization_levels'])
 True
 
->>> deref_makelist('OPCODES_CLANG') == \\
+>>> deref_makelist('OPCODES_CLANG', makevars) == \\
 ...     sorted(default_clang['optimization_levels'])
 True
 
->>> deref_makelist('OPCODES_INTEL') == \\
+>>> deref_makelist('OPCODES_INTEL', makevars) == \\
 ...     sorted(default_intel['optimization_levels'])
 True
 
->>> deref_makelist('SWITCHES_GCC') == sorted(default_gcc['switches_list'])
+>>> deref_makelist('SWITCHES_GCC', makevars) == \\
+...     sorted(default_gcc['switches_list'])
 True
 
->>> deref_makelist('SWITCHES_CLANG') == sorted(default_clang['switches_list'])
+>>> deref_makelist('SWITCHES_CLANG', makevars) == \\
+...     sorted(default_clang['switches_list'])
 True
 
->>> deref_makelist('SWITCHES_INTEL') == sorted(default_intel['switches_list'])
+>>> deref_makelist('SWITCHES_INTEL', makevars) == \\
+...     sorted(default_intel['switches_list'])
 True
 '''
 

@@ -79,55 +79,52 @@
 #    purposes.
 #
 # -- LICENSE END --
-
 '''
-Test that missing optimization levels causes the defaults to be used
-
->>> from io import StringIO
->>> import os
->>> import shutil
-
->>> from tst_common_funcs import (
-...     deref_makelist, get_default_compiler, runconfig)
-
->>> testconf = 'data/nooptl.toml'
->>> with open(testconf, 'r') as fin:
-...     init_out, update_out, makevars = runconfig(fin.read())
-
-Get default values for each compiler from the default configuration
->>> default_gcc = get_default_compiler('gcc')
->>> default_clang = get_default_compiler('clang')
->>> default_intel = get_default_compiler('intel')
-
->>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
-Creating .../flit-config.toml
-Creating .../custom.mk
-Creating .../main.cpp
-Creating .../tests/Empty.cpp
-Creating .../Makefile
-
->>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
-Updating .../Makefile
-
->>> deref_makelist('OPCODES_GCC', makevars) == \\
-...     sorted(default_gcc['optimization_levels'])
-True
-
->>> deref_makelist('OPCODES_CLANG', makevars) == \\
-...     sorted(default_clang['optimization_levels'])
-True
-
->>> deref_makelist('OPCODES_INTEL', makevars) == \\
-...     sorted(default_intel['optimization_levels'])
-True
+This module holds common functions used in all of the tests for
+`flit_update.py`
 '''
 
-# Test setup before the docstring is run.
+from io import StringIO
+import os
+import shutil
 import sys
+
 before_path = sys.path[:]
 sys.path.append('../..')
 import test_harness as th
 sys.path = before_path
+
+class UpdateTestError(RuntimeError): pass
+
+def deref_makelist(name, makevars):
+    return sorted([' '.join(makevars[x]) for x in makevars[name]])
+
+def get_default_compiler(typename):
+    defaults = th.util.get_default_toml()
+    default_compiler = [x for x in defaults['compiler']
+                        if x['type'] == typename]
+    assert len(default_compiler) == 1
+    return default_compiler[0]
+
+def runconfig(configstr):
+    with th.tempdir() as temp_dir:
+        with StringIO() as ostream:
+            retval = th.flit.main(['init', '-C', temp_dir],
+                                  outstream=ostream, errstream=ostream)
+            init_out = ostream.getvalue().splitlines()
+        if retval != 0:
+            raise UpdateTestError('Failed to initialize flit directory')
+        with open(os.path.join(temp_dir, 'flit-config.toml'), 'w') as fout:
+            print(configstr, file=fout, flush=True)
+        with StringIO() as ostream:
+            retval = th.flit.main(['update', '-C', temp_dir],
+                                  outstream=ostream, errstream=ostream)
+            update_out = ostream.getvalue().splitlines()
+        if retval != 0:
+            raise UpdateTestError('Failed to update Makefile: ' +
+                                  ' '.join(update_out))
+        makevars = th.util.extract_make_vars(directory=temp_dir)
+    return (init_out, update_out, makevars)
 
 if __name__ == '__main__':
     from doctest import testmod

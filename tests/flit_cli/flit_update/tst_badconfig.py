@@ -87,30 +87,7 @@ Tests error cases in the configuration file, such as specifying more than one of
 >>> import os
 >>> import shutil
 
->>> class UpdateTestError(RuntimeError): pass
-
->>> def deref_makelist(name):
-...     return sorted([' '.join(makevars[x]) for x in makevars[name]])
-
->>> def runconfig(configstr):
-...     with th.tempdir() as temp_dir:
-...         with StringIO() as ostream:
-...             retval = th.flit.main(['init', '-C', temp_dir],
-...                                   outstream=ostream, errstream=ostream)
-...             init_out = ostream.getvalue().splitlines()
-...         if retval != 0:
-...             raise UpdateTestError('Failed to initialize flit directory')
-...         with open(os.path.join(temp_dir, 'flit-config.toml'), 'w') as fout:
-...             print(configstr, file=fout, flush=True)
-...         with StringIO() as ostream:
-...             retval = th.flit.main(['update', '-C', temp_dir],
-...                                   outstream=ostream, errstream=ostream)
-...             update_out = ostream.getvalue().splitlines()
-...         if retval != 0:
-...             raise UpdateTestError('Failed to update Makefile: ' +
-...                                   ' '.join(update_out))
-...         makevars = th.util.extract_make_vars(directory=temp_dir)
-...     return (init_out, update_out, makevars)
+>>> from tst_common_funcs import runconfig
 
 >>> configstr = \\
 ...     '[dev_build]\\n' \\
@@ -131,25 +108,25 @@ AssertionError: Compiler name another-name-that-does-not-exist not found
 >>> runconfig('[compiler]\\n')
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml improperly configured, needs [[compiler]] section
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml improperly configured, needs [[compiler]] section
 
 >>> runconfig('[[compiler]]\\n')
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{}" is missing the "name" field
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{}" is missing the "name" field
 
 >>> runconfig('[[compiler]]\\n'
 ...           'name = \\'hello\\'\\n')
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{'name': 'hello'}" is missing the "type" field
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{'name': 'hello'}" is missing the "type" field
 
 >>> runconfig('[[compiler]]\\n'
 ...           'name = \\'hello\\'\\n'
 ...           'type = \\'gcc\\'\\n') # doctest:+ELLIPSIS
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{...}" is missing the "binary" field
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{...}" is missing the "binary" field
 
 >>> runconfig('[[compiler]]\\n'
 ...           'binary = \\'my-special-compiler\\'\\n'
@@ -157,7 +134,7 @@ UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{
 ...           'type = \\'my-unsupported-type\\'\\n')
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml: unsupported compiler type "my-unsupported-type"
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: unsupported compiler type "my-unsupported-type"
 
 >>> runconfig('[[compiler]]\\n'
 ...           'binary = \\'gcc\\'\\n'
@@ -171,7 +148,7 @@ UpdateTestError: Failed to update Makefile: Error: flit-config.toml: unsupported
 ...           )
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same type (gcc)
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same type (gcc)
 
 >>> runconfig('[[compiler]]\\n'
 ...           'binary = \\'gcc\\'\\n'
@@ -185,7 +162,7 @@ UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have
 ...           )
 Traceback (most recent call last):
 ...
-UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same name (gcc)
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same name (gcc)
 '''
 
 # Test setup before the docstring is run.
