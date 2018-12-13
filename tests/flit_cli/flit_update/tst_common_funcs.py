@@ -86,7 +86,6 @@ This module holds common functions used in all of the tests for
 
 from io import StringIO
 import os
-import shutil
 import sys
 
 before_path = sys.path[:]
@@ -94,7 +93,9 @@ sys.path.append('../..')
 import test_harness as th
 sys.path = before_path
 
-class UpdateTestError(RuntimeError): pass
+class UpdateTestError(RuntimeError):
+    'Error used in runconfig()'
+    pass
 
 def deref_makelist(name, makevars):
     '''
@@ -157,7 +158,7 @@ def runconfig(configstr):
     '''
     Runs `flit init`, then writes the given configuration string into
     `flit-config.toml`, and then runs `flit update`.
-    
+
     @param configstr (str) contents to put into `flit-config.toml`
     @return (tuple(list(str), list(str), dict{str: list(str)})
         Three things are returned:
