@@ -97,9 +97,56 @@ sys.path = before_path
 class UpdateTestError(RuntimeError): pass
 
 def deref_makelist(name, makevars):
+    '''
+    The makevars are a dictionary of key list pairs of strings in the
+    form of a dictionary.  This function is useful when a variable within
+    makevars contains a list of other variables within makevars.  This
+    dereferences all of them and returns a sorted list of them all.
+
+    @param name (str) variable name from makevars
+    @param makevars (dict{str: list(str)}) all makefile variables
+
+    See some examples to see exactly what to expect:
+
+    >>> makevars = {
+    ...     'A': ['one', 'first'], 'B': ['two', 'second'],
+    ...     'C': ['three', 'third'], 'D': ['four', 'fourth'],
+    ...     'evens': ['D', 'B'], 'odds': ['A', 'C']
+    ...     }
+
+    >>> deref_makelist('evens', makevars)
+    ['four fourth', 'two second']
+
+    >>> deref_makelist('odds', makevars)
+    ['one first', 'three third']
+    '''
     return sorted([' '.join(makevars[x]) for x in makevars[name]])
 
 def get_default_compiler(typename):
+    '''
+    Returns the default compiler from the default toml configuration.
+
+    @param typename (str) name of the type of compiler to extract
+    @return (dict) default compiler values from the default flit config
+
+    >>> gcc = get_default_compiler('gcc')
+    >>> gcc['binary']
+    'g++'
+    >>> gcc['type']
+    'gcc'
+    >>> gcc['name']
+    'g++'
+
+    >>> clang = get_default_compiler('clang')
+    >>> clang['optimization_levels']
+    ['-O0', '-O1', '-O2', '-O3']
+    >>> clang['binary']
+    'clang++'
+
+    >>> intel = get_default_compiler('intel')
+    >>> intel['binary']
+    'icpc'
+    '''
     defaults = th.util.get_default_toml()
     default_compiler = [x for x in defaults['compiler']
                         if x['type'] == typename]
@@ -107,6 +154,21 @@ def get_default_compiler(typename):
     return default_compiler[0]
 
 def runconfig(configstr):
+    '''
+    Runs `flit init`, then writes the given configuration string into
+    `flit-config.toml`, and then runs `flit update`.
+    
+    @param configstr (str) contents to put into `flit-config.toml`
+    @return (tuple(list(str), list(str), dict{str: list(str)})
+        Three things are returned:
+        1. init_out (list(str)): the lines of output from `flit init`
+        2. update_out (list(str)): the lines of output from `flit update`
+        3. makevars (dict{str: list(str)}): all Makefile variables from the
+           `Makefile` generated from `flit update`
+
+    I will not put tests for this function here since this is tested by its use
+    in the other test functions.
+    '''
     with th.tempdir() as temp_dir:
         with StringIO() as ostream:
             retval = th.flit.main(['init', '-C', temp_dir],
