@@ -305,18 +305,12 @@ def main(arguments, prog=sys.argv[0]):
                               if x['name'] == dev_build['compiler_name']]
     assert len(matching_dev_compilers) > 0, \
             'Compiler name {0} not found'.format(dev_build['compiler_name'])
-    assert len(matching_dev_compilers) < 2, \
-            'Multiple compilers with name {0} found' \
-            .format(dev_build['compiler_name'])
 
     ground_truth = projconf['ground_truth']
     matching_gt_compilers = [x for x in projconf['compiler']
                              if x['name'] == ground_truth['compiler_name']]
     assert len(matching_gt_compilers) > 0, \
             'Compiler name {0} not found'.format(ground_truth['compiler_name'])
-    assert len(matching_gt_compilers) < 2, \
-            'Multiple compilers with name {0} found' \
-            .format(ground_truth['compiler_name'])
 
     base_compilers = {x.upper(): None for x in _supported_compiler_types}
     base_compilers.update({compiler['type'].upper(): compiler['binary']

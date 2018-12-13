@@ -12,7 +12,8 @@
    optimization levels and switches are used, and nothing more.
 5. `tst_onlyprovidedcompilers.py`: Test that by only specifying one compiler,
    only that specified compiler is used
-[ ] 6. Test error cases, such as specifying more than one type of a compiler
+6. `tst_badconfig.py`: Tests error cases in the configuration file, such as
+   specifying more than one of a certain type of compiler
 
 # Needed tests
 
