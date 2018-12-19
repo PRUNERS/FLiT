@@ -87,6 +87,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace flit {
 
@@ -102,6 +103,9 @@ public:
     None = 1,
     LongDouble = 2,
     String = 3,
+    VectorFloat = 4,
+    VectorDouble = 5,
+    VectorLongDouble = 6,
   };
 
   Variant() : _type(Type::None) { }
@@ -123,6 +127,81 @@ public:
     : _type(Type::String)
     , _str_val(val) { }
 
+  Variant(std::vector<float> &val)
+    : _type(Type::VectorFloat)
+    , _vecflt_val(val) { }
+  Variant(const std::vector<float> &val)
+    : _type(Type::VectorFloat)
+    , _vecflt_val(val) { }
+  Variant(std::vector<float> &&val)
+    : _type(Type::VectorFloat)
+    , _vecflt_val(val) { }
+
+  Variant(std::vector<double> &val)
+    : _type(Type::VectorDouble)
+    , _vecdbl_val(val) { }
+  Variant(const std::vector<double> &val)
+    : _type(Type::VectorDouble)
+    , _vecdbl_val(val) { }
+  Variant(std::vector<double> &&val)
+    : _type(Type::VectorDouble)
+    , _vecdbl_val(val) { }
+
+  Variant(std::vector<long double> &val)
+    : _type(Type::VectorLongDouble)
+    , _vecldbl_val(val) { }
+  Variant(const std::vector<long double> &val)
+    : _type(Type::VectorLongDouble)
+    , _vecldbl_val(val) { }
+  Variant(std::vector<long double> &&val)
+    : _type(Type::VectorLongDouble)
+    , _vecldbl_val(val) { }
+
+  Variant(const Variant &other)
+    : _type(other._type)
+  {
+    *this = other;
+  }
+
+  Variant(Variant &&other)
+    : _type(other._type)
+    , _ld_val(other._ld_val)
+    , _str_val(std::move(other._str_val))
+    , _vecflt_val(std::move(other._vecflt_val))
+    , _vecdbl_val(std::move(other._vecdbl_val))
+    , _vecldbl_val(std::move(other._vecldbl_val)) { }
+
+  Variant& operator=(const Variant &other) {
+    _type = other._type;
+    switch (_type) {
+      case Type::None:
+        break;
+      case Type::LongDouble:
+        _ld_val = other._ld_val;
+        break;
+      case Type::String:
+        _str_val = other._str_val;
+        break;
+      case Type::VectorFloat:
+        _vecflt_val = other._vecflt_val;
+        break;
+      case Type::VectorDouble:
+        _vecdbl_val = other._vecdbl_val;
+        break;
+      case Type::VectorLongDouble:
+        _vecldbl_val = other._vecldbl_val;
+        break;
+      default:
+        throw std::logic_error(
+            "Unimplemented Variant type in assignment operator");
+    }
+    return *this;
+  }
+
+  bool operator==(const Variant& other) {
+    return this->equals(other);
+  }
+
   Type type() const { return _type; }
 
   long double longDouble() const {
@@ -139,6 +218,28 @@ public:
     return _str_val;
   }
 
+  std::vector<float> vectorFloat() const {
+    if (_type != Type::VectorFloat) {
+      throw std::runtime_error("Variant is not of type std::vector<float>");
+    }
+    return _vecflt_val;
+  }
+
+  std::vector<double> vectorDouble() const {
+    if (_type != Type::VectorDouble) {
+      throw std::runtime_error("Variant is not of type std::vector<double>");
+    }
+    return _vecdbl_val;
+  }
+
+  std::vector<long double> vectorLongDouble() const {
+    if (_type != Type::VectorLongDouble) {
+      throw std::runtime_error(
+          "Variant is not of type std::vector<long double>");
+    }
+    return _vecldbl_val;
+  }
+
   template <typename T> T val() const;
 
   bool equals(const Variant &other) const {
@@ -152,6 +253,12 @@ public:
         return _ld_val == other._ld_val;
       case Type::String:
         return _str_val == other._str_val;
+      case Type::VectorFloat:
+        return _vecflt_val == other._vecflt_val;
+      case Type::VectorDouble:
+        return _vecdbl_val == other._vecdbl_val;
+      case Type::VectorLongDouble:
+        return _vecldbl_val == other._vecldbl_val;
       default:
         throw std::logic_error("Unimplemented Variant type in equals()");
     }
@@ -161,6 +268,9 @@ private:
   Type _type;
   long double _ld_val { 0.0l };
   std::string _str_val { "" };
+  std::vector<float> _vecflt_val { };
+  std::vector<double> _vecdbl_val { };
+  std::vector<long double> _vecldbl_val { };
 };
 
 std::ostream& operator<< (std::ostream&, const Variant&);
