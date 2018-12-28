@@ -114,22 +114,16 @@ public:
     : _type(Type::LongDouble)
     , _ld_val(val) { }
 
-  Variant(std::string &val)
-    : _type(Type::String)
-    , _str_val(val) { }
   Variant(const std::string &val)
     : _type(Type::String)
     , _str_val(val) { }
   Variant(std::string &&val)
     : _type(Type::String)
-    , _str_val(val) { }
+    , _str_val(std::move(val)) { }
   Variant(const char* val)
     : _type(Type::String)
     , _str_val(val) { }
 
-  Variant(std::vector<float> &val)
-    : _type(Type::VectorFloat)
-    , _vecflt_val(val) { }
   Variant(const std::vector<float> &val)
     : _type(Type::VectorFloat)
     , _vecflt_val(val) { }
@@ -137,9 +131,6 @@ public:
     : _type(Type::VectorFloat)
     , _vecflt_val(val) { }
 
-  Variant(std::vector<double> &val)
-    : _type(Type::VectorDouble)
-    , _vecdbl_val(val) { }
   Variant(const std::vector<double> &val)
     : _type(Type::VectorDouble)
     , _vecdbl_val(val) { }
@@ -147,9 +138,6 @@ public:
     : _type(Type::VectorDouble)
     , _vecdbl_val(val) { }
 
-  Variant(std::vector<long double> &val)
-    : _type(Type::VectorLongDouble)
-    , _vecldbl_val(val) { }
   Variant(const std::vector<long double> &val)
     : _type(Type::VectorLongDouble)
     , _vecldbl_val(val) { }
@@ -169,7 +157,10 @@ public:
     , _str_val(std::move(other._str_val))
     , _vecflt_val(std::move(other._vecflt_val))
     , _vecdbl_val(std::move(other._vecdbl_val))
-    , _vecldbl_val(std::move(other._vecldbl_val)) { }
+    , _vecldbl_val(std::move(other._vecldbl_val))
+  {
+    other._type = Type::None;
+  }
 
   Variant& operator=(const Variant &other) {
     _type = other._type;
@@ -198,8 +189,32 @@ public:
     return *this;
   }
 
-  bool operator==(const Variant& other) {
-    return this->equals(other);
+  Variant& operator=(Variant &&other) {
+    _type = other._type;
+    other._type = Type::None;
+    switch (_type) {
+      case Type::None:
+        break;
+      case Type::LongDouble:
+        _ld_val = std::move(other._ld_val);
+        break;
+      case Type::String:
+        _str_val = std::move(other._str_val);
+        break;
+      case Type::VectorFloat:
+        _vecflt_val = std::move(other._vecflt_val);
+        break;
+      case Type::VectorDouble:
+        _vecdbl_val = std::move(other._vecdbl_val);
+        break;
+      case Type::VectorLongDouble:
+        _vecldbl_val = std::move(other._vecldbl_val);
+        break;
+      default:
+        throw std::logic_error(
+            "Unimplemented Variant type in move assignment operator");
+    }
+    return *this;
   }
 
   Type type() const { return _type; }
@@ -277,6 +292,10 @@ std::ostream& operator<< (std::ostream&, const Variant&);
 
 inline bool operator== (const Variant& lhs, const Variant& rhs) {
   return lhs.equals(rhs);
+}
+
+inline bool operator!= (const Variant& lhs, const Variant& rhs) {
+  return !(lhs == rhs);
 }
 
 } // end of namespace flit

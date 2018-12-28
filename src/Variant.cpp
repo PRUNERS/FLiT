@@ -83,7 +83,28 @@
 
 #include "Variant.h"
 
+namespace {
+
+template <typename T>
+std::ostream& vecToStream(std::ostream& out, std::vector<T> vec) {
+  out << "{";
+  bool first = true;
+  for (auto item : vec) {
+    if (!first) {
+      out << ", ";
+    }
+    first = false;
+    out << item;
+  }
+  out << "}";
+  return out;
+}
+
+} // end of unnamed namespace
+
 namespace flit {
+
+
 
 std::ostream& operator<< (std::ostream& out, const Variant &val) {
   switch (val.type()) {
@@ -95,6 +116,21 @@ std::ostream& operator<< (std::ostream& out, const Variant &val) {
       break;
     case Variant::Type::String:
       out << "Variant(\"" << val.string() << "\")";
+      break;
+    case Variant::Type::VectorFloat:
+      out << "Variant(vectorFloat";
+      vecToStream(out, val.vectorFloat());
+      out << ")";
+      break;
+    case Variant::Type::VectorDouble:
+      out << "Variant(vectorDouble";
+      vecToStream(out, val.vectorDouble());
+      out << ")";
+      break;
+    case Variant::Type::VectorLongDouble:
+      out << "Variant(vectorLongDouble";
+      vecToStream(out, val.vectorLongDouble());
+      out << ")";
       break;
     default:
       throw std::runtime_error("Unimplemented type");

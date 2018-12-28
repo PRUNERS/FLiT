@@ -3,7 +3,7 @@ FLITDIR     := ../..
 FLITLIBDIR  := $(FLITDIR)/lib
 FLITLIB     := $(FLITLIBDIR)/libflit.so
 
-CFLAGS      := -O2
+CFLAGS      := -O0 -g
 CFLAGS      += -std=c++11
 LDFLAGS     := -L$(FLITLIBDIR) -lflit
 LDFLAGS     += -Wl,-rpath=$(FLITLIBDIR)
