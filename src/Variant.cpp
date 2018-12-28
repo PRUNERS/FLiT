@@ -226,4 +226,19 @@ std::string Variant::val() const {
   return this->string();
 }
 
+template <>
+std::vector<float> Variant::val() const {
+  return this->vectorFloat();
+}
+
+template <>
+std::vector<double> Variant::val() const {
+  return this->vectorDouble();
+}
+
+template <>
+std::vector<long double> Variant::val() const {
+  return this->vectorLongDouble();
+}
+
 } // end of namespace flit
