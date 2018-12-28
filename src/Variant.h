@@ -162,62 +162,12 @@ public:
     other._type = Type::None;
   }
 
-  Variant& operator=(const Variant &other) {
-    _type = other._type;
-    switch (_type) {
-      case Type::None:
-        break;
-      case Type::LongDouble:
-        _ld_val = other._ld_val;
-        break;
-      case Type::String:
-        _str_val = other._str_val;
-        break;
-      case Type::VectorFloat:
-        _vecflt_val = other._vecflt_val;
-        break;
-      case Type::VectorDouble:
-        _vecdbl_val = other._vecdbl_val;
-        break;
-      case Type::VectorLongDouble:
-        _vecldbl_val = other._vecldbl_val;
-        break;
-      default:
-        throw std::logic_error(
-            "Unimplemented Variant type in assignment operator");
-    }
-    return *this;
-  }
-
-  Variant& operator=(Variant &&other) {
-    _type = other._type;
-    other._type = Type::None;
-    switch (_type) {
-      case Type::None:
-        break;
-      case Type::LongDouble:
-        _ld_val = std::move(other._ld_val);
-        break;
-      case Type::String:
-        _str_val = std::move(other._str_val);
-        break;
-      case Type::VectorFloat:
-        _vecflt_val = std::move(other._vecflt_val);
-        break;
-      case Type::VectorDouble:
-        _vecdbl_val = std::move(other._vecdbl_val);
-        break;
-      case Type::VectorLongDouble:
-        _vecldbl_val = std::move(other._vecldbl_val);
-        break;
-      default:
-        throw std::logic_error(
-            "Unimplemented Variant type in move assignment operator");
-    }
-    return *this;
-  }
-
+  Variant& operator=(const Variant &other);
+  Variant& operator=(Variant &&other);
   Type type() const { return _type; }
+  template <typename T> T val() const;
+  bool equals(const Variant &other) const;
+  std::string toString() const;
 
   long double longDouble() const {
     if (_type != Type::LongDouble) {
@@ -255,30 +205,6 @@ public:
     return _vecldbl_val;
   }
 
-  template <typename T> T val() const;
-
-  bool equals(const Variant &other) const {
-    if (_type != other._type) {
-      return false;
-    }
-    switch (_type) {
-      case Type::None:
-        return true;
-      case Type::LongDouble:
-        return _ld_val == other._ld_val;
-      case Type::String:
-        return _str_val == other._str_val;
-      case Type::VectorFloat:
-        return _vecflt_val == other._vecflt_val;
-      case Type::VectorDouble:
-        return _vecdbl_val == other._vecdbl_val;
-      case Type::VectorLongDouble:
-        return _vecldbl_val == other._vecldbl_val;
-      default:
-        throw std::logic_error("Unimplemented Variant type in equals()");
-    }
-  }
-
 private:
   Type _type;
   long double _ld_val { 0.0l };
@@ -288,7 +214,10 @@ private:
   std::vector<long double> _vecldbl_val { };
 };
 
-std::ostream& operator<< (std::ostream&, const Variant&);
+inline std::ostream& operator<< (std::ostream& out, const Variant& val) {
+  out << val.toString();
+  return out;
+}
 
 inline bool operator== (const Variant& lhs, const Variant& rhs) {
   return lhs.equals(rhs);

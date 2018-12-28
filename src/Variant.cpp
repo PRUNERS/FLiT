@@ -83,6 +83,8 @@
 
 #include "Variant.h"
 
+#include <sstream>
+
 namespace {
 
 template <typename T>
@@ -104,38 +106,114 @@ std::ostream& vecToStream(std::ostream& out, std::vector<T> vec) {
 
 namespace flit {
 
+Variant& Variant::operator=(const Variant &other) {
+  _type = other._type;
+  switch (_type) {
+    case Type::None:
+      break;
+    case Type::LongDouble:
+      _ld_val = other._ld_val;
+      break;
+    case Type::String:
+      _str_val = other._str_val;
+      break;
+    case Type::VectorFloat:
+      _vecflt_val = other._vecflt_val;
+      break;
+    case Type::VectorDouble:
+      _vecdbl_val = other._vecdbl_val;
+      break;
+    case Type::VectorLongDouble:
+      _vecldbl_val = other._vecldbl_val;
+      break;
+    default:
+      throw std::logic_error(
+          "Unimplemented Variant type in assignment operator");
+  }
+  return *this;
+}
 
+Variant& Variant::operator=(Variant &&other) {
+  _type = other._type;
+  other._type = Type::None;
+  switch (_type) {
+    case Type::None:
+      break;
+    case Type::LongDouble:
+      _ld_val = std::move(other._ld_val);
+      break;
+    case Type::String:
+      _str_val = std::move(other._str_val);
+      break;
+    case Type::VectorFloat:
+      _vecflt_val = std::move(other._vecflt_val);
+      break;
+    case Type::VectorDouble:
+      _vecdbl_val = std::move(other._vecdbl_val);
+      break;
+    case Type::VectorLongDouble:
+      _vecldbl_val = std::move(other._vecldbl_val);
+      break;
+    default:
+      throw std::logic_error(
+          "Unimplemented Variant type in move assignment operator");
+  }
+  return *this;
+}
 
-std::ostream& operator<< (std::ostream& out, const Variant &val) {
-  switch (val.type()) {
+bool Variant::equals(const Variant &other) const {
+  if (_type != other._type) {
+    return false;
+  }
+  switch (_type) {
+    case Type::None:
+      return true;
+    case Type::LongDouble:
+      return _ld_val == other._ld_val;
+    case Type::String:
+      return _str_val == other._str_val;
+    case Type::VectorFloat:
+      return _vecflt_val == other._vecflt_val;
+    case Type::VectorDouble:
+      return _vecdbl_val == other._vecdbl_val;
+    case Type::VectorLongDouble:
+      return _vecldbl_val == other._vecldbl_val;
+    default:
+      throw std::logic_error("Unimplemented Variant type in equals()");
+  }
+}
+
+std::string Variant::toString() const {
+  std::ostringstream out;
+  switch (type()) {
     case Variant::Type::None:
       out << "Variant(None)";
       break;
     case Variant::Type::LongDouble:
-      out << "Variant(" << val.longDouble() << ")";
+      out << "Variant(" << longDouble() << ")";
       break;
     case Variant::Type::String:
-      out << "Variant(\"" << val.string() << "\")";
+      out << "Variant(\"" << string() << "\")";
       break;
     case Variant::Type::VectorFloat:
       out << "Variant(vectorFloat";
-      vecToStream(out, val.vectorFloat());
+      vecToStream(out, vectorFloat());
       out << ")";
       break;
     case Variant::Type::VectorDouble:
       out << "Variant(vectorDouble";
-      vecToStream(out, val.vectorDouble());
+      vecToStream(out, vectorDouble());
       out << ")";
       break;
     case Variant::Type::VectorLongDouble:
       out << "Variant(vectorLongDouble";
-      vecToStream(out, val.vectorLongDouble());
+      vecToStream(out, vectorLongDouble());
       out << ")";
       break;
     default:
       throw std::runtime_error("Unimplemented type");
   }
-  return out;
+  return out.str();
 }
 
 template <>
