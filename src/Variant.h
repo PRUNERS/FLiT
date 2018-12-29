@@ -162,10 +162,10 @@ public:
     other._type = Type::None;
   }
 
-  Variant& operator=(const Variant &other);
-  Variant& operator=(Variant &&other);
   Type type() const { return _type; }
   template <typename T> T val() const;
+  Variant& operator=(const Variant &other);
+  Variant& operator=(Variant &&other);
   bool equals(const Variant &other) const;
   std::string toString() const;
 
@@ -206,7 +206,7 @@ public:
   }
 
 private:
-  Type _type;
+  Type _type { Type::None };
   long double _ld_val { 0.0l };
   std::string _str_val { "" };
   std::vector<float> _vecflt_val { };

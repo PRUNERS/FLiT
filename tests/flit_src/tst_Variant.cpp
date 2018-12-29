@@ -313,6 +313,66 @@ void tst_Variant_moveConstructor() {
 }
 TH_REGISTER(tst_Variant_moveConstructor);
 
+void tst_Variant_val() {
+  long double val2 = 3.14159;
+  std::string val3 = "hello there";
+  std::vector<float> val4 { 314159.f };
+  std::vector<double> val5 { 3.14159e-5, 5 };
+  std::vector<long double> val6 { 4452346, 6, 7e54 };
+
+  flit::Variant v1;
+  flit::Variant v2(val2);
+  flit::Variant v3(val3);
+  flit::Variant v4(val4);
+  flit::Variant v5(val5);
+  flit::Variant v6(val6);
+
+  // cannot test that any other type will cause a linker error
+
+  TH_THROWS(v1.val<long double>(), std::runtime_error);
+  TH_THROWS(v1.val<std::string>(), std::runtime_error);
+  TH_THROWS(v1.val<std::vector<float>>(), std::runtime_error);
+  TH_THROWS(v1.val<std::vector<double>>(), std::runtime_error);
+  TH_THROWS(v1.val<std::vector<long double>>(), std::runtime_error);
+
+  TH_EQUAL(v2.val<long double>(), val2);
+  TH_THROWS(v2.val<std::string>(), std::runtime_error);
+  TH_THROWS(v2.val<std::vector<float>>(), std::runtime_error);
+  TH_THROWS(v2.val<std::vector<double>>(), std::runtime_error);
+  TH_THROWS(v2.val<std::vector<long double>>(), std::runtime_error);
+
+  TH_THROWS(v3.val<long double>(), std::runtime_error);
+  TH_EQUAL(v3.val<std::string>(), val3);
+  TH_THROWS(v3.val<std::vector<float>>(), std::runtime_error);
+  TH_THROWS(v3.val<std::vector<double>>(), std::runtime_error);
+  TH_THROWS(v3.val<std::vector<long double>>(), std::runtime_error);
+
+  TH_THROWS(v4.val<long double>(), std::runtime_error);
+  TH_THROWS(v4.val<std::string>(), std::runtime_error);
+  TH_EQUAL(v4.val<std::vector<float>>(), val4);
+  TH_THROWS(v4.val<std::vector<double>>(), std::runtime_error);
+  TH_THROWS(v4.val<std::vector<long double>>(), std::runtime_error);
+
+  TH_THROWS(v5.val<long double>(), std::runtime_error);
+  TH_THROWS(v5.val<std::string>(), std::runtime_error);
+  TH_THROWS(v5.val<std::vector<float>>(), std::runtime_error);
+  TH_EQUAL(v5.val<std::vector<double>>(), val5);
+  TH_THROWS(v5.val<std::vector<long double>>(), std::runtime_error);
+
+  TH_THROWS(v6.val<long double>(), std::runtime_error);
+  TH_THROWS(v6.val<std::string>(), std::runtime_error);
+  TH_THROWS(v6.val<std::vector<float>>(), std::runtime_error);
+  TH_THROWS(v6.val<std::vector<double>>(), std::runtime_error);
+  TH_EQUAL(v6.val<std::vector<long double>>(), val6);
+
+  TH_EQUAL(v2.val<decltype(val2)>(), val2);
+  TH_EQUAL(v3.val<decltype(val3)>(), val3);
+  TH_EQUAL(v4.val<decltype(val4)>(), val4);
+  TH_EQUAL(v5.val<decltype(val5)>(), val5);
+  TH_EQUAL(v6.val<decltype(val6)>(), val6);
+}
+TH_REGISTER(tst_Variant_val);
+
 void tst_Variant_assignmentOperator_reference() {
   flit::Variant v1;
   flit::Variant v2(3.14159);
@@ -510,6 +570,23 @@ void tst_Variant_equals() {
 }
 TH_REGISTER(tst_Variant_equals);
 
+void tst_Variant_toString() {
+  flit::Variant v1;
+  flit::Variant v2(3.14159);
+  flit::Variant v3("hello there");
+  flit::Variant v4(std::vector<float> { 314159.f });
+  flit::Variant v5(std::vector<double> { 3.14159e-5, 5 });
+  flit::Variant v6(std::vector<long double> { 4452346, 6, 7e54 });
+
+  TH_EQUAL(v1.toString(), "Variant(None)");
+  TH_EQUAL(v2.toString(), "Variant(3.14159)");
+  TH_EQUAL(v3.toString(), "Variant(\"hello there\")");
+  TH_EQUAL(v4.toString(), "Variant(vectorFloat{314159})");
+  TH_EQUAL(v5.toString(), "Variant(vectorDouble{3.14159e-05, 5})");
+  TH_EQUAL(v6.toString(), "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})");
+}
+TH_REGISTER(tst_Variant_toString);
+
 void tst_Variant_streamOutputOperator() {
   flit::Variant v1;
   flit::Variant v2(3.14159);
@@ -532,83 +609,6 @@ void tst_Variant_streamOutputOperator() {
   TH_EQUAL(toString(v6), "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})");
 }
 TH_REGISTER(tst_Variant_streamOutputOperator);
-
-void tst_Variant_toString() {
-  flit::Variant v1;
-  flit::Variant v2(3.14159);
-  flit::Variant v3("hello there");
-  flit::Variant v4(std::vector<float> { 314159.f });
-  flit::Variant v5(std::vector<double> { 3.14159e-5, 5 });
-  flit::Variant v6(std::vector<long double> { 4452346, 6, 7e54 });
-
-  TH_EQUAL(v1.toString(), "Variant(None)");
-  TH_EQUAL(v2.toString(), "Variant(3.14159)");
-  TH_EQUAL(v3.toString(), "Variant(\"hello there\")");
-  TH_EQUAL(v4.toString(), "Variant(vectorFloat{314159})");
-  TH_EQUAL(v5.toString(), "Variant(vectorDouble{3.14159e-05, 5})");
-  TH_EQUAL(v6.toString(), "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})");
-}
-TH_REGISTER(tst_Variant_toString);
-
-void tst_Variant_val() {
-  long double val2 = 3.14159;
-  std::string val3 = "hello there";
-  std::vector<float> val4 { 314159.f };
-  std::vector<double> val5 { 3.14159e-5, 5 };
-  std::vector<long double> val6 { 4452346, 6, 7e54 };
-
-  flit::Variant v1;
-  flit::Variant v2(val2);
-  flit::Variant v3(val3);
-  flit::Variant v4(val4);
-  flit::Variant v5(val5);
-  flit::Variant v6(val6);
-
-  // cannot test that any other type will cause a linker error
-
-  TH_THROWS(v1.val<long double>(), std::runtime_error);
-  TH_THROWS(v1.val<std::string>(), std::runtime_error);
-  TH_THROWS(v1.val<std::vector<float>>(), std::runtime_error);
-  TH_THROWS(v1.val<std::vector<double>>(), std::runtime_error);
-  TH_THROWS(v1.val<std::vector<long double>>(), std::runtime_error);
-
-  TH_EQUAL(v2.val<long double>(), val2);
-  TH_THROWS(v2.val<std::string>(), std::runtime_error);
-  TH_THROWS(v2.val<std::vector<float>>(), std::runtime_error);
-  TH_THROWS(v2.val<std::vector<double>>(), std::runtime_error);
-  TH_THROWS(v2.val<std::vector<long double>>(), std::runtime_error);
-
-  TH_THROWS(v3.val<long double>(), std::runtime_error);
-  TH_EQUAL(v3.val<std::string>(), val3);
-  TH_THROWS(v3.val<std::vector<float>>(), std::runtime_error);
-  TH_THROWS(v3.val<std::vector<double>>(), std::runtime_error);
-  TH_THROWS(v3.val<std::vector<long double>>(), std::runtime_error);
-
-  TH_THROWS(v4.val<long double>(), std::runtime_error);
-  TH_THROWS(v4.val<std::string>(), std::runtime_error);
-  TH_EQUAL(v4.val<std::vector<float>>(), val4);
-  TH_THROWS(v4.val<std::vector<double>>(), std::runtime_error);
-  TH_THROWS(v4.val<std::vector<long double>>(), std::runtime_error);
-
-  TH_THROWS(v5.val<long double>(), std::runtime_error);
-  TH_THROWS(v5.val<std::string>(), std::runtime_error);
-  TH_THROWS(v5.val<std::vector<float>>(), std::runtime_error);
-  TH_EQUAL(v5.val<std::vector<double>>(), val5);
-  TH_THROWS(v5.val<std::vector<long double>>(), std::runtime_error);
-
-  TH_THROWS(v6.val<long double>(), std::runtime_error);
-  TH_THROWS(v6.val<std::string>(), std::runtime_error);
-  TH_THROWS(v6.val<std::vector<float>>(), std::runtime_error);
-  TH_THROWS(v6.val<std::vector<double>>(), std::runtime_error);
-  TH_EQUAL(v6.val<std::vector<long double>>(), val6);
-
-  TH_EQUAL(v2.val<decltype(val2)>(), val2);
-  TH_EQUAL(v3.val<decltype(val3)>(), val3);
-  TH_EQUAL(v4.val<decltype(val4)>(), val4);
-  TH_EQUAL(v5.val<decltype(val5)>(), val5);
-  TH_EQUAL(v6.val<decltype(val6)>(), val6);
-}
-TH_REGISTER(tst_Variant_val);
 
 // already tested by constructor tests:
 // - type()

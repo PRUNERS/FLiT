@@ -106,6 +106,26 @@ std::ostream& vecToStream(std::ostream& out, std::vector<T> vec) {
 
 namespace flit {
 
+template <> long double Variant::val() const {
+  return this->longDouble();
+}
+
+template <> std::string Variant::val() const {
+  return this->string();
+}
+
+template <> std::vector<float> Variant::val() const {
+  return this->vectorFloat();
+}
+
+template <> std::vector<double> Variant::val() const {
+  return this->vectorDouble();
+}
+
+template <> std::vector<long double> Variant::val() const {
+  return this->vectorLongDouble();
+}
+
 Variant& Variant::operator=(const Variant &other) {
   _type = other._type;
   switch (_type) {
@@ -214,31 +234,6 @@ std::string Variant::toString() const {
       throw std::runtime_error("Unimplemented type");
   }
   return out.str();
-}
-
-template <>
-long double Variant::val() const {
-  return this->longDouble();
-}
-
-template <>
-std::string Variant::val() const {
-  return this->string();
-}
-
-template <>
-std::vector<float> Variant::val() const {
-  return this->vectorFloat();
-}
-
-template <>
-std::vector<double> Variant::val() const {
-  return this->vectorDouble();
-}
-
-template <>
-std::vector<long double> Variant::val() const {
-  return this->vectorLongDouble();
 }
 
 } // end of namespace flit
