@@ -102,6 +102,28 @@ std::ostream& vecToStream(std::ostream& out, std::vector<T> vec) {
   return out;
 }
 
+// Tests if a[pos:pos+b.size()] == b[:]
+bool substrEquals(const std::string &a, size_t pos, const std::string &b) {
+  if (a.size() <= pos || a.size() - pos < b.size()) {
+    return false;
+  }
+  return std::equal(b.begin(), b.end(), a.begin() + pos);
+}
+
+template <typename T>
+std::vector<T> stringToVec(std::string str) {
+  std::istringstream stream(str);
+  std::vector<T> vec;
+  T val;
+  while (stream >> val) {
+    vec.emplace_back(val);
+    if ((stream >> std::ws).peek() == ',') {
+      stream.ignore();
+    }
+  }
+  return vec;
+}
+
 } // end of unnamed namespace
 
 namespace flit {
@@ -205,6 +227,7 @@ bool Variant::equals(const Variant &other) const {
 
 std::string Variant::toString() const {
   std::ostringstream out;
+  out.precision(1000);
   switch (type()) {
     case Variant::Type::None:
       out << "Variant(None)";
@@ -234,6 +257,60 @@ std::string Variant::toString() const {
       throw std::runtime_error("Unimplemented type");
   }
   return out.str();
+}
+
+Variant Variant::fromString(const std::string val) {
+  // error check
+  if (!substrEquals(val, 0, "Variant(") || val.back() != ')') {
+    throw std::runtime_error("Not a valid variant string");
+  }
+
+  // Type::None
+  if (substrEquals(val, 8, "None)")) {
+    return Variant();
+  }
+
+  // Type::LongDouble
+  if (std::isdigit(val[8]) || val[8] == '.') {
+    return Variant(stold(val.substr(8, val.size() - 9)));
+  }
+
+  // Type::String
+  if (val[8] == '"') {
+    if (val[val.size() - 2] != '"') {
+      throw std::runtime_error("Not a valid Type::String variant string");
+    }
+    return Variant(val.substr(9, val.size() - 11));
+  }
+
+  // Type::VectorFloat
+  if (substrEquals(val, 8, "vectorFloat{")) {
+    if (val[val.size() - 2] != '}') {
+      throw std::runtime_error("Not a valid Type::VectorFloat variant string");
+    }
+    return Variant(stringToVec<float>(val.substr(20, val.size() - 22)));
+  }
+
+  // Type::VectorDouble
+  if (substrEquals(val, 8, "vectorDouble{")) {
+    if (val[val.size() - 2] != '}') {
+      throw std::runtime_error("Not a valid Type::VectorDouble variant "
+                               "string");
+    }
+    return Variant(stringToVec<double>(val.substr(21, val.size() - 23)));
+  }
+
+  // Type::VectorLongDouble
+  if (substrEquals(val, 8, "vectorLongDouble{")) {
+    if (val[val.size() - 2] != '}') {
+      throw std::runtime_error("Not a valid Type::VectorLongDouble variant "
+                               "string");
+    }
+    return Variant(stringToVec<long double>(val.substr(25, val.size() - 27)));
+  }
+
+  // default behavior
+  throw std::runtime_error("Unrecognized variant string type");
 }
 
 } // end of namespace flit

@@ -115,7 +115,7 @@ void tst_Variant_emptyConstructor() {
 TH_REGISTER(tst_Variant_emptyConstructor);
 
 void tst_Variant_longDoubleConstructor() {
-  long double value = 5.4;
+  long double value = 5.4L;
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::LongDouble);
   TH_EQUAL(v.longDouble(), value);
@@ -220,7 +220,7 @@ void tst_Variant_vectorDoubleConstructor_rvalueReference() {
 TH_REGISTER(tst_Variant_vectorDoubleConstructor_rvalueReference);
 
 void tst_Variant_vectorLongDoubleConstructor_reference() {
-  std::vector<long double> value { 3.14159, 14.883, .54321, 737373. };
+  std::vector<long double> value { 3.14159L, 14.883L, .54321L, 737373.L };
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::VectorLongDouble);
   TH_THROWS(v.longDouble(), std::runtime_error);
@@ -232,7 +232,7 @@ void tst_Variant_vectorLongDoubleConstructor_reference() {
 TH_REGISTER(tst_Variant_vectorLongDoubleConstructor_reference);
 
 void tst_Variant_vectorLongDoubleConstructor_rvalueReference() {
-  std::vector<long double> value { 3.14159, 14.883, .54321, 737373. };
+  std::vector<long double> value { 3.14159L, 14.883L, .54321L, 737373.L };
   std::vector<long double> copy(value);
   flit::Variant v(std::move(copy));
   TH_EQUAL(v.type(), flit::Variant::Type::VectorLongDouble);
@@ -252,7 +252,7 @@ void tst_Variant_copyConstructor() {
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5 });
-  flit::Variant v6(std::vector<long double> { 4452346 });
+  flit::Variant v6(std::vector<long double> { 4452346L });
 
   flit::Variant c1(v1);
   flit::Variant c2(v2);
@@ -276,7 +276,7 @@ void tst_Variant_moveConstructor() {
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5 });
-  flit::Variant v6(std::vector<long double> { 4452346 });
+  flit::Variant v6(std::vector<long double> { 4452346L });
 
   flit::Variant c1(v1);
   flit::Variant c2(v2);
@@ -314,11 +314,11 @@ void tst_Variant_moveConstructor() {
 TH_REGISTER(tst_Variant_moveConstructor);
 
 void tst_Variant_val() {
-  long double val2 = 3.14159;
+  long double val2 = 3.14159L;
   std::string val3 = "hello there";
   std::vector<float> val4 { 314159.f };
   std::vector<double> val5 { 3.14159e-5, 5 };
-  std::vector<long double> val6 { 4452346, 6, 7e54 };
+  std::vector<long double> val6 { 4452346L, 6L, 7e54L };
 
   flit::Variant v1;
   flit::Variant v2(val2);
@@ -379,7 +379,7 @@ void tst_Variant_assignmentOperator_reference() {
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5 });
-  flit::Variant v6(std::vector<long double> { 4452346 });
+  flit::Variant v6(std::vector<long double> { 4452346L });
 
   flit::Variant c1;
   flit::Variant c2;
@@ -437,7 +437,7 @@ void tst_Variant_assignmentOperator_rvalueReference() {
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5 });
-  flit::Variant v6(std::vector<long double> { 4452346 });
+  flit::Variant v6(std::vector<long double> { 4452346L });
 
   flit::Variant c1(v1);
   flit::Variant c2(v2);
@@ -532,7 +532,7 @@ void tst_Variant_equals() {
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5 });
-  flit::Variant v6(std::vector<long double> { 4452346 });
+  flit::Variant v6(std::vector<long double> { 4452346L });
 
   flit::Variant c1(v1);
   flit::Variant c2(v2);
@@ -576,24 +576,59 @@ void tst_Variant_toString() {
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5, 5 });
-  flit::Variant v6(std::vector<long double> { 4452346, 6, 7e54 });
+  flit::Variant v6(std::vector<long double> { 4452346L, 6L, 7e54L });
 
   TH_EQUAL(v1.toString(), "Variant(None)");
-  TH_EQUAL(v2.toString(), "Variant(3.14159)");
+  TH_EQUAL(v2.toString(), "Variant(3.141589999999999882618340052431449294090270"
+                          "99609375)");
   TH_EQUAL(v3.toString(), "Variant(\"hello there\")");
   TH_EQUAL(v4.toString(), "Variant(vectorFloat{314159})");
-  TH_EQUAL(v5.toString(), "Variant(vectorDouble{3.14159e-05, 5})");
-  TH_EQUAL(v6.toString(), "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})");
+  TH_EQUAL(v5.toString(), "Variant(vectorDouble{3.14158999999999985030911531236"
+                          "341716066817753016948699951171875e-05, 5})");
+  TH_EQUAL(v6.toString(), "Variant(vectorLongDouble{4452346, 6, 699999999999999"
+                          "9999734234570895909323317109733560680448})");
 }
 TH_REGISTER(tst_Variant_toString);
 
+void tst_Variant_fromString() {
+  std::string s1 = "Variant(None)";
+  std::string s2 = "Variant(3.1415899999999998826183400524314492940902709960937"
+                   "5)";
+  std::string s3 = "Variant(\"hello there\")";
+  std::string s4 = "Variant(vectorFloat{314159})";
+  std::string s5 = "Variant(vectorDouble{3.14159e-05, 5})";
+  std::string s6 = "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})";
+
+  flit::Variant expected1;
+  flit::Variant expected2(3.14159);
+  flit::Variant expected3("hello there");
+  flit::Variant expected4(std::vector<float> { 314159.f });
+  flit::Variant expected5(std::vector<double> { 3.14159e-5, 5 });
+  flit::Variant expected6(std::vector<long double> { 4.45235e6L, 6.L, 7e54L });
+
+  auto actual1 = flit::Variant::fromString(s1);
+  auto actual2 = flit::Variant::fromString(s2);
+  auto actual3 = flit::Variant::fromString(s3);
+  auto actual4 = flit::Variant::fromString(s4);
+  auto actual5 = flit::Variant::fromString(s5);
+  auto actual6 = flit::Variant::fromString(s6);
+
+  TH_EQUAL(expected1, actual1);
+  TH_EQUAL(expected2, actual2);
+  TH_EQUAL(expected3, actual3);
+  TH_EQUAL(expected4, actual4);
+  TH_EQUAL(expected5, actual5);
+  TH_EQUAL(expected6, actual6);
+}
+TH_REGISTER(tst_Variant_fromString);
+
 void tst_Variant_streamOutputOperator() {
   flit::Variant v1;
-  flit::Variant v2(3.14159);
+  flit::Variant v2(3.14159L);
   flit::Variant v3("hello there");
   flit::Variant v4(std::vector<float> { 314159.f });
   flit::Variant v5(std::vector<double> { 3.14159e-5, 5 });
-  flit::Variant v6(std::vector<long double> { 4452346, 6, 7e54 });
+  flit::Variant v6(std::vector<long double> { 4452346L, 6L, 7e54L });
 
   auto toString = [] (const flit::Variant &v) {
     std::ostringstream out;
@@ -602,11 +637,14 @@ void tst_Variant_streamOutputOperator() {
   };
 
   TH_EQUAL(toString(v1), "Variant(None)");
-  TH_EQUAL(toString(v2), "Variant(3.14159)");
+  TH_EQUAL(toString(v2), "Variant(3.1415899999999999999290151153630290536966640"
+                         "5022144317626953125)");
   TH_EQUAL(toString(v3), "Variant(\"hello there\")");
   TH_EQUAL(toString(v4), "Variant(vectorFloat{314159})");
-  TH_EQUAL(toString(v5), "Variant(vectorDouble{3.14159e-05, 5})");
-  TH_EQUAL(toString(v6), "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})");
+  TH_EQUAL(toString(v5), "Variant(vectorDouble{3.141589999999999850309115312363"
+                         "41716066817753016948699951171875e-05, 5})");
+  TH_EQUAL(toString(v6), "Variant(vectorLongDouble{4452346, 6, 6999999999999999"
+                         "999734234570895909323317109733560680448})");
 }
 TH_REGISTER(tst_Variant_streamOutputOperator);
 

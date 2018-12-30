@@ -168,6 +168,7 @@ public:
   Variant& operator=(Variant &&other);
   bool equals(const Variant &other) const;
   std::string toString() const;
+  static Variant fromString(const std::string val);
 
   long double longDouble() const {
     if (_type != Type::LongDouble) {
