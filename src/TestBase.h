@@ -307,6 +307,13 @@ public:
                             test_results.string());
         break;
 
+      case Variant::Type::VectorFloat:
+      case Variant::Type::VectorDouble:
+      case Variant::Type::VectorLongDouble:
+        val = this->compare(ground_truth.val<std::vector<T>>(),
+                            test_results.val<std::vector<T>>());
+        break;
+
       default:
         throw std::runtime_error("Unimplemented Variant type");
     }
@@ -361,6 +368,11 @@ public:
     FLIT_UNUSED(ground_truth);
     FLIT_UNUSED(test_results);
     return 0.0;
+  }
+
+  virtual long double compare(const std::vector<T> &ground_truth,
+                              const std::vector<T> &test_results) const {
+    return flit::l2norm(ground_truth, test_results);
   }
 
 protected:

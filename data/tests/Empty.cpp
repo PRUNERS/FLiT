@@ -142,6 +142,13 @@ public:
     return 0.0;
   }
 
+  /** Default implementation: L2 norm */
+  virtual long double compare(const std::vector<T> &ground_truth,
+                              const std::vector<T> &test_results)
+                             const override {
+    return flit::l2norm(ground_truth, test_results);
+  }
+
 protected:
   /** Call or implement the algorithm here.
    *

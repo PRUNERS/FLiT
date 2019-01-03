@@ -177,28 +177,28 @@ public:
     return _ld_val;
   }
 
-  std::string string() const {
+  const std::string& string() const {
     if (_type != Type::String) {
       throw std::runtime_error("Variant is not of type String");
     }
     return _str_val;
   }
 
-  std::vector<float> vectorFloat() const {
+  const std::vector<float>& vectorFloat() const {
     if (_type != Type::VectorFloat) {
       throw std::runtime_error("Variant is not of type std::vector<float>");
     }
     return _vecflt_val;
   }
 
-  std::vector<double> vectorDouble() const {
+  const std::vector<double>& vectorDouble() const {
     if (_type != Type::VectorDouble) {
       throw std::runtime_error("Variant is not of type std::vector<double>");
     }
     return _vecdbl_val;
   }
 
-  std::vector<long double> vectorLongDouble() const {
+  const std::vector<long double>& vectorLongDouble() const {
     if (_type != Type::VectorLongDouble) {
       throw std::runtime_error(
           "Variant is not of type std::vector<long double>");
