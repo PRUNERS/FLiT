@@ -132,6 +132,8 @@ mpirun_args = ''
 [dev_build]
 
 # compiler_name must be found in the [[compiler]] list under the name attribute
+# The optimization level and switches need not match those found in the
+# associated [[compiler]]
 compiler_name = 'g++'
 optimization_level = '-O2'
 switches = '-funsafe-math-optimizations'
@@ -141,16 +143,18 @@ switches = '-funsafe-math-optimizations'
 [ground_truth]
 
 # compiler_name must be found in the [[compiler]] list under the name attribute
+# The optimization level and switches need not match those found in the
+# associated [[compiler]]
 compiler_name = 'g++'
 optimization_level = '-O0'
 switches = ''
 
-# List of compilers.
+# This host's list of compilers.
 # - binary: can be an absolute path, relative path, or binary name (found in
 #   PATH).  If you want to specify a compiler in the same directory as this
 #   config file, prepend with a "./" (e.g. "./my-compiler")
 # - name: can be any string.  Used to recognize in the other options such as
-#   in [dev_build] and [ground_truth]
+#   dev_build and ground_truth
 # - type: the brand of the compiler.  We support ('gcc', 'clang', 'intel')
 #   Currently, only one of each type may be specified.
 # Note that these are all defaulted to use g++, clang++, and icpc from the
@@ -162,14 +166,117 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+# search space of optimization levels
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+# Note: gcc disables -fassociative-math @ O0
+switches_list = [
+  '-fassociative-math',
+  '-fcx-fortran-rules',
+  '-fcx-limited-range',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-funsafe-math-optimizations',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
 
 [[compiler]]
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+# search space of optimization levels
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+# Note: Clang not honoring -fassociative-math (issues warning with 3.9)
+#       see: https://llvm.org/bugs/show_bug.cgi?id=27372
+switches_list = [
+  '-fassociative-math',
+  '-fexcess-precision=fast',
+  '-fexcess-precision=standard',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-fsingle-precision-constant',
+  '-funsafe-math-optimizations',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
 
 [[compiler]]
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
-
+# search space of optimization levels
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+switches_list = [
+  '--use_fast_math',
+  '-fcx-limited-range',
+  '-ffloat-store',
+  '-fma',
+  '-fmerge-all-constants',
+  '-fp-model fast=1',
+  '-fp-model fast=2',
+  '-fp-model=double',
+  '-fp-model=except',
+  '-fp-model=extended',
+  '-fp-model=precise',
+  '-fp-model=source',
+  '-fp-model=strict',
+  '-fp-port',
+  '-frounding-math',
+  '-fsingle-precision-constant',
+  '-ftz',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  '-mp1',
+  '-no-fma',
+  '-no-ftz',
+  '-no-prec-div',
+  '-prec-div',
+  ''
+]

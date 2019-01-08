@@ -1,0 +1,6 @@
+# Test only providing g++
+
+[[compiler]]
+binary = '/usr/bin/my-g++'
+name = 'g++'
+type = 'gcc'

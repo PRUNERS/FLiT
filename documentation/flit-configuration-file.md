@@ -155,6 +155,31 @@ executable.
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '-fassociative-math',
+  '-fcx-fortran-rules',
+  '-fcx-limited-range',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-funsafe-math-optimizations',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
 ```
 
 Here we specify the first compiler.
@@ -170,6 +195,15 @@ Here we specify the first compiler.
 - `type`: The type of compiler.  The supported types are `gcc`, `clang` and
   `intel`.  If you need an additional type supported, please submit an
   [issue](https://github.com/PRUNERS/FLiT/issues).
+- `optimization_levels`: List of optimization levels to search over.  You may
+  remove from or add to this list.  If you omit this list, the default list
+  will be used (which is the same as the one shown here).  The defaults are
+  specific to the type of compiler.  See below for the default list for the
+  other supported compilers.
+- `switches_list`: List of switches to search over.  You may remove from or add
+  to this list.  If you omit this list, the default list will be used (which is
+  the same as the one shown here).  The defaults are specific to the type of
+  compiler.  See below for the default list for the other supported compilers.
 
 Note that the section has two square brackets around it instead of one.  This
 indicates that it is an array and subsequent instances of `[[compiler]]` will
@@ -183,11 +217,72 @@ which includes the one from above named `g++` and the following two:
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '-fassociative-math',
+  '-fexcess-precision=fast',
+  '-fexcess-precision=standard',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-fsingle-precision-constant',
+  '-funsafe-math-optimizations',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
 
 [[compiler]]
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '--use_fast_math',
+  '-fcx-limited-range',
+  '-ffloat-store',
+  '-fma',
+  '-fmerge-all-constants',
+  '-fp-model fast=1',
+  '-fp-model fast=2',
+  '-fp-model=double',
+  '-fp-model=except',
+  '-fp-model=extended',
+  '-fp-model=precise',
+  '-fp-model=source',
+  '-fp-model=strict',
+  '-fp-port',
+  '-frounding-math',
+  '-fsingle-precision-constant',
+  '-ftz',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  '-mp1',
+  '-no-fma',
+  '-no-ftz',
+  '-no-prec-div',
+  '-prec-div',
+  ''
+]
 ```
 
 Do not worry if you do not have all of the compilers on your system, they will
@@ -231,16 +326,102 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '-fassociative-math',
+  '-fcx-fortran-rules',
+  '-fcx-limited-range',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-funsafe-math-optimizations',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
 
 [[compiler]]
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '-fassociative-math',
+  '-fexcess-precision=fast',
+  '-fexcess-precision=standard',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-fsingle-precision-constant',
+  '-funsafe-math-optimizations',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
 
 [[compiler]]
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '--use_fast_math',
+  '-fcx-limited-range',
+  '-ffloat-store',
+  '-fma',
+  '-fmerge-all-constants',
+  '-fp-model fast=1',
+  '-fp-model fast=2',
+  '-fp-model=double',
+  '-fp-model=except',
+  '-fp-model=extended',
+  '-fp-model=precise',
+  '-fp-model=source',
+  '-fp-model=strict',
+  '-fp-port',
+  '-frounding-math',
+  '-fsingle-precision-constant',
+  '-ftz',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  '-mp1',
+  '-no-fma',
+  '-no-ftz',
+  '-no-prec-div',
+  '-prec-div',
+  ''
+]
 ```
 
 

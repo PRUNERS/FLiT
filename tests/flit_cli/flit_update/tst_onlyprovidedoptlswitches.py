@@ -80,106 +80,63 @@
 #
 # -- LICENSE END --
 
-'Contains functions and classes for Expressions'
+'''
+Test that only the provided optimization levels and switches are used
 
-import random
+>>> from io import StringIO
+>>> import shutil
+>>> import os
 
-class Expression(object):
-   'An expression object'
-   plus = '+'
-   minus = '-'
-   divide = '/'
-   multiply = '*'
+>>> from tst_common_funcs import (
+...     deref_makelist, get_default_compiler, runconfig)
 
-   ops = [
-      plus,
-      minus,
-      divide,
-      multiply,
-      ]
+>>> testconf = 'data/onlyprovidedoptlswitches.toml'
+>>> with open(testconf, 'r') as fin:
+...     init_out, update_out, makevars = runconfig(fin.read())
 
-   def __init__(self, parent=None):
-      'initialize a leaf node'
-      self.op = None
-      self.left = None
-      self.right = None
-      self.parent = parent
-      self.value = None
+Get default values for each compiler from the default configuration
 
-   def is_leaf(self):
-      'True means this node is a leaf'
-      return self.op == None
+>>> default_gcc = get_default_compiler('gcc')
+>>> default_clang = get_default_compiler('clang')
+>>> default_intel = get_default_compiler('intel')
 
-   def all_leaves(self):
-      'Returns a list of all leaves'
-      leaves = []
-      if self.is_leaf():
-         leaves.append(self)
-      else:
-         leaves.extend(self.left.all_leaves())
-         leaves.extend(self.right.all_leaves())
-      return leaves
+>>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
+Creating .../flit-config.toml
+Creating .../custom.mk
+Creating .../main.cpp
+Creating .../tests/Empty.cpp
+Creating .../Makefile
 
-   def choose_random_leaf(self):
-      'Randomly choose and return a leaf node'
-      if self.is_leaf():
-         return self
-      return random.choice(self.all_leaves())
+>>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
+Updating .../Makefile
 
-   def expand(self):
-      'Expands a leaf node'
-      assert self.is_leaf()
+>>> deref_makelist('OPCODES_GCC', makevars)
+['-O2', '-O3']
 
-      self.op = random.choice(self.ops)
-      self.left = Expression(self)
-      self.right = Expression(self)
+>>> deref_makelist('OPCODES_CLANG', makevars)
+['-O0', '-O1']
 
-   def __str__(self):
-      'Convert to string'
-      if self.is_leaf():
-         return str(self.value)
-      surround = False
-      if self.parent is not None and self.parent.op in [self.multiply, self.divide]:
-         surround = True
-      retstr = ''
-      if surround:
-         retstr += '('
-      retstr += str(self.left)
-      retstr += ' ' + self.op + ' '
-      retstr += str(self.right)
-      if surround:
-         retstr += ')'
-      return retstr
+>>> deref_makelist('OPCODES_INTEL', makevars)
+['-Ofast', '-Og']
 
-   def __repr__(self):
-      'Return a string representation of this expression'
-      return 'Expression(' + str(self) + ')'
+>>> deref_makelist('SWITCHES_GCC', makevars)
+['', '-funsafe-math-optimizations', '-mavx']
 
-def random_expression(env, length, vars_only=False):
-   '''
-   Generates a random mathematical expression as a string
-   '''
-   # Populate the expression with operations
-   expr = Expression()
-   for i in range(length-1):
-      leaf = expr.choose_random_leaf()
-      leaf.expand()
+>>> deref_makelist('SWITCHES_CLANG', makevars)
+['-ffinite-math-only', '-ffloat-store']
 
-   # Replace all of the leaf nodes with either variables or literals
-   rand_var = lambda: random.choice(list(env.values()))
-   #rand_flt = lambda: random.uniform(-1e9, 1e9)
-   rand_flt = lambda: random.normalvariate(0, 5e4)
-   rand_int = lambda: random.randint(-1e9, 1e9)
+>>> deref_makelist('SWITCHES_INTEL', makevars)
+['-DUSE_MPI', '-fmerge-all-constants', '-fp-model fast=1', '-fp-model fast=2']
+'''
 
-   randers = []
-   if len(env) > 0:
-      randers.append(rand_var)
-   if not vars_only:
-      randers.append(rand_flt)
+# Test setup before the docstring is run.
+import sys
+before_path = sys.path[:]
+sys.path.append('../..')
+import test_harness as th
+sys.path = before_path
 
-   for leaf in expr.all_leaves():
-      rander = random.choice(randers)
-      leaf.value = rander()
-
-   # Generate the string
-   return expr
+if __name__ == '__main__':
+    from doctest import testmod
+    failures, tests = testmod()
+    sys.exit(failures)

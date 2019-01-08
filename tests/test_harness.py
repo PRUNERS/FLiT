@@ -227,6 +227,7 @@ def touch(filename):
 
 flit = _path_import(_script_dir, 'flit')
 config = _path_import(_script_dir, 'flitconfig')
+util = _path_import(_script_dir, 'flitutil')
 
 # Remove the things that are no longer necessary
 del contextmanager

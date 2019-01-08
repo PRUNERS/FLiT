@@ -80,106 +80,99 @@
 #
 # -- LICENSE END --
 
-'Contains functions and classes for Expressions'
+'''
+Tests error cases in the configuration file, such as specifying more than one of a certain type of compiler.
 
-import random
+>>> from io import StringIO
+>>> import os
+>>> import shutil
 
-class Expression(object):
-   'An expression object'
-   plus = '+'
-   minus = '-'
-   divide = '/'
-   multiply = '*'
+>>> from tst_common_funcs import runconfig
 
-   ops = [
-      plus,
-      minus,
-      divide,
-      multiply,
-      ]
+>>> configstr = \\
+...     '[dev_build]\\n' \\
+...     'compiler_name = \\'name-does-not-exist\\'\\n'
+>>> runconfig(configstr)
+Traceback (most recent call last):
+...
+AssertionError: Compiler name name-does-not-exist not found
 
-   def __init__(self, parent=None):
-      'initialize a leaf node'
-      self.op = None
-      self.left = None
-      self.right = None
-      self.parent = parent
-      self.value = None
+>>> configstr = \\
+...     '[ground_truth]\\n' \\
+...     'compiler_name = \\'another-name-that-does-not-exist\\'\\n'
+>>> runconfig(configstr)
+Traceback (most recent call last):
+...
+AssertionError: Compiler name another-name-that-does-not-exist not found
 
-   def is_leaf(self):
-      'True means this node is a leaf'
-      return self.op == None
+>>> runconfig('[compiler]\\n')
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml improperly configured, needs [[compiler]] section
 
-   def all_leaves(self):
-      'Returns a list of all leaves'
-      leaves = []
-      if self.is_leaf():
-         leaves.append(self)
-      else:
-         leaves.extend(self.left.all_leaves())
-         leaves.extend(self.right.all_leaves())
-      return leaves
+>>> runconfig('[[compiler]]\\n')
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{}" is missing the "name" field
 
-   def choose_random_leaf(self):
-      'Randomly choose and return a leaf node'
-      if self.is_leaf():
-         return self
-      return random.choice(self.all_leaves())
+>>> runconfig('[[compiler]]\\n'
+...           'name = \\'hello\\'\\n')
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{'name': 'hello'}" is missing the "type" field
 
-   def expand(self):
-      'Expands a leaf node'
-      assert self.is_leaf()
+>>> runconfig('[[compiler]]\\n'
+...           'name = \\'hello\\'\\n'
+...           'type = \\'gcc\\'\\n') # doctest:+ELLIPSIS
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: compiler "{...}" is missing the "binary" field
 
-      self.op = random.choice(self.ops)
-      self.left = Expression(self)
-      self.right = Expression(self)
+>>> runconfig('[[compiler]]\\n'
+...           'binary = \\'my-special-compiler\\'\\n'
+...           'name = \\'hello\\'\\n'
+...           'type = \\'my-unsupported-type\\'\\n')
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: unsupported compiler type "my-unsupported-type"
 
-   def __str__(self):
-      'Convert to string'
-      if self.is_leaf():
-         return str(self.value)
-      surround = False
-      if self.parent is not None and self.parent.op in [self.multiply, self.divide]:
-         surround = True
-      retstr = ''
-      if surround:
-         retstr += '('
-      retstr += str(self.left)
-      retstr += ' ' + self.op + ' '
-      retstr += str(self.right)
-      if surround:
-         retstr += ')'
-      return retstr
+>>> runconfig('[[compiler]]\\n'
+...           'binary = \\'gcc\\'\\n'
+...           'name = \\'gcc\\'\\n'
+...           'type = \\'gcc\\'\\n'
+...           '\\n'
+...           '[[compiler]]\\n'
+...           'binary = \\'gcc-2\\'\\n'
+...           'name = \\'gcc-2\\'\\n'
+...           'type = \\'gcc\\'\\n'
+...           )
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same type (gcc)
 
-   def __repr__(self):
-      'Return a string representation of this expression'
-      return 'Expression(' + str(self) + ')'
+>>> runconfig('[[compiler]]\\n'
+...           'binary = \\'gcc\\'\\n'
+...           'name = \\'gcc\\'\\n'
+...           'type = \\'gcc\\'\\n'
+...           '\\n'
+...           '[[compiler]]\\n'
+...           'binary = \\'gcc-2\\'\\n'
+...           'name = \\'gcc\\'\\n'
+...           'type = \\'clang\\'\\n'
+...           )
+Traceback (most recent call last):
+...
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same name (gcc)
+'''
 
-def random_expression(env, length, vars_only=False):
-   '''
-   Generates a random mathematical expression as a string
-   '''
-   # Populate the expression with operations
-   expr = Expression()
-   for i in range(length-1):
-      leaf = expr.choose_random_leaf()
-      leaf.expand()
+# Test setup before the docstring is run.
+import sys
+before_path = sys.path[:]
+sys.path.append('../..')
+import test_harness as th
+sys.path = before_path
 
-   # Replace all of the leaf nodes with either variables or literals
-   rand_var = lambda: random.choice(list(env.values()))
-   #rand_flt = lambda: random.uniform(-1e9, 1e9)
-   rand_flt = lambda: random.normalvariate(0, 5e4)
-   rand_int = lambda: random.randint(-1e9, 1e9)
-
-   randers = []
-   if len(env) > 0:
-      randers.append(rand_var)
-   if not vars_only:
-      randers.append(rand_flt)
-
-   for leaf in expr.all_leaves():
-      rander = random.choice(randers)
-      leaf.value = rander()
-
-   # Generate the string
-   return expr
+if __name__ == '__main__':
+    from doctest import testmod
+    failures, tests = testmod()
+    sys.exit(failures)

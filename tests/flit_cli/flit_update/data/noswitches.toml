@@ -1,0 +1,40 @@
+# Test that missing switches causes the compiler-specific defaults to be used
+
+[[compiler]]
+binary = 'g++'
+name = 'g++'
+type = 'gcc'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+
+# Missing switches
+
+[[compiler]]
+binary = 'clang++'
+name = 'clang++'
+type = 'clang'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+
+# Missing switches
+
+[[compiler]]
+binary = 'icpc'
+name = 'icpc'
+type = 'intel'
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+
+# Missing switches
