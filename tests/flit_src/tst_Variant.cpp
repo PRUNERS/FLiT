@@ -598,6 +598,9 @@ void tst_Variant_fromString() {
   std::string s4 = "Variant(vectorFloat{314159})";
   std::string s5 = "Variant(vectorDouble{3.14159e-05, 5})";
   std::string s6 = "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})";
+  std::string s7 = "Hello there!";
+  std::string s8 = "Variant(.678)";
+  std::string s9 = "Variant(vectorFloat{})";
 
   flit::Variant expected1;
   flit::Variant expected2(3.14159);
@@ -605,6 +608,9 @@ void tst_Variant_fromString() {
   flit::Variant expected4(std::vector<float> { 314159.f });
   flit::Variant expected5(std::vector<double> { 3.14159e-5, 5 });
   flit::Variant expected6(std::vector<long double> { 4.45235e6L, 6.L, 7e54L });
+  flit::Variant expected7(s7);
+  flit::Variant expected8(.678L);
+  flit::Variant expected9(std::vector<float> {});
 
   auto actual1 = flit::Variant::fromString(s1);
   auto actual2 = flit::Variant::fromString(s2);
@@ -612,6 +618,9 @@ void tst_Variant_fromString() {
   auto actual4 = flit::Variant::fromString(s4);
   auto actual5 = flit::Variant::fromString(s5);
   auto actual6 = flit::Variant::fromString(s6);
+  auto actual7 = flit::Variant::fromString(s7);
+  auto actual8 = flit::Variant::fromString(s8);
+  auto actual9 = flit::Variant::fromString(s9);
 
   TH_EQUAL(expected1, actual1);
   TH_EQUAL(expected2, actual2);
@@ -619,6 +628,41 @@ void tst_Variant_fromString() {
   TH_EQUAL(expected4, actual4);
   TH_EQUAL(expected5, actual5);
   TH_EQUAL(expected6, actual6);
+  TH_EQUAL(expected7, actual7);
+  TH_EQUAL(expected8, actual8);
+  TH_EQUAL(expected9, actual9);
+
+  // A number that cannot fit in a long double
+  TH_THROWS(flit::Variant::fromString("Variant(3e99999999999999999999)"),
+            std::out_of_range);
+
+  // The beginning of a number (i.e. '.'), but not having a number there
+  TH_THROWS(flit::Variant::fromString("Variant(.ruiea)"),
+            std::invalid_argument);
+
+  // Starts as a string but does not have a matching end quote
+  TH_THROWS(flit::Variant::fromString("Variant(\"Non-matching quotes)"),
+            std::invalid_argument);
+
+  // Looks like "Variant(None)", but with an unexpected space in there
+  TH_THROWS(flit::Variant::fromString("Variant(None )"),
+            std::invalid_argument);
+
+  // Start of a vectorFloat, but without the matching ending curly brace
+  TH_THROWS(flit::Variant::fromString("Variant(vectorFloat{3)"),
+            std::invalid_argument);
+
+  // Start of a vectorDouble, but without the matching ending curly brace
+  TH_THROWS(flit::Variant::fromString("Variant(vectorDouble{3)"),
+            std::invalid_argument);
+
+  // Start of a vectorDouble, but without the matching ending curly brace
+  TH_THROWS(flit::Variant::fromString("Variant(vectorLongDouble{3)"),
+            std::invalid_argument);
+
+  // Unrecognized type within the Variant
+  TH_THROWS(flit::Variant::fromString("Variant(vectorMyType{})"),
+            std::invalid_argument);
 }
 TH_REGISTER(tst_Variant_fromString);
 
