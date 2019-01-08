@@ -176,10 +176,10 @@ long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
     score += diff * diff;
   }
   // remaining elements
-  for (int i = len; i < v1.size(); i++) {
+  for (decltype(v1.size()) i = len; i < v1.size(); i++) {
     score += v1[i] * v1[i];
   }
-  for (int i = len; i < v2.size(); i++) {
+  for (decltype(v2.size()) i = len; i < v2.size(); i++) {
     score += v2[i] * v2[i];
   }
   return score;
