@@ -362,8 +362,8 @@ void runTestWithDefaultInput(TestFactory* factory,
                              int timingRepeats = 3,
                              int idx = -1) {
   auto test = factory->get<F>();
-  auto ip = test->getDefaultInput();
-  auto results = test->run(ip, filebase, shouldTime, timingLoops,
+  auto test_input = test->getDefaultInput();
+  auto results = test->run(test_input, filebase, shouldTime, timingLoops,
                            timingRepeats, idx);
   totResults.insert(totResults.end(), results.begin(), results.end());
   info_stream.flushout();

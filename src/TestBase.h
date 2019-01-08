@@ -270,11 +270,11 @@ public:
         name += "_idx" + std::to_string(i);
       }
       std::string resultfile;
-      if (testResult.type() == Variant::Type::String) {
+      if (testResult.type() != Variant::Type::LongDouble) {
         resultfile = filebase + "_" + name + "_" + typeid(T).name() + ".dat";
         std::ofstream resultout;
         flit::ofopen(resultout, resultfile);
-        resultout << testResult.string();
+        resultout << testResult.toString();
         testResult = Variant(); // empty the result to release memory
       }
       results.emplace_back(name, typeid(T).name(), testResult,
