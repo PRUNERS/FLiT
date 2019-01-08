@@ -348,7 +348,7 @@ TARGET_OUTS :=
 
 # @param 1: compiler variable name (e.g. CLANG)
 # @param 2: optimization level variable name (e.g. O2)
-# @param 3: switches variable name (e.g. --use_fast_math)
+# @param 3: switches variable name (e.g. USE_FAST_MATH)
 define RECURSION_RULE
 TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
