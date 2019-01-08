@@ -134,7 +134,7 @@ mpirun_args = ''
 # compiler_name must be found in the [[compiler]] list under the name attribute
 # The optimization level and switches need not match those found in the
 # associated [[compiler]]
-compiler_name = 'g++'
+compiler_name = 'gcc'
 optimization_level = '-O2'
 switches = '-funsafe-math-optimizations'
 
@@ -145,7 +145,7 @@ switches = '-funsafe-math-optimizations'
 # compiler_name must be found in the [[compiler]] list under the name attribute
 # The optimization level and switches need not match those found in the
 # associated [[compiler]]
-compiler_name = 'g++'
+compiler_name = 'gcc'
 optimization_level = '-O0'
 switches = ''
 
@@ -322,5 +322,10 @@ switches_list = [
 ]
 
 [[compiler_collection]]
-cpp_name = 'g++'
-fortran_name = 'gfortran'
+name = 'gcc'
+langs = [
+  'cpp',
+  'fortran'
+]
+cpp = 'g++'
+fortran = 'gfortran'
