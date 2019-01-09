@@ -106,8 +106,6 @@
 
 namespace flit {
 
-void setWatching(bool watch = true);
-
 struct TestResult {
 public:
   TestResult(const std::string &_name, const std::string &_precision,
@@ -315,7 +313,7 @@ public:
         break;
 
       default:
-        throw std::runtime_error("Unimplemented Variant type");
+        throw std::invalid_argument("Unimplemented Variant type");
     }
     return val;
   }
@@ -401,8 +399,9 @@ public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
   virtual std::vector<T> getDefaultInput() override { return {}; }
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual std::vector<TestResult> run(
-      const std::vector<T>&, const bool, const size_t) override { return {}; }
+  virtual std::vector<TestResult> run(const std::vector<T>&, const
+      std::string&, const bool, const int, const int, const int) override
+  { return {}; }
 protected:
   virtual Variant run_impl(const std::vector<T>&) override { return {}; }
 };

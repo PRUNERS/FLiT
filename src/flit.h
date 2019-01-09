@@ -384,23 +384,9 @@ long double runComparison_impl(TestFactory* factory, const TestResult &gt,
     }
     Variant gtval = Variant::fromString(readFile(gt.resultfile()));
     Variant resval = Variant::fromString(readFile(res.resultfile()));
-    switch (gtval.type()) {
-      case Variant::Type::String:
-        return test->compare(gtval.string(), resval.string());
-      case Variant::Type::VectorFloat:
-      case Variant::Type::VectorDouble:
-      case Variant::Type::VectorLongDouble:
-        return test->compare(gtval.val<std::vector<F>>(),
-                             resval.val<std::vector<F>>());
-      case Variant::Type::None:
-      case Variant::Type::LongDouble:
-      default:
-        throw std::runtime_error("Unsupported variant type from file");
-    }
-  } else if (gt.result().type() == Variant::Type::LongDouble) {
-    return test->compare(gt.result().longDouble(), res.result().longDouble());
+    return test->variant_compare(gtval, resval);
   }
-  throw std::runtime_error("Unsupported variant type");
+  return test->variant_compare(gt.result(), res.result());
 }
 
 inline long double runComparison(TestFactory* factory, const TestResult &gt,
