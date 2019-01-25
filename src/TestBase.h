@@ -175,7 +175,7 @@ public:
    *        automatically determine timing loops.
    * @param timingRepeats how many times to repeat the timing.
    * @param idx which test to run if it is data driven, zero-based indexing.  A
-   *        value less than one means to run them all.
+   *        value less than zero means to run them all.
    *
    * @return A vector of test results
    *

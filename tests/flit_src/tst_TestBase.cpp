@@ -323,7 +323,7 @@ void tst_TestBase_run_oneInput() {
 }
 TH_REGISTER(tst_TestBase_run_oneInput);
 
-void tst_TestBase_run_twoInput() {
+void tst_TestBase_run_twoInputs() {
   auto setup = run_setup<double>();
   auto &test = setup.test;
   test.to_return = 3.14L;
@@ -366,7 +366,7 @@ void tst_TestBase_run_twoInput() {
   TH_EQUAL(results[1].resultfile(), "");
   test.inputs.clear();
 }
-TH_REGISTER(tst_TestBase_run_twoInput);
+TH_REGISTER(tst_TestBase_run_twoInputs);
 
 void tst_TestBase_run_manyInputs() {
   auto setup = run_setup<long double>();
@@ -421,6 +421,56 @@ void tst_TestBase_run_manyInputs() {
   test.inputs.clear();
 }
 TH_REGISTER(tst_TestBase_run_manyInputs);
+
+void tst_TestBase_run_idxWithOneInput() {
+  auto setup = run_setup<float>();
+  auto &test = setup.test;
+  test.to_return = 3;
+
+  std::vector<float> ti {2, 3};
+  auto results = test.run(ti, "", false, 5, 5, 0);
+
+  TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called once
+  TH_EQUAL(test.inputs[0], ti);
+  TH_EQUAL(results.size(), 1);
+  TH_EQUAL(results[0].name(), test.id);
+  TH_EQUAL(results[0].precision(), "f");
+  TH_EQUAL(results[0].result(), 3);
+  TH_EQUAL(results[0].nanosecs(), 0);
+  TH_EQUAL(results[0].resultfile(), "");
+  test.inputs.clear();
+
+  ti = {5, 1, 4};
+  std::vector<float> expected_input {5, 1};
+  results = test.run(ti, "", false);
+  TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called once
+  TH_EQUAL(test.inputs[0], expected_input);
+}
+TH_REGISTER(tst_TestBase_run_idxWithOneInput);
+
+void tst_TestBase_run_idxWithManyInputs() {
+  auto setup = run_setup<long double>();
+  auto &test = setup.test;
+  test.to_return = 5e10L;
+
+  std::vector<long double> ti = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                                 1, 2, 3, 4, 5, 6, 7,  8,  9, 10,
+                                 0, -1};
+  auto results = test.run(ti, "", false, 5, 5, 6);
+  std::vector<long double> expected_7  = { 3,  4};
+  TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called 1 time
+  TH_EQUAL(test.inputs[ 0], expected_7);
+  TH_EQUAL(results.size(), 1);
+  for (auto &result : results) {
+    TH_EQUAL(result.precision(), "e");
+    TH_EQUAL(result.result(), 5e10L);
+    TH_EQUAL(result.nanosecs(), 0);
+    TH_EQUAL(result.resultfile(), "");
+  }
+  TH_EQUAL(results[ 0].name(), test.id + "_idx6");
+  test.inputs.clear();
+}
+TH_REGISTER(tst_TestBase_run_idxWithManyInputs);
 
 // run() tests that are needed:
 // TODO: test the timing functionality of loops and repeats
