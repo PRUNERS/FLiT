@@ -176,8 +176,8 @@ template <typename F>
 class MocTest : public flit::TestBase<F> {
 public:
   using flit::TestBase<F>::TestBase;
-  virtual size_t getInputsPerRun() { return 2; }
-  virtual std::vector<F> getDefaultInput() { return {3, 4}; }
+  virtual size_t getInputsPerRun() { return inputsPerRun; }
+  virtual std::vector<F> getDefaultInput() { return defaultInputs; }
 
   virtual long double compare(long double ground_truth,
                               long double test_results) const {
@@ -219,6 +219,8 @@ public:
   flit::Variant to_return;  // return value from run_impl
   std::vector<std::vector<F>> inputs;
   using flit::TestBase<F>::id;
+  int inputsPerRun = 2;
+  std::vector<F> defaultInputs { 3, 4 };
 };
 
 void tst_TestBase_constructor() {
@@ -472,18 +474,67 @@ void tst_TestBase_run_idxWithManyInputs() {
 }
 TH_REGISTER(tst_TestBase_run_idxWithManyInputs);
 
-// run() tests that are needed:
-// TODO: test the timing functionality of loops and repeats
-// TODO: test the running of the specified index only
-// TODO: test the shouldTime functionality regardless of loops and repeats
-// TODO: test the output file using the filebase
-// TODO: test each variant type that they each go to file except long double
-// TODO- perhaps do it using a foreach loop with the enum:
-// TODO-   for (auto vtype : std::range(flit::Variant::Type::None,
-// TODO-                                flit::Variant::Type::Error)) { ... }
-// TODO: test the values of the variants that go to file
-// TODO: test disabled tests from the flit::Variant::Type::None type
+void tst_TestBase_run_disabledTests() {
+  auto setup = run_setup<long double>();
+  auto &test = setup.test;
+  test.to_return = flit::Variant(); // None type
 
+  std::vector<long double> ti {5, 4, 3, 2, 1};
+  std::vector<long double> expected_1 {5, 4};
+  std::vector<long double> expected_2 {3, 2};
+  auto results = test.run(ti, "");
+  std::cout << "input size: " << test.inputs.size() << std::endl;
+  TH_EQUAL(test.inputs.size(), 2); // verify run_impl was called 1 time
+  TH_EQUAL(test.inputs[ 0], expected_1);
+  TH_EQUAL(test.inputs[ 1], expected_2);
+  TH_EQUAL(results.size(), 0);
+  test.inputs.clear();
+}
+TH_REGISTER(tst_TestBase_run_disabledTests);
 
+void tst_TestBase_run_shouldNotTime() {
+  TH_SKIP("unimplemented");
+  // TODO: test the shouldTime functionality regardless of loops and repeats
+}
+TH_REGISTER(tst_TestBase_run_shouldNotTime);
+
+void tst_TestBase_run_autoLooping() {
+  TH_SKIP("unimplemented");
+  // TODO: test the timing functionality of loops and repeats
+}
+TH_REGISTER(tst_TestBase_run_autoLooping);
+
+void tst_TestBase_run_specifiedLoops() {
+  TH_SKIP("unimplemented");
+  // TODO: test the timing functionality of loops and repeats
+}
+TH_REGISTER(tst_TestBase_run_specifiedLoops);
+
+void tst_TestBase_run_specifiedRepeats() {
+  TH_SKIP("unimplemented");
+  // TODO: test the timing functionality of loops and repeats
+}
+TH_REGISTER(tst_TestBase_run_specifiedRepeats);
+
+void tst_TestBase_run_outputFileUsingFilebase() {
+  TH_SKIP("unimplemented");
+  // TODO: test the output file using the filebase
+}
+TH_REGISTER(tst_TestBase_run_outputFileUsingFilebase);
+
+void tst_TestBase_run_outputVariantsToFile() {
+  TH_SKIP("unimplemented");
+  // TODO: test each variant type that they each go to file except long double
+  // TODO- perhaps do it using a foreach loop with the enum:
+  // TODO-   for (auto vtype : std::range(flit::Variant::Type::None,
+  // TODO-                                flit::Variant::Type::Error)) { ... }
+}
+TH_REGISTER(tst_TestBase_run_outputVariantsToFile);
+
+void tst_TestBase_run_variantValueInFile() {
+  TH_SKIP("unimplemented");
+  // TODO: test the values of the variants that go to file
+}
+TH_REGISTER(tst_TestBase_run_variantValueInFile);
 
 }
