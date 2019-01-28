@@ -483,7 +483,6 @@ void tst_TestBase_run_disabledTests() {
   std::vector<long double> expected_1 {5, 4};
   std::vector<long double> expected_2 {3, 2};
   auto results = test.run(ti, "");
-  std::cout << "input size: " << test.inputs.size() << std::endl;
   TH_EQUAL(test.inputs.size(), 2); // verify run_impl was called 1 time
   TH_EQUAL(test.inputs[ 0], expected_1);
   TH_EQUAL(test.inputs[ 1], expected_2);
@@ -493,6 +492,17 @@ void tst_TestBase_run_disabledTests() {
 TH_REGISTER(tst_TestBase_run_disabledTests);
 
 void tst_TestBase_run_shouldNotTime() {
+  auto setup = run_setup<long double>();
+  auto &test = setup.test;
+  test.to_return = 5e10L;
+
+  std::vector<long double> ti {5, 4};
+  std::vector<long double> expected_1 {5, 4};
+  auto results = test.run(ti, "", false, 1000, 1000);
+  TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called 1 time
+  TH_EQUAL(test.inputs[ 0], expected_1);
+  TH_EQUAL(results.size(), 1);
+  test.inputs.clear();
   TH_SKIP("unimplemented");
   // TODO: test the shouldTime functionality regardless of loops and repeats
 }
