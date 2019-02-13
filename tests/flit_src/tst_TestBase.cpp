@@ -83,7 +83,12 @@
 
 #include "test_harness.h"
 
+#define time_function wrap_time_function
+#define time_function_autoloop wrap_time_function_autoloop
 #include "TestBase.h"
+#undef time_function
+#undef time_function_autoloop
+
 #include "MpiEnvironment.h"
  
 #include <sstream>
@@ -104,7 +109,41 @@ std::ostream& operator<<(std::ostream& out, std::vector<std::string> vec) {
   return out;
 }
 
+int time_function_invocations = 0;
+int time_function_autoloop_invocations = 0;
+size_t last_loops = 0;
+size_t last_repeats = 0;
+
 } // end of unnamed namespace
+
+// define stubs
+namespace flit {
+
+int_fast64_t time_function(
+    const TimingFunction &func, size_t loops = 1, size_t repeats = 3);
+int_fast64_t time_function_autoloop(const TimingFunction &func,
+                                    size_t repeats = 3);
+
+int_fast64_t wrap_time_function(
+    const TimingFunction &func, size_t loops, size_t repeats)
+{
+  time_function_invocations++;
+  last_loops = loops;
+  last_repeats = repeats;
+  // Only call the test once
+  return time_function(func, 1, 1);
+}
+
+int_fast64_t wrap_time_function_autoloop(
+    const TimingFunction &func, size_t repeats)
+{
+  time_function_autoloop_invocations++;
+  last_repeats = repeats;
+  return time_function(func, 1 ,1);
+}
+
+} // end of namespace flit
+
 
 namespace TestResultTests {
 
@@ -495,6 +534,8 @@ void tst_TestBase_run_shouldNotTime() {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = 5e10L;
+  time_function_invocations = 0;
+  time_function_autoloop_invocations = 0;
 
   std::vector<long double> ti {5, 4};
   std::vector<long double> expected_1 {5, 4};
@@ -503,28 +544,62 @@ void tst_TestBase_run_shouldNotTime() {
   TH_EQUAL(test.inputs[ 0], expected_1);
   TH_EQUAL(results.size(), 1);
   test.inputs.clear();
-  TH_SKIP("unimplemented");
-  // TODO: test the shouldTime functionality regardless of loops and repeats
+
+  TH_EQUAL(time_function_invocations, 0);
+  TH_EQUAL(time_function_autoloop_invocations, 0);
 }
 TH_REGISTER(tst_TestBase_run_shouldNotTime);
 
 void tst_TestBase_run_autoLooping() {
-  TH_SKIP("unimplemented");
-  // TODO: test the timing functionality of loops and repeats
+  auto setup = run_setup<long double>();
+  auto &test = setup.test;
+  test.to_return = 5e10L;
+  time_function_invocations = 0;
+  time_function_autoloop_invocations = 0;
+  last_repeats = 0;
+
+  std::vector<long double> ti {5, 4};
+  std::vector<long double> expected_1 {5, 4};
+  size_t expected_repeats = 50;
+  auto results = test.run(ti, "", true, -1, expected_repeats);
+  TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called 1 time
+  TH_EQUAL(test.inputs[ 0], expected_1);
+  TH_EQUAL(results.size(), 1);
+  test.inputs.clear();
+
+  // test that time_function_autoloop() is called and not time_function()
+  TH_EQUAL(time_function_invocations, 0);
+  TH_EQUAL(time_function_autoloop_invocations, 1);
+  TH_EQUAL(last_repeats, expected_repeats);
 }
 TH_REGISTER(tst_TestBase_run_autoLooping);
 
 void tst_TestBase_run_specifiedLoops() {
-  TH_SKIP("unimplemented");
-  // TODO: test the timing functionality of loops and repeats
+  auto setup = run_setup<long double>();
+  auto &test = setup.test;
+  test.to_return = 5e10L;
+  time_function_invocations = 0;
+  time_function_autoloop_invocations = 0;
+  last_loops = 0;
+  last_repeats = 0;
+
+  std::vector<long double> ti {5, 4};
+  std::vector<long double> expected_1 {5, 4};
+  size_t expected_loops = 125;
+  size_t expected_repeats = 50;
+  auto results = test.run(ti, "", true, expected_loops, expected_repeats);
+  TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called 1 time
+  TH_EQUAL(test.inputs[ 0], expected_1);
+  TH_EQUAL(results.size(), 1);
+  test.inputs.clear();
+
+  // test that time_function() is called and not time_function_autoloop()
+  TH_EQUAL(time_function_invocations, 1);
+  TH_EQUAL(time_function_autoloop_invocations, 0);
+  TH_EQUAL(last_loops, expected_loops);
+  TH_EQUAL(last_repeats, expected_repeats);
 }
 TH_REGISTER(tst_TestBase_run_specifiedLoops);
-
-void tst_TestBase_run_specifiedRepeats() {
-  TH_SKIP("unimplemented");
-  // TODO: test the timing functionality of loops and repeats
-}
-TH_REGISTER(tst_TestBase_run_specifiedRepeats);
 
 void tst_TestBase_run_outputFileUsingFilebase() {
   TH_SKIP("unimplemented");
