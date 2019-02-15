@@ -153,6 +153,7 @@
   TH_Registered_Test_##test_name r_##test_name
 
 // includes
+ 
 #include <exception>
 #include <iostream>
 #include <map>
@@ -205,7 +206,8 @@ namespace th {
     }
   };
 
-};
+
+}; // end of namespace th
 
 void printUsage(char *progname) {
   std::cout <<

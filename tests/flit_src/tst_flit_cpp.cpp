@@ -81,6 +81,7 @@
  * -- LICENSE END --
  */
 
+#include "fsutil.h"
 #include "test_harness.h"
 
 #include "flit.h"
@@ -97,29 +98,9 @@
 
 #include <cstdio>
 
+using fsutil::TempFile;
+
 namespace {
-struct TempFile {
-public:
-  std::string name;
-  std::ofstream out;
-  TempFile() {
-    char fname_buf[L_tmpnam];
-    char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-    if (s != fname_buf) {
-      throw std::runtime_error("Could not create temporary file");
-    }
-
-    name = fname_buf;
-    name += "-tst_flit.in";    // this makes the danger much less likely
-    out.exceptions(std::ios::failbit);
-    out.open(name);
-  }
-  ~TempFile() {
-    out.close();
-    std::remove(name.c_str());
-  }
-};
-
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T> &v) {
   out << "[";
