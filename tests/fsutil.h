@@ -186,9 +186,10 @@ TempDir::TempDir() {
 #else
   err = mkdir(_name.c_str(), 0700); // drwx------
 #endif
-  // TODO: get a message related to the error code
   if (err != 0) {
-    throw std::runtime_error("Could not create temporary directory");
+    std::string msg = "Could not create temporary directory: ";
+    msg += strerror(err);
+    throw std::runtime_error(msg);
   }
 }
 

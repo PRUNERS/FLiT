@@ -1,4 +1,5 @@
-harness_tester
+harness/tst_test_harness
+harness/tst_fsutil
 flit_src/tst_flit_cpp
 flit_src/tst_flitHelpers_h
 flit_src/tst_FlitCsv
