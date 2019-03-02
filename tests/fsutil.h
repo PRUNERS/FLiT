@@ -153,7 +153,7 @@ private:
 
 // definitions
 
-TempFile::TempFile() {
+inline TempFile::TempFile() {
   char fname_buf[L_tmpnam];
   char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
   if (s != fname_buf) {
@@ -166,12 +166,12 @@ TempFile::TempFile() {
   out.open(name);
 }
 
-TempFile::~TempFile() {
+inline TempFile::~TempFile() {
   out.close();
   std::remove(name.c_str());
 }
 
-TempDir::TempDir() {
+inline TempDir::TempDir() {
   char fname_buf[L_tmpnam];
   char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
   if (s != fname_buf) {
@@ -193,7 +193,7 @@ TempDir::TempDir() {
   }
 }
 
-TempDir::~TempDir() {
+inline TempDir::~TempDir() {
   try {
     // recursively remove all directories and files found
     rec_rmdir(_name.c_str());
@@ -203,14 +203,14 @@ TempDir::~TempDir() {
   }
 }
 
-TinyDir::TinyDir(const std::string &directory) {
+inline TinyDir::TinyDir(const std::string &directory) {
   int err = tinydir_open(&_dir, directory.c_str());
   checkerr(err, "Error opening directory: ");
 }
 
-TinyDir::~TinyDir() { tinydir_close(&_dir); }
+inline TinyDir::~TinyDir() { tinydir_close(&_dir); }
 
-tinydir_file TinyDir::readfile() const {
+inline tinydir_file TinyDir::readfile() const {
   tinydir_file file;
   int err = tinydir_readfile(&_dir, &file);
   std::string msg = "Error reading file '";
@@ -220,16 +220,16 @@ tinydir_file TinyDir::readfile() const {
   return file;
 }
 
-bool TinyDir::hasnext() {
+inline bool TinyDir::hasnext() {
   return static_cast<bool>(_dir.has_next);
 }
 
-void TinyDir::nextfile() {
+inline void TinyDir::nextfile() {
   int err = tinydir_next(&_dir);
   checkerr(err, "Error getting next file from directory: ");
 }
 
-TinyDir::Iterator& TinyDir::Iterator::operator++() {
+inline TinyDir::Iterator& TinyDir::Iterator::operator++() {
   if (_td != nullptr) {
     if (_td->hasnext()) {
       _td->nextfile();
@@ -241,7 +241,7 @@ TinyDir::Iterator& TinyDir::Iterator::operator++() {
   return *this;
 }
 
-void TinyDir::checkerr(int err, std::string msg) const {
+inline void TinyDir::checkerr(int err, std::string msg) const {
   // TODO: handle broken symlinks
   if (err != 0) {
     throw std::ios_base::failure(
