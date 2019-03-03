@@ -167,6 +167,8 @@ binary = 'g++'
 name = 'g++'
 type = 'gcc'
 lang = 'c++'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -204,6 +206,8 @@ binary = 'gfortran'
 name = 'gfortran'
 type = 'gcc'
 lang = 'fortran'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -241,6 +245,8 @@ binary = 'clang++'
 name = 'clang++'
 type = 'clang'
 lang = 'c++'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -280,6 +286,8 @@ binary = 'icpc'
 name = 'icpc'
 type = 'intel'
 lang = 'c++'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',

@@ -300,6 +300,13 @@ def gen_multi_assignment(name, values):
     return '\n'.join(
         [beginning] + ['{} += {}'.format(justified, x) for x in values])
 
+def compiler_attribute_dict(projconf,attr):
+    compiler_attrs = {}#{x.upper(): None for x in _supported_compiler_types}
+    compiler_attrs.update({compiler['name'].upper(): compiler[attr]
+                           for compiler in projconf['compiler']})
+    return compiler_attrs
+    
+
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     args = parse_args(arguments, prog=prog)
@@ -336,9 +343,10 @@ def main(arguments, prog=sys.argv[0]):
             'Multiple compilers with name {0} found' \
             .format(ground_truth['compiler_name'])
 
-    base_compilers = {}#{x.upper(): None for x in _supported_compiler_types}
-    base_compilers.update({compiler['name'].upper(): compiler['binary']
-                           for compiler in projconf['compiler']})
+    base_compilers = compiler_attribute_dict(projconf,'binary')
+    compiler_req_flags = compiler_attribute_dict(projconf,'required_flags')
+    compiler_ld_flags = compiler_attribute_dict(projconf,'ld_flags')
+    compiler_types = compiler_attribute_dict(projconf,'type')
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -353,18 +361,13 @@ def main(arguments, prog=sys.argv[0]):
             collection[name].upper() for name in collection['langs']} 
             for collection in collections]
 
-    cxx_type = lambda collection : [x for x in projconf['compiler']
-                                   if x['name'] == collection['cpp']][0]['type']
-
     replacements = {
         'uname': os.uname().sysname,
         'hostname': os.uname().nodename,
         'dev_collection': matching_dev_collections[0]['name'].upper(),
-        'dev_type': cxx_type(matching_dev_collections[0]),
         'dev_optl': dev_build['optimization_level'],
         'dev_switches': dev_build['switches'],
         'ground_truth_collection': matching_gt_collections[0]['name'].upper(),
-        'ground_truth_type': cxx_type(matching_gt_collections[0]),
         'ground_truth_optl': ground_truth['optimization_level'],
         'ground_truth_switches': ground_truth['switches'],
         'flit_include_dir': conf.include_dir,
@@ -381,6 +384,12 @@ def main(arguments, prog=sys.argv[0]):
             for collection in collections_def_map]),
         'compiler_defs': gen_assignments({
             key: val for key, val in base_compilers.items()}),
+        'compiler_required_flags': gen_assignments({
+            key + '_REQUIRED': val for key, val in compiler_req_flags.items()}),
+        'compiler_ld_flags': gen_assignments({
+            key + '_LD_REQUIRED': val for key, val in compiler_ld_flags.items()}),
+        'compiler_types': gen_assignments({
+            key + '_TYPE': val for key, val in compiler_types.items()}),
         'compilers': ' '.join([compiler['name'].upper()
                                for compiler in projconf['compiler']]),
         'opcodes_definitions': gen_assignments({
