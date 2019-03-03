@@ -353,7 +353,7 @@ def main(arguments, prog=sys.argv[0]):
             collection[name].upper() for name in collection['langs']} 
             for collection in collections]
 
-    cxx_type = lambda collection : [x for x in projconf['compilers']
+    cxx_type = lambda collection : [x for x in projconf['compiler']
                                    if x['name'] == collection['cpp']][0]['type']
 
     replacements = {
@@ -364,7 +364,7 @@ def main(arguments, prog=sys.argv[0]):
         'dev_optl': dev_build['optimization_level'],
         'dev_switches': dev_build['switches'],
         'ground_truth_collection': matching_gt_collections[0]['name'].upper(),
-        'ground_truth_type': cxx_type(matching_dev_collections[0]),
+        'ground_truth_type': cxx_type(matching_gt_collections[0]),
         'ground_truth_optl': ground_truth['optimization_level'],
         'ground_truth_switches': ground_truth['switches'],
         'flit_include_dir': conf.include_dir,

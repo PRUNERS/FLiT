@@ -114,13 +114,13 @@ FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
-DEV_COLLECTION  ?= {dev_compiler_collection}
+DEV_COLLECTION  ?= {dev_collection}
 DEV_CXX         ?= $($($(DEV_COLLECTION)_CXX))
 DEV_CXX_TYPE    ?= {dev_type}
 DEV_OPTL        ?= {dev_optl}
 DEV_SWITCHES    ?= {dev_switches}
 
-GT_COLLECTION   := {ground_truth_compiler_collection}
+GT_COLLECTION   := {ground_truth_collection}
 GT_CXX          := $($($(GT_COLLECTION)_CXX))
 GT_CXX_TYPE     := {ground_truth_type}
 GT_OPTL         := {ground_truth_optl}
