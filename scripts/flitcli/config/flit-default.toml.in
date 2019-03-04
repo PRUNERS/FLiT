@@ -134,7 +134,7 @@ mpirun_args = ''
 # compiler_name must be found in the [[compiler]] list under the name attribute
 # The optimization level and switches need not match those found in the
 # associated [[compiler]]
-compiler_name = 'g++'
+compiler_name = 'gcc'
 optimization_level = '-O2'
 switches = '-funsafe-math-optimizations'
 
@@ -145,7 +145,7 @@ switches = '-funsafe-math-optimizations'
 # compiler_name must be found in the [[compiler]] list under the name attribute
 # The optimization level and switches need not match those found in the
 # associated [[compiler]]
-compiler_name = 'g++'
+compiler_name = 'gcc'
 optimization_level = '-O0'
 switches = ''
 
@@ -166,6 +166,48 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+lang = 'c++'
+required_flags = ''
+ld_flags = ''
+# search space of optimization levels
+optimization_levels = [
+  '-O0',
+  '-O1',
+  '-O2',
+  '-O3',
+]
+# search space of compiler switches.
+# Note: in some versions of python-toml, there is a parsing bug when a list
+#       has an empty string in the middle.  So simply put it at the end without
+#       a comma.  This has been fixed in the latest version of python-toml.
+# Note: gcc disables -fassociative-math @ O0
+switches_list = [
+  '-fassociative-math',
+  '-fcx-fortran-rules',
+  '-fcx-limited-range',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-funsafe-math-optimizations',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
+
+[[compiler]]
+binary = 'gfortran'
+name = 'gfortran'
+type = 'gcc'
+lang = 'fortran'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -202,6 +244,9 @@ switches_list = [
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+lang = 'c++'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -240,6 +285,9 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+lang = 'c++'
+required_flags = ''
+ld_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -280,3 +328,12 @@ switches_list = [
   '-prec-div',
   ''
 ]
+
+[[compiler_collection]]
+name = 'gcc'
+langs = [
+  'cpp',
+  'fortran'
+]
+cpp = 'g++'
+fortran = 'gfortran'

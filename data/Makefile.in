@@ -91,25 +91,44 @@ UNAME_S         := {uname}
 
 # will be None if not specified in flit-config.toml
 {compiler_defs}
-CLANG_TYPE      := clang
-INTEL_TYPE      := intel
-GCC_TYPE        := gcc
+
+# Required flags, LD flags, and Types are kept track of
+#             on a per compiler basis
+
+{compiler_required_flags}
+
+{compiler_ld_flags}
+
+{compiler_types}
 
 # keep only the compilers that are not None and are in the path
 COMPILERS       := {compilers}
+
+# Compiler Colections
+# 
+# E.G. if GCC was the collection
+#
+# GCC_CXX = g++
+# GCC_FXX = gfortran
+
+{collection_defs}
+
+COLLECTIONS     := {collections}
 
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
-DEV_CXX         ?= {dev_compiler}
-DEV_CXX_TYPE    ?= {dev_type}
+DEV_COLLECTION  ?= {dev_collection}
+DEV_CXX         ?= $($($(DEV_COLLECTION)_CXX))
+DEV_CXX_TYPE    ?= $($($(DEV_COLLECTION)_CXX)_TYPE)
 DEV_OPTL        ?= {dev_optl}
 DEV_SWITCHES    ?= {dev_switches}
 
-GT_CXX          := {ground_truth_compiler}
-GT_CXX_TYPE     := {ground_truth_type}
+GT_COLLECTION   := {ground_truth_collection}
+GT_CXX          := $($($(GT_COLLECTION)_CXX))
+GT_CXX_TYPE     := $($($(DEV_COLLECTION)_CXX)_TYPE)
 GT_OPTL         := {ground_truth_optl}
 GT_SWITCHES     := {ground_truth_switches}
 
@@ -120,6 +139,8 @@ MPIRUN_ARGS     := {mpirun_args}
 
 # initalize some variables to be appended later
 CC_REQUIRED     :=
+F_REQUIRED      :=
+F_FIX_REQUIRED  :=
 DEV_CFLAGS      :=
 LD_REQUIRED     :=
 
@@ -139,6 +160,8 @@ CC_REQUIRED     += -fno-pie
 CC_REQUIRED     += -std=c++11
 CC_REQUIRED     += -I.
 CC_REQUIRED     += -I$(FLIT_INC_DIR)
+
+F_REQUIRED      += -cpp
 
 DEV_CFLAGS      += -g
 DEV_CFLAGS      += -Wall
@@ -187,8 +210,10 @@ DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
 SOURCE          += $(TESTS)
+F_SOURCE         = $(wildcard *.f90)
 
 VPATH            = $(dir $(SOURCE))
+VPATH           += $(dir $(F_SOURCE))
 
 .PHONY: help
 help:
@@ -220,8 +245,10 @@ help:
 VPATH           := $(sort $(VPATH))
 
 DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
+DEV_OBJ          += $(addprefix $(OBJ_DIR)/,$(addsuffix _dev.o, $(basename $(notdir $(F_SOURCE)))))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
+GT_OBJ          += $(addprefix $(OBJ_DIR)/,$(addsuffix _gt.o, $(basename $(notdir $(F_SOURCE)))))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
@@ -265,17 +292,22 @@ endif
 
 # will be set internally when doing recursive calls.  Get set to variable names
 # containing the information (e.g. R_CUR_COMPILER=CLANG)
-R_CUR_COMPILER  ?=
+R_CUR_COLLECTION  ?=
 R_CUR_OPTL      ?=
 R_CUR_SWITCHES  ?=
 
 # If we are in a recursion
 ifdef R_IS_RECURSED
 
-R_ID            := $(R_CUR_COMPILER)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
+R_ID            := $(R_CUR_COLLECTION)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
 R_TARGET        := $(RESULTS_DIR)/$(R_ID)
 R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(R_ID).o)))
+# this may exclude source files with a dot in their name...
+R_OBJ           += $(addprefix $(OBJ_DIR)/,$(addsuffix _$(R_ID).o, $(basename $(notdir $(F_SOURCE)))))
 R_DEP           := $(R_OBJ:%.o=%.d)
+
+R_CUR_CXX       := $($(R_CUR_COLLECTION)_CXX)
+R_CUR_FXX       := $($(R_CUR_COLLECTION)_FXX)
 
 -include $(R_DEP)
 
@@ -285,31 +317,54 @@ rec: $(R_TARGET)
 # clang's flag is -nopie
 # else if the current compiler is not GCC 4 or 5, then enable -no-pie
 # GCC 4 and 5 do not need -no-pie since that is the default
-ifeq ($($(R_CUR_COMPILER)_TYPE),clang)
+ifeq ($($(R_CUR_CXX)_TYPE),clang)
   LD_REQUIRED += -nopie
-else ifeq ($($(R_CUR_COMPILER)_TYPE), gcc)
-ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_COMPILER))),0)
+else ifeq ($($(R_CUR_CXX)_TYPE), gcc)
+ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_CXX))),0)
   LD_REQUIRED += -no-pie
 endif
 endif
 
 $(R_TARGET): $(R_OBJ)
-	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
-	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
+	$($(R_CUR_CXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	  $($(R_CUR_CXX)_REQUIRED) $(CC_REQUIRED) \
 	  $(R_OBJ) -o $@ \
-	  $(LD_REQUIRED)
+	  $(LD_REQUIRED) $($(R_CUR_CXX)_LD_REQUIRED)
 
 $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
-	  -c $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
+	$($(R_CUR_CXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	  -c $($(R_CUR_CXX)_REQUIRED) $(CC_REQUIRED) \
 	  $< -o $@ \
 	  $(DEPFLAGS) \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$($(R_CUR_COMPILER))"' \
+	  -DFLIT_COMPILER='"$($(R_CUR_CXX))"' \
 	  -DFLIT_OPTL='"$($(R_CUR_OPTL))"' \
 	  -DFLIT_SWITCHES='"$($(R_CUR_SWITCHES))"' \
 	  -DFLIT_FILENAME='"$(R_ID)"'
 
+# FORTRAN copy of the previous cpp rule
+$(OBJ_DIR)/%_$(R_ID).o: %.f90 Makefile custom.mk | $(OBJ_DIR)
+	$($(R_CUR_FXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	  -c $($(R_CUR_FXX)_REQUIRED) $(F_REQUIRED) \
+	  $< -o $@ \
+	  $(DEPFLAGS) \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($(R_CUR_FXX))"' \
+	  -DFLIT_OPTL='"$($(R_CUR_OPTL))"' \
+	  -DFLIT_SWITCHES='"$($(R_CUR_SWITCHES))"' \
+	  -DFLIT_FILENAME='"$(R_ID)"'
+
+# Fixed Form FORTRAN copy
+$(OBJ_DIR)/%_$(R_ID).o: %.F90 Makefile custom.mk | $(OBJ_DIR)
+	$($(R_CUR_FXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
+	  -c $($(R_CUR_FXX)_REQUIRED) $(F_FIX_REQUIRED) \
+	  $< -o $@ \
+	  $(DEPFLAGS) \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($(R_CUR_FXX))"' \
+	  -DFLIT_OPTL='"$($(R_CUR_OPTL))"' \
+	  -DFLIT_SWITCHES='"$($(R_CUR_SWITCHES))"' \
+	  -DFLIT_FILENAME='"$(R_ID)"'
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
 
@@ -362,16 +417,16 @@ TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RESULTS_DIR)
 	-$$(MAKE) rec \
 	  R_IS_RECURSED=True \
-	  R_CUR_COMPILER=$(strip $1) \
+	  R_CUR_COLLECTION=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
 	  R_CUR_SWITCHES=$(strip $3)
 	-test -f $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 endef
 
-$(foreach c, $(COMPILERS),                 \
-  $(foreach s, $(SWITCHES_$(strip $c)),    \
-    $(foreach o, $(OPCODES_$(strip $c)),               \
+$(foreach c, $(COLLECTIONS),                 \
+  $(foreach s, $(SWITCHES_$(strip $($(c)_CXX))),    \
+    $(foreach o, $(OPCODES_$(strip $($(c)_CXX))),               \
       $(eval $(call RECURSION_RULE, $c, $o, $s)))))
 TARGET_OUTS     := $(TARGETS:%=%-out)
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
@@ -464,12 +519,34 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 # Dev compilation rules first (easier to understand)
 $(DEV_TARGET): $(DEV_OBJ) Makefile custom.mk
 	$(DEV_CXX) $(CC_REQUIRED) $(DEV_CFLAGS) \
-	  -o $@ $(DEV_OBJ) $(LD_REQUIRED) $(DEV_LDFLAGS)
+	  -o $@ $(DEV_OBJ) $(LD_REQUIRED) $(DEV_LDFLAGS) \
+          $($($(DEV_COLLECTION)_CXX)_LD_REQUIRED)
 
 $(OBJ_DIR)/%_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(DEV_CXX) $(DEV_OPTL) $(DEV_SWITCHES) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
+	$(DEV_CXX) $(DEV_OPTL) $(DEV_SWITCHES) $(CC_REQUIRED) \
+        $($($(DEV_COLLECTION)_CXX)_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(DEV_CXX)"' \
+	  -DFLIT_OPTL='"$(DEV_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
+
+# FORTRAN copy of the previous cpp rule
+$(OBJ_DIR)/%_dev.o: %.f90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(DEV_COLLECTION)_FXX)) $(DEV_OPTL) $(DEV_SWITCHES) $(F_REQUIRED) \
+        $($($(DEV_COLLECTION)_FXX)_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(DEV_COLLECTION)_FXX))"' \
+	  -DFLIT_OPTL='"$(DEV_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
+
+# Fixed Form FORTRAN copy
+$(OBJ_DIR)/%_dev.o: %.F90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(DEV_COLLECTION)_FXX)) $(DEV_OPTL) $(DEV_SWITCHES) $(F_FIX_REQUIRED) \
+        $($($(DEV_COLLECTION)_FXX)_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(DEV_COLLECTION)_FXX))"' \
 	  -DFLIT_OPTL='"$(DEV_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
 	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
@@ -479,20 +556,63 @@ $(GT_OUT): $(GT_TARGET)
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
-	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
+	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS) \
+        $($($(DEV_COLLECTION)_CXX)_LD_REQUIRED) 
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) \
+        $($($(GT_COLLECTION)_CXX)_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CXX)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
 	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
 
+# FORTRAN copy of the previous cpp rule
+$(OBJ_DIR)/%_gt.o: %.f90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(GT_COLLECTION)_FXX)) -g $(GT_OPTL) $(GT_SWITCHES) $(F_REQUIRED) \
+        $($($(GT_COLLECTION)_FXX)_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(GT_COLLECTION)_FXX))"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
+# Fixed Form FORTRAN copy
+$(OBJ_DIR)/%_gt.o: %.F90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(GT_COLLECTION)_FXX)) -g $(GT_OPTL) $(GT_SWITCHES) $(F_FIX_REQUIRED) \
+        $($($(GT_COLLECTION)_FXX)_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(GT_COLLECTION)_FXX))"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
 $(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) \
+        $($($(GT_COLLECTION)_CXX)_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CXX)"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
+# FORTRAN copy of the previous cpp rule
+$(OBJ_DIR)/%_gt_fPIC.o: %.f90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(GT_COLLECTION)_FXX)) -g $(GT_OPTL) $(GT_SWITCHES) $(F_REQUIRED) \
+        $($($(GT_COLLECTION)_FXX)_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(GT_COLLECTION)_FXX))"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
+# Fixed Form FORTRAN copy
+$(OBJ_DIR)/%_gt_fPIC.o: %.F90 Makefile custom.mk | $(OBJ_DIR)
+	$($($(GT_COLLECTION)_FXX)) -g $(GT_OPTL) $(GT_SWITCHES) $(F_FIX_REQUIRED) \
+        $($($(GT_COLLECTION)_FXX)_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$($($(GT_COLLECTION)_FXX))"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
 	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'

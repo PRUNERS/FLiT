@@ -138,7 +138,9 @@ def load_projconf(directory):
             'needs [[compiler]] section'
 
         default_type_map = {c['type']: c for c in defaults['compiler']}
-        type_map = {} # type -> compiler
+        # types are not longer unique with collections. However,
+        #  we should never have a compiler of the same name and type
+        type_map = {} # type##name -> compiler
         name_map = {} # name -> compiler
         for compiler in projconf['compiler']:
 
@@ -154,10 +156,11 @@ def load_projconf(directory):
                 .format(compiler['type'])
 
             # check that we only have one of each type specified
-            assert compiler['type'] not in type_map, \
+            compiler_key = compiler['type'] + '##' + compiler['name']
+            assert compiler_key not in type_map, \
                 'flit-config.toml: cannot have multiple compilers of the ' \
-                'same type ({0})'.format(compiler['type'])
-            type_map[compiler['type']] = compiler
+                'same type and name ({0})'.format(compiler_key)
+            type_map[compiler_key] = compiler
 
             # check that we only have one of each name specified
             assert compiler['name'] not in name_map, \
@@ -211,6 +214,21 @@ def flag_name(flag):
         'Error: cannot handle flag that starts with a number'
     assert len(name) > 0, 'Error: cannot handle flag only made of dashes'
     return name
+
+def lang_name(lang):
+    ''' 
+    Returns an appropriate Makefile name for a compiler of the
+    given language
+    '''
+
+    if lang == 'cpp':
+        return "CXX"
+    if lang == "c":
+        return "CC"
+    if lang == "fortran":
+        return "FXX"
+    
+    raise Exception("Unsupported Language: " + lang)
 
 def gen_assignments(flag_map):
     '''
@@ -282,6 +300,13 @@ def gen_multi_assignment(name, values):
     return '\n'.join(
         [beginning] + ['{} += {}'.format(justified, x) for x in values])
 
+def compiler_attribute_dict(projconf,attr):
+    compiler_attrs = {}#{x.upper(): None for x in _supported_compiler_types}
+    compiler_attrs.update({compiler['name'].upper(): compiler[attr]
+                           for compiler in projconf['compiler']})
+    return compiler_attrs
+    
+
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     args = parse_args(arguments, prog=prog)
@@ -301,20 +326,27 @@ def main(arguments, prog=sys.argv[0]):
         print('Creating {0}'.format(makefile))
 
     dev_build = projconf['dev_build']
-    matching_dev_compilers = [x for x in projconf['compiler']
+    matching_dev_collections = [x for x in projconf['compiler_collection']
                               if x['name'] == dev_build['compiler_name']]
-    assert len(matching_dev_compilers) > 0, \
-            'Compiler name {0} not found'.format(dev_build['compiler_name'])
+    assert len(matching_dev_collections) > 0, \
+            'Compiler collection name {0} not found'.format(dev_build['compiler_name'])
+    assert len(matching_dev_collections) < 2, \
+            'Multiple compilers with name {0} found' \
+            .format(dev_build['compiler_name'])
 
     ground_truth = projconf['ground_truth']
-    matching_gt_compilers = [x for x in projconf['compiler']
+    matching_gt_collections = [x for x in projconf['compiler_collection']
                              if x['name'] == ground_truth['compiler_name']]
-    assert len(matching_gt_compilers) > 0, \
-            'Compiler name {0} not found'.format(ground_truth['compiler_name'])
+    assert len(matching_gt_collections) > 0, \
+            'Compiler collection name {0} not found'.format(ground_truth['compiler_name'])
+    assert len(matching_gt_collections) < 2, \
+            'Multiple compilers with name {0} found' \
+            .format(ground_truth['compiler_name'])
 
-    base_compilers = {x.upper(): None for x in _supported_compiler_types}
-    base_compilers.update({compiler['type'].upper(): compiler['binary']
-                           for compiler in projconf['compiler']})
+    base_compilers = compiler_attribute_dict(projconf,'binary')
+    compiler_req_flags = compiler_attribute_dict(projconf,'required_flags')
+    compiler_ld_flags = compiler_attribute_dict(projconf,'ld_flags')
+    compiler_types = compiler_attribute_dict(projconf,'type')
 
     test_run_args = ''
     if not projconf['run']['timing']:
@@ -324,16 +356,18 @@ def main(arguments, prog=sys.argv[0]):
             '--timing-loops', str(projconf['run']['timing_loops']),
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
+    collections = projconf['compiler_collection']
+    collections_def_map = [{collection['name'].upper() + '_' + lang_name(name): \
+            collection[name].upper() for name in collection['langs']} 
+            for collection in collections]
 
     replacements = {
         'uname': os.uname().sysname,
         'hostname': os.uname().nodename,
-        'dev_compiler': matching_dev_compilers[0]['binary'],
-        'dev_type': matching_dev_compilers[0]['type'],
+        'dev_collection': matching_dev_collections[0]['name'].upper(),
         'dev_optl': dev_build['optimization_level'],
         'dev_switches': dev_build['switches'],
-        'ground_truth_compiler': matching_gt_compilers[0]['binary'],
-        'ground_truth_type': matching_gt_compilers[0]['type'],
+        'ground_truth_collection': matching_gt_collections[0]['name'].upper(),
         'ground_truth_optl': ground_truth['optimization_level'],
         'ground_truth_switches': ground_truth['switches'],
         'flit_include_dir': conf.include_dir,
@@ -344,9 +378,19 @@ def main(arguments, prog=sys.argv[0]):
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpirun_args': projconf['run']['mpirun_args'],
+        'collections': ' '.join(collection['name'].upper() 
+            for collection in projconf['compiler_collection']),
+        'collection_defs': '\n\n'.join([gen_assignments(collection) 
+            for collection in collections_def_map]),
         'compiler_defs': gen_assignments({
             key: val for key, val in base_compilers.items()}),
-        'compilers': ' '.join([compiler['type'].upper()
+        'compiler_required_flags': gen_assignments({
+            key + '_REQUIRED': val for key, val in compiler_req_flags.items()}),
+        'compiler_ld_flags': gen_assignments({
+            key + '_LD_REQUIRED': val for key, val in compiler_ld_flags.items()}),
+        'compiler_types': gen_assignments({
+            key + '_TYPE': val for key, val in compiler_types.items()}),
+        'compilers': ' '.join([compiler['name'].upper()
                                for compiler in projconf['compiler']]),
         'opcodes_definitions': gen_assignments({
             flag_name(x): x
@@ -358,12 +402,12 @@ def main(arguments, prog=sys.argv[0]):
             for x in compiler['switches_list']}),
         'compiler_opcodes': '\n\n'.join([
             gen_multi_assignment(
-                'OPCODES_' + compiler['type'].upper(),
+                'OPCODES_' + compiler['name'].upper(),
                 [flag_name(x) for x in compiler['optimization_levels']])
             for compiler in projconf['compiler']]),
         'compiler_switches': '\n\n'.join([
             gen_multi_assignment(
-                'SWITCHES_' + compiler['type'].upper(),
+                'SWITCHES_' + compiler['name'].upper(),
                 [flag_name(x) for x in compiler['switches_list']])
             for compiler in projconf['compiler']]),
         }
