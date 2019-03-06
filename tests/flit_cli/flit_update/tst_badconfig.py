@@ -95,7 +95,7 @@ Tests error cases in the configuration file, such as specifying more than one of
 >>> runconfig(configstr)
 Traceback (most recent call last):
 ...
-AssertionError: Compiler name name-does-not-exist not found
+AssertionError: Compiler collection name name-does-not-exist not found
 
 >>> configstr = \\
 ...     '[ground_truth]\\n' \\
@@ -103,7 +103,7 @@ AssertionError: Compiler name name-does-not-exist not found
 >>> runconfig(configstr)
 Traceback (most recent call last):
 ...
-AssertionError: Compiler name another-name-that-does-not-exist not found
+AssertionError: Compiler collection name another-name-that-does-not-exist not found
 
 >>> runconfig('[compiler]\\n')
 Traceback (most recent call last):
@@ -135,20 +135,6 @@ tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.
 Traceback (most recent call last):
 ...
 tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: unsupported compiler type "my-unsupported-type"
-
->>> runconfig('[[compiler]]\\n'
-...           'binary = \\'gcc\\'\\n'
-...           'name = \\'gcc\\'\\n'
-...           'type = \\'gcc\\'\\n'
-...           '\\n'
-...           '[[compiler]]\\n'
-...           'binary = \\'gcc-2\\'\\n'
-...           'name = \\'gcc-2\\'\\n'
-...           'type = \\'gcc\\'\\n'
-...           )
-Traceback (most recent call last):
-...
-tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: flit-config.toml: cannot have multiple compilers of the same type (gcc)
 
 >>> runconfig('[[compiler]]\\n'
 ...           'binary = \\'gcc\\'\\n'

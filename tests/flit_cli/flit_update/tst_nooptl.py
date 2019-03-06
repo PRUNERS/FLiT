@@ -109,15 +109,15 @@ Creating .../Makefile
 >>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
 Updating .../Makefile
 
->>> deref_makelist('OPCODES_GCC', makevars) == \\
+>>> deref_makelist('OPCODES_G++', makevars) == \\
 ...     sorted(default_gcc['optimization_levels'])
 True
 
->>> deref_makelist('OPCODES_CLANG', makevars) == \\
+>>> deref_makelist('OPCODES_CLANG++', makevars) == \\
 ...     sorted(default_clang['optimization_levels'])
 True
 
->>> deref_makelist('OPCODES_INTEL', makevars) == \\
+>>> deref_makelist('OPCODES_ICPC', makevars) == \\
 ...     sorted(default_intel['optimization_levels'])
 True
 '''

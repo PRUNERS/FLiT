@@ -112,48 +112,48 @@ Creating .../Makefile
 Updating .../Makefile
 
 Check that the compiler binaries are the default values
->>> gcc = makevars['GCC']
+>>> gcc = makevars['G++']
 >>> len(gcc) == 1
 True
 >>> gcc[0] == default_gcc['binary']
 True
 
->>> clang = makevars['CLANG']
+>>> clang = makevars['CLANG++']
 >>> len(clang) == 1
 True
 >>> clang[0] == default_clang['binary']
 True
 
->>> intel = makevars['INTEL']
+>>> intel = makevars['ICPC']
 >>> len(intel) == 1
 True
 >>> intel[0] == default_intel['binary']
 True
 
 >>> sorted(makevars['COMPILERS'])
-['CLANG', 'GCC', 'INTEL']
+['CLANG++', 'G++', 'GFORTRAN', 'ICPC']
 
->>> deref_makelist('OPCODES_GCC', makevars) == \\
+>>> deref_makelist('OPCODES_G++', makevars) == \\
 ...     sorted(default_gcc['optimization_levels'])
 True
 
->>> deref_makelist('OPCODES_CLANG', makevars) == \\
+>>> deref_makelist('OPCODES_CLANG++', makevars) == \\
 ...     sorted(default_clang['optimization_levels'])
 True
 
->>> deref_makelist('OPCODES_INTEL', makevars) == \\
+>>> deref_makelist('OPCODES_ICPC', makevars) == \\
 ...     sorted(default_intel['optimization_levels'])
 True
 
->>> deref_makelist('SWITCHES_GCC', makevars) == \\
+>>> deref_makelist('SWITCHES_G++', makevars) == \\
 ...     sorted(default_gcc['switches_list'])
 True
 
->>> deref_makelist('SWITCHES_CLANG', makevars) == \\
+>>> deref_makelist('SWITCHES_CLANG++', makevars) == \\
 ...     sorted(default_clang['switches_list'])
 True
 
->>> deref_makelist('SWITCHES_INTEL', makevars) == \\
+>>> deref_makelist('SWITCHES_ICPC', makevars) == \\
 ...     sorted(default_intel['switches_list'])
 True
 '''

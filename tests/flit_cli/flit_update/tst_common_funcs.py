@@ -150,7 +150,7 @@ def get_default_compiler(typename):
     '''
     defaults = th.util.get_default_toml()
     default_compiler = [x for x in defaults['compiler']
-                        if x['type'] == typename]
+                        if x['type'] == typename and x['lang'] == 'c++']
     assert len(default_compiler) == 1
     return default_compiler[0]
 

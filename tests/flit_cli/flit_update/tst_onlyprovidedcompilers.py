@@ -109,29 +109,29 @@ Creating .../Makefile
 Updating .../Makefile
 
 Check that the compiler binaries are the default values
->>> makevars['GCC']
+>>> makevars['G++']
 ['/usr/bin/my-g++']
 
->>> makevars['CLANG']
+>>> makevars.get('CLANG', ['None'])
 ['None']
 
->>> makevars['INTEL']
+>>> makevars.get('INTEL', ['None'])
 ['None']
 
 >>> makevars['COMPILERS']
-['GCC']
+['G++']
 
->>> 'OPCODES_GCC' in makevars
+>>> 'OPCODES_G++' in makevars
 True
->>> 'SWITCHES_GCC' in makevars
+>>> 'SWITCHES_G++' in makevars
 True
->>> 'OPCODES_CLANG' in makevars
+>>> 'OPCODES_CLANG++' in makevars
 False
->>> 'SWITCHES_CLANG' in makevars
+>>> 'SWITCHES_CLANG++' in makevars
 False
->>> 'OPCODES_INTEL' in makevars
+>>> 'OPCODES_ICPC' in makevars
 False
->>> 'SWITCHES_INTEL' in makevars
+>>> 'SWITCHES_ICPC' in makevars
 False
 '''
 

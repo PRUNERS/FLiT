@@ -110,22 +110,22 @@ Creating .../Makefile
 >>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
 Updating .../Makefile
 
->>> deref_makelist('OPCODES_GCC', makevars)
+>>> deref_makelist('OPCODES_G++', makevars)
 ['-O2', '-O3']
 
->>> deref_makelist('OPCODES_CLANG', makevars)
+>>> deref_makelist('OPCODES_CLANG++', makevars)
 ['-O0', '-O1']
 
->>> deref_makelist('OPCODES_INTEL', makevars)
+>>> deref_makelist('OPCODES_ICPC', makevars)
 ['-Ofast', '-Og']
 
->>> deref_makelist('SWITCHES_GCC', makevars)
+>>> deref_makelist('SWITCHES_G++', makevars)
 ['', '-funsafe-math-optimizations', '-mavx']
 
->>> deref_makelist('SWITCHES_CLANG', makevars)
+>>> deref_makelist('SWITCHES_CLANG++', makevars)
 ['-ffinite-math-only', '-ffloat-store']
 
->>> deref_makelist('SWITCHES_INTEL', makevars)
+>>> deref_makelist('SWITCHES_ICPC', makevars)
 ['-DUSE_MPI', '-fmerge-all-constants', '-fp-model fast=1', '-fp-model fast=2']
 '''
 

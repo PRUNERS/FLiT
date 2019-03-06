@@ -109,15 +109,15 @@ Creating .../Makefile
 >>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
 Updating .../Makefile
 
->>> deref_makelist('SWITCHES_GCC', makevars) == \\
+>>> deref_makelist('SWITCHES_G++', makevars) == \\
 ...     sorted(default_gcc['switches_list'])
 True
 
->>> deref_makelist('SWITCHES_CLANG', makevars) == \\
+>>> deref_makelist('SWITCHES_CLANG++', makevars) == \\
 ...     sorted(default_clang['switches_list'])
 True
 
->>> deref_makelist('SWITCHES_INTEL', makevars) == \\
+>>> deref_makelist('SWITCHES_ICPC', makevars) == \\
 ...     sorted(default_intel['switches_list'])
 True
 '''
