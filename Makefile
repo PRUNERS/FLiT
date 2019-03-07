@@ -7,18 +7,19 @@ LIBDIR         := lib
 SRCDIR         := src
 TARGET         ?= $(LIBDIR)/libflit.so
 
-CPPFLAGS       += $(FFLAGS)
-CPPFLAGS       += -Wuninitialized -g
-CPPFLAGS       += -fPIC
-CPPFLAGS       += -std=c++11
-CPPFLAGS       += -Wno-shift-count-overflow
-CPPFLAGS       += -Wall
-CPPFLAGS       += -Wextra
-CPPFLAGS       += -Werror
-CPPFLAGS       += -I.
+CXXFLAGS       += $(FFLAGS)
+CXXFLAGS       += -Wuninitialized -g
+CXXFLAGS       += -fPIC
+CXXFLAGS       += -std=c++11
+CXXFLAGS       += -Wno-shift-count-overflow
+CXXFLAGS       += -Wall
+CXXFLAGS       += -Wextra
+CXXFLAGS       += -Werror
+CXXFLAGS       += -I.
 
-CPPFLAGS       += $(S3_REQUIRED)
-LINKFLAGS      += -lm -shared
+CXXFLAGS       += $(S3_REQUIRED)
+LDFLAGS        += -shared
+LDLIBS         += -lm
 
 DEPFLAGS       += -MD -MF $(SRCDIR)/$*.d
 
@@ -68,10 +69,10 @@ help:
 
 $(TARGET): $(OBJ)
 	mkdir -p lib
-	$(CXX) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) -o $@ $^ $(LDLIBS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
-	$(CXX) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 .PRECIOUS: src/%.d
 -include $(SOURCE:%.cpp=%.d)
