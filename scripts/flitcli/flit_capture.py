@@ -321,6 +321,15 @@ def compilation2db_entry(compilation):
         'language': language,
         }
 
+def uniquify_db_duplicates(entries):
+    'Removes duplicates from a list of JSON database entries'
+    entries.sort(key=lambda x: sorted(x.items()))
+    last = object()
+    for entry in entries:
+        if entry != last:
+            last = entry
+            yield entry
+
 # TODO: handle other languages such as FORTRAN and CUDA
 def main(arguments, prog=sys.argv[0]):
     '''
@@ -337,13 +346,15 @@ def main(arguments, prog=sys.argv[0]):
 
     exit_code, compilations = capture(args)
 
-    to_save = compilations
-    if args.append and os.path.isfile(args.output):
-        prev_compilations = CompilationDatabase.load(args.output)
-        to_save = iter(set(itertools.chain(prev_compilations, compilations)))
-
     entries = [compilation2db_entry(compilation)
-               for compilation in to_save]
+               for compilation in compilations]
+    if args.append and os.path.isfile(args.output):
+        with open(args.output, 'r') as fin:
+            prev_compilations = json.load(fin)
+        entries.extend(prev_compilations)
+
+    entries = list(uniquify_db_duplicates(entries))
+
     with open(args.output, 'w') as fout:
         json.dump(entries, fout, sort_keys=True, indent=4)
 
