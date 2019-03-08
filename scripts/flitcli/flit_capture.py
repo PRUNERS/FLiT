@@ -91,10 +91,13 @@ Implements the capture subcommand, capturing compilation process into a
 database
 '''
 
+from collections import defaultdict
 import argparse
 import itertools
 import json
+import logging
 import os
+import re
 import sys
 
 from libear import temporary_directory
@@ -109,6 +112,10 @@ from libscanbuild import run_build, reconfigure_logging
 
 brief_description = 'Captures source file compilations into a JSON database'
 
+LANG_COMPILER_LISTS = defaultdict(list)
+CC = os.getenv('CC', 'cc')
+CXX = os.getenv('CXX', 'c++')
+
 class CustomCompilation(Compilation):
     '''
     A compilation, but really a specialization of
@@ -120,11 +127,7 @@ class CustomCompilation(Compilation):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def _split_compiler(cls,        # type: Type[Compilation]
-                        command,    # type: List[str]
-                        cc,         # type: str
-                        cxx         # type: str
-                        ):
+    def _split_compiler(cls, command, cc, cxx):
         '''
         Copied and modified from the Compilation class.
 
@@ -156,10 +159,7 @@ class CustomCompilation(Compilation):
                 # executable from PATH.
                 mpi_call = get_mpi_call(command[0])  # type: List[str]
                 return cls._split_compiler(mpi_call + parameters, cc, cxx)
-            # and 'compiler' 'parameters' is valid.
-            elif is_c_compiler(executable, cc):
-                return executable, parameters
-            elif is_cxx_compiler(executable, cxx):
+            elif get_language(executable) is not None:
                 return executable, parameters
         return None
 
@@ -172,7 +172,13 @@ def parse_args(arguments, prog=sys.argv[0]):
             Captures source file compilations into a JSON database.  This can
             then be used by flit import and flit update to generate custom.mk.
             The JSON compilation database is similar to the format defined by
-            Clang.
+            Clang.  By default, this program will only find C and C++
+            compilations,  but you can specify your own language compilers with
+            --add-lang.
+
+            Note: this program compiles a library to be used with LD_PRELOAD.
+            As such, you must ensure a valid C compiler is available either as
+            the executable "cc" or within the "CC" environment variable.
             ''',
         )
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -181,19 +187,30 @@ def parse_args(arguments, prog=sys.argv[0]):
                         dest='output', type=str,
                         default='compile_commands.json',
                         help='Output JSON compilation database file location.')
-    parser.add_argument('--use-cc', metavar='<path>', dest='cc', type=str,
-                        default=os.getenv('CC', 'cc'),
+    parser.add_argument('--add-cc', metavar='<path>[,<path>...]',
+                        dest='c_compilers', type=str,
                         help='''
-                            not yet implemented.
-                            By default, will pull from the "CC" environment
-                            variable if available.
+                            Add a comma-separated list of C compilers to the
+                            list of compilers to identify.  Note, the compiler
+                            in the CC environment variable will automatically
+                            be added.
                             ''')
-    parser.add_argument('--use-c++', metavar='<path>', dest='cxx', type=str,
-                        default=os.getenv('CXX', 'c++'),
+    parser.add_argument('--add-c++', metavar='<path>[,<path>...]',
+                        dest='cxx_compilers', type=str,
                         help='''
-                            not yet implemented.
-                            By default, will pull from the "CXX" environment
-                            variable if available.
+                            Add a comma-separated list of C++ compilers to the
+                            list of compilers to identify.  Note, the compiler
+                            in the CXX environment variable will automatically
+                            be added.
+                            ''')
+    parser.add_argument('--add-lang',
+                        metavar='<lang>:<compiler>[,<compiler>...]',
+                        action='append', dest='added_langs',
+                        help='''
+                            Add a user-specified language with associated
+                            compilers.  For example, to add CUDA, you can issue
+                            "--add-lang=cuda:nvcc".  You may use this flag
+                            multiple times to add many languages.
                             ''')
     parser.add_argument('--append', action='store_true',
                         help='''
@@ -209,7 +226,24 @@ def parse_args(arguments, prog=sys.argv[0]):
     args = parser.parse_args(arguments)
     if len(args.build) == 0:
         parser.error(message='missing build command')
+    args.override_compiler = False
+    args.cc = CC
+    args.cxx = CXX
+    if args.c_compilers is not None:
+        args.c_compilers = tuple(os.path.basename(c)
+                                 for c in args.c_compilers.split(','))
+        LANG_COMPILER_LISTS['c'].extend(args.c_compilers)
+    if args.cxx_compilers is not None:
+        args.cxx_compilers = tuple(os.path.basename(cxx)
+                                   for cxx in args.cxx_compilers.split(','))
+        LANG_COMPILER_LISTS['c++'].extend(args.cxx_compilers)
     reconfigure_logging(int(args.verbose) * 2)
+
+    for newlang in args.added_langs:
+        lang, compilers = newlang.split(':', 1)
+        compilers = [os.path.basename(c) for c in compilers.split(',')]
+        LANG_COMPILER_LISTS[lang].extend(compilers)
+
     return args
 
 def is_wrapper(cmd):
@@ -220,17 +254,33 @@ def is_mpi_wrapper(cmd):
     'Returns True if cmd is a known mpi wrapper'
     return COMPILER_PATTERNS_MPI_WRAPPER.match(cmd) is not None
 
-def is_c_compiler(cmd, cc):
+def is_c_compiler(cmd):
     'Returns True if cmd is a known C compiler'
-    return os.path.basename(cc) == cmd or \
+    return os.path.basename(CC) == cmd or \
+        cmd in LANG_COMPILER_LISTS['c'] or \
         any(pattern.match(cmd) is not None
             for pattern in COMPILER_PATTERNS_CC)
 
-def is_cxx_compiler(cmd, cxx):
+def is_cxx_compiler(cmd):
     'Returns True if cmd is a known C++ compiler'
-    return os.path.basename(cxx) == cmd or \
+    return os.path.basename(CXX) == cmd or \
+        cmd in LANG_COMPILER_LISTS['c++'] or \
         any(pattern.match(cmd) is not None
             for pattern in COMPILER_PATTERNS_CXX)
+
+def get_language(cmd):
+    '''
+    Returns the language name for the given command or None if it is not
+    recognized as a compiler.
+    '''
+    if is_c_compiler(cmd):
+        return 'c'
+    if is_cxx_compiler(cmd):
+        return 'c++'
+    for lang, compilers in LANG_COMPILER_LISTS.items():
+        if cmd in compilers:
+            return lang
+    return None
 
 def capture(args):
     '''
@@ -250,20 +300,16 @@ def capture(args):
                  for tracefile in exec_trace_files(tmpdir))
         compilations = set(
             compilation for call in calls for compilation in
-            CustomCompilation.iter_from_execution(call, args.cc, args.cxx)
+            CustomCompilation.iter_from_execution(call, CC, CXX)
             )
 
     return exit_code, iter(compilations)
 
-def compilation2db_entry(compilation, cc, cxx):
+def compilation2db_entry(compilation):
     'Converts a compilation to a database entry for JSON'
     relative = os.path.relpath(compilation.source, compilation.directory)
     args = [compilation.compiler, '-c'] + compilation.flags + [relative]
-    language = None
-    if is_c_compiler(compilation.compiler, cc):
-        language = 'c'
-    elif is_cxx_compiler(compilation.compiler, cxx):
-        language = 'c++'
+    language = get_language(compilation.compiler)
     return {
         'compiler': compilation.compiler,
         'file': relative,
@@ -280,10 +326,11 @@ def main(arguments, prog=sys.argv[0]):
     Copied largely from libscanbuild/intercept.py
     '''
     args = parse_args(arguments, prog)
-
-    # Remove after testing
-    args.override_compiler = False
-    # Finish remove after testing
+    logging.debug('arguments: %s', args)
+    if len(LANG_COMPILER_LISTS) > 0:
+        logging.debug('added language compilers:')
+        for lang, compilers in LANG_COMPILER_LISTS.items():
+            logging.debug('  %s: %s', lang, compilers)
 
     exit_code, compilations = capture(args)
 
@@ -292,7 +339,7 @@ def main(arguments, prog=sys.argv[0]):
         prev_compilations = CompilationDatabase.load(args.output)
         to_save = iter(set(itertools.chain(prev_compilations, compilations)))
 
-    entries = [compilation2db_entry(compilation, args.cc, args.cxx)
+    entries = [compilation2db_entry(compilation)
                for compilation in to_save]
     with open(args.output, 'w') as fout:
         json.dump(entries, fout, sort_keys=True, indent=4)
