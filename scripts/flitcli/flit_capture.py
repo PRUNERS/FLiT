@@ -210,7 +210,10 @@ def parse_args(arguments, prog=sys.argv[0]):
                             Add a user-specified language with associated
                             compilers.  For example, to add CUDA, you can issue
                             "--add-lang=cuda:nvcc".  You may use this flag
-                            multiple times to add many languages.
+                            multiple times to add many languages.  These
+                            specified languages will supercede internal known C
+                            and C++ compilers, so if you wanted to use "g++"
+                            for a non-c++ language, you could.
                             ''')
     parser.add_argument('--append', action='store_true',
                         help='''
@@ -273,13 +276,13 @@ def get_language(cmd):
     Returns the language name for the given command or None if it is not
     recognized as a compiler.
     '''
+    for lang, compilers in LANG_COMPILER_LISTS.items():
+        if cmd in compilers:
+            return lang
     if is_c_compiler(cmd):
         return 'c'
     if is_cxx_compiler(cmd):
         return 'c++'
-    for lang, compilers in LANG_COMPILER_LISTS.items():
-        if cmd in compilers:
-            return lang
     return None
 
 def capture(args):
