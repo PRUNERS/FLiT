@@ -84,7 +84,8 @@
 
 # additional source files to compile other than what is in '.' and 'tests/'
 # since those directories are added by a wildcard.
-SOURCE         +=
+SOURCE         += $(wildcard *.cpp)
+SOURCE         += $(wildcard tests/*.cpp)
 
 # required compiler flags
 # for example, include directories

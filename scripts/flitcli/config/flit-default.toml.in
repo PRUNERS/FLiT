@@ -134,6 +134,11 @@ mpirun_args = ''
 # compiler_name must be found in the [[compiler]] list under the name attribute
 # The optimization level and switches need not match those found in the
 # associated [[compiler]]
+# TODO: use compiler collection here
+# TODO: optimization_level needs a variable for C++, FORTRAN, and C, etc.
+# TODO: switches needs a variable for C++, FORTRAN, and C, etc.
+# TODO: what do we do if the compiler collection is not specified?
+# TODO- do we provide a good default set of values?  Perhaps gcc, clang, intel
 compiler_name = 'gcc'
 optimization_level = '-O2'
 switches = '-funsafe-math-optimizations'
@@ -145,6 +150,11 @@ switches = '-funsafe-math-optimizations'
 # compiler_name must be found in the [[compiler]] list under the name attribute
 # The optimization level and switches need not match those found in the
 # associated [[compiler]]
+# TODO: use compiler collection here
+# TODO: optimization_level needs a variable for C++, FORTRAN, and C, etc.
+# TODO: switches needs a variable for C++, FORTRAN, and C, etc.
+# TODO: what do we do if the compiler collection is not specified?
+# TODO- do we provide a good default set of values?  Perhaps gcc, clang, intel
 compiler_name = 'gcc'
 optimization_level = '-O0'
 switches = ''
@@ -165,7 +175,9 @@ switches = ''
 [[compiler]]
 binary = 'g++'
 name = 'g++'
+# TODO: rename "type" to "vendor", but will need an alias in python
 type = 'gcc'
+# TODO: default value of lang should be C++
 lang = 'c++'
 required_flags = ''
 ld_flags = ''
@@ -329,6 +341,11 @@ switches_list = [
   ''
 ]
 
+# TODO: langs needs to match the "lang" value, which is "c++" and "fortran"
+# TODO: query from python which compilers are available on the system and only
+# TODO- create the flit-config.toml to have those compilers.  Accordingly,
+# TODO- generate the compiler collections depending on what is found on the
+# TODO- system.
 [[compiler_collection]]
 name = 'gcc'
 langs = [

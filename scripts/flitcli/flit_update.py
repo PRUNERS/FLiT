@@ -140,6 +140,8 @@ def load_projconf(directory):
         default_type_map = {c['type']: c for c in defaults['compiler']}
         # types are not longer unique with collections. However,
         #  we should never have a compiler of the same name and type
+        # TODO: instead of 'type##name', do ('type', 'name')
+        # TODO: fix the unit tests to test this aspect
         type_map = {} # type##name -> compiler
         name_map = {} # name -> compiler
         for compiler in projconf['compiler']:

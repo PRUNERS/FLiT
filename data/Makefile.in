@@ -104,6 +104,8 @@ UNAME_S         := {uname}
 # keep only the compilers that are not None and are in the path
 COMPILERS       := {compilers}
 
+# TODO: rename *FXX to *FORTRAN
+# TODO: in python, replace "+" with "X" from name field
 # Compiler Colections
 # 
 # E.G. if GCC was the collection
@@ -120,12 +122,14 @@ FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
+# TODO: instead of having Make dereference, let's have python solve it
 DEV_COLLECTION  ?= {dev_collection}
 DEV_CXX         ?= $($($(DEV_COLLECTION)_CXX))
 DEV_CXX_TYPE    ?= $($($(DEV_COLLECTION)_CXX)_TYPE)
 DEV_OPTL        ?= {dev_optl}
 DEV_SWITCHES    ?= {dev_switches}
 
+# TODO: instead of having Make dereference, let's have python solve it
 GT_COLLECTION   := {ground_truth_collection}
 GT_CXX          := $($($(GT_COLLECTION)_CXX))
 GT_CXX_TYPE     := $($($(DEV_COLLECTION)_CXX)_TYPE)
@@ -138,6 +142,12 @@ ENABLE_MPI      := {enable_mpi}
 MPIRUN_ARGS     := {mpirun_args}
 
 # initalize some variables to be appended later
+# TODO: replace CC_REQUIRED with CXXFLAGS
+# TODO: introduce FFLAGS variable
+# TODO: replace F_FIX_REQUIRED with FFLAGS_FIXEDFORM
+# TODO: replace F_REQUIRED with FFLAGS_FREEFORM
+# TODO: replace DEV_CFLAGS with DEV_CXXFLAGS
+# TODO: replace LD_REQUIRED with LDFLAGS
 CC_REQUIRED     :=
 F_REQUIRED      :=
 F_FIX_REQUIRED  :=
@@ -207,6 +217,10 @@ GT_LDFLAGS       =
 
 DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
 
+# TODO: alias SOURCE as CPP_SOURCE
+# TODO: rename F_SOURCE as FORTRAN_FREEFORM_SOURCE
+# TODO: add variable FORTRAN_FIXEDFORM_SOURCE
+# TODO: remove TESTS variable, not needed
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
 SOURCE          += $(TESTS)
@@ -244,6 +258,8 @@ help:
 # We are done adding to VPATH, so consolidate it for speed (removing duplicates)
 VPATH           := $(sort $(VPATH))
 
+# TODO: have the object file append the filename rather than replace .cpp
+# TODO- i.e., addsuffix instead of replacing
 DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
 DEV_OBJ          += $(addprefix $(OBJ_DIR)/,$(addsuffix _dev.o, $(basename $(notdir $(F_SOURCE)))))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
@@ -292,6 +308,9 @@ endif
 
 # will be set internally when doing recursive calls.  Get set to variable names
 # containing the information (e.g. R_CUR_COMPILER=CLANG)
+# TODO: will need a current optimization level and current sequence of
+# TODO- switches PER COMPILER TYPE.  I.e., one for C++, one for FORTRAN, one
+# TODO- for C, etc.
 R_CUR_COLLECTION  ?=
 R_CUR_OPTL      ?=
 R_CUR_SWITCHES  ?=
@@ -302,7 +321,6 @@ ifdef R_IS_RECURSED
 R_ID            := $(R_CUR_COLLECTION)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
 R_TARGET        := $(RESULTS_DIR)/$(R_ID)
 R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(R_ID).o)))
-# this may exclude source files with a dot in their name...
 R_OBJ           += $(addprefix $(OBJ_DIR)/,$(addsuffix _$(R_ID).o, $(basename $(notdir $(F_SOURCE)))))
 R_DEP           := $(R_OBJ:%.o=%.d)
 
@@ -314,6 +332,7 @@ R_CUR_FXX       := $($(R_CUR_COLLECTION)_FXX)
 .PHONY: rec
 rec: $(R_TARGET)
 
+# TODO: do we want to only allow linking with C++ compilers?  I think so.
 # clang's flag is -nopie
 # else if the current compiler is not GCC 4 or 5, then enable -no-pie
 # GCC 4 and 5 do not need -no-pie since that is the default
@@ -322,8 +341,8 @@ ifeq ($($(R_CUR_CXX)_TYPE),clang)
 else ifeq ($($(R_CUR_CXX)_TYPE), gcc)
 ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_CXX))),0)
   LD_REQUIRED += -no-pie
-endif
-endif
+endif # end of ifeq(current gcc compiler version, 4 or 5)
+endif # end of ifeq(current c++ compiler, clang)
 
 $(R_TARGET): $(R_OBJ)
 	$($(R_CUR_CXX)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
@@ -420,7 +439,6 @@ $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) 
 	  R_CUR_COLLECTION=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
 	  R_CUR_SWITCHES=$(strip $3)
-	-test -f $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 endef
 
