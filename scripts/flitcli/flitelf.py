@@ -95,7 +95,8 @@ import os
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import SymbolTableSection
 
-SymbolTuple = namedtuple('SymbolTuple', 'src, symbol, demangled, fname, lineno')
+SymbolTuple = namedtuple('SymbolTuple',
+                         'src, symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
 Tuple containing information about the symbols in a file.  Has the following
 attributes:
@@ -223,6 +224,15 @@ def _locate_symbols(elffile, symbols):
 def _gen_file_line_table(dwarfinfo):
     '''
     Generates and returns a list of (filename, lineno, startaddr, endaddr).
+
+    Tests that an empty dwarfinfo object will result in an empty return list
+    >>> class FakeDwarf:
+    ...     def __init__(self):
+    ...         pass
+    ...     def iter_CUs(self):
+    ...         return []
+    >>> _gen_file_line_table(FakeDwarf())
+    []
     '''
     # generate the table
     table = []
@@ -238,12 +248,17 @@ def _gen_file_line_table(dwarfinfo):
             if prevstate is not None:
                 filename = lineprog['file_entry'][prevstate.file - 1].name
                 dirno = lineprog['file_entry'][prevstate.file - 1].dir_index
-                filepath = os.path.join(lineprog['include_directory'][dirno - 1], filename)
+                filepath = os.path.join(
+                        lineprog['include_directory'][dirno - 1], filename)
                 line = prevstate.line
                 fromaddr = prevstate.address
                 toaddr = max(fromaddr, entry.state.address)
                 table.append((filepath, line, fromaddr, toaddr))
             prevstate = entry.state
+
+    # If there are no functions, then return an empty list
+    if len(table) == 0:
+        return []
 
     # consolidate the table
     consolidated = []
