@@ -390,8 +390,6 @@ TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 # specify how to get comparison
 %-out-comparison.csv: %-out $(GT_OUT) $(GT_TARGET)
 	$(RUNWRAP) ./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
-#$(RESULTS_DIR)/%_out.csv: $(RESULTS_DIR)/%
-#	$< --output $@
 
 #
 # Define the recursion rules

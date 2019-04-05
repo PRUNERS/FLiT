@@ -140,29 +140,29 @@ endif
 BUILD_GT_LOCAL   := {build_gt_local}
 
 TROUBLE_TARGET_OBJ := $(addprefix \
-	  $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
+    $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 ALL_TROUBLE_FPIC := $(TROUBLE_TARGET_OBJ:%.o=%_fPIC.o)
 BISECT_GT_OBJ    := $(addprefix \
-	  $(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%.cpp=%_gt.o)))
+    $(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%.cpp=%_gt.o)))
 TROUBLE_OBJ      := $(addprefix \
-	  $(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
+    $(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
 BISECT_OBJ       := $(BISECT_GT_OBJ)
 BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 FPIC_OBJ         := $(addprefix \
-	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_fPIC.o)))
+    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_fPIC.o)))
 FPIC_OBJ         := $(addprefix \
-	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_bisect_$(TROUBLE_ID)_fPIC.o)))
+    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_bisect_$(TROUBLE_ID)_fPIC.o)))
 FPIC_DEPS        := $(FPIC_OBJ:%.o=%.d)
 SPLIT_OBJ        := $(addprefix \
-	  $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
+    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
 SPLIT_OBJ        += $(addprefix \
-	  $(BISECT_OBJ_DIR)/,$(notdir \
-	    $(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
+    $(BISECT_OBJ_DIR)/,$(notdir \
+      $(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
 SPLIT_DEPS       := $(SPLIT_OBJ:%.o=%.d)
 TROUBLE_SYMBOLS  := $(addprefix \
-	  $(BISECT_OBJ_DIR)/,$(notdir \
-	    $(SPLIT_SRC:%.cpp=%_trouble_symbols_$(NUMBER).txt)))
+    $(BISECT_OBJ_DIR)/,$(notdir \
+      $(SPLIT_SRC:%.cpp=%_trouble_symbols_$(NUMBER).txt)))
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
@@ -299,12 +299,12 @@ $(BISECT_OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(BI
 	if [ -f "$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" ]; then \
 	  ln -s "../../$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" "$@"; \
 	else \
-		$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
-			-DFLIT_HOST='"$(HOSTNAME)"' \
-			-DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
-			-DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
-			-DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
-			-DFLIT_FILENAME='"bisect-default-out"'; \
+	  $(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	    -DFLIT_HOST='"$(HOSTNAME)"' \
+	    -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
+	    -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
+	    -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
+	    -DFLIT_FILENAME='"bisect-default-out"'; \
 	fi
 
 # and the fPIC variant
@@ -355,4 +355,4 @@ $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
 endef
 
 $(foreach s, $(notdir $(SPLIT_SRC:%.cpp=%)), \
-	$(eval $(call SPLIT_RULE,$s)))
+  $(eval $(call SPLIT_RULE,$s)))
