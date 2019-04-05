@@ -114,6 +114,65 @@ def hash_compilation(compiler, optl, switches):
     'Takes a compilation and returns a 10 digit hash string.'
     return hashlib.sha1((compiler + optl + switches).encode()).hexdigest()[:10]
 
+def try_resolve_compiler_type(compiler_name, projconf):
+    '''
+    Try to resolve the compiler type from the given compiler name and the
+    project configuration (loaded from flit-config.toml).  If we are unable to
+    find the compiler type in the project configuration, then return 'misc' as
+    the compiler type.
+
+    @param compiler_name: binary name (to find in PATH) or path to compiler
+        binary
+    @param projconf: A dictionary loaded from flit-config.toml for the project.
+        Specifically, the list of compilers will be used, i.e., the list found
+        in projconf['compiler'], using fields 'binary' and 'type'
+    @return the compiler type from ('clang', 'gcc', 'intel') or 'misc' if it
+        cannot be determined.
+
+    >>> try_resolve_compiler_type('', {})
+    'misc'
+    >>> try_resolve_compiler_type('emptyconfig', {})
+    'misc'
+    >>> try_resolve_compiler_type(
+    ...     'mycompiler',
+    ...     {'compiler': [{'binary': 'mycompiler', 'type': 'gcc'}]})
+    'gcc'
+    >>> try_resolve_compiler_type(
+    ...     'mycompiler',
+    ...     {'compiler': [{'binary': 'mycompiler', 'type': 'clang'}]})
+    'clang'
+    >>> try_resolve_compiler_type(
+    ...     'path/to/mycompiler',
+    ...     {'compiler': [
+    ...         {'binary': 'mycompiler', 'type': 'gcc'},
+    ...         {'binary': 'path/to/mycompiler', 'type': 'intel'},
+    ...         ]})
+    'intel'
+    >>> try_resolve_compiler_type(
+    ...     'wrong/path/to/mycompiler',
+    ...     {'compiler': [
+    ...         {'binary': 'mycompiler', 'type': 'gcc'},
+    ...         {'binary': 'path/to/mycompiler', 'type': 'intel'},
+    ...         ]})
+    'misc'
+    '''
+    if compiler_name == '':
+        return 'misc'
+    if 'compiler' not in projconf:
+        return 'misc'
+    for compiler in projconf['compiler']:
+        if 'type' not in compiler or 'binary' not in compiler:
+            continue
+        if compiler_name == compiler['binary']:
+            return compiler['type']
+        compiler_path = shutil.which(compiler_name)
+        binary_path = shutil.which(compiler['binary'])
+        if compiler_path is not None and compiler_path == binary_path:
+            return compiler['type']
+    # TODO: do we want to add logic to call the compiler's --version flag and
+    # TODO- try to guess which compiler type it is?  Not yet.
+    return 'misc'
+
 def create_bisect_dir(parent):
     '''
     Create a unique bisect directory named bisect-## where ## is the lowest
@@ -1055,6 +1114,21 @@ def parse_args(arguments, prog=sys.argv[0]):
                             those assertions so as to not run the tests more
                             often than necessary.
                             ''')
+    parser.add_argument('-t', '--compiler-type',
+                        choices=('clang', 'gcc', 'intel', 'misc'),
+                        default='misc',
+                        help='''
+                            Specify the type of compiler used by the given
+                            compilation.  The choices are 'clang', 'gcc',
+                            'intel', and 'misc'.  The default is 'misc', which
+                            will try to match the compiler with one specified
+                            in flit-config.toml.  If not found there, this tool
+                            assumes that the user has ensured the correct flags
+                            are given in the compilation to allow for a
+                            bisection search, primarily that the standard c++
+                            library used by the given compiler is the same as
+                            that used by the ground-truth compilation.
+                            ''')
 
     args = parser.parse_args(arguments)
 
@@ -1419,8 +1493,9 @@ def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
 
     return differing_sources, differing_symbols
 
-def compile_trouble(directory, compiler, optl, switches, verbose=False,
-                    jobs=mp.cpu_count(), delete=True, fpic=False):
+def compile_trouble(directory, compiler, optl, switches,
+                    compiler_type,verbose=False, jobs=mp.cpu_count(),
+                    delete=True, fpic=False):
     '''
     Compiles the trouble executable for the given arguments.  This is useful to
     compile the trouble executable as it will force the creation of all needed
@@ -1454,7 +1529,7 @@ def compile_trouble(directory, compiler, optl, switches, verbose=False,
         'trouble_cxx': compiler,
         'trouble_optl': optl,
         'trouble_switches': switches,
-        'trouble_type': None,
+        'trouble_type': compiler_type,
         'trouble_id': trouble_hash,
         'link_flags': [],
         'cpp_flags': [],
@@ -1492,6 +1567,10 @@ def run_bisect(arguments, prog=sys.argv[0]):
     the symbols part, then only the symbols return value is None.
     '''
     args = parse_args(arguments, prog)
+
+    if args.compiler_type == 'misc':
+        projconf = util.load_projconf(args.directory)
+        args.compiler_type = try_resolve_compiler_type(args.compiler, projconf)
 
     trouble_hash = hash_compilation(args.compiler, args.optl, args.switches)
 
@@ -1540,7 +1619,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'trouble_cxx': args.compiler,
         'trouble_optl': args.optl,
         'trouble_switches': args.switches,
-        'trouble_type': None,
+        'trouble_type': args.compiler_type,
         'trouble_id': trouble_hash,
         'link_flags': [],
         'cpp_flags': [],
@@ -1838,6 +1917,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
         ['--precision', 'double', 'compilation', 'testcase'] + arguments,
         prog)
     sqlitefile = args.auto_sqlite_run
+    projconf = util.load_projconf(args.directory)
 
     try:
         connection = util.sqlite_open(sqlitefile)
@@ -1869,9 +1949,11 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
               ' '.join((compiler, optl, switches)) + ':',
               end='',
               flush=True)
+        compiler_type = try_resolve_compiler_type(compiler, projconf)
         compile_trouble(args.directory, compiler, optl, switches,
-                        verbose=args.verbose, jobs=args.jobs,
-                        delete=args.delete, fpic=args.precompile_fpic)
+                        args.compiler_type, verbose=args.verbose,
+                        jobs=args.jobs, delete=args.delete,
+                        fpic=args.precompile_fpic)
         print('  done', flush=True)
 
     # Update ground-truth results before launching workers
