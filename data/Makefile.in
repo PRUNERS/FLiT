@@ -121,6 +121,7 @@ MPIRUN_ARGS     := {mpirun_args}
 # initalize some variables to be appended later
 CC_REQUIRED     :=
 DEV_CFLAGS      :=
+GT_CFLAGS       :=
 LD_REQUIRED     :=
 
 RUNWRAP          = $(RUN_WRAPPER)
@@ -237,6 +238,13 @@ GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
 CLANG_REQUIRED  += --gcc-toolchain=$(GCC_TOOLCHAIN)
 endif
 
+ifeq ($(DEV_CXX_TYPE),$(CLANG_TYPE))
+DEV_CFLAGS      += $(CLANG_REQUIRED)
+endif
+ifeq ($(GT_CXX_TYPE),$(CLANG_TYPE))
+GT_CFLAGS       += $(CLANG_REQUIRED)
+endif
+
 # Compiler setting targets
 #   taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
 #   among other places
@@ -285,9 +293,9 @@ rec: $(R_TARGET)
 # clang's flag is -nopie
 # else if the current compiler is not GCC 4 or 5, then enable -no-pie
 # GCC 4 and 5 do not need -no-pie since that is the default
-ifeq ($($(R_CUR_COMPILER)_TYPE),clang)
+ifeq ($($(R_CUR_COMPILER)_TYPE),$(CLANG_TYPE))
   LD_REQUIRED += -nopie
-else ifeq ($($(R_CUR_COMPILER)_TYPE), gcc)
+else ifeq ($($(R_CUR_COMPILER)_TYPE),$(GCC_TYPE))
 ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_COMPILER))),0)
   LD_REQUIRED += -no-pie
 endif
@@ -316,18 +324,18 @@ else # ifndef R_IS_RECURSED
 # clang's flag is -nopie
 # else if the current compiler is not GCC 4 or 5, then enable -no-pie
 # GCC 4 and 5 do not need -no-pie since that is the default
-ifeq ($(DEV_CXX_TYPE),clang)
+ifeq ($(DEV_CXX_TYPE),$(CLANG_TYPE))
   DEV_LDFLAGS   += -nopie
-else ifeq ($(DEV_CXX_TYPE), gcc)
+else ifeq ($(DEV_CXX_TYPE),$(GCC_TYPE))
 ifeq ($(call IS_VER_4_OR_5,$(DEV_CXX)),0)
   DEV_LDFLAGS   += -no-pie
 endif
 endif
 
 # same for the gt compiler
-ifeq ($(GT_CXX_TYPE),clang)
+ifeq ($(GT_CXX_TYPE),$(CLANG_TYPE))
   GT_LDFLAGS    += -nopie
-else ifeq ($(GT_CXX_TYPE), gcc)
+else ifeq ($(GT_CXX_TYPE),$(GCC_TYPE))
 ifeq ($(call IS_VER_4_OR_5,$(GT_CXX)),0)
   GT_LDFLAGS    += -no-pie
 endif
@@ -482,7 +490,7 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CXX)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
@@ -490,7 +498,7 @@ $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
 
 $(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(GT_CXX)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
