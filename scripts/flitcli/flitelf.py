@@ -202,7 +202,15 @@ def _locate_symbols(elffile, symbols):
 
     If the file does not have DWARF info or a symbol is not found, an exception
     is raised
+
+    Test that even without a proper elffile, if there are no symbols to match,
+    then no error occurs and you can be on your merry way.
+    >>> _locate_symbols(object(), [])
+    []
     '''
+    if len(symbols) == 0:
+        return []
+
     if not elffile.has_dwarf_info():
         raise RuntimeError('Elf file has no DWARF info')
 
