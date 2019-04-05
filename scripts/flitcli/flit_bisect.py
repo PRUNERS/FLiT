@@ -582,9 +582,9 @@ def bisect_biggest(score_func, elements, found_callback=None, k=1,
     '''
     Performs the bisect search, attempting to find the biggest offenders.  This
     is different from bisect_search() in that this function only tries to
-    identify the top k offenders, not all of them.  If k is greater than or equal
-    to the total number of offenders, then bisect_biggest() is more expensive
-    than bisect_search().
+    identify the top k offenders, not all of them.  If k is greater than or
+    equal to the total number of offenders, then bisect_biggest() is more
+    expensive than bisect_search().
 
     We do not want to call score_func() very much.  We assume the score_func()
     is is an expensive operation.  We could go throught the list one at a time,
@@ -1787,7 +1787,8 @@ def auto_bisect_worker(arg_queue, result_queue):
         pass
 
     except:
-        # without putting something onto the result_queue, the parent process will deadlock
+        # without putting something onto the result_queue, the parent process
+        # will deadlock
         result_queue.put((row, -1, None, None, None, 1))
         raise
 
