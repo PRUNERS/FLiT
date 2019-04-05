@@ -97,9 +97,10 @@
 PRECISION        := {precision}
 TEST_CASE        := {test_case}
 
-TROUBLE_CXX      := {trouble_cc}
+TROUBLE_CXX      := {trouble_cxx}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
+TROUBLE_CXX_TYPE := {trouble_type}
 BISECT_LINK      := $(GT_CXX)
 
 TROUBLE_ID       := {trouble_id}
