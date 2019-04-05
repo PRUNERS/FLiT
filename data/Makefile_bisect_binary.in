@@ -97,9 +97,10 @@
 PRECISION        := {precision}
 TEST_CASE        := {test_case}
 
-TROUBLE_CXX      := {trouble_cc}
+TROUBLE_CXX      := {trouble_cxx}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
+TROUBLE_CXX_TYPE := {trouble_type}
 BISECT_LINK      := $(GT_CXX)
 
 TROUBLE_ID       := {trouble_id}
@@ -124,11 +125,16 @@ SPLIT_SRC        :=
 {EXTRA_CC_FLAGS}
 {EXTRA_LD_FLAGS}
 
-TROUBLE_LDFLAGS   =
+TROUBLE_LDFLAGS  :=
+TROUBLE_CFLAGS   :=
 
-# if the trouble compiler is not GCC 4 or 5, then add -no-pie
-ifeq ($(call IS_GCC_4_OR_5,$(TROUBLE_CXX)),0)
+ifeq ($(TROUBLE_CXX_TYPE),$(CLANG_TYPE))
+  TROUBLE_LDFLAGS += -nopie
+  TROUBLE_CFLAGS  += $(CLANG_REQUIRED)
+else ifeq ($(TROUBLE_CXX_TYPE),$(GCC_TYPE))
+ifeq ($(call IS_VER_4_OR_5,$(TROUBLE_CXX)),0)
   TROUBLE_LDFLAGS += -no-pie
+endif
 endif
 
 BUILD_GT_LOCAL   := {build_gt_local}
@@ -270,7 +276,7 @@ $(BISECT_OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(BISECT_OBJ_DIR)
 	if [ -f "$(OBJ_DIR)/$*_gt_fPIC.o" ]; then \
 	  ln -s "../../$(OBJ_DIR)/$*_gt_fPIC.o" "$@"; \
 	else \
-	  $(GT_CXX) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	  $(GT_CXX) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	    -DFLIT_HOST='"$(HOSTNAME)"' \
 	    -DFLIT_COMPILER='"$(GT_CXX)"' \
 	    -DFLIT_OPTL='"$(GT_OPTL)"' \
@@ -281,7 +287,7 @@ $(BISECT_OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(BISECT_OBJ_DIR)
 
 # specify how to build the troublesome ones
 $(OBJ_DIR)/%_bisect_$(TROUBLE_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
 	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
@@ -293,7 +299,7 @@ $(BISECT_OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(BI
 	if [ -f "$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" ]; then \
 	  ln -s "../../$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" "$@"; \
 	else \
-		$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+		$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
 			-DFLIT_HOST='"$(HOSTNAME)"' \
 			-DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
 			-DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
@@ -303,7 +309,7 @@ $(BISECT_OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(BI
 
 # and the fPIC variant
 $(OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
 	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
