@@ -485,7 +485,8 @@ $(GT_OUT): $(GT_TARGET)
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
-	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
+	$(GT_CXX) $(CC_REQUIRED) $(GT_CFLAGS) \
+	  -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
