@@ -1493,9 +1493,9 @@ def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
 
     return differing_sources, differing_symbols
 
-def compile_trouble(directory, compiler, optl, switches,
-                    compiler_type,verbose=False, jobs=mp.cpu_count(),
-                    delete=True, fpic=False):
+def compile_trouble(directory, compiler, optl, switches, compiler_type,
+                    verbose=False, jobs=mp.cpu_count(), delete=True,
+                    fpic=False):
     '''
     Compiles the trouble executable for the given arguments.  This is useful to
     compile the trouble executable as it will force the creation of all needed
@@ -1951,7 +1951,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
               flush=True)
         compiler_type = try_resolve_compiler_type(compiler, projconf)
         compile_trouble(args.directory, compiler, optl, switches,
-                        args.compiler_type, verbose=args.verbose,
+                        compiler_type, verbose=args.verbose,
                         jobs=args.jobs, delete=args.delete,
                         fpic=args.precompile_fpic)
         print('  done', flush=True)
