@@ -89,7 +89,7 @@ VERSION = '3.4.1'
 def print_version():
     'Print fake version information'
     nodot_version = VERSION.replace('.', '')
-    print(f'clang version {VERSION} (tags/{nodot_version}/final)')
+    print('clang version {0} (tags/{1}/final)'.format(VERSION, nodot_version))
     print('Target: x86_64-pc-linux-gnu')
     print('Thread model: posix')
     print('InstalledDir: /usr/bin')
