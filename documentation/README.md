@@ -2,6 +2,7 @@
 
 [Return to top-level README file](../README.md)
 
+* [Release Notes](release-notes.md)
 * [Installation](installation.md)
 * [Litmus Tests](litmus-tests.md)
 * [FLiT Command-Line](flit-command-line.md)

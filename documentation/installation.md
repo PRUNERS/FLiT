@@ -1,5 +1,7 @@
 # FLiT Installation
 
+[Prev](release-notes.md)
+|
 [Table of Contents](README.md)
 |
 [Next](litmus-tests.md)
@@ -186,6 +188,8 @@ then you would uninstall with
 make uninstall PREFIX=~/my-installs/
 ```
 
+[Prev](release-notes.md)
+|
 [Table of Contents](README.md)
 |
 [Next](litmus-tests.md)
