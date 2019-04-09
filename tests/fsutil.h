@@ -94,8 +94,9 @@
 #include <unistd.h>     // for rmdir()
 
 #include <fstream>
+#include <ios>          // for std::ios_base::failure
 #include <iostream>
-#include <stdexcept>
+#include <stdexcept>    // for std::runtime_error
 #include <string>
 #include <vector>
 
