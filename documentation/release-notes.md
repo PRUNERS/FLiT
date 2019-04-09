@@ -6,16 +6,16 @@
 
 Release note versions:
 
-- [v2.0-beta.2](#v2.0-beta.2)
-- [v2.0-beta.1](#v2.0-beta.1)
-- [v2.0-alpha.3](#v2.0-alpha.3)
-- [v2.0-alpha.2](#v2.0-alpha.2)
-- [v2.0-alpha.1](#v2.0-alpha.1)
-- [v1.0.0](#v1.0.0)
+- [v2.0-beta.2](#v2.0-beta.2) _(10 April 2019)_
+- [v2.0-beta.1](#v2.0-beta.1) _(18 July 2018)_
+- [v2.0-alpha.3](#v2.0-alpha.3) _(29 January 2018)_
+- [v2.0-alpha.2](#v2.0-alpha.2) _(27 January 2018)_
+- [v2.0-alpha.1](#v2.0-alpha.1) _(25 September 2017)_
+- [v1.0.0](#v1.0.0) _(25 March 2017)_
 
 ## v2.0-beta.2
 
-Released on 10 April 2019
+_Released on 10 April 2019_
 
 **Highlights of Major Changes**
 
@@ -63,6 +63,8 @@ Released on 10 April 2019
 
 ## v2.0-beta.1
 
+_Released on 18 July 2018_
+
 Since FLiT has been stable in the alpha phase for some time and some other things have stabilized more (such as documentation and interface), we are happy to announce the move to beta status.
 
 In this release, we have included the following pull requests:
@@ -92,10 +94,14 @@ This includes the following features:
 
 ## v2.0-alpha.3
 
+_Released on 29 January 2018_
+
 There was reported a bug in the installation making `flit import` not work. This has been fixed and a new alpha release is ready.
 
 
 ## v2.0-alpha.2
+
+_Released on 27 January 2018_
 
 Many fixes in this update:
 
@@ -112,6 +118,8 @@ Many fixes in this update:
 
 ## v2.0-alpha.1
 
+_Released on 25 September 2017_
+
 Not everything for this new release is finished. The tool has been rearchitected to be easier to use within existing code bases. Many things have changed. Here are a few of them:
 
 - A command-line tool called `flit` with subcommands
@@ -122,6 +130,8 @@ Not everything for this new release is finished. The tool has been rearchitected
 
 
 ## v.1.0.0
+
+_Released on 25 March 2017_
 
 This release provides litmus tests, a reproducibility test framework, and analysis tools for the results of the tests.
 
