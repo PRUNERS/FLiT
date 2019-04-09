@@ -56,7 +56,7 @@ _Released on 10 April 2019_
 - [#239](https://github.com/PRUNERS/FLiT/issues/239) (PR [#242](https://github.com/PRUNERS/FLiT/pull/242)): Fix support for older versions of the Clang compiler (version 4)
 - [#244](https://github.com/PRUNERS/FLiT/issues/244) (PR [#246](https://github.com/PRUNERS/FLiT/pull/246)); Remove the `hosts` section from `flit-config.toml`.  It was not used.
 - [#249](https://github.com/PRUNERS/FLiT/issues/249) (PR [#250](https://github.com/PRUNERS/FLiT/pull/250)): Update documentation about how FLiT handles MPI tests.  Specifically how the test return values are handled.
-- [#119](https://github.com/PRUNERS/FLiT/issues/119) (PR [#351](https://github.com/PRUNERS/FLiT/pull/351)): Allow the user to specify the list of optimization levels and flags in `flit-config.toml` for the FLiT search space.  No longer hard-coded.
+- [#119](https://github.com/PRUNERS/FLiT/issues/119) (PR [#251](https://github.com/PRUNERS/FLiT/pull/251)): Allow the user to specify the list of optimization levels and flags in `flit-config.toml` for the FLiT search space.  No longer hard-coded.
 - [#256](https://github.com/PRUNERS/FLiT/issues/256) (PR [#258](https://github.com/PRUNERS/FLiT/pull/258)): Fix bisect crash when an object file has an empty dwarf info
 - [#257](https://github.com/PRUNERS/FLiT/issues/257) (PR [#259](https://github.com/PRUNERS/FLiT/pull/259)): Fix bisect crash when an object file has no dwarf info section
 
