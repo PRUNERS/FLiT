@@ -94,6 +94,7 @@ and run FLiT bisect
 >>> import shutil
 >>> import subprocess as subp
 >>> from io import StringIO
+>>> import flitutil as util
 
 >>> class BisectTestError(RuntimeError): pass
 
@@ -110,6 +111,7 @@ and run FLiT bisect
 ...                         os.path.join(temp_dir, 'tests'))
 ...     with StringIO() as ostream:
 ...         retval = th.flit.main(['bisect', '-C', temp_dir,
+...                                '--compiler-type', 'gcc',
 ...                                '--precision', 'double',
 ...                                'g++ -O3', 'BisectTest'],
 ...                               outstream=ostream)
@@ -123,6 +125,14 @@ and run FLiT bisect
 ...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
 ...                         for line in raw_log]
 ...         log_contents = [line for line in stripped_log if line.strip() != '']
+...     troublecxx = util.extract_make_var(
+...         'TROUBLE_CXX',
+...         os.path.join('bisect-01', 'bisect-make-01.mk'),
+...         directory=temp_dir)
+...     troublecxx_type = util.extract_make_var(
+...         'TROUBLE_CXX_TYPE',
+...         os.path.join('bisect-01', 'bisect-make-01.mk'),
+...         directory=temp_dir)
 
 Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
@@ -220,6 +230,12 @@ Test the All differing symbols section of the output
   tests/A.cpp:95 ... -- A::fileA_method1_PROBLEM() (score 2.0)
   tests/file1.cpp:100 ... -- file1_func3_PROBLEM() (score 2.0)
   tests/file3.cpp:92 ... -- file3_func2_PROBLEM() (score 1.0)
+
+Test that the --compiler-type flag value made it into the bisect Makefile
+>>> troublecxx
+['g++']
+>>> troublecxx_type
+['gcc']
 
 TODO: test the log_contents variable
 '''
