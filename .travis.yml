@@ -80,6 +80,8 @@
 #
 # -- LICENSE END --
 
+before_install:
+
 language: cpp
 os: linux
 addons:
@@ -119,9 +121,12 @@ matrix:
           packages:
             - *native_deps
 
-before_install: pip3 install --user toml $extra_pip
+before_install:
+  - pip3 install --user toml $extra_pip
 
-script: make -j 4 && make check
+script:
+  - make -j 4
+  - make check
 
 #notifications:
 #  email: false

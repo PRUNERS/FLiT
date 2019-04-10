@@ -100,6 +100,10 @@
 #include <string>
 #include <vector>
 
+#if !defined(__GNUC__) || defined(__clang__) || \
+    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8))
+#define FSUTIL_IS_NOT_GCC_4_8
+#endif
 
 namespace fsutil {
 
@@ -201,7 +205,12 @@ inline TempDir::~TempDir() {
     rec_rmdir(_name.c_str());
   }
   catch (std::ios_base::failure &ex) {
-    std::cerr << "Error (" << ex.code() << "): " << ex.what() << std::endl;
+    std::cerr << "Error"
+#ifdef FSUTIL_IS_NOT_GCC_4_8
+// This was an unimplemented part of C++11 from GCC 4.8
+                 " (" << ex.code() << ")"
+#endif
+                 ": " << ex.what() << std::endl;
   }
 }
 
@@ -247,8 +256,12 @@ inline void TinyDir::checkerr(int err, std::string msg) const {
   // TODO: handle broken symlinks
   if (err != 0) {
     throw std::ios_base::failure(
-        msg + strerror(errno),
-        std::error_code(errno, std::generic_category()));
+        msg + strerror(errno)
+#ifdef FSUTIL_IS_NOT_GCC_4_8
+// This was an unimplemented part of C++11 from GCC 4.8
+        , std::error_code(errno, std::generic_category())
+#endif
+        );
   }
 }
 
