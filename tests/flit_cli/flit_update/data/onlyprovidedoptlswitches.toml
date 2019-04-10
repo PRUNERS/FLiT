@@ -1,0 +1,46 @@
+# Test that only the provided optimization levels and switches are used
+
+[[compiler]]
+binary = 'g++'
+name = 'g++'
+type = 'gcc'
+
+optimization_levels = [
+  '-O2',
+  '-O3',
+]
+switches_list = [
+  '-funsafe-math-optimizations',
+  '-mavx',
+  ''
+]
+
+[[compiler]]
+binary = 'clang++'
+name = 'clang++'
+type = 'clang'
+
+optimization_levels = [
+  '-O0',
+  '-O1',
+]
+switches_list = [
+  '-ffinite-math-only',
+  '-ffloat-store',
+]
+
+[[compiler]]
+binary = 'icpc'
+name = 'icpc'
+type = 'intel'
+
+optimization_levels = [
+  '-Ofast',
+  '-Og',
+]
+switches_list = [
+  '-fmerge-all-constants',
+  '-fp-model fast=1',
+  '-fp-model fast=2',
+  '-DUSE_MPI'
+]

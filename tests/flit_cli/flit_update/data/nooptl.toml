@@ -1,0 +1,93 @@
+# Test that missing optimization levels causes the defaults to be used
+
+[[compiler]]
+binary = 'g++'
+name = 'g++'
+type = 'gcc'
+
+# missing optimization levels
+
+switches_list = [
+  '-fassociative-math',
+  '-fcx-fortran-rules',
+  '-fcx-limited-range',
+  '-fexcess-precision=fast',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-funsafe-math-optimizations',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
+
+[[compiler]]
+binary = 'clang++'
+name = 'clang++'
+type = 'clang'
+
+# missing optimization levels
+
+switches_list = [
+  '-fassociative-math',
+  '-fexcess-precision=fast',
+  '-fexcess-precision=standard',
+  '-ffinite-math-only',
+  '-ffloat-store',
+  '-ffp-contract=on',
+  '-fmerge-all-constants',
+  '-fno-trapping-math',
+  '-freciprocal-math',
+  '-frounding-math',
+  '-fsignaling-nans',
+  '-fsingle-precision-constant',
+  '-funsafe-math-optimizations',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  ''
+]
+
+[[compiler]]
+binary = 'icpc'
+name = 'icpc'
+type = 'intel'
+
+# missing optimization levels
+
+switches_list = [
+  '--use_fast_math',
+  '-fcx-limited-range',
+  '-ffloat-store',
+  '-fma',
+  '-fmerge-all-constants',
+  '-fp-model fast=1',
+  '-fp-model fast=2',
+  '-fp-model=double',
+  '-fp-model=except',
+  '-fp-model=extended',
+  '-fp-model=precise',
+  '-fp-model=source',
+  '-fp-model=strict',
+  '-fp-port',
+  '-frounding-math',
+  '-fsingle-precision-constant',
+  '-ftz',
+  '-march=core-avx2',
+  '-mavx',
+  '-mavx2 -mfma',
+  '-mfpmath=sse -mtune=native',
+  '-mp1',
+  '-no-fma',
+  '-no-ftz',
+  '-no-prec-div',
+  '-prec-div',
+  ''
+]

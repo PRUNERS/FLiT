@@ -90,6 +90,7 @@
 
 #include <algorithm>
 #include <array>
+#include <ios>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -132,58 +133,6 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T> &v) {
   return out;
 }
 } // end of unnamed namespace
-
-namespace tst_CsvRow {
-void tst_CsvRow_header() {
-  CsvRow row {"1", "2", "3", "4"};
-  TH_EQUAL(row.header(), nullptr);
-  row.setHeader(&row);
-  TH_EQUAL(row.header(), &row);
-}
-TH_REGISTER(tst_CsvRow_header);
-
-void tst_CsvRow_operator_brackets() {
-  CsvRow row {"1", "2", "3", "4"};
-  CsvRow header {"a", "b", "c", "d"};
-  row.setHeader(&header);
-  TH_EQUAL(row["a"], "1");
-  TH_EQUAL(row["b"], "2");
-  TH_EQUAL(row["c"], "3");
-  TH_EQUAL(row["d"], "4");
-  TH_THROWS(row["Mike"], std::invalid_argument);
-
-  // Row missing elements
-  header.emplace_back("e");
-  TH_THROWS(row["e"], std::out_of_range);
-
-  // null header
-  row.setHeader(nullptr);
-  TH_THROWS(row["a"], std::logic_error);
-}
-TH_REGISTER(tst_CsvRow_operator_brackets);
-} // end of namespace tst_CsvRow
-
-void tst_Csv() {
-  std::istringstream in(
-      "first,second,third,fourth\n"
-      "a, b,c,\n"
-      "1,2,3,4,5,6,7\n"
-      "\n"
-      );
-  Csv csv(in);
-  CsvRow row;
-  csv >> row;
-  auto &header = *row.header();
-  TH_EQUAL(header, CsvRow({"first", "second", "third", "fourth"}));
-  TH_EQUAL(row, CsvRow({"a", " b", "c", ""}));
-
-  csv >> row;
-  TH_EQUAL(row, CsvRow({"1", "2", "3", "4", "5", "6", "7"}));
-
-  csv >> row;
-  TH_EQUAL(row, CsvRow({""}));
-}
-TH_REGISTER(tst_Csv);
 
 void tst_isIn() {
   // an empty vector
@@ -577,7 +526,7 @@ TH_REGISTER(tst_readFile_exists);
 
 void tst_readFile_doesnt_exist() {
   TH_THROWS(flit::readFile("/this/file/should/not/exist"),
-            std::system_error);
+            std::ios_base::failure);
 }
 TH_REGISTER(tst_readFile_doesnt_exist);
 

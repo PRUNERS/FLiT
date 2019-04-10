@@ -101,78 +101,6 @@
 
 namespace {
 
-/** Helper class for Csv.
- *
- * Represents a single row either indexed by number or by column name.
- */
-class CsvRow : public std::vector<std::string> {
-public:
-  // Inherit base class constructors
-  using std::vector<std::string>::vector;
-
-  const CsvRow* header() const { return m_header; }
-  void setHeader(CsvRow* head) { m_header = head; }
-
-  using std::vector<std::string>::operator[];
-  std::string const& operator[](std::string col) const {
-    if (m_header == nullptr) {
-      throw std::logic_error("No header defined");
-    }
-    auto iter = std::find(m_header->begin(), m_header->end(), col);
-    if (iter == m_header->end()) {
-      std::stringstream message;
-      message << "No column named " << col;
-      throw std::invalid_argument(message.str());
-    }
-    auto idx = iter - m_header->begin();
-    return this->at(idx);
-  }
-
-private:
-  CsvRow* m_header {nullptr};  // not owned by this class
-};
-
-/** Class for parsing csv files */
-class Csv {
-public:
-  Csv(std::istream &in) : m_header(Csv::parseRow(in)), m_in(in) {
-    m_header.setHeader(&m_header);
-  }
-
-  Csv& operator>> (CsvRow& row) {
-    row = Csv::parseRow(m_in);
-    row.setHeader(&m_header);
-    return *this;
-  }
-
-  operator bool() const { return static_cast<bool>(m_in); }
-
-private:
-  static CsvRow parseRow(std::istream &in) {
-    std::string line;
-    std::getline(in, line);
-
-    std::stringstream lineStream(line);
-    std::string token;
-
-    // tokenize on ','
-    CsvRow row;
-    while(std::getline(lineStream, token, ',')) {
-      row.emplace_back(token);
-    }
-
-    // check for trailing comma with no data after it
-    if (!lineStream && token.empty()) {
-      row.emplace_back("");
-    }
-
-    return row;
-  }
-
-private:
-  CsvRow m_header;
-  std::istream &m_in;
-};
 
 /** Returns true if the element is in the container */
 template<typename Container, typename Element>
@@ -466,9 +394,9 @@ std::string readFile(const std::string &filename) {
 std::vector<TestResult> parseResults(std::istream &in) {
   std::vector<TestResult> results;
 
-  Csv csv(in);
+  CsvReader reader(in);
   CsvRow row;
-  while (csv >> row) {
+  for (CsvRow row; reader >> row; ) {
     auto nanosec = std::stol(row["nanosec"]);
     Variant value;
     std::string resultfile;
@@ -501,9 +429,10 @@ std::unordered_map<std::string, std::string> parseMetadata(std::istream &in) {
     "file"
   };
 
-  Csv csv(in);
+  CsvReader csv(in);
   CsvRow row;
-  if (csv >> row) {
+  csv >> row;
+  if (!row.empty()) {
     for (auto key : metadataKeys) {
       metadata.emplace(key, row[key]);
     }

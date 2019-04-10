@@ -129,28 +129,28 @@ def generate_help_documentation(subcom_map):
     >>> help_str, help_subcom_str = generate_help_documentation(dict())
     '''
     parser = argparse.ArgumentParser(
-            description='''
-                The flit command-line tool allows for users to write
-                portability test cases.  One can test primarily for
-                compiler effects on reproducibility of floating-point
-                algorithms.  That at least is the main use case for this
-                tool, although you may come up with some other uses.
-                ''',
-            )
+        description='''
+            The flit command-line tool allows for users to write
+            portability test cases.  One can test primarily for
+            compiler effects on reproducibility of floating-point
+            algorithms.  That at least is the main use case for this
+            tool, although you may come up with some other uses.
+            ''',
+        )
     parser.add_argument('-v', '--version', action='store_true',
                         help='Print version and exit')
     subparsers = parser.add_subparsers(metavar='subcommand', dest='subcommand')
     help_subparser = subparsers.add_parser(
-            'help', help='display help for a specific subcommand')
+        'help', help='display help for a specific subcommand')
     help_subparser.add_argument(
-            metavar='subcommand',
-            dest='help_subcommand',
-            choices=subcom_map.keys(),
-            help='''
-                display the help documentation for a specific subcommand.
-                choices are {0}.
-                '''.format(', '.join(sorted(subcom_map.keys()))),
-            )
+        metavar='subcommand',
+        dest='help_subcommand',
+        choices=subcom_map.keys(),
+        help='''
+            display the help documentation for a specific subcommand.
+            choices are {0}.
+            '''.format(', '.join(sorted(subcom_map.keys()))),
+        )
     for name, module in sorted(subcom_map.items()):
         subparsers.add_parser(name, help=module.brief_description)
 
@@ -160,7 +160,30 @@ def generate_help_documentation(subcom_map):
 
     return (parser.format_help(), help_subparser.format_help())
 
-def main(arguments):
+def main(arguments, outstream=None, errstream=None):
+    '''
+    Main logic here.
+
+    For ease of use when within python, the stdout can be captured using the
+    optional outstream parameter.  You can use this to capture the stdout that
+    would go to the console and put it into a StringStream or maybe a file.
+    '''
+    if outstream is None and errstream is None:
+        return _main_impl(arguments)
+    oldout = sys.stdout
+    olderr = sys.stderr
+    try:
+        if outstream is not None:
+            sys.stdout = outstream
+        if errstream is not None:
+            sys.stderr = errstream
+        return _main_impl(arguments)
+    finally:
+        sys.stdout = oldout
+        sys.stderr = olderr
+
+def _main_impl(arguments):
+    'Implementation of main'
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, script_dir)
     import flitconfig as conf
@@ -195,21 +218,19 @@ def main(arguments):
             print(help_subcommand_str)
             return 0
 
-        elif help_subcommand not in all_subcommands:
+        if help_subcommand not in all_subcommands:
             sys.stderr.write('Error: invalid subcommand: {0}.\n' \
                              .format(subcommand))
             sys.stderr.write('Call with --help for more information\n')
             return 1
 
-        else:
-            # just forward to the documentation from the submodule
-            return subcom_map[help_subcommand].main(
-                    ['--help'], prog='{0} {1}'.format(sys.argv[0], help_subcommand))
-    else:
-        # it is one of the other subcommands.  Just forward the request on
-        return subcom_map[subcommand].main(
-                arguments, prog='{0} {1}'.format(sys.argv[0], subcommand))
+        # just forward to the documentation from the submodule
+        return subcom_map[help_subcommand].main(
+            ['--help'], prog='{0} {1}'.format(sys.argv[0], help_subcommand))
+
+    # it is one of the other subcommands.  Just forward the request on
+    return subcom_map[subcommand].main(
+        arguments, prog='{0} {1}'.format(sys.argv[0], subcommand))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
-

@@ -1,5 +1,7 @@
 # FLiT Installation
 
+[Prev](release-notes.md)
+|
 [Table of Contents](README.md)
 |
 [Next](litmus-tests.md)
@@ -8,6 +10,7 @@ Instruction Contents:
 
 * [Prerequisites](#prerequisites)
   * [Compilers](#compilers)
+  * [Clang Only](#clang-only)
   * [Optional Dependencies](#optional-dependencies)
 * [FLiT Setup](#flit-setup)
 * [Database Setup](#database-setup)
@@ -18,7 +21,7 @@ Instruction Contents:
 Stuff you should already have:
 
 * [bash](https://www.gnu.org/software/bash)
-* [binutils](https://www.gnu.org/software/binutils)
+* [binutils](https://www.gnu.org/software/binutils) version 2.26 or higher
 * [coreutils](https://www.gnu.org/software/coreutils/coreutils.html)
 * hostname
 
@@ -26,10 +29,14 @@ Stuff you may need to get
 
 * [git](https://git-scm.com)
 * [python3](https://www.python.org)
-  * The [toml](https://github.com/uiri/toml) module (for
+  * [toml](https://github.com/uiri/toml) module (for
     [TOML](https://github.com/toml-lang/toml) configuration files)
+  * (optional) [pyelftools](https://github.com/eliben/pyelftools) module for
+    parsing ELF files.  This is used for `flit bisect`; all other functionality
+    will work without it.
 * [make](https://www.gnu.org/software/make)
-* [gcc](https://gcc.gnu.org) version 4.9 or higher
+* [gcc](https://gcc.gnu.org) version 4.9 or higher (or
+  [clang](https://clang.llvm.org), see section [Clang Only](#clang-only))
 * [sqlite3](https://sqlite.org) version 3.0 or higher.
   You can use the one that comes with python, or install as a standalone.
 
@@ -38,14 +45,27 @@ For Debian-based systems:
 ```bash
 sudo apt install \
   bash binutils build-essential coreutils git hostname \
-  python3 python3-toml
+  python3
+```
+
+The python modules can be installed with `apt`
+
+```bash
+sudo apt install python3-toml python3-pyelftools
+```
+
+or with `pip`
+
+```bash
+sudo apt install python3-pip
+pip3 install --user toml pyelftools
 ```
 
 For homebrew on OSX (besides installing [Xcode](https://developer.apple.com/xcode))
 
 ```bash
 brew install make python3 gcc git
-pip3 install toml
+pip3 install toml pyelftools
 ```
 
 If you install python version 3.0 or later, then you will need to have a
@@ -59,6 +79,44 @@ used to compiler the FLiT shared library.  Other than that, you are free to
 install another version of GCC, as well as Clang and the Intel compiler.  If
 you are missing either Clang or the Intel compiler, FLiT will still work as
 expected.
+
+The supported compiler versions are:
+
+| Compiler Type | Minimum Supported Version |
+|:-------------:|:-------------------------:|
+| gcc           | 4.9.0                     |
+| clang         | 3.4.0                     |
+| intel         | 16.0                      |
+
+If your compiler version is below those on this list and you want FLiT to
+support it, please create an [issue](https://github.com/PRUNERS/FLiT/issues)
+and we may be able to add support for you.  Otherwise, you are on your own.
+
+Likewise, if you want support added for other types of compilers, such as the
+PGI compiler or the IBM compiler, please create an
+[issue](https://github.com/PRUNERS/FLiT/issues).
+
+
+### Clang Only
+
+FLiT is mostly geared around having at least GCC around, however, users may
+want to skip using GCC and use Clang instead.  If this is your use case, this
+can be done.
+
+To compile FLiT using Clang, set the `CXX` environment variable to the
+executable for Clang you wish to use.  For example:
+
+```bash
+git clone https://github.com/PRUNERS/FLiT.git
+cd FLiT
+export CXX=clang
+make
+sudo make install
+```
+
+Then when creating your environment, simply provide only a Clang compiler.
+This setup is largely untested, so if you have trouble, please submit an
+[issue](https://github.com/PRUNERS/FLiT/issues).
 
 ### Optional Dependencies
 
@@ -130,6 +188,8 @@ then you would uninstall with
 make uninstall PREFIX=~/my-installs/
 ```
 
+[Prev](release-notes.md)
+|
 [Table of Contents](README.md)
 |
 [Next](litmus-tests.md)

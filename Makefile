@@ -1,7 +1,7 @@
 PREFIX         ?= /usr
 
-#CC             := clang++
-CC             := g++
+#CXX            ?= clang++
+CXX            ?= g++
 FFLAGS         ?=
 LIBDIR         := lib
 SRCDIR         := src
@@ -68,10 +68,10 @@ help:
 
 $(TARGET): $(OBJ)
 	mkdir -p lib
-	$(CC) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
+	$(CXX) $(CPPFLAGS) -o $@ $^ $(LINKFLAGS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
-	$(CC) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
 
 .PRECIOUS: src/%.d
 -include $(SOURCE:%.cpp=%.d)
@@ -109,6 +109,7 @@ install: $(TARGET)
 	install -m 0755 $(SCRIPT_DIR)/flit.py $(PREFIX)/share/flit/scripts/
 	install -m 0755 $(SCRIPT_DIR)/flit_*.py $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(SCRIPT_DIR)/flitutil.py $(PREFIX)/share/flit/scripts/
+	install -m 0644 $(SCRIPT_DIR)/flitelf.py $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(SCRIPT_DIR)/README.md $(PREFIX)/share/flit/scripts/
 	install -m 0644 $(DOC_DIR)/*.md $(PREFIX)/share/flit/doc/
 	install -m 0644 $(DATA_DIR)/Makefile.in $(PREFIX)/share/flit/data/

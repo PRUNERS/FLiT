@@ -87,18 +87,29 @@ DEV_TARGET      ?= devrun
 GT_TARGET       ?= gtrun
 GT_OUT          := ground-truth.csv
 
-UNAME_S         := $(shell uname -s)
+UNAME_S         := {uname}
+
+# will be None if not specified in flit-config.toml
+{compiler_defs}
+CLANG_TYPE      := clang
+INTEL_TYPE      := intel
+GCC_TYPE        := gcc
+
+# keep only the compilers that are not None and are in the path
+COMPILERS       := {compilers}
 
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
-DEV_CC          ?= {dev_compiler}
+DEV_CXX         ?= {dev_compiler}
+DEV_CXX_TYPE    ?= {dev_type}
 DEV_OPTL        ?= {dev_optl}
 DEV_SWITCHES    ?= {dev_switches}
 
-GT_CC           := {ground_truth_compiler}
+GT_CXX          := {ground_truth_compiler}
+GT_CXX_TYPE     := {ground_truth_type}
 GT_OPTL         := {ground_truth_optl}
 GT_SWITCHES     := {ground_truth_switches}
 
@@ -110,11 +121,11 @@ MPIRUN_ARGS     := {mpirun_args}
 # initalize some variables to be appended later
 CC_REQUIRED     :=
 DEV_CFLAGS      :=
+GT_CFLAGS       :=
 LD_REQUIRED     :=
 
 RUNWRAP          = $(RUN_WRAPPER)
 ifeq ($(ENABLE_MPI),yes) # If we are using MPI
-  $(info MPI is enabled)
   RUNWRAP       += mpirun $(MPIRUN_ARGS)
   CC_REQUIRED   += -DFLIT_USE_MPI
   CC_REQUIRED   += $(shell mpic++ --showme:compile)
@@ -137,7 +148,9 @@ DEV_CFLAGS      += -Wuninitialized
 DEV_CFLAGS      += -Wno-shift-count-overflow
 
 # This flag specifies NOT to link as a position-independent executable
-LD_REQUIRED     += -no-pie
+# Note: this flag does not exist in GCC 4 or GCC 5 so it will fail to compile
+#       we need extra logic to check for this and conditionally add this flag
+#LD_REQUIRED     += -no-pie
 LD_REQUIRED     += -lm
 LD_REQUIRED     += -lstdc++
 ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
@@ -147,9 +160,30 @@ else
   LD_REQUIRED   += -Wl,-rpath=$(realpath $(FLIT_LIB_DIR))
 endif
 
-DEV_LDFLAGS     +=
+# Helper functions to determine if the compiler is a particular version of GCC
 
-DEPFLAGS        += -MMD -MF $(patsubst %.o,%.d,$@)
+# Returns the compiler name as output by the --version flag
+# @param 1: executable name or path to compiler
+GET_COMPILER     = $(shell $1 --version | head -n 1 | awk '{{ print $$1 }}')
+
+# Returns the version of the compiler as returned by -dumpversion
+# @param 1: executable name or path to compiler
+GET_COMPILER_VER = $(shell $1 -dumpversion)
+
+# Returns 1 if the major version matches else 0
+# @param 1: executable name or path to compiler
+# @param 2: major version number as an integer
+IS_MAJOR_VER     = $(shell expr substr $(call GET_COMPILER_VER,$1) 1 1 = $2)
+
+# Returns 1 if the compiler is GCC version 4 or version 5
+# @param 1: executable name or path to compiler
+IS_VER_4_OR_5    = $(shell expr $(call IS_MAJOR_VER,$1,4) \| \
+                                $(call IS_MAJOR_VER,$1,5))
+
+DEV_LDFLAGS      =
+GT_LDFLAGS       =
+
+DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
 
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
@@ -190,26 +224,26 @@ DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
 GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
+GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
-CLANG           := clang++
-INTEL           := icpc
-GCC             := g++
-
-ifdef CLANG_ONLY
-COMPILERS       := CLANG
-else
-COMPILERS       := $(foreach c, GCC INTEL CLANG, \
-                     $(if $(shell which $($(c)) 2>/dev/null), $c,))
-endif
-
-HOSTNAME        := $(shell hostname)
+HOSTNAME        := {hostname}
 
 RESULTS_DIR     := results
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
+CLANG_REQUIRED  :=
+ifeq ($(findstring GCC,$(COMPILERS)),GCC)
 GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
-CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
+CLANG_REQUIRED  += --gcc-toolchain=$(GCC_TOOLCHAIN)
+endif
+
+ifeq ($(DEV_CXX_TYPE),$(CLANG_TYPE))
+DEV_CFLAGS      += $(CLANG_REQUIRED)
+endif
+ifeq ($(GT_CXX_TYPE),$(CLANG_TYPE))
+GT_CFLAGS       += $(CLANG_REQUIRED)
+endif
 
 # Compiler setting targets
 #   taken from: https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
@@ -217,128 +251,19 @@ CLANG_REQUIRED  := --gcc-toolchain=$(GCC_TOOLCHAIN)
 # more comp settings, taken from here:
 # https://software.intel.com/sites/default/files/article/326703/fp-control-2012-08.pdf
 
-#individual flags
+# individual flags
+
 ## optls
 
-O0              := -O0
-O1              := -O1
-O2              := -O2
-O3              := -O3
+{opcodes_definitions}
 
-#switches
+## switches
 
-ASSOCMATH       := -fassociative-math
-AVX             := -mavx
-COMPTRANS       := -mp1
-DEFFLAGS        :=
-DISFMA          := -no-fma
-ENAFMA          := -fma
-FASTEXPREC      := -fexcess-precision=fast
-FASTM           := -ffast-math
-FINMATH         := -ffinite-math-only
-FLUSHDEN        := -ftz
-FMAGCC          := -mavx2 -mfma
-FMAICC          := -march=core-avx2
-FORTRULES       := -fcx-fortran-rules
-FPCONT          := -ffp-contract=on
-FPMODDBL        := -fp-model=double
-FPMODEXC        := -fp-model=except
-FPMODEXT        := -fp-model=extended
-FPMODFST1       := -fp-model fast=1
-FPMODFST2       := -fp-model fast=2
-FPMODPRE        := -fp-model=precise
-FPMODSRC        := -fp-model=source
-FPMODSTR        := -fp-model=strict
-FPTRAP          := -fp-trap=common
-FSTORE          := -ffloat-store
-LIMITEDRANGE    := -fcx-limited-range
-MCONSTS         := -fmerge-all-constants
-NOFLUSHDEN      := -no-ftz
-NOPRECDIV       := -no-prec-div
-NOTRAP          := -fno-trapping-math
-PRECDIV         := -prec-div
-RECIPMATH       := -freciprocal-math
-ROUNDINGMATH    := -frounding-math
-ROUNDUSR        := -fp-port
-SIGNALNAN       := -fsignaling-nans
-SINGLEPRECCONST := -fsingle-precision-constant
-SSE             := -mfpmath=sse -mtune=native
-STDEXPREC       := -fexcess-precision=standard
-UNSOPTS         := -funsafe-math-optimizations
-USEFASTM        := --use_fast_math
+{switches_definitions}
 
-# Collections
+{compiler_opcodes}
 
-OPCODES         := O0 O1 O2 O3
-
-# NOTE: gcc disables ASSOCMATH @ O0
-SWITCHES_GCC    += ASSOCMATH
-SWITCHES_GCC    += AVX
-SWITCHES_GCC    += DEFFLAGS
-SWITCHES_GCC    += FASTEXPREC
-SWITCHES_GCC    += FINMATH
-SWITCHES_GCC    += FMAGCC
-SWITCHES_GCC    += FORTRULES
-SWITCHES_GCC    += FPCONT
-SWITCHES_GCC    += FSTORE
-SWITCHES_GCC    += LIMITEDRANGE
-SWITCHES_GCC    += MCONSTS
-SWITCHES_GCC    += NOTRAP
-SWITCHES_GCC    += RECIPMATH
-SWITCHES_GCC    += ROUNDINGMATH
-SWITCHES_GCC    += SIGNALNAN
-SWITCHES_GCC    += SSE
-SWITCHES_GCC    += UNSOPTS
-
-#NOTE: Clang not honoring ASSOCMATH (issues warning with 3.9)
-# see: https://llvm.org/bugs/show_bug.cgi?id=27372
-
-SWITCHES_CLANG  += ASSOCMATH
-SWITCHES_CLANG  += AVX
-SWITCHES_CLANG  += DEFFLAGS
-SWITCHES_CLANG  += FASTEXPREC
-SWITCHES_CLANG  += FINMATH
-SWITCHES_CLANG  += FMAGCC
-SWITCHES_CLANG  += FMAICC
-SWITCHES_CLANG  += FPCONT
-SWITCHES_CLANG  += FSTORE
-SWITCHES_CLANG  += MCONSTS
-SWITCHES_CLANG  += NOTRAP
-SWITCHES_CLANG  += RECIPMATH
-SWITCHES_CLANG  += ROUNDINGMATH
-SWITCHES_CLANG  += SIGNALNAN
-SWITCHES_CLANG  += SINGLEPRECCONST
-SWITCHES_CLANG  += SSE
-SWITCHES_CLANG  += STDEXPREC
-SWITCHES_CLANG  += UNSOPTS
-
-SWITCHES_INTEL  += AVX
-SWITCHES_INTEL  += COMPTRANS
-SWITCHES_INTEL  += DEFFLAGS
-SWITCHES_INTEL  += DISFMA
-SWITCHES_INTEL  += ENAFMA
-SWITCHES_INTEL  += FLUSHDEN
-SWITCHES_INTEL  += FMAGCC
-SWITCHES_INTEL  += FMAICC
-SWITCHES_INTEL  += FPMODDBL
-SWITCHES_INTEL  += FPMODEXT
-SWITCHES_INTEL  += FPMODFST1
-SWITCHES_INTEL  += FPMODFST2
-SWITCHES_INTEL  += FPMODPRE
-SWITCHES_INTEL  += FPMODSRC
-SWITCHES_INTEL  += FPMODSTR
-SWITCHES_INTEL  += FSTORE
-SWITCHES_INTEL  += LIMITEDRANGE
-SWITCHES_INTEL  += MCONSTS
-SWITCHES_INTEL  += NOFLUSHDEN
-SWITCHES_INTEL  += NOPRECDIV
-SWITCHES_INTEL  += PRECDIV
-SWITCHES_INTEL  += ROUNDINGMATH
-SWITCHES_INTEL  += ROUNDUSR
-SWITCHES_INTEL  += SINGLEPRECCONST
-SWITCHES_INTEL  += SSE
-SWITCHES_INTEL  += USEFASTM
-
+{compiler_switches}
 
 ##########################################################
 #
@@ -365,6 +290,17 @@ R_DEP           := $(R_OBJ:%.o=%.d)
 .PHONY: rec
 rec: $(R_TARGET)
 
+# clang's flag is -nopie
+# else if the current compiler is not GCC 4 or 5, then enable -no-pie
+# GCC 4 and 5 do not need -no-pie since that is the default
+ifeq ($($(R_CUR_COMPILER)_TYPE),$(CLANG_TYPE))
+  LD_REQUIRED += -nopie
+else ifeq ($($(R_CUR_COMPILER)_TYPE),$(GCC_TYPE))
+ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_COMPILER))),0)
+  LD_REQUIRED += -no-pie
+endif
+endif
+
 $(R_TARGET): $(R_OBJ)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
@@ -385,6 +321,26 @@ $(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
 
+# clang's flag is -nopie
+# else if the current compiler is not GCC 4 or 5, then enable -no-pie
+# GCC 4 and 5 do not need -no-pie since that is the default
+ifeq ($(DEV_CXX_TYPE),$(CLANG_TYPE))
+  DEV_LDFLAGS   += -nopie
+else ifeq ($(DEV_CXX_TYPE),$(GCC_TYPE))
+ifeq ($(call IS_VER_4_OR_5,$(DEV_CXX)),0)
+  DEV_LDFLAGS   += -no-pie
+endif
+endif
+
+# same for the gt compiler
+ifeq ($(GT_CXX_TYPE),$(CLANG_TYPE))
+  GT_LDFLAGS    += -nopie
+else ifeq ($(GT_CXX_TYPE),$(GCC_TYPE))
+ifeq ($(call IS_VER_4_OR_5,$(GT_CXX)),0)
+  GT_LDFLAGS    += -no-pie
+endif
+endif
+
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 $(RESULTS_DIR):
@@ -396,13 +352,13 @@ $(RESULTS_DIR):
 
 # Set these as empty "simply-expanded variables".  This affects the "+=" operator.
 # see https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html
-TARGET_OUTS     :=
+TARGET_OUTS :=
 
 # @param 1: compiler variable name (e.g. CLANG)
 # @param 2: optimization level variable name (e.g. O2)
-# @param 3: switches variable name (e.g. USEFASTM)
+# @param 3: switches variable name (e.g. USE_FAST_MATH)
 define RECURSION_RULE
-TARGETS         += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
+TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 # TODO: use the variable $$(MAKECMDGOALS) to get the original make target
 # TODO- or see if it is even necessary
@@ -423,7 +379,7 @@ endef
 
 $(foreach c, $(COMPILERS),                 \
   $(foreach s, $(SWITCHES_$(strip $c)),    \
-    $(foreach o, $(OPCODES),               \
+    $(foreach o, $(OPCODES_$(strip $c)),               \
       $(eval $(call RECURSION_RULE, $c, $o, $s)))))
 TARGET_OUTS     := $(TARGETS:%=%-out)
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
@@ -444,9 +400,10 @@ TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
 DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
-.PHONY: dev gt groundtruth run runbuild
+.PHONY: dev gt gt-fpic groundtruth run runbuild
 dev: $(DEV_TARGET)
 gt: groundtruth
+gt-fpic: $(GT_OBJ_FPIC)
 groundtruth: $(GT_TARGET)
 
 run: $(TARGET_RESULTS) $(TARGET_OUTS)
@@ -514,13 +471,13 @@ endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
 
 # Dev compilation rules first (easier to understand)
 $(DEV_TARGET): $(DEV_OBJ) Makefile custom.mk
-	$(DEV_CC) $(CC_REQUIRED) $(DEV_CFLAGS) \
+	$(DEV_CXX) $(CC_REQUIRED) $(DEV_CFLAGS) \
 	  -o $@ $(DEV_OBJ) $(LD_REQUIRED) $(DEV_LDFLAGS)
 
 $(OBJ_DIR)/%_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(DEV_CC) $(DEV_OPTL) $(DEV_SWITCHES) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
+	$(DEV_CXX) $(DEV_OPTL) $(DEV_SWITCHES) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(DEV_CC)"' \
+	  -DFLIT_COMPILER='"$(DEV_CXX)"' \
 	  -DFLIT_OPTL='"$(DEV_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
 	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
@@ -530,12 +487,20 @@ $(GT_OUT): $(GT_TARGET)
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
 $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
-	$(GT_CC) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
+	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
 $(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CC) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(DEPFLAGS) -c $< -o $@ \
+	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(GT_CC)"' \
+	  -DFLIT_COMPILER='"$(GT_CXX)"' \
+	  -DFLIT_OPTL='"$(GT_OPTL)"' \
+	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
+	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+
+$(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
+	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$(GT_CXX)"' \
 	  -DFLIT_OPTL='"$(GT_OPTL)"' \
 	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
 	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'

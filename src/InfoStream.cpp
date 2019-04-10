@@ -95,8 +95,8 @@ namespace {
   public:
     InfoStreamBackend() : std::ostream(), _null() { hide(); }
     ~InfoStreamBackend() { hide(); }
-    void show() { init(std::cout.rdbuf()); }
-    void hide() { init(&_null); }
+    void show() { rdbuf(std::cout.rdbuf()); }
+    void hide() { rdbuf(&_null); }
 
   private:
     NullBuffer _null;
@@ -110,7 +110,7 @@ InfoStream::InfoStream()
   : std::ostream()
   , _threadbuf()
 {
-  init(_threadbuf.rdbuf());
+  rdbuf(_threadbuf.rdbuf());
 }
 
 InfoStream::~InfoStream() {

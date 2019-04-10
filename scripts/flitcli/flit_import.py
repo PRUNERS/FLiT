@@ -82,42 +82,56 @@
 
 'Implements the import subcommand, importing results into a database'
 
-import flitutil as util
-
-import toml
-
 import argparse
 import csv
 import datetime
 import os
-import sqlite3
 import sys
+
+import flitutil as util
 
 brief_description = 'Import flit results into the configured database'
 
 def _file_check(filename):
+    'Check that a file exists or raise an exception'
     if not os.path.isfile(filename):
         raise argparse.ArgumentTypeError('File does not exist: {0}'.format(filename))
     return filename
 
+def get_dbfile_from_toml(tomlfile):
+    'get and return the database.filepath field'
+    import toml
+    try:
+        projconf = toml.load(tomlfile)
+    except FileNotFoundError:
+        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
+              file=sys.stderr)
+        raise
+    util.fill_defaults(projconf)
+
+    assert projconf['database']['type'] == 'sqlite', \
+            'Only sqlite database supported'
+    return projconf['database']['filepath']
+
 def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
     parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                Import flit results into the configured database.  The
-                configured database is found from the settings in
-                flit-config.toml.  You can import either exported results or
-                results from manually running the tests.  Note that importing
-                the same thing twice will result in having two copies of it
-                in the database.
-                ''',
-            )
+        prog=prog,
+        description='''
+            Import flit results into the configured database.  The configured
+            database is found from the settings in flit-config.toml.  You can
+            import either exported results or results from manually running the
+            tests.  Note that importing the same thing twice will result in
+            having two copies of it in the database.
+            ''',
+        )
     parser.add_argument('importfile', nargs='+', type=_file_check,
                         help='''
                             File(s) to import into the database.  These files
                             may be csv files or sqlite3 databases.
                             ''')
-    parser.add_argument('-a', '--append', type=int, default=None, metavar='RUN_ID',
+    parser.add_argument('-a', '--append', type=int, default=None,
+                        metavar='RUN_ID',
                         help='''
                             Append the import to the specified run id.  The
                             default behavior is to add a new run to include the
@@ -142,27 +156,36 @@ def main(arguments, prog=sys.argv[0]):
                             call this program multiple times, each one with
                             --run specified to the next run you want to import.
                             ''')
+    parser.add_argument('-D', '--dbfile', default=None,
+                        help='''
+                            Use this database file rather than the one
+                            specified in flit-config.toml.  This option is
+                            especially useful when you want to import results
+                            but do not have the flit-config.toml file
+                            available, as that is currently the only reason for
+                            flit-config.toml to be read by this command.  It
+                            can also be used when you do not have the toml
+                            python package installed (goodie!).
+                            ''')
     args = parser.parse_args(arguments)
 
-    try:
-        projconf = toml.load('flit-config.toml')
-    except FileNotFoundError:
-        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
-              file=sys.stderr)
-        return 1
-    util.fill_defaults(projconf)
+    if args.dbfile is None:
+        args.dbfile = get_dbfile_from_toml('flit-config.toml')
 
-    assert projconf['database']['type'] == 'sqlite', \
-            'Only sqlite database supported'
-    db = util.sqlite_open(projconf['database']['filepath'])
+    if os.path.isfile(args.dbfile):
+        print('Appending', args.dbfile)
+    else:
+        print('Creating', args.dbfile)
+    db = util.sqlite_open(args.dbfile)
 
     # create a new run and set the args.append run id
     if args.append is None:
         # Create a new run to use in import
         db.execute('insert into runs(rdate,label) values (?,?)',
-                (datetime.datetime.now(), args.label))
+                   (datetime.datetime.now(), args.label))
         db.commit()
-        args.append = db.execute('select id from runs order by id').fetchall()[-1]['id']
+        args.append = \
+            db.execute('select id from runs order by id').fetchall()[-1]['id']
 
     # Make sure the run id exists.
     run_ids = [x['id'] for x in db.execute('select id from runs')]
@@ -228,6 +251,8 @@ def main(arguments, prog=sys.argv[0]):
             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', to_insert)
     db.commit()
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

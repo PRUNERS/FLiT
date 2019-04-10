@@ -93,12 +93,20 @@ and run the FLiT test with MPI
 >>> import shutil
 >>> import subprocess as subp
 
+>>> class TestError(RuntimeError): pass
+
 >>> with th.tempdir() as temp_dir:
-...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     retval = th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     if retval != 0:
+...         raise TestError('Main #1 returned with {}, failed to initialize'
+...                         .format(retval))
 ...     _ = shutil.copy(os.path.join('data', 'MpiHello.cpp'),
 ...                     os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copy(os.path.join('data', 'flit-config.toml'), temp_dir)
-...     th.flit.main(['update', '-C', temp_dir])
+...     retval = th.flit.main(['update', '-C', temp_dir])
+...     if retval != 0:
+...         raise TestError('Main #2 returned with {}, failed to update'
+...                         .format(retval))
 ...     compile_str = subp.check_output(['make', '-C', temp_dir, 'gt'],
 ...                                     stderr=subp.STDOUT)
 ...     run_str = subp.check_output(['make', '-C', temp_dir, 'ground-truth.csv'],
@@ -135,17 +143,10 @@ Creating /.../Makefile
 >>> run_str_2 = run_str_2.decode('utf-8').strip().splitlines()
 >>> run_str_3 = run_str_3.decode('utf-8').strip().splitlines()
 
-Make sure the info statement about MPI being enabled is done at each make call
-
->>> compile_str[1]
-'MPI is enabled'
->>> run_str[1]
-'MPI is enabled'
-
 Make sure the correct arguments are passed to mpirun
 
->>> run_str[2]
-'mpirun -n 2 ./gtrun --output ground-truth.csv --no-timing'
+>>> 'mpirun -n 2 ./gtrun --output ground-truth.csv --no-timing' in run_str
+True
 
 Make sure the console messages are there, but they can be out of order
 

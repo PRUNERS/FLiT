@@ -158,10 +158,6 @@ class Expression(object):
 def random_expression(env, length, vars_only=False):
    '''
    Generates a random mathematical expression as a string
-
-   >>> env = Environment({'x'; Variable('x', 'int'})
-   >>> random_expression(env, 3)
-   Expression((x + 3.25124) * x)
    '''
    # Populate the expression with operations
    expr = Expression()

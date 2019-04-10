@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -- LICENSE BEGIN --
 #
 # Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
@@ -79,19 +80,80 @@
 #    purposes.
 #
 # -- LICENSE END --
+'Pretend to be gcc 4.8.4, specifically checking for unsupported flags'
 
-'''
-Tests flit bisect functionality.
-'''
-
-# Test setup before the docstring is run.
 import sys
-before_path = sys.path[:]
-sys.path.append('..')
-import test_harness as th
-sys.path = before_path
+
+def print_version():
+    'Print fake version information'
+    print('Ubuntu g++ (GCC) 4.8.4')
+    print('Copyright (C) 2018 Free Software Foundation, Inc.')
+    print('This is a fake GCC compiler that does not actually do anything')
+
+def main(arguments):
+    'Main logic here'
+
+    recognized_arguments = [
+        '-fno-pie',
+        '-std',
+        '-g',
+        '-o',
+        '-fassociative-math',
+        '-mavx',
+        '-fexcess-precision',
+        '-ffinite-math-only',
+        '-mavx2',
+        '-fcx-fortran-rules',
+        '-ffp-contract',
+        '-ffloat-store',
+        '-fcx-limited-range',
+        '-fmerge-all-constants',
+        '-fno-trapping-math',
+        '-freciprocal-math',
+        '-frounding-math',
+        '-fsignaling-nans',
+        '-mfpmath',
+        '-funsafe-math-optimizations',
+        '-MMD',
+        '-MP',
+        '-MF',
+        '-c'
+        ]
+
+    recognized_beginnings = [
+        '-W',
+        '-D',
+        '-I',
+        '-l',
+        '-L',
+        '-O',
+        ]
+
+    if '--version' in arguments:
+        print_version()
+        return 0
+
+    if '-dumpversion' in arguments:
+        print('4.8.4')
+        return 0
+
+
+    for arg in arguments:
+        canonical = arg.split('=', maxsplit=1)[0]
+        if canonical.startswith('-'):
+            recognized = canonical in recognized_arguments or \
+                any(canonical.startswith(x) for x in recognized_beginnings)
+            if not recognized:
+                print('Error: unrecognized argument "{0}"'.format(arg),
+                      file=sys.stderr)
+                return 1
+
+    if '-o' in arguments or '--output' in arguments:
+        idx = arguments.index('-o' if '-o' in arguments else '--output')
+        outfile = arguments[idx + 1]
+        open(outfile, 'a').close()  # create an empty file if it does not exist
+
+    return 0
 
 if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
-
+    sys.exit(main(sys.argv[1:]))

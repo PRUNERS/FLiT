@@ -81,48 +81,49 @@
 # -- LICENSE END --
 
 '''
-Tests FLiT's --version argument
+Tests FLiT's capabilities with compiling against older versions of Clang
 
-The tests are below using doctest
+Let's now make a temporary directory and test that using the fake clang, we can
+verify correct usage.
 
-Let's now make a temporary directory and test that flit init populates the
-correct files
-
->>> import subprocess as subp
+>>> from io import StringIO
+>>> import glob
 >>> import os
+>>> import shutil
+>>> import subprocess as subp
 
->>> actual = subp.check_output([os.path.join(th.config.script_dir, 'flit.py'),
-...                             '--version'])
->>> actual = actual.decode('utf-8').strip()
->>> expected = 'flit version ' + th.config.version
->>> expected == actual
-True
+>>> with th.tempdir() as temp_dir:
+...     with StringIO() as ostream:
+...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
+...         init_out = ostream.getvalue().splitlines()
+...     os.remove(os.path.join(temp_dir, 'flit-config.toml'))
+...     with open(os.path.join(temp_dir, 'flit-config.toml'), 'w') as conf:
+...         _ = conf.write('[dev_build]\\n')
+...         _ = conf.write("compiler_name = 'fake-clang'\\n")
+...         _ = conf.write('[ground_truth]\\n')
+...         _ = conf.write("compiler_name = 'fake-clang'\\n")
+...         _ = conf.write('[[compiler]]\\n')
+...         _ = conf.write("binary = './fake_clang34.py'\\n")
+...         _ = conf.write("name = 'fake-clang'\\n")
+...         _ = conf.write("type = 'clang'\\n")
+...     _ = shutil.copy('fake_clang34.py', temp_dir)
+...     _ = subp.check_output(['make', '--always-make', 'Makefile', '-C', temp_dir])
+...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir])
+...     make_out = make_out.decode('utf8').splitlines()
 
->>> actual = subp.check_output([os.path.join(th.config.script_dir, 'flit.py'), '-v'])
->>> actual = actual.decode('utf-8').strip()
->>> expected = 'flit version ' + th.config.version
->>> expected == actual
-True
+Verify the output of flit init
+>>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
+Creating .../flit-config.toml
+Creating .../custom.mk
+Creating .../main.cpp
+Creating .../tests/Empty.cpp
+Creating .../Makefile
 
->>> actual = subp.check_output([os.path.join(th.config.script_dir, 'flit.py'),
-...                             '--help'])
->>> actual = actual.decode('utf-8').strip()
->>> '-v, --version' in actual
-True
->>> 'Print version and exit' in actual
-True
-
-
-Check that an installed flit will also be able to handle the call to --version
-
->>> with th.tempdir() as tmpdir:
-...     _ = subp.check_output(['make', 'install', 'PREFIX=' + tmpdir, '-C',
-...             os.path.dirname(th.config.lib_dir)])
-...     actual = subp.check_output([os.path.join(tmpdir, 'bin', 'flit'), '-v'])
->>> actual = actual.decode('utf-8').strip()
->>> expected = 'flit version ' + th.config.version
->>> expected == actual
-True
+Check the output of Make
+>>> any(['-no-pie' in x for x in make_out])
+False
+>>> len([1 for x in make_out if '-nopie' in x])
+1
 '''
 
 # Test setup before the docstring is run.
@@ -136,3 +137,4 @@ if __name__ == '__main__':
     from doctest import testmod
     failures, tests = testmod()
     sys.exit(failures)
+

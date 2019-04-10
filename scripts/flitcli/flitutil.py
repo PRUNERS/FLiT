@@ -87,13 +87,13 @@ Utility functions shared between multiple flit subcommands.
 import flitconfig as conf
 
 import copy
+import logging
 import os
 import socket
 import sqlite3
 import subprocess as subp
 import sys
 import tempfile
-import toml
 
 # cached values
 _default_toml = None
@@ -120,6 +120,7 @@ def get_default_toml():
     Gets the default toml configuration file for FLIT and returns the
     configuration object.
     '''
+    import toml
     global _default_toml
     if _default_toml is None:
         _default_toml = toml.loads(get_default_toml_string())
@@ -349,3 +350,79 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     var_values = output.split('=', maxsplit=1)[1].split()
     return var_values
 
+def extract_make_vars(makefile='Makefile', directory='.'):
+    '''
+    Extracts all GNU Make variables from the given Makefile, except for those
+    that are built-in.  It is returned as a dictionary of
+      {'var': ['val', ...]}
+
+    @note, all variables are returned, including internal Makefile
+    variables.
+
+    >>> from tempfile import NamedTemporaryFile as NTF
+    >>> with NTF(mode='w+') as fout:
+    ...     print('A    := hello there sweetheart\\n'
+    ...           'B     = \\n',
+    ...           file=fout, flush=True)
+    ...     allvars = extract_make_vars(fout.name)
+
+    >>> allvars['A']
+    ['hello', 'there', 'sweetheart']
+    >>> allvars['B']
+    []
+
+    What if the file does not exist?  It throws an exception:
+
+    >>> extract_make_var('A', 'file-should-not-exist.mk') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    subprocess.CalledProcessError: Command ... returned non-zero exit status 2.
+    '''
+    with tempfile.NamedTemporaryFile(mode='w+') as fout:
+        print('$(foreach v,$(.VARIABLES),$(info $(v)=$($(v))**==**))\n'
+              '.PHONY: empty-target\n'
+              'empty-target:\n'
+              "\t@true\n", file=fout, flush=True)
+        output = subp.check_output(
+            ['make', '-f', makefile, '-f', fout.name, 'empty-target',
+             '--directory', directory, '--no-print-directory'],
+            stderr=subp.DEVNULL)
+    lines = output.strip().decode('utf-8').splitlines()
+    var_values = {}
+    prevkey = None
+    for line in lines:
+        if prevkey is None:
+            split = line.split('=', maxsplit=1)
+            prevkey = split[0]
+            values = split[1]
+            var_values[prevkey] = []
+        else:
+            values = line
+
+        key = prevkey
+
+        if values.endswith('**==**'):
+            values = values.replace('**==**', '')
+            prevkey = None
+
+        var_values[key].extend(values.split())
+
+    return var_values
+
+def printlog(message):
+    '''
+    Prints the message to stdout and then logs the message at the info level.
+    It is expected that the logging module has already been configured using
+    the root logger.
+
+    >>> logger = logging.getLogger()
+    >>> for handler in logger.handlers[:]:
+    ...     logger.removeHandler(handler)
+    >>> import sys
+    >>> logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    >>> printlog('Danger Will Robinson!')
+    Danger Will Robinson!
+    INFO:root:Danger Will Robinson!
+    '''
+    print(message)
+    logging.info(message)

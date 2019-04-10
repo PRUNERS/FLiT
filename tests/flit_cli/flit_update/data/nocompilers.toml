@@ -1,0 +1,2 @@
+# Test that with no compilers specified the default three compilers with their
+# default flags are used.

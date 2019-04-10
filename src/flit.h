@@ -87,6 +87,7 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
+#include "FlitCsv.h"
 #include "MpiEnvironment.h"
 #include "TestBase.h"
 #include "flitHelpers.h"
@@ -287,64 +288,67 @@ inline void outputResults (
     std::string executableFilename = FLIT_FILENAME)
 {
   // Output the column headers
-  out << "name,"
-         "host,"
-         "compiler,"
-         "optl,"
-         "switches,"
-         "precision,"
-         "score_hex,"
-         "score,"
-         "resultfile,"
-         "comparison_hex,"
-         "comparison,"
-         "file,"
-         "nanosec"
-      << std::endl;
-  for(const auto& result: results){
-    out
-      << result.name() << ","                        // test case name
-      << hostname << ","                             // hostname
-      << compiler << ","                             // compiler
-      << optimization_level << ","                   // optimization level
-      << switches << ","                             // compiler flags
-      << result.precision() << ","                   // precision
+  CsvWriter writer(out);
+  writer
+    << "name"
+    << "host"
+    << "compiler"
+    << "optl"
+    << "switches"
+    << "precision"
+    << "score_hex"
+    << "score"
+    << "resultfile"
+    << "comparison_hex"
+    << "comparison"
+    << "file"
+    << "nanosec";
+  writer.new_row();
+  for (const auto& result: results) {
+    writer
+      << result.name()                               // test case name
+      << hostname                                    // hostname
+      << compiler                                    // compiler
+      << optimization_level                          // optimization level
+      << switches                                    // compiler flags
+      << result.precision()                          // precision
       ;
 
     if (result.result().type() == Variant::Type::LongDouble) {
-      out
-        << as_int(result.result().longDouble()) << "," // score_hex
-        << result.result().longDouble() << ","       // score
+      writer
+        << as_int(result.result().longDouble())      // score_hex
+        << result.result().longDouble()              // score
         ;
     } else {
-      out
-        << FLIT_NULL << ","                          // score_hex
-        << FLIT_NULL << ","                          // score
+      writer
+        << FLIT_NULL                                 // score_hex
+        << FLIT_NULL                                 // score
         ;
     }
 
     if (result.resultfile().empty()) {
-      out << FLIT_NULL << ",";                       // resultfile
+      writer << FLIT_NULL;                           // resultfile
     } else {
-      out << result.resultfile() << ",";             // resultfile
+      writer << result.resultfile();                 // resultfile
     }
 
     if (result.is_comparison_null()) {
-      out
-        << FLIT_NULL << ","                          // comparison_hex
-        << FLIT_NULL << ","                          // comparison
+      writer
+        << FLIT_NULL                                 // comparison_hex
+        << FLIT_NULL                                 // comparison
         ;
     } else {
-      out
-        << as_int(result.comparison()) << ","        // comparison_hex
-        << result.comparison() << ","                // comparison
+      writer
+        << as_int(result.comparison())               // comparison_hex
+        << result.comparison()                       // comparison
         ;
     }
 
-    out
-      << executableFilename << ","                   // executable filename
+    writer
+      << executableFilename                          // executable filename
       << result.nanosecs()                           // nanoseconds
-      << std::endl;
+      ;
+    writer.new_row();
   }
 }
 

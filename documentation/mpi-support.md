@@ -74,11 +74,33 @@ global pointer even if MPI is not enabled and you can have logic based on the
 rank and size of the MPI world.
 
 
+## Test Return Values
+
+Under FLiT, you can write tests using MPI with multiple processes (as long as
+the result is deterministic).  To prevent confusion with multiple test return
+values, one from each process, FLiT will ignore the test result value from all
+processes except for the one with rank 0.  Therefore, all calculated results
+must be communicated to rank 0 in order to have it be captured by the FLiT
+framework.
+
+If you find this does not fit with your use case, please submit an
+[issue](https://github.com/PRUNERS/FLiT/issues/new?template=feature_request.md)
+on GitHub.  For example, it may be that users may want to configure whether
+each result is captured individually and checked at test time, process by
+process.  However, That approach will not work in all cases, such as the
+producer-consumer model where processes may end up getting different data and
+tasks.  For now, enforcing users to communicate with rank 0 is the most
+straightforward way to ensure determinism.
+
+
 ## Conditional Compilation
 
 If you want your tests to conditionally use MPI, there is a macro-defined
 variable you can condition off of to disable or enable certain code.  That
 variable is `FLIT_USE_MPI`.  For example
+
+Note: even when MPI is disabled, the global `flit::mpi` variable is still
+available.
 
 ```c++
 T grid[1024][1024];
