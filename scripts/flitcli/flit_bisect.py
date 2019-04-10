@@ -1115,19 +1115,20 @@ def parse_args(arguments, prog=sys.argv[0]):
                             often than necessary.
                             ''')
     parser.add_argument('-t', '--compiler-type',
-                        choices=('clang', 'gcc', 'intel', 'misc'),
-                        default='misc',
+                        choices=('clang', 'gcc', 'intel', 'misc', 'auto'),
+                        default='auto',
                         help='''
                             Specify the type of compiler used by the given
                             compilation.  The choices are 'clang', 'gcc',
-                            'intel', and 'misc'.  The default is 'misc', which
-                            will try to match the compiler with one specified
-                            in flit-config.toml.  If not found there, this tool
-                            assumes that the user has ensured the correct flags
-                            are given in the compilation to allow for a
-                            bisection search, primarily that the standard c++
-                            library used by the given compiler is the same as
-                            that used by the ground-truth compilation.
+                            'intel', 'misc', and auto.  The default is 'auto',
+                            which will try to match the compiler with one
+                            specified in flit-config.toml.  If not found there,
+                            this tool falls back to 'misc', which assumes that
+                            the user has ensured the correct flags are given in
+                            the compilation to allow for a bisection search,
+                            primarily that the standard c++ library used by the
+                            given compiler is the same as that used by the
+                            ground-truth compilation.
                             ''')
 
     args = parser.parse_args(arguments)
@@ -1568,7 +1569,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     '''
     args = parse_args(arguments, prog)
 
-    if args.compiler_type == 'misc':
+    if args.compiler_type == 'auto':
         projconf = util.load_projconf(args.directory)
         args.compiler_type = try_resolve_compiler_type(args.compiler, projconf)
 
