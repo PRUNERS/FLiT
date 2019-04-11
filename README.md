@@ -59,6 +59,7 @@ It consists of the following components:
 
 Contents:
 
+* [Release Notes](documentation/release-notes.md)
 * [Installation](documentation/installation.md)
 * [Litmus Tests](documentation/litmus-tests.md)
 * [FLiT Command-Line](documentation/flit-command-line.md)
