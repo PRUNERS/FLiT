@@ -84,9 +84,12 @@
 
 import sys
 
+VERSION = '3.4.1'
+
 def print_version():
     'Print fake version information'
-    print('clang version 3.4.1 (tags/RELEASE_341/final)')
+    nodot_version = VERSION.replace('.', '')
+    print('clang version {0} (tags/{1}/final)'.format(VERSION, nodot_version))
     print('Target: x86_64-pc-linux-gnu')
     print('Thread model: posix')
     print('InstalledDir: /usr/bin')
@@ -121,6 +124,7 @@ def main(arguments):
         '-MMD',
         '-MP',
         '-MF',
+        '--gcc-toolchain',
         '-c'
         ]
 
@@ -138,7 +142,7 @@ def main(arguments):
         return 0
 
     if '-dumpversion' in arguments:
-        print('3.4.0')
+        print(VERSION)
         return 0
 
     for arg in arguments:

@@ -1,0 +1,23 @@
+[dev_build]
+compiler_name = 'g++'
+optimization_level = '-O2'
+switches = ''
+
+[ground_truth]
+compiler_name = 'g++'
+optimization_level = '-O0'
+switches = ''
+
+[[compiler]]
+binary = 'g++'
+name = 'g++'
+type = 'gcc'
+optimization_levels = ['-O1']
+switches_list = ['']
+
+[[compiler]]
+binary = './fake_clang34.py'
+name = 'clang++'
+type = 'clang'
+optimization_levels = ['-O1']
+switches_list = ['']

@@ -106,10 +106,16 @@ verify correct usage.
 ...         _ = conf.write("binary = './fake_clang34.py'\\n")
 ...         _ = conf.write("name = 'fake-clang'\\n")
 ...         _ = conf.write("type = 'clang'\\n")
+...         _ = conf.write('[[compiler]]\\n')
+...         _ = conf.write("binary = './fake_gcc4.py'\\n")
+...         _ = conf.write("name = 'fake-gcc'\\n")
+...         _ = conf.write("type = 'gcc'\\n")
 ...     _ = shutil.copy('fake_clang34.py', temp_dir)
 ...     _ = subp.check_output(['make', '--always-make', 'Makefile', '-C', temp_dir])
-...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir])
-...     make_out = make_out.decode('utf8').splitlines()
+...     make_out_gt = subp.check_output(['make', 'gt', '-C', temp_dir])
+...     make_out_gt = make_out_gt.decode('utf8').splitlines()
+...     make_out_dev = subp.check_output(['make', 'dev', '-C', temp_dir])
+...     make_out_dev = make_out_dev.decode('utf8').splitlines()
 
 Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
@@ -119,15 +125,11 @@ Creating .../main.cpp
 Creating .../tests/Empty.cpp
 Creating .../Makefile
 
-Check the output of Make
->>> any(['-no-pie' in x for x in make_out])
-False
->>> len([1 for x in make_out if '-nopie' in x])
-1
-
-Make sure gcc toolchain is not used since gcc is not there
->>> any(['--gcc-toolchain' in x for x in make_out])
-False
+Make sure gcc toolchain is used since gcc is available
+>>> sum([1 for x in make_out_gt if '--gcc-toolchain' in x])
+3
+>>> sum([1 for x in make_out_dev if '--gcc-toolchain' in x])
+3
 '''
 
 # Test setup before the docstring is run.

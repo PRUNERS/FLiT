@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2019, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -109,29 +109,49 @@ and run FLiT bisect
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))
+...     _ = shutil.copy(os.path.join('data',
+...                                  'auto-bisect-run-flit-config.toml'),
+...                     os.path.join(temp_dir, 'flit-config.toml'))
+...     _ = shutil.copy(os.path.join('..', '..', 'flit_makefile',
+...                                  'fake_clang34.py'),
+...                     temp_dir)
 ...     with StringIO() as ostream:
-...         retval = th.flit.main(['bisect', '-C', temp_dir,
-...                                '--compiler-type', 'gcc',
-...                                '--precision', 'double',
-...                                'g++ -O3', 'BisectTest'],
+...         retval = th.flit.main(['import', '--dbfile',
+...                                os.path.join(temp_dir, 'autorun.sqlite'),
+...                                os.path.join('data', 'auto-bisect-run.csv')],
+...                               outstream=ostream)
+...         if retval != 0:
+...             raise BisectTestError(
+...                 'Could not import (retval={0}):\\n'.format(retval) +
+...                 ostream.getvalue())
+...     with StringIO() as ostream:
+...         retval = th.flit.main(['bisect', '--directory', temp_dir,
+...                                '--auto-sqlite-run',
+...                                os.path.join(temp_dir, 'autorun.sqlite'),
+...                                '--compile-only'],
 ...                               outstream=ostream)
 ...         if retval != 0:
 ...             raise BisectTestError(
 ...                 'Could not bisect (retval={0}):\\n'.format(retval) +
 ...                 ostream.getvalue())
 ...         bisect_out = ostream.getvalue().splitlines()
-...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
-...         raw_log = fin.readlines()
-...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
-...                         for line in raw_log]
-...         log_contents = [line for line in stripped_log if line.strip() != '']
+...     makeout1 = subp.check_output([
+...         'make', '-C', temp_dir, '--dry-run', 'trouble',
+...         '--no-print-directory', '--always-make',
+...         '-f', os.path.join('bisect-precompile', 'bisect-make-01.mk')])
+...     makeout1 = makeout1.strip().decode('utf-8').splitlines()
+...     makeout2 = subp.check_output([
+...         'make', '-C', temp_dir, '--dry-run', 'gt',
+...         '--no-print-directory', '--always-make',
+...         '-f', os.path.join('bisect-precompile', 'bisect-make-01.mk')])
+...     makeout2 = makeout2.strip().decode('utf-8').splitlines()
 ...     troublecxx = util.extract_make_var(
 ...         'TROUBLE_CXX',
-...         os.path.join('bisect-01', 'bisect-make-01.mk'),
+...         os.path.join('bisect-precompile', 'bisect-make-01.mk'),
 ...         directory=temp_dir)
 ...     troublecxx_type = util.extract_make_var(
 ...         'TROUBLE_CXX_TYPE',
-...         os.path.join('bisect-01', 'bisect-make-01.mk'),
+...         os.path.join('bisect-precompile', 'bisect-make-01.mk'),
 ...         directory=temp_dir)
 
 Verify the output of flit init
@@ -142,102 +162,27 @@ Creating /.../main.cpp
 Creating /.../tests/Empty.cpp
 Creating /.../Makefile
 
-Let's see that the ground truth results are updated first
->>> bisect_out[0]
-'Updating ground-truth results - ground-truth.csv - done'
-
-Verify that all source files were found and output during the search
->>> sorted([x.split(':')[0].split()[-1] for x in bisect_out
-...         if x.startswith('    Found differing source file')])
-['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
-
-Verify that the four differing sources were output in the "differing sources:"
-section
->>> idx = bisect_out.index('all variability inducing source file(s):')
->>> print('\\n'.join(bisect_out[idx+1:idx+6]))
-  tests/file4.cpp (score 30.0)
-  tests/file1.cpp (score 10.0)
-  tests/file2.cpp (score 7.0)
-  tests/file3.cpp (score 4.0)
-  tests/A.cpp (score 2.0)
->>> bisect_out[idx+6].startswith('Searching for differing symbols in:')
+Let's make sure that the fake clang is called with --gcc-toolchain
+>>> fakeclang_lines = [line for line in makeout1
+...                    if line.startswith('./fake_clang34.py')]
+>>> len(fakeclang_lines)
+8
+>>> all('--gcc-toolchain' in line for line in fakeclang_lines)
 True
 
-Verify that all four files were searched individually
->>> sorted([x.split()[-1] for x in bisect_out
-...         if x.startswith('Searching for differing symbols in:')])
-['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
-
-Verify all non-templated functions were identified during the symbol searches
->>> print('\\n'.join(
-...     sorted([' '.join(x.split()[-6:]) for x in bisect_out
-...             if x.startswith('    Found differing symbol on line')])))
-line 100 -- file1_func3_PROBLEM() (score 2.0)
-line 103 -- file3_func5_PROBLEM() (score 3.0)
-line 106 -- file4_all() (score 30.0)
-line 108 -- file1_func4_PROBLEM() (score 3.0)
-line 90 -- file2_func1_PROBLEM() (score 7.0)
-line 92 -- file1_func2_PROBLEM() (score 5.0)
-line 92 -- file3_func2_PROBLEM() (score 1.0)
-line 95 -- A::fileA_method1_PROBLEM() (score 2.0)
-
-Verify the differing symbols section for file1.cpp
->>> idx = bisect_out.index('  All differing symbols in tests/file1.cpp:')
->>> print('\\n'.join(bisect_out[idx+1:idx+4]))
-    line 92 -- file1_func2_PROBLEM() (score 5.0)
-    line 108 -- file1_func4_PROBLEM() (score 3.0)
-    line 100 -- file1_func3_PROBLEM() (score 2.0)
->>> bisect_out[idx+4].startswith(' ')
+Let's make sure that gcc is not called with --gcc-toolchain
+>>> gcc_lines = [line for line in makeout2
+...              if line.startswith('g++ ')]
+>>> len(gcc_lines)
+8
+>>> any('--gcc-toolchain' in line for line in gcc_lines)
 False
 
-Verify the differing symbols section for file2.cpp
->>> idx = bisect_out.index('  All differing symbols in tests/file2.cpp:')
->>> bisect_out[idx+1]
-'    line 90 -- file2_func1_PROBLEM() (score 7.0)'
->>> bisect_out[idx+2].startswith(' ')
-False
-
-Verify the differing symbols section for file3.cpp
->>> idx = bisect_out.index('  All differing symbols in tests/file3.cpp:')
->>> print('\\n'.join(bisect_out[idx+1:idx+3]))
-    line 103 -- file3_func5_PROBLEM() (score 3.0)
-    line 92 -- file3_func2_PROBLEM() (score 1.0)
->>> bisect_out[idx+3].startswith('    ')
-False
-
-Verify the bad symbols section for file4.cpp
->>> idx = bisect_out.index('  All differing symbols in tests/file4.cpp:')
->>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
-    line 106 -- file4_all() (score 30.0)
->>> bisect_out[idx+2].startswith(' ')
-False
-
-Verify the bad symbols section for fileA.cpp
->>> idx = bisect_out.index('  All differing symbols in tests/A.cpp:')
->>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
-    line 95 -- A::fileA_method1_PROBLEM() (score 2.0)
->>> bisect_out[idx+2].startswith(' ')
-False
-
-Test the All differing symbols section of the output
->>> idx = bisect_out.index('All variability inducing symbols:')
->>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
-  tests/file4.cpp:106 ... -- file4_all() (score 30.0)
-  tests/file2.cpp:90 ... -- file2_func1_PROBLEM() (score 7.0)
-  tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
-  tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)
-  tests/file3.cpp:103 ... -- file3_func5_PROBLEM() (score 3.0)
-  tests/A.cpp:95 ... -- A::fileA_method1_PROBLEM() (score 2.0)
-  tests/file1.cpp:100 ... -- file1_func3_PROBLEM() (score 2.0)
-  tests/file3.cpp:92 ... -- file3_func2_PROBLEM() (score 1.0)
-
-Test that the --compiler-type flag value made it into the bisect Makefile
+See that the generated Makefile for fake_clang34.py shows the correct type
 >>> troublecxx
-['g++']
+['./fake_clang34.py']
 >>> troublecxx_type
-['gcc']
-
-TODO: test the log_contents variable
+['clang']
 '''
 
 # Test setup before the docstring is run.

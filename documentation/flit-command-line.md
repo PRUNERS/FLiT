@@ -141,7 +141,7 @@ is [pyelftools](https://github.com/eliben/pyelftools) as discussed in [FLiT
 Installation](installation.md).  If `pyelftools` is not installed, then
 `bisect` is disabled.
 
-When FLiT runs identify compilations that cause some tests to exhibit
+After FLiT identifies compilations that cause some tests to exhibit
 variability, one may want to investigate further and understand where the
 compiler introduced overly aggressive optimizations.
 
@@ -151,12 +151,17 @@ blamed source files.  You can run `flit bisect` directly giving it a specific
 compilation, precision, and test case, or you can tell it to automatically run
 for all differences in a given SQLite3 database.
 
-Here is an example of giving a single test case known to show variability:
+Here is an example of giving a single test case (named `subnormal`) known to
+show variability:
 
 ```bash
 flit init --directory litmus-test-run --litmus-tests
 cd litmus-test-run
-flit bisect --precision double "gcc -O3 -funsafe-math-optimizations" subnormal
+flit bisect \
+  --precision double \
+  --compiler-type gcc \
+  "gcc -O3 -funsafe-math-optimizations" \
+  subnormal
 ```
 
 And here is an example of giving a full SQLite3 database
@@ -169,6 +174,12 @@ make run -j8
 flit import --new-run results/*.csv
 flit bisect --auto-sqlite-run results.sqlite --parallel 8 --jobs 8
 ```
+
+In this mode, the compiler type will be inferred by matching the compiler in
+the sqlite database with `flit-config.toml`.  The same is true for a single
+bisect invocation if the given compiler is found within `flit-config.toml`.
+
+Call `flit bisect --help` for more documentation.
 
 [Prev](litmus-tests.md)
 |

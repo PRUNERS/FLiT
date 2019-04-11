@@ -98,6 +98,7 @@ import tempfile
 # cached values
 _default_toml = None
 _default_toml_string = None
+SUPPORTED_COMPILER_TYPES = ('clang', 'gcc', 'intel')
 
 def get_default_toml_string():
     '''
@@ -171,6 +172,73 @@ def fill_defaults(vals, defaults=None):
         for x in vals:
             fill_defaults(x, defaults[0])
     return vals
+
+def load_projconf(directory='.'):
+    '''
+    Loads and returns the project configuration found in the given tomlfile.
+    This function checks for validity of that tomlfile and fills it with
+    default values.
+
+    @param directory: directory containing 'flit-config.toml'.
+
+    @return project configuration as a struct of dicts and lists depending on
+    the structure of the given tomlfile.
+    '''
+    import toml
+    tomlfile = os.path.join(directory, 'flit-config.toml')
+    try:
+        projconf = toml.load(tomlfile)
+    except FileNotFoundError:
+        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
+              file=sys.stderr)
+        raise
+
+    defaults = get_default_toml()
+
+    if 'compiler' in projconf:
+        assert isinstance(projconf['compiler'], list), \
+            'flit-config.toml improperly configured, ' \
+            'needs [[compiler]] section'
+
+        default_type_map = {c['type']: c for c in defaults['compiler']}
+        type_map = {} # type -> compiler
+        name_map = {} # name -> compiler
+        for compiler in projconf['compiler']:
+
+            # make sure each compiler has a name, type, and binary
+            for field in ('name', 'type', 'binary'):
+                assert field in compiler, \
+                    'flit-config.toml: compiler "{0}"'.format(compiler) + \
+                    ' is missing the "{0}" field'.format(field)
+
+            # check that the type is valid
+            assert compiler['type'] in SUPPORTED_COMPILER_TYPES, \
+                'flit-config.toml: unsupported compiler type "{0}"' \
+                .format(compiler['type'])
+
+            # check that we only have one of each type specified
+            assert compiler['type'] not in type_map, \
+                'flit-config.toml: cannot have multiple compilers of the ' \
+                'same type ({0})'.format(compiler['type'])
+            type_map[compiler['type']] = compiler
+
+            # check that we only have one of each name specified
+            assert compiler['name'] not in name_map, \
+                'flit-config.toml: cannot have multiple compilers of the ' \
+                'same name ({0})'.format(compiler['name'])
+            name_map[compiler['name']] = compiler
+
+            # if optimization_levels or switches_list are missing for any
+            # compiler, put in the default flags for that compiler
+            default = default_type_map[compiler['type']]
+            for field in ('optimization_levels', 'switches_list'):
+                if field not in compiler:
+                    compiler[field] = default[field]
+
+    # Fill in the rest of the default values
+    fill_defaults(projconf, defaults)
+
+    return projconf
 
 def process_in_string(infile, vals, remove_license=True):
     '''
