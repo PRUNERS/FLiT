@@ -14,7 +14,7 @@ check: $(TARGETS) $(RUN_TARGETS)
 else
 check:
 	$(call color_out,RED,Warning: pyelftools is not found on your system;\
-	  skipping bisect tests)
+	  skipping flit-bisect tests)
 endif
 
 help:
