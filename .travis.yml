@@ -93,7 +93,7 @@ matrix:
     # Job 1: OpenMPI
     - env:
       - mpi_type=openmpi
-      - extra_pip=pyelftools
+      - extra_pip="pyelftools scan-build"
       addons:
         apt:
           packages:
