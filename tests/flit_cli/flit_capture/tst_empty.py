@@ -87,29 +87,106 @@ The tests are below using doctest
 
 >>> import os
 >>> from io import StringIO
+>>> import json
 
+Helpers
 >>> class CaptureTestError(RuntimeError): pass
+>>> def run_capture(argv):
+...     with th.tempdir() as temp_dir:
+...         os.chdir(temp_dir)
+...         with StringIO() as ostream:
+...             retval = th.flit.main(argv, outstream=ostream)
+...             if retval != 0:
+...                 raise CaptureTestError(
+...                     'could not capture "true" command (retval={0}): '
+...                     .format(retval) + ostream.getvalue())
+...             out = ostream.getvalue().splitlines()
+...         listing = os.listdir()
+...         content_map = {}
+...         for fname in listing:
+...             with open(fname, 'r') as fin:
+...                 content_map[fname] = json.load(fin)
+...     return out, content_map
 
->>> with th.tempdir() as temp_dir:
-...     os.chdir(temp_dir)
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['capture', 'true'])
-...         if retval != 0:
-...             raise CaptureTestError(
-...                 'could not capture "true" command (retval={0}): '
-...                 .format(retval) + ostream.getvalue())
-...         out = ostream.getvalue().splitlines()
-...     listing = os.listdir()
-...     contents = None
-...     if 'compile_commands.json' in listing:
-...         with open('compile_commands.json', 'r') as fin:
-...             contents = fin.read().splitlines()
+
+No arguments and the default output filename
+
+>>> out, content_map = run_capture(['capture', 'true'])
+>>> out
+[]
+>>> content_map
+{'compile_commands.json': []}
+
+No build, but specifying the output filename
+
+>>> import tempfile
+>>> with tempfile.NamedTemporaryFile() as fout:
+...     fname = os.path.basename(fout.name)
+...     out, content_map = run_capture(['capture', '-o', fname, 'true'])
 
 >>> out
 []
+>>> len(content_map)
+1
+>>> content_map[fname]
+[]
 
->>> contents
-['[]']
+Capture the innocuous 'true' command as a compiler
+
+>>> with tempfile.NamedTemporaryFile(suffix='.cpp') as sourcefile:
+...     fname = sourcefile.name
+...     out, content_map = run_capture(['capture', '--cdb', 'out.json',
+...                                     '--add-c++', 'true',
+...                                     'bash', '-c',
+...                                     '/usr/bin/true ' + fname])
+>>> out
+[]
+>>> len(content_map['out.json'])
+1
+>>> relfname = os.path.join('..', os.path.basename(fname))
+>>> compilation = content_map['out.json'][0]
+>>> 'directory' in compilation
+True
+>>> expected_compilation = {
+...     'arguments': ['true', '-c', relfname],
+...     'compiler': 'true',
+...     'file': relfname,
+...     'directory': compilation['directory'], # a temporary directory
+...     'language': 'c++',
+...     }
+>>> compilation == expected_compilation
+True
+>>> os.path.dirname(compilation['directory']) == '/tmp'
+True
+
+Capture the innocuous 'true' command as a compiler, without absolute path
+
+>>> with tempfile.NamedTemporaryFile(suffix='.cpp') as sourcefile:
+...     fname = sourcefile.name
+...     out, content_map = run_capture(['capture', '--cdb', 'out.json',
+...                                     '--add-c++', 'true',
+...                                     'bash', '-c',
+...                                     'true ' + fname])
+>>> out
+[]
+>>> len(content_map['out.json'])
+1
+>>> relfname = os.path.join('..', os.path.basename(fname))
+>>> compilation = content_map['out.json'][0]
+>>> 'directory' in compilation
+True
+>>> expected_compilation = {
+...     'arguments': ['true', '-c', relfname],
+...     'compiler': 'true',
+...     'file': relfname,
+...     'directory': compilation['directory'], # a temporary directory
+...     'language': 'c++',
+...     }
+>>> compilation == expected_compilation
+True
+>>> os.path.dirname(compilation['directory']) == '/tmp'
+True
+
 '''
 
 # Test setup before the docstring is run.

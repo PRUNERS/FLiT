@@ -110,6 +110,10 @@ from libscanbuild.intercept import (
     )
 from libscanbuild import run_build, reconfigure_logging
 
+# TODO: in order to handle new file endings, we need to override the function
+# TODO-   libscanbuild.compilation.classify_source(fname)
+# TODO- to be able to handle our own custom list of supported file endings
+
 brief_description = 'Captures source file compilations into a JSON database'
 
 LANG_COMPILER_LISTS = defaultdict(list)
@@ -140,7 +144,7 @@ class CustomCompilation(Compilation):
             - compiler_name (str): the binary name of the compiler
               (e.g., 'clang++')
             - remaining_args (list(str)): all other arguments
-              (e.g., ['-c', '-o', 'out.o'])
+              (e.g., ['-c', 'main.cpp', '-o', 'out.o'])
         '''
 
         if command:  # not empty list will allow to index '0' and '1:'
@@ -203,6 +207,7 @@ def parse_args(arguments, prog=sys.argv[0]):
                             in the CXX environment variable will automatically
                             be added.
                             ''')
+    # TODO: support adding new file endings for new or existing languages
     parser.add_argument('--add-lang',
                         metavar='<lang>:<compiler>[,<compiler>...]',
                         action='append', dest='added_langs',
@@ -301,8 +306,10 @@ def capture(args):
     with temporary_directory(prefix='flit-capture-') as tmpdir:
         env = setup_environment(args, tmpdir)
         exit_code = run_build(args.build, env=env)
+        trace_files = list(exec_trace_files(tmpdir))
         calls = (parse_exec_trace(tracefile)
                  for tracefile in exec_trace_files(tmpdir))
+        calls = list(calls)
         compilations = set(
             compilation for call in calls for compilation in
             CustomCompilation.iter_from_execution(call, CC, CXX)
