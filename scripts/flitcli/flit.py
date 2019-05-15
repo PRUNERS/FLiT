@@ -98,6 +98,8 @@ import importlib
 import os
 import sys
 
+import flitargformatter
+
 def import_helper_modules(directory):
     'Imports the modules found in the given directory.'
     if directory not in sys.path:
@@ -129,6 +131,7 @@ def generate_help_documentation(subcom_map):
     >>> help_str, help_subcom_str = generate_help_documentation(dict())
     '''
     parser = argparse.ArgumentParser(
+        formatter_class=flitargformatter.DefaultsParaHelpFormatter,
         description='''
             The flit command-line tool allows for users to write
             portability test cases.  One can test primarily for

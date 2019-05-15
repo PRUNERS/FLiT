@@ -85,19 +85,22 @@
 import argparse
 import sys
 
+import flitargformatter
 import flitconfig as conf
 
 brief_description = 'Runs analysis on a previous flit run'
 
 def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
     parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                Runs analysis on a previous flit run.  The analysis will be of
-                the current flit repository and will create a directory called
-                analysis inside of the flit directory.
-                ''',
-            )
+        prog=prog,
+        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
+        description='''
+            Runs analysis on a previous flit run.  The analysis will be of
+            the current flit repository and will create a directory called
+            analysis inside of the flit directory.
+            ''',
+        )
     parser.add_argument('-C', '--directory', default='.',
                         help='Directory containing flit-config.toml')
     parser.add_argument('-l', '--list', action='store_true',

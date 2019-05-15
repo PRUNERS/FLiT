@@ -80,36 +80,46 @@
 #
 # -- LICENSE END --
 
-'Implements the run subcommand for executing all compilations of flit tests'
+'Custom formatter classes for argparse'
 
 import argparse
-import sys
+import re
+import textwrap
 
-import flitargformatter
+def _split_lines(text, width):
+    'Returns split lines, wrapping and retaining paragraphs'
+    text = '\n'.join(x.strip() for x in text.strip().splitlines())
+    paragraphs = re.split('\n\n\n*', text)
+    lines = []
+    for para in paragraphs:
+        lines.extend(textwrap.wrap(para, width))
+        lines.append('')
+    return lines[:-1] # remove trailing empty line
 
-brief_description = 'Run flit on the configured remote machine(s)'
+class DefaultsParaHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    '''
+    Formats the description and all help text using wrapped text and adding
+    default values to argument help.  The only addition is that two successive
+    newlines results in a separate wrapped paragraph.
+    '''
+    def _fill_text(self, text, width, indent):
+        'Fill the line, wrapping, adding indent, and preserving paragraphs'
+        return indent + ('\n' + indent).join(
+            self._split_lines(text, width - len(indent)))
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
-            Run flit on the configured remote machine(s).  Note that you
-            may need to provide a password for SSH, but that should be
-            taken care of pretty early on in the process.  The results
-            should be sent to the database computer for later analysis.
-            ''',
-        )
-    parser.add_argument('description',
-                        help='A description of the test run (required)')
-    args = parser.parse_args(arguments)
+    def _split_lines(self, text, width):
+        'Return split lines, wrapping and retaining paragraphs'
+        return _split_lines(text, width)
 
-    # Subcommand logic here
-    # ...
+class DefaultsParaSpaciousHelpFormatter(DefaultsParaHelpFormatter):
+    '''
+    Formats the description and all help text using wrapped text and adding
+    default values to argument help.  The only addition is that two successive
+    newlines results in a separate wrapped paragraph.
 
-    # TODO: execute flit make on the remote machines
-    # TODO: push the results to the database machine
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    The spacious aspect adds a newline to the end of option argument
+    descriptions to spread them out more.
+    '''
+    def _split_lines(self, text, width):
+        'Return split lines, wrapping and retaining paragraphs'
+        return _split_lines(text, width) + ['']

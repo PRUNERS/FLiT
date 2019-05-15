@@ -93,22 +93,22 @@ database
 
 from collections import defaultdict
 import argparse
-import itertools
 import json
 import logging
 import os
-import re
 import sys
 
 from libear import temporary_directory
 from libscanbuild.compilation import (
-    Compilation, CompilationDatabase, COMPILER_PATTERN_WRAPPER,
-    COMPILER_PATTERNS_MPI_WRAPPER, COMPILER_PATTERNS_CC, COMPILER_PATTERNS_CXX
+    Compilation, COMPILER_PATTERN_WRAPPER, COMPILER_PATTERNS_MPI_WRAPPER,
+    COMPILER_PATTERNS_CC, COMPILER_PATTERNS_CXX, get_mpi_call
     )
 from libscanbuild.intercept import (
     setup_environment, exec_trace_files, parse_exec_trace
     )
 from libscanbuild import run_build, reconfigure_logging
+
+import flitargformatter
 
 # TODO: in order to handle new file endings, we need to override the function
 # TODO-   libscanbuild.compilation.classify_source(fname)
@@ -125,10 +125,6 @@ class CustomCompilation(Compilation):
     A compilation, but really a specialization of
     libscanbuild.compilation.Compilation for the kind of behaviour we need.
     '''
-
-    def __init__(*args, **kwargs):
-        'Just calls the Compilation class constructor'
-        super().__init__(*args, **kwargs)
 
     @classmethod
     def _split_compiler(cls, command, cc, cxx):
@@ -158,12 +154,12 @@ class CustomCompilation(Compilation):
                 # Compiler wrapper without compiler is a 'C' compiler.
                 return (executable, parameters) if result is None else result
             # MPI compiler wrappers add extra parameters
-            elif is_mpi_wrapper(executable):
+            if is_mpi_wrapper(executable):
                 # Pass the executable with full path to avoid pick different
                 # executable from PATH.
                 mpi_call = get_mpi_call(command[0])  # type: List[str]
                 return cls._split_compiler(mpi_call + parameters, cc, cxx)
-            elif get_language(executable) is not None:
+            if get_language(executable) is not None:
                 return executable, parameters
         return None
 
@@ -171,7 +167,7 @@ def parse_args(arguments, prog=sys.argv[0]):
     'Parse arguments and return parsed args'
     parser = argparse.ArgumentParser(
         prog=prog,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
         description='''
             Captures source file compilations into a JSON database.  This can
             then be used by flit import and flit update to generate custom.mk.
@@ -203,7 +199,9 @@ def parse_args(arguments, prog=sys.argv[0]):
                         dest='cxx_compilers', type=str,
                         help='''
                             Add a comma-separated list of C++ compilers to the
-                            list of compilers to identify.  Note, the compiler
+                            list of compilers to identify.
+
+                            Note: the compiler
                             in the CXX environment variable will automatically
                             be added.
                             ''')
@@ -306,10 +304,8 @@ def capture(args):
     with temporary_directory(prefix='flit-capture-') as tmpdir:
         env = setup_environment(args, tmpdir)
         exit_code = run_build(args.build, env=env)
-        trace_files = list(exec_trace_files(tmpdir))
         calls = (parse_exec_trace(tracefile)
                  for tracefile in exec_trace_files(tmpdir))
-        calls = list(calls)
         compilations = set(
             compilation for call in calls for compilation in
             CustomCompilation.iter_from_execution(call, CC, CXX)

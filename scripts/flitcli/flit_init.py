@@ -87,16 +87,18 @@ import os
 import shutil
 import sys
 
+import flitargformatter
 import flitconfig as conf
 import flitutil
 import flit_update
 
 brief_description = 'Initializes a flit test directory for use'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
+def parse_args(arguments, prog=sys.argv[0]):
+    'Parse arguments and return parsed args'
     parser = argparse.ArgumentParser(
         prog=prog,
+        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
         description='''
             Initializes a flit test directory for use.  It will initialize
             the directory by copying the default configuration file into
@@ -111,8 +113,11 @@ def main(arguments, prog=sys.argv[0]):
                         help='Overwrite init files if they are already there')
     parser.add_argument('-L', '--litmus-tests', action='store_true',
                         help='Copy over litmus tests too')
-    args = parser.parse_args(arguments)
+    return parser.parse_args(arguments)
 
+def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
+    args = parse_args(arguments, prog)
     os.makedirs(args.directory, exist_ok=True)
 
     # write flit-config.toml

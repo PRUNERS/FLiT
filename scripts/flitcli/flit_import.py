@@ -88,6 +88,7 @@ import datetime
 import os
 import sys
 
+import flitargformatter
 import flitutil as util
 
 brief_description = 'Import flit results into the configured database'
@@ -95,7 +96,8 @@ brief_description = 'Import flit results into the configured database'
 def _file_check(filename):
     'Check that a file exists or raise an exception'
     if not os.path.isfile(filename):
-        raise argparse.ArgumentTypeError('File does not exist: {0}'.format(filename))
+        raise argparse.ArgumentTypeError('File does not exist: {0}'
+                                         .format(filename))
     return filename
 
 def get_dbfile_from_toml(tomlfile):
@@ -113,10 +115,11 @@ def get_dbfile_from_toml(tomlfile):
             'Only sqlite database supported'
     return projconf['database']['filepath']
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
+def parse_args(arguments, prog=sys.argv[0]):
+    'Parse arguments and returned parsed args'
     parser = argparse.ArgumentParser(
         prog=prog,
+        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
         description='''
             Import flit results into the configured database.  The configured
             database is found from the settings in flit-config.toml.  You can
@@ -172,43 +175,117 @@ def main(arguments, prog=sys.argv[0]):
     if args.dbfile is None:
         args.dbfile = get_dbfile_from_toml('flit-config.toml')
 
+    return args
+
+def create_new_run(database, label):
+    '''
+    Create a new run and return the run number
+
+    @param database sqlite3 database connection
+    @return integer representing the new run number
+    '''
+    database.execute('insert into runs(rdate,label) values (?,?)',
+                     (datetime.datetime.now(), label))
+    database.commit()
+    results = database.execute('select id from runs order by id')
+    return results.fetchall()[-1]['id']
+
+def verify_run_id(database, run_id):
+    'Asserts the run id is found in the database'
+    run_ids = [x['id'] for x in database.execute('select id from runs')]
+    assert run_id in run_ids, \
+            'Specified append run id {0} is not in the runs ' \
+            'table'.format(run_id)
+
+def extract_from_sqlite(fname, run_id=None):
+    '''
+    Extract a particular run from an sqlite file.
+
+    @param fname filename to an sqlite3 file
+    @param run_id integer specifying id of the run to extract from fname
+    @return (list(dict)) extracted rows
+    '''
+    database = util.sqlite_open(fname)
+    cur = database.cursor()
+    if run_id is None:
+        cur.execute('select id from runs')
+        all_run_ids = sorted([x['id'] for x in cur])
+        if len(all_run_ids) == 0:
+            print('  Warning: no runs in database')
+            return []
+        run_id = all_run_ids[-1]
+    else:
+        verify_run_id(database, run_id)
+
+    cur.execute('select name,host,compiler,optl,switches,precision,'
+                'comparison_hex,comparison,file,nanosec '
+                'from tests where run = ?', (run_id,))
+    return [dict(x) for x in cur]
+
+def insert_test_rows(database, rows, run_id):
+    '''
+    Inserts the rows into the database
+
+    @param database an sqlite3 database connection
+    @param rows (list(dict)) rows to insert into 'tests' table
+    @param run_id (int) run id to use
+    @return None
+    '''
+    to_insert = []
+    for row in rows:
+        # Convert 'NULL' to None
+        for key, val in row.items():
+            if val == 'NULL':
+                row[key] = None
+        # Insert
+        to_insert.append((
+            run_id,
+            row['name'],
+            row['host'],
+            row['compiler'],
+            row['optl'],
+            row['switches'],
+            row['precision'],
+            row['comparison_hex'],
+            row['comparison'],
+            row['file'],
+            row['nanosec'],
+            ))
+    database.executemany('''
+        insert into tests(
+            run,
+            name,
+            host,
+            compiler,
+            optl,
+            switches,
+            precision,
+            comparison_hex,
+            comparison,
+            file,
+            nanosec)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', to_insert)
+    database.commit()
+
+def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
+    args = parse_args(arguments, prog)
+
     if os.path.isfile(args.dbfile):
         print('Appending', args.dbfile)
     else:
         print('Creating', args.dbfile)
-    db = util.sqlite_open(args.dbfile)
+    database = util.sqlite_open(args.dbfile)
 
-    # create a new run and set the args.append run id
     if args.append is None:
-        # Create a new run to use in import
-        db.execute('insert into runs(rdate,label) values (?,?)',
-                   (datetime.datetime.now(), args.label))
-        db.commit()
-        args.append = \
-            db.execute('select id from runs order by id').fetchall()[-1]['id']
-
-    # Make sure the run id exists.
-    run_ids = [x['id'] for x in db.execute('select id from runs')]
-    assert args.append in run_ids, \
-            'Specified append run id {0} is not in the runs ' \
-            'table'.format(args.append)
+        args.append = create_new_run(database, args.label)
+    verify_run_id(database, args.append)
 
     for importee in args.importfile:
         print('Importing', importee)
         if util.is_sqlite(importee):
-            import_db = util.sqlite_open(importee)
-            cur = import_db.cursor()
-            cur.execute('select id from runs')
-            importee_run_ids = sorted([x['id'] for x in cur])
-            if len(importee_run_ids) == 0:
-                print('  no runs in database: nothing to import')
-                continue
-            latest_run = importee_run_ids[-1]
-            import_run = args.run if args.run is not None else latest_run
-            cur.execute('select name,host,compiler,optl,switches,precision,'
-                        'comparison_hex,comparison,file,nanosec '
-                        'from tests where run = ?', (import_run,))
-            rows = [dict(x) for x in cur]
+            rows = extract_from_sqlite(importee, run_id=args.run)
         else:
             with open(importee, 'r') as csvin:
                 reader = csv.DictReader(csvin)
@@ -216,41 +293,7 @@ def main(arguments, prog=sys.argv[0]):
         if len(rows) == 0:
             print('  zero rows: nothing to import')
             continue
-        to_insert = []
-        for row in rows:
-            # Convert 'NULL' to None
-            for key, val in row.items():
-                row[key] = val if val != 'NULL' else None
-            # Insert
-            to_insert.append((
-                args.append,
-                row['name'],
-                row['host'],
-                row['compiler'],
-                row['optl'],
-                row['switches'],
-                row['precision'],
-                row['comparison_hex'],
-                row['comparison'],
-                row['file'],
-                row['nanosec'],
-                ))
-        db.executemany('''
-            insert into tests(
-                run,
-                name,
-                host,
-                compiler,
-                optl,
-                switches,
-                precision,
-                comparison_hex,
-                comparison,
-                file,
-                nanosec)
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', to_insert)
-    db.commit()
+        insert_test_rows(database, rows, args.append)
 
     return 0
 

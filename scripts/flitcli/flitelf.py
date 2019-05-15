@@ -257,7 +257,7 @@ def _gen_file_line_table(dwarfinfo):
                 filename = lineprog['file_entry'][prevstate.file - 1].name
                 dirno = lineprog['file_entry'][prevstate.file - 1].dir_index
                 filepath = os.path.join(
-                        lineprog['include_directory'][dirno - 1], filename)
+                    lineprog['include_directory'][dirno - 1], filename)
                 line = prevstate.line
                 fromaddr = prevstate.address
                 toaddr = max(fromaddr, entry.state.address)

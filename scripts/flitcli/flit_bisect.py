@@ -100,6 +100,7 @@ import sqlite3
 import subprocess as subp
 import sys
 
+import flitargformatter
 import flitconfig as conf
 import flitutil as util
 try:
@@ -957,6 +958,7 @@ def parse_args(arguments, prog=sys.argv[0]):
     '''
     parser = argparse.ArgumentParser(
         prog=prog,
+        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
         description='''
             Compiles the source code under both the ground-truth
             compilation and a given problematic compilation.  This tool
@@ -1443,7 +1445,6 @@ def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
 
     class ExitEarlyException(Exception):
         'Exception used to exit early from bisect search'
-        pass
 
     def differing_symbol_callback(symbol, score):
         'captures the symbol and checks for early termination'

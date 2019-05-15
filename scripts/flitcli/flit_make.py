@@ -88,6 +88,7 @@ import multiprocessing
 import subprocess
 import sys
 
+import flitargformatter
 import flit_import
 
 brief_description = 'Runs the make and adds to the database'
@@ -96,6 +97,7 @@ def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     parser = argparse.ArgumentParser(
         prog=prog,
+        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
         description='''
             This command runs the full set of tests and adds the results
             to the configured database.
