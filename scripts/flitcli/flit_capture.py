@@ -98,15 +98,20 @@ import logging
 import os
 import sys
 
-from libear import temporary_directory
-from libscanbuild.compilation import (
-    Compilation, COMPILER_PATTERN_WRAPPER, COMPILER_PATTERNS_MPI_WRAPPER,
-    COMPILER_PATTERNS_CC, COMPILER_PATTERNS_CXX, get_mpi_call
-    )
-from libscanbuild.intercept import (
-    setup_environment, exec_trace_files, parse_exec_trace
-    )
-from libscanbuild import run_build, reconfigure_logging
+try:
+    from libear import temporary_directory
+    from libscanbuild.compilation import (
+        Compilation, COMPILER_PATTERN_WRAPPER, COMPILER_PATTERNS_MPI_WRAPPER,
+        COMPILER_PATTERNS_CC, COMPILER_PATTERNS_CXX, get_mpi_call
+        )
+    from libscanbuild.intercept import (
+        setup_environment, exec_trace_files, parse_exec_trace
+        )
+    from libscanbuild import run_build, reconfigure_logging
+except:
+    enabled = False
+else:
+    enabled = True
 
 import flitargformatter
 
@@ -368,4 +373,8 @@ def main(arguments, prog=sys.argv[0]):
     return exit_code
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    if enabled:
+        sys.exit(main(sys.argv[1:]))
+    else:
+        print('Warning: failed to import scan-build. Flit capture disabled')
+        return 1
