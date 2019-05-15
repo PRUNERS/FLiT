@@ -98,18 +98,18 @@ The tests are below using doctest
 ...             raise CaptureTestError(
 ...                 'could not capture "true" command (retval={0}): '
 ...                 .format(retval) + ostream.getvalue())
-...         out1 = ostream.getvalue().splitlines()
-...     listing1 = os.listdir()
-...     contents1 = None
-...     if 'compile_commands.json' in listing1:
+...         out = ostream.getvalue().splitlines()
+...     listing = os.listdir()
+...     contents = None
+...     if 'compile_commands.json' in listing:
 ...         with open('compile_commands.json', 'r') as fin:
-...             contents1 = fin.read().splitlines()
+...             contents = fin.read().splitlines()
 
->>> out1
+>>> out
 []
 
->>> contents1
-[]
+>>> contents
+['[]']
 '''
 
 # Test setup before the docstring is run.

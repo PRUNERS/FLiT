@@ -241,6 +241,8 @@ def parse_args(arguments, prog=sys.argv[0]):
                                    for cxx in args.cxx_compilers.split(','))
         LANG_COMPILER_LISTS['c++'].extend(args.cxx_compilers)
     reconfigure_logging(int(args.verbose) * 2)
+    if args.added_langs is None:
+        args.added_langs = []
 
     for newlang in args.added_langs:
         lang, compilers = newlang.split(':', 1)
