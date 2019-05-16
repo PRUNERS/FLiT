@@ -110,6 +110,8 @@ try:
     from libscanbuild import run_build, reconfigure_logging
 except:
     enabled = False
+    # fake out failed imports
+    Compilation = object
 else:
     enabled = True
 
