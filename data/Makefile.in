@@ -128,9 +128,16 @@ RUNWRAP          = $(RUN_WRAPPER)
 ifeq ($(ENABLE_MPI),yes) # If we are using MPI
   RUNWRAP       += mpirun $(MPIRUN_ARGS)
   CC_REQUIRED   += -DFLIT_USE_MPI
-  CC_REQUIRED   += $(shell mpic++ --showme:compile)
-  LD_REQUIRED   += $(shell mpic++ --showme:link)
-endif
+  IS_OPENMPI    := $(shell mpic++ --showme:compile >/dev/null 2>&1 && echo true)
+ifeq ($(IS_OPENMPI),true)
+  CC_REQUIRED   += $(shell mpic++ --showme:compile 2>/dev/null)
+  LD_REQUIRED   += $(shell mpic++ --showme:link 2>/dev/null)
+else  # IS_OPENMPI == false
+  CC_REQUIRED   += $(shell mpic++ -compile_info 2>/dev/null | \
+                           cut --delimiter ' ' --field 2-)
+  LD_REQUIRED   += $(shell mpic++ -link | cut --delimiter ' ' --field 2-)
+endif # IS_OPENMPI == true
+endif # ENABLE_MPI == yes
 
 OBJ_DIR         := obj
 
