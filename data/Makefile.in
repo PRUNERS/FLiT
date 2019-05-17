@@ -135,7 +135,7 @@ ifeq ($(IS_OPENMPI),true)
 else  # IS_OPENMPI == false
   CC_REQUIRED   += $(shell mpic++ -compile_info 2>/dev/null | \
                            cut --delimiter ' ' --field 2-)
-  LD_REQUIRED   += $(shell mpic++ -link | cut --delimiter ' ' --field 2-)
+  LD_REQUIRED   += $(shell mpic++ -link_info | cut --delimiter ' ' --field 2-)
 endif # IS_OPENMPI == true
 endif # ENABLE_MPI == yes
 
