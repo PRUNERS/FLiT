@@ -101,13 +101,15 @@ matrix:
             - libopenmpi-dev
             - openmpi-bin
     # Job 2: MPICH
-    #- env: mpi_type=mpich
-    #  addons:
-    #    apt:
-    #      packages:
-    #        - *native_deps
-    #        - libmpich-dev
-    #        - mpich
+    - env:
+      - mpi_type=mpich
+      - extra_pip=
+      addons:
+        apt:
+          packages:
+            - *native_deps
+            - libmpich-dev
+            - mpich
     # Job 3: No MPI
     - env:
       - mpi_type=none
