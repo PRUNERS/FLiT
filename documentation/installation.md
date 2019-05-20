@@ -133,6 +133,12 @@ OpenMPI is installed with
 sudo apt install openmpi-bin libopenmpi-dev
 ```
 
+Or you can alternatively use MPICH
+
+```bash
+sudo apt install mpich
+```
+
 ## FLiT Setup
 
 You will need FLiT available and compiled.  It can be optionally installed.
