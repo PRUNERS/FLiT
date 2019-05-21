@@ -109,6 +109,8 @@ and run FLiT bisect
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))
+...     with open(os.path.join(temp_dir, 'custom.mk'), 'a') as mkout:
+...         _ = mkout.write('SOURCE += tests/file4.cxx\\n')
 ...     with StringIO() as ostream:
 ...         retval = th.flit.main(['bisect', '-C', temp_dir,
 ...                                '--compiler-type', 'gcc',
@@ -149,13 +151,13 @@ Let's see that the ground truth results are updated first
 Verify that all source files were found and output during the search
 >>> sorted([x.split(':')[0].split()[-1] for x in bisect_out
 ...         if x.startswith('    Found differing source file')])
-['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
+['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cxx']
 
 Verify that the four differing sources were output in the "differing sources:"
 section
 >>> idx = bisect_out.index('all variability inducing source file(s):')
 >>> print('\\n'.join(bisect_out[idx+1:idx+6]))
-  tests/file4.cpp (score 30.0)
+  tests/file4.cxx (score 30.0)
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
   tests/file3.cpp (score 4.0)
@@ -166,7 +168,7 @@ True
 Verify that all four files were searched individually
 >>> sorted([x.split()[-1] for x in bisect_out
 ...         if x.startswith('Searching for differing symbols in:')])
-['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cpp']
+['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cxx']
 
 Verify all non-templated functions were identified during the symbol searches
 >>> print('\\n'.join(
@@ -205,8 +207,8 @@ Verify the differing symbols section for file3.cpp
 >>> bisect_out[idx+3].startswith('    ')
 False
 
-Verify the bad symbols section for file4.cpp
->>> idx = bisect_out.index('  All differing symbols in tests/file4.cpp:')
+Verify the bad symbols section for file4.cxx
+>>> idx = bisect_out.index('  All differing symbols in tests/file4.cxx:')
 >>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
     line 106 -- file4_all() (score 30.0)
 >>> bisect_out[idx+2].startswith(' ')
@@ -222,7 +224,7 @@ False
 Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
-  tests/file4.cpp:106 ... -- file4_all() (score 30.0)
+  tests/file4.cxx:106 ... -- file4_all() (score 30.0)
   tests/file2.cpp:90 ... -- file2_func1_PROBLEM() (score 7.0)
   tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
   tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)
