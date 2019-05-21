@@ -12,7 +12,9 @@ implies - empty.  It basically shows you how to create a new test and is
 intended to be used as a template for creating tests.
 
 To add a test, simply copy `Empty.cpp` and place it in the `tests` directory
-with an ending of `cpp`.  Rename the class inside, and you're good to go.
+with an ending of `.cpp`.  Rename the class inside, and you're good to go.  If
+you name it with a different ending than `.cpp`, then you will need to ensure
+it is included from within `custom.mk` in the `SOURCE` variable.
 
 
 ## Test Case Requirements
@@ -61,9 +63,9 @@ like to override that behavior.
 ## Disabling Test Cases
 
 Since all files ending with `.cpp` in the `tests` directory and the parent
-directory are included in the compilation, the best way to disable a test is
-simply to move it into a new directory.  Suppose the test I want to disable is
-called `BrokenTest.cpp`.
+directory are included in the compilation by default, the best way to disable a
+test is simply to move it into a new directory.  Suppose the test I want to
+disable is called `BrokenTest.cpp`.
 
 ```bash
 mkdir disabled

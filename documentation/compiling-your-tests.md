@@ -27,8 +27,7 @@ changes.  Instead put changes in this `custom.mk` file.
 The `custom.mk` file is already populated with variables that you may want to
 use.  Simply add to these variables to compile your application.
 
-- `SOURCE`: This variable contains source code to compile other than the tests
-  that are in the `tests` directory.
+- `SOURCE`: This variable contains source files to compile
 - `CC_REQUIRED`: Compiler flags to use across the board, for the dev build,
   ground-truth build, and all other builds.  Here is where you set macro
   variables, include paths, and perhaps warning flags.
