@@ -198,8 +198,6 @@ TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
 SOURCE          += $(TESTS)
 
-VPATH            = $(sort $(dir $(SOURCE)))
-
 .PHONY: help
 help:
 	@echo 'You can run the Makefile directly, but it is recommended to use'
