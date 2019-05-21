@@ -310,8 +310,6 @@ def capture(args):
     '''
     with temporary_directory(prefix='flit-capture-') as tmpdir:
         env = setup_environment(args, tmpdir)
-        assert env is not None
-        assert args.build is not None
         exit_code = run_build(args.build, env=env)
         calls = (parse_exec_trace(tracefile)
                  for tracefile in exec_trace_files(tmpdir))

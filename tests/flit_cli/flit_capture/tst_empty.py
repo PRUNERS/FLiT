@@ -88,6 +88,7 @@ The tests are below using doctest
 >>> import os
 >>> from io import StringIO
 >>> import json
+>>> import shutil
 
 Helpers
 >>> class CaptureTestError(RuntimeError): pass
@@ -107,7 +108,7 @@ Helpers
 ...             with open(fname, 'r') as fin:
 ...                 content_map[fname] = json.load(fin)
 ...     return out, content_map
-
+>>> truepath = shutil.which('true')
 
 No arguments and the default output filename
 
@@ -138,7 +139,7 @@ Capture the innocuous 'true' command as a compiler
 ...     out, content_map = run_capture(['capture', '--cdb', 'out.json',
 ...                                     '--add-c++', 'true',
 ...                                     'bash', '-c',
-...                                     '/usr/bin/true ' + fname])
+...                                     truepath + ' ' + fname])
 >>> out
 []
 >>> len(content_map['out.json'])
