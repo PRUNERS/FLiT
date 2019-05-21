@@ -303,7 +303,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
 
     # Create the txt files containing symbol lists within the obj directory
     for split_srcfile, split_symbols in split_symbol_map.items():
-        split_basename = os.path.splitext(os.path.basename(split_srcfile))[0]
+        split_basename = os.path.basename(split_srcfile)
         split_base = os.path.join(directory, 'obj', split_basename)
         trouble_symbols_fname = split_base + '_trouble_symbols_' \
                 + repl_copy['number'] + '.txt'
@@ -567,7 +567,7 @@ def extract_symbols(file_or_filelist, objdir):
     '''
     Extracts symbols for the given source file(s).  The corresponding object is
     assumed to be in the objdir with the filename replaced with the GNU Make
-    pattern %.cpp=%_gt.o.
+    pattern %=%_gt.o.
 
     @param file_or_filelist: (str or list(str)) source file(s) for which to get
         symbols.
@@ -592,7 +592,7 @@ def extract_symbols(file_or_filelist, objdir):
 
     # now we know it is a string, so assume it is a filename
     fname = file_or_filelist
-    fbase = os.path.splitext(os.path.basename(fname))[0]
+    fbase = os.path.basename(fname)
     fobj = os.path.join(objdir, fbase + '_gt.o')
 
     if fobj in _extract_symbols_memos:

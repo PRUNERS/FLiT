@@ -140,29 +140,29 @@ endif
 BUILD_GT_LOCAL   := {build_gt_local}
 
 TROUBLE_TARGET_OBJ := $(addprefix \
-    $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_bisect_$(TROUBLE_ID).o)))
+    $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_bisect_$(TROUBLE_ID).o)))
 ALL_TROUBLE_FPIC := $(TROUBLE_TARGET_OBJ:%.o=%_fPIC.o)
 BISECT_GT_OBJ    := $(addprefix \
-    $(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%.cpp=%_gt.o)))
+    $(OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%=%_gt.o)))
 TROUBLE_OBJ      := $(addprefix \
-    $(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%.cpp=%_bisect_$(TROUBLE_ID).o)))
+    $(OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%=%_bisect_$(TROUBLE_ID).o)))
 BISECT_OBJ       := $(BISECT_GT_OBJ)
 BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 FPIC_OBJ         := $(addprefix \
-    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_fPIC.o)))
+    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_fPIC.o)))
 FPIC_OBJ         := $(addprefix \
-    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_bisect_$(TROUBLE_ID)_fPIC.o)))
+    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_bisect_$(TROUBLE_ID)_fPIC.o)))
 FPIC_DEPS        := $(FPIC_OBJ:%.o=%.d)
 SPLIT_OBJ        := $(addprefix \
-    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%.cpp=%_gt_split_$(NUMBER).o)))
+    $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_split_$(NUMBER).o)))
 SPLIT_OBJ        += $(addprefix \
     $(BISECT_OBJ_DIR)/,$(notdir \
-      $(SPLIT_SRC:%.cpp=%_trouble_split_$(NUMBER).o)))
+      $(SPLIT_SRC:%=%_trouble_split_$(NUMBER).o)))
 SPLIT_DEPS       := $(SPLIT_OBJ:%.o=%.d)
 TROUBLE_SYMBOLS  := $(addprefix \
     $(BISECT_OBJ_DIR)/,$(notdir \
-      $(SPLIT_SRC:%.cpp=%_trouble_symbols_$(NUMBER).txt)))
+      $(SPLIT_SRC:%=%_trouble_symbols_$(NUMBER).txt)))
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
@@ -270,56 +270,78 @@ $(BISECT_DIR):
 $(BISECT_OBJ_DIR):
 	mkdir -p $(BISECT_OBJ_DIR)
 
-# ground-truth files are already specified in Makefile
-# but need to specify how to do the fPIC variant
-$(BISECT_OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(BISECT_OBJ_DIR)
-	if [ -f "$(OBJ_DIR)/$*_gt_fPIC.o" ]; then \
-	  ln -s "../../$(OBJ_DIR)/$*_gt_fPIC.o" "$@"; \
+# Copied mostly from Makefile.in COMPILE_RULE, but customized for bisect
+# Compiles a single object file with -fPIC, checking first for a precompiled
+# version (and if so, copy it instead of recompiling).
+# @param 1: source file
+# @param 2: object file
+# @param 3: compiler
+# @param 4: optimization level
+# @param 5: switches
+# @param 6: target filename
+# @param 7: extra compiler flags
+define FPIC_COMPILE_RULE
+$2: $1 Makefile custom.mk | $(BISECT_OBJ_DIR)
+	if [ -f "$(OBJ_DIR)/$(notdir $(strip 2))" ]; then \
+	  ln -s "../../$(OBJ_DIR)/$(notdir $(strip 2))" "$(strip $2)"; \
 	else \
-	  $(GT_CXX) $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
+	  $3 $4 $5 -c $7 $(CC_REQUIRED) -fPIC $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
 	    -DFLIT_HOST='"$(HOSTNAME)"' \
-	    -DFLIT_COMPILER='"$(GT_CXX)"' \
-	    -DFLIT_OPTL='"$(GT_OPTL)"' \
-	    -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
-	    -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'; \
+	    -DFLIT_COMPILER='"$(strip $3)"' \
+	    -DFLIT_OPTL='"$(strip $4)"' \
+	    -DFLIT_SWITCHES='"$(strip $5)"' \
+	    -DFLIT_FILENAME='"$(notdir $(strip $6))"'; \
 	fi
+endef
 
+$(foreach s,$(SOURCE),\
+  $(eval $(call FPIC_COMPILE_RULE,\
+    $s,\
+    $(BISECT_OBJ_DIR)/$(notdir $s)_gt_fPIC.o,\
+    $(GT_CXX),\
+    $(GT_OPTL),\
+    $(GT_SWITCHES),\
+    $(GT_TARGET),\
+    $(GT_CFLAGS))))
 
 # specify how to build the troublesome ones
-$(OBJ_DIR)/%_bisect_$(TROUBLE_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
-	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
-	  -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
-	  -DFLIT_FILENAME='"bisect-default-out"'
+$(foreach s,$(SOURCE),\
+  $(eval $(call COMPILE_RULE,\
+    $s,\
+    $(OBJ_DIR)/$(notdir $s)_bisect_$(TROUBLE_ID).o,\
+    $(TROUBLE_CXX),\
+    $(TROUBLE_OPTL),\
+    $(TROUBLE_SWITCHES),\
+    bisect-default-out,\
+    $(TROUBLE_CFLAGS))))
 
 # and the fPIC variant
-$(BISECT_OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(BISECT_OBJ_DIR)
-	if [ -f "$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" ]; then \
-	  ln -s "../../$(OBJ_DIR)/$*_bisect_$(TROUBLE_ID)_fPIC.o" "$@"; \
-	else \
-	  $(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
-	    -DFLIT_HOST='"$(HOSTNAME)"' \
-	    -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
-	    -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
-	    -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
-	    -DFLIT_FILENAME='"bisect-default-out"'; \
-	fi
+$(foreach s,$(SOURCE),\
+  $(eval $(call FPIC_COMPILE_RULE,\
+    $s,\
+    $(BISECT_OBJ_DIR)/$(notdir $s)_bisect_$(TROUBLE_ID)_fPIC.o,\
+    $(TROUBLE_CXX),\
+    $(TROUBLE_OPTL),\
+    $(TROUBLE_SWITCHES),\
+    bisect-default-out,\
+    $(TROUBLE_CFLAGS))))
 
-# and the fPIC variant
-$(OBJ_DIR)/%_bisect_$(TROUBLE_ID)_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(TROUBLE_CXX) $(TROUBLE_OPTL) $(TROUBLE_SWITCHES) $(CC_REQUIRED) $(TROUBLE_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(TROUBLE_CXX)"' \
-	  -DFLIT_OPTL='"$(TROUBLE_OPTL)"' \
-	  -DFLIT_SWITCHES='"$(TROUBLE_SWITCHES)"' \
-	  -DFLIT_FILENAME='"bisect-default-out"'
+# The fPIC variant built in OBJ_DIR instead of BISECT_OBJ_DIR
+$(foreach s,$(SOURCE),\
+  $(eval $(call COMPILE_RULE,\
+    $s,\
+    $(OBJ_DIR)/$(notdir $s)_bisect_$(TROUBLE_ID)_fPIC.o,\
+    $(TROUBLE_CXX),\
+    $(TROUBLE_OPTL),\
+    $(TROUBLE_SWITCHES),\
+    bisect-default-out,\
+    $(TROUBLE_CFLAGS))))
 
 # Specify how to split symbols using objcopy
 
 # Defines how to split the one object file into two object files using objcopy
-# @param 1: src basename (e.g. for 'tests/Example01.cpp' pass in 'Example01')
+# @param 1: src basename (e.g. for 'tests/Example01.cpp' pass in
+#     'Example01.cpp')
 define SPLIT_RULE
 
 $$(BISECT_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(BISECT_OBJ_DIR)/$1_gt_fPIC.o
@@ -354,5 +376,5 @@ $$(BISECT_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(BISECT_OBJ_DIR)
 
 endef
 
-$(foreach s, $(notdir $(SPLIT_SRC:%.cpp=%)), \
+$(foreach s, $(notdir $(SPLIT_SRC:%=%)), \
   $(eval $(call SPLIT_RULE,$s)))

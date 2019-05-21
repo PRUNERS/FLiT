@@ -110,8 +110,9 @@ test that the correct files are updated.
 ...     # update one file and recompile
 ...     with open(os.path.join(temp_dir, 'main.cpp'), 'a') as mainfile:
 ...         mainfile.write('#include "new_header.h"\\n')
-...     with open(os.path.join(temp_dir, 'obj', 'main_dev.d'), 'w') as maindep:
-...         maindep.write('obj/main_dev.o: main.cpp new_header.h\\n')
+...     maindepname = os.path.join(temp_dir, 'obj', 'main.cpp_dev.d')
+...     with open(maindepname, 'w') as maindep:
+...         maindep.write('obj/main.cpp_dev.o: main.cpp new_header.h\\n')
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_dev(temp_dir)
 ...     # touch the header file and make sure it recompiles again
@@ -128,16 +129,16 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['devrun', 'obj/Empty_dev.o', 'obj/main_dev.o']
+['devrun', 'obj/Empty.cpp_dev.o', 'obj/main.cpp_dev.o']
 
 >>> touched_files(after_build)
 []
 
 >>> touched_files(after_modify)
-['devrun', 'obj/main_dev.o']
+['devrun', 'obj/main.cpp_dev.o']
 
 >>> touched_files(after_touch)
-['devrun', 'obj/main_dev.o']
+['devrun', 'obj/main.cpp_dev.o']
 
 Now, let's test the same thing with the "gt" target
 
@@ -152,8 +153,9 @@ Now, let's test the same thing with the "gt" target
 ...     # update one file and recompile
 ...     with open(os.path.join(temp_dir, 'main.cpp'), 'a') as mainfile:
 ...         mainfile.write('#include "new_header.h"\\n')
-...     with open(os.path.join(temp_dir, 'obj', 'main_gt.d'), 'w') as maindep:
-...         maindep.write('obj/main_gt.o: main.cpp new_header.h\\n')
+...     maindepname = os.path.join(temp_dir, 'obj', 'main.cpp_gt.d')
+...     with open(maindepname, 'w') as maindep:
+...         maindep.write('obj/main.cpp_gt.o: main.cpp new_header.h\\n')
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_gt(temp_dir)
 ...     # touch the header file and make sure it recompiles again
@@ -165,16 +167,16 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['gtrun', 'obj/Empty_gt.o', 'obj/main_gt.o']
+['gtrun', 'obj/Empty.cpp_gt.o', 'obj/main.cpp_gt.o']
 
 >>> touched_files(after_build)
 []
 
 >>> touched_files(after_modify)
-['gtrun', 'obj/main_gt.o']
+['gtrun', 'obj/main.cpp_gt.o']
 
 >>> touched_files(after_touch)
-['gtrun', 'obj/main_gt.o']
+['gtrun', 'obj/main.cpp_gt.o']
 '''
 
 # Test setup before the docstring is run.

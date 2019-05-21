@@ -129,7 +129,7 @@ True
 True
 >>> '-DFLIT_FILENAME=\\'"devrun"\\'' in actual
 True
->>> '-o devrun obj/main_dev.o obj/Empty_dev.o' in actual
+>>> '-o devrun obj/main.cpp_dev.o obj/Empty.cpp_dev.o' in actual
 True
 >>> '-lm -lstdc++ -L{libdir} -lflit -Wl,-rpath={libdir}' \\
 ... .format(libdir=th.config.lib_dir) in actual

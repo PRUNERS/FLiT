@@ -115,6 +115,8 @@ and run FLiT bisect
 ...     _ = shutil.copy(os.path.join('..', '..', 'flit_makefile',
 ...                                  'fake_clang34.py'),
 ...                     temp_dir)
+...     with open(os.path.join(temp_dir, 'custom.mk'), 'a') as mkout:
+...         _ = mkout.write('SOURCE += tests/file4.cxx\\n')
 ...     with StringIO() as ostream:
 ...         retval = th.flit.main(['import', '--dbfile',
 ...                                os.path.join(temp_dir, 'autorun.sqlite'),

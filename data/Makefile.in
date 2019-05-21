@@ -190,13 +190,13 @@ IS_VER_4_OR_5    = $(shell expr $(call IS_MAJOR_VER,$1,4) \| \
 DEV_LDFLAGS      =
 GT_LDFLAGS       =
 
-DEPFLAGS        += -MMD -MP -MF $(patsubst %.o,%.d,$@)
+# Note: needs dependency out filename after this variable
+DEPFLAGS        += -MMD -MP -MF
 
+# TODO: deprecated.  Remove in FLiT version 3.0
 TESTS            = $(wildcard tests/*.cpp)
 SOURCE           = $(wildcard *.cpp)
 SOURCE          += $(TESTS)
-
-VPATH            = $(dir $(SOURCE))
 
 .PHONY: help
 help:
@@ -224,12 +224,16 @@ help:
 # to SOURCE from custom.mk
 -include custom.mk
 
+# sort and remove duplicates
+# TODO: Remove in FLiT version 3.0
+SOURCE          := $(sort $(SOURCE))
+
 # We are done adding to VPATH, so consolidate it for speed (removing duplicates)
 VPATH           := $(sort $(VPATH))
 
-DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_dev.o)))
+DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_dev.o)))
 DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
-GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_gt.o)))
+GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_gt.o)))
 GT_DEPS          = $(GT_OBJ:%.o=%.d)
 GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
 
@@ -278,6 +282,24 @@ endif
 #
 ##########################################################
 
+# Compiles a single object file from a source file given compiler and flags
+# @param 1: source file
+# @param 2: object file
+# @param 3: compiler
+# @param 4: optimization level
+# @param 5: switches
+# @param 6: target filename
+# @param 7: extra compiler flags
+define COMPILE_RULE
+$2: $1 Makefile custom.mk | $(OBJ_DIR)
+	$3 $4 $5 -c $7 $(CC_REQUIRED) $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
+	  -DFLIT_HOST='"$(HOSTNAME)"' \
+	  -DFLIT_COMPILER='"$(strip $3)"' \
+	  -DFLIT_OPTL='"$(strip $4)"' \
+	  -DFLIT_SWITCHES='"$(strip $5)"' \
+	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
+endef
+
 # will be set internally when doing recursive calls.  Get set to variable names
 # containing the information (e.g. R_CUR_COMPILER=CLANG)
 R_CUR_COMPILER  ?=
@@ -289,7 +311,7 @@ ifdef R_IS_RECURSED
 
 R_ID            := $(R_CUR_COMPILER)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
 R_TARGET        := $(RESULTS_DIR)/$(R_ID)
-R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_$(R_ID).o)))
+R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_$(R_ID).o)))
 R_DEP           := $(R_OBJ:%.o=%.d)
 
 -include $(R_DEP)
@@ -314,16 +336,15 @@ $(R_TARGET): $(R_OBJ)
 	  $(R_OBJ) -o $@ \
 	  $(LD_REQUIRED)
 
-$(OBJ_DIR)/%_$(R_ID).o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
-	  -c $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
-	  $< -o $@ \
-	  $(DEPFLAGS) \
-	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$($(R_CUR_COMPILER))"' \
-	  -DFLIT_OPTL='"$($(R_CUR_OPTL))"' \
-	  -DFLIT_SWITCHES='"$($(R_CUR_SWITCHES))"' \
-	  -DFLIT_FILENAME='"$(R_ID)"'
+$(foreach s,$(SOURCE), \
+  $(eval $(call COMPILE_RULE,\
+    $s,\
+    $(OBJ_DIR)/$(notdir $s)_$(R_ID).o,\
+    $($(R_CUR_COMPILER)),\
+    $($(R_CUR_OPTL)),\
+    $($(R_CUR_SWITCHES)),\
+    $(R_ID),\
+    $($(R_CUR_COMPILER)_REQUIRED))))
 
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
@@ -402,7 +423,7 @@ TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 # Define the recursion rules
 #
 
-OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%.cpp=%_*.o)))
+OBJ_CLEAN        = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_*.o)))
 DEP_CLEAN       += $(OBJ_CLEAN:%.o=%.d)
 
 .PHONY: dev gt gt-fpic groundtruth run runbuild
@@ -479,13 +500,15 @@ $(DEV_TARGET): $(DEV_OBJ) Makefile custom.mk
 	$(DEV_CXX) $(CC_REQUIRED) $(DEV_CFLAGS) \
 	  -o $@ $(DEV_OBJ) $(LD_REQUIRED) $(DEV_LDFLAGS)
 
-$(OBJ_DIR)/%_dev.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(DEV_CXX) $(DEV_OPTL) $(DEV_SWITCHES) $(CC_REQUIRED) $(DEV_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(DEV_CXX)"' \
-	  -DFLIT_OPTL='"$(DEV_OPTL)"' \
-	  -DFLIT_SWITCHES='"$(DEV_SWITCHES)"' \
-	  -DFLIT_FILENAME='"$(notdir $(DEV_TARGET))"'
+$(foreach s,$(SOURCE),\
+  $(eval $(call COMPILE_RULE,\
+    $s,\
+    $(OBJ_DIR)/$(notdir $s)_dev.o,\
+    $(DEV_CXX),\
+    $(DEV_OPTL),\
+    $(DEV_SWITCHES),\
+    $(DEV_TARGET),\
+    $(DEV_CFLAGS))))
 
 # Ground truth compilation rules
 $(GT_OUT): $(GT_TARGET)
@@ -495,21 +518,25 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 	$(GT_CXX) $(CC_REQUIRED) $(GT_CFLAGS) \
 	  -o $@ $(GT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
 
-$(OBJ_DIR)/%_gt.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(GT_CXX)"' \
-	  -DFLIT_OPTL='"$(GT_OPTL)"' \
-	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
-	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+$(foreach s,$(SOURCE),\
+  $(eval $(call COMPILE_RULE,\
+    $s,\
+    $(OBJ_DIR)/$(notdir $s)_gt.o,\
+    $(GT_CXX),\
+    $(GT_OPTL),\
+    $(GT_SWITCHES),\
+    $(GT_TARGET),\
+    $(GT_CFLAGS) -g)))
 
-$(OBJ_DIR)/%_gt_fPIC.o: %.cpp Makefile custom.mk | $(OBJ_DIR)
-	$(GT_CXX) -g $(GT_OPTL) $(GT_SWITCHES) $(CC_REQUIRED) $(GT_CFLAGS) $(DEPFLAGS) -fPIC -c $< -o $@ \
-	  -DFLIT_HOST='"$(HOSTNAME)"' \
-	  -DFLIT_COMPILER='"$(GT_CXX)"' \
-	  -DFLIT_OPTL='"$(GT_OPTL)"' \
-	  -DFLIT_SWITCHES='"$(GT_SWITCHES)"' \
-	  -DFLIT_FILENAME='"$(notdir $(GT_TARGET))"'
+$(foreach s,$(SOURCE),\
+  $(eval $(call COMPILE_RULE,\
+    $s,\
+    $(OBJ_DIR)/$(notdir $s)_gt_fPIC.o,\
+    $(GT_CXX),\
+    $(GT_OPTL),\
+    $(GT_SWITCHES),\
+    $(GT_TARGET),\
+    $(GT_CFLAGS) -fPIC -g)))
 
 endif # end of ifdef R_IS_RECURSED
 
