@@ -306,6 +306,9 @@ R_CUR_COMPILER  ?=
 R_CUR_OPTL      ?=
 R_CUR_SWITCHES  ?=
 
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
 # If we are in a recursion
 ifdef R_IS_RECURSED
 
@@ -369,8 +372,6 @@ ifeq ($(call IS_VER_4_OR_5,$(GT_CXX)),0)
 endif
 endif
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
 $(RESULTS_DIR):
 	mkdir -p $(RESULTS_DIR)
 
@@ -396,7 +397,7 @@ TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 # rebuilt, so does each recursive target.
 
 $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RESULTS_DIR)
-	-$$(MAKE) rec \
+	-+$$(MAKE) rec \
 	  R_IS_RECURSED=True \
 	  R_CUR_COMPILER=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
