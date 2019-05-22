@@ -1,10 +1,10 @@
-CC          := g++
+CXX         := g++
 FLITDIR     := ../..
 FLITLIBDIR  := $(FLITDIR)/lib
 FLITLIB     := $(FLITLIBDIR)/libflit.so
 
-CFLAGS      := -O2
-CFLAGS      += -std=c++11
+CXXFLAGS    := -O2
+CXXFLAGS    += -std=c++11
 LDFLAGS     := -L$(FLITLIBDIR) -lflit
 LDFLAGS     += -Wl,-rpath=$(FLITLIBDIR)
 SRC         := $(wildcard *.cpp)
@@ -12,8 +12,8 @@ DEPS        := $(SRC:%.cpp=%.d)
 TARGETS     := $(SRC:%.cpp=%)
 RUN_TARGETS := $(TARGETS:%=run_%)
 HARNESS     := ../test_harness.h
-CFLAGS      += $(addprefix -I,$(dir $(HARNESS)))
-CFLAGS      += -I../../src
+CXXFLAGS    += $(addprefix -I,$(dir $(HARNESS)))
+CXXFLAGS    += -I../../src
 
 DEPFLAGS     = -MD -MF $*.d
 
@@ -41,7 +41,7 @@ run_% : %
 	@./$< --quiet
 
 % : %.cpp $(HARNESS) Makefile
-	$(CC) $(CFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
 
 .PRECIOUS: %.d
 -include $(DEPS)

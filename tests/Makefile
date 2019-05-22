@@ -1,6 +1,6 @@
-CC            := g++
-CFLAGS        := -O2
-CFLAGS        += -std=c++11
+CXX           := g++
+CXXFLAGS      := -O2
+CXXFLAGS      += -std=c++11
 LDFLAGS       :=
 TESTER_SRC    := harness_tester.cpp
 HARNESS       := test_harness.h
@@ -52,5 +52,5 @@ clean__%:
 	@$(MAKE) clean --directory $*
 
 $(TESTER): $(TESTER_SRC) $(HARNESS) Makefile
-	$(CC) $(CFLAGS) $(TESTER_SRC) -o $(TESTER) $(LD_FLAGS)
+	$(CXX) $(CXXFLAGS) $(TESTER_SRC) -o $(TESTER) $(LD_FLAGS)
 
