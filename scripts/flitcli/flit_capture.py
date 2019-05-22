@@ -97,6 +97,7 @@ import json
 import logging
 import os
 import sys
+import textwrap
 
 try:
     from libear import temporary_directory
@@ -212,6 +213,8 @@ def parse_args(arguments, prog=sys.argv[0]):
                             in the CXX environment variable will automatically
                             be added.
                             ''')
+    parser.add_argument('--debug', action='store_true',
+                        help='Show logging output up to debug level.')
     # TODO: support adding new file endings for new or existing languages
     parser.add_argument('--add-lang',
                         metavar='<lang>:<compiler>[,<compiler>...]',
@@ -309,8 +312,24 @@ def capture(args):
     Copied largely from libscanbuild/intercept.py
     '''
     with temporary_directory(prefix='flit-capture-') as tmpdir:
+        # Note: we wrap the build command because the infrastructure does not
+        # capture the top-level command.  Therefore, we can wrap it in another
+        # top-level command so that the one given to us can be captured.
+        command = [
+            '/usr/bin/env',
+            'python3',
+            '-c',
+            textwrap.dedent('''\
+                import subprocess as subp
+                try:
+                    subp.check_call({})
+                except subp.CalledProcessError as ex:
+                    import sys
+                    sys.exit(ex.returncode)
+                '''.format(repr(args.build))),
+            ]
         env = setup_environment(args, tmpdir)
-        exit_code = run_build(args.build, env=env)
+        exit_code = run_build(command, env=env)
         calls = (parse_exec_trace(tracefile)
                  for tracefile in exec_trace_files(tmpdir))
         compilations = set(
@@ -350,6 +369,8 @@ def main(arguments, prog=sys.argv[0]):
     Copied largely from libscanbuild/intercept.py
     '''
     args = parse_args(arguments, prog)
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     logging.debug('arguments: %s', args)
     if len(LANG_COMPILER_LISTS) > 0:
         logging.debug('added language compilers:')

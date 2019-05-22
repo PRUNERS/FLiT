@@ -112,7 +112,10 @@ Helpers
 
 No arguments and the default output filename
 
->>> out, content_map = run_capture(['capture', 'true'])
+Note that bash has its own version of the 'true' command, so to ensure the one
+from the filesystem is used, the full path must be given.
+
+>>> out, content_map = run_capture(['capture', truepath])
 >>> out
 []
 >>> content_map
@@ -123,7 +126,7 @@ No build, but specifying the output filename
 >>> import tempfile
 >>> with tempfile.NamedTemporaryFile() as fout:
 ...     fname = os.path.basename(fout.name)
-...     out, content_map = run_capture(['capture', '-o', fname, 'true'])
+...     out, content_map = run_capture(['capture', '-o', fname, truepath])
 
 >>> out
 []
@@ -132,7 +135,7 @@ No build, but specifying the output filename
 >>> content_map[fname]
 []
 
-Capture the innocuous 'true' command as a compiler
+Capture the innocuous 'true' command as a compiler.
 
 >>> with tempfile.NamedTemporaryFile(suffix='.cpp') as sourcefile:
 ...     fname = sourcefile.name
@@ -160,33 +163,33 @@ True
 >>> os.path.dirname(compilation['directory']) == '/tmp'
 True
 
-Capture the innocuous 'true' command as a compiler, without absolute path
+Capture the innocuous 'true' command as a compiler, even if it is the top-level
+compilation command (i.e., not wrapped in a "bash -c" call).
 
-#>>> with tempfile.NamedTemporaryFile(suffix='.cpp') as sourcefile:
-#...     fname = sourcefile.name
-#...     out, content_map = run_capture(['capture', '--cdb', 'out.json',
-#...                                     '--add-c++', 'true',
-#...                                     'bash', '-c',
-#...                                     'true ' + fname])
-#>>> out
-#[]
-#>>> len(content_map['out.json'])
-#1
-#>>> relfname = os.path.join('..', os.path.basename(fname))
-#>>> compilation = content_map['out.json'][0]
-#>>> 'directory' in compilation
-#True
-#>>> expected_compilation = {
-#...     'arguments': ['true', '-c', relfname],
-#...     'compiler': 'true',
-#...     'file': relfname,
-#...     'directory': compilation['directory'], # a temporary directory
-#...     'language': 'c++',
-#...     }
-#>>> compilation == expected_compilation
-#True
-#>>> os.path.dirname(compilation['directory']) == '/tmp'
-#True
+>>> with tempfile.NamedTemporaryFile(suffix='.cpp') as sourcefile:
+...     fname = sourcefile.name
+...     out, content_map = run_capture(['capture', '--cdb', 'out.json',
+...                                     '--add-c++', 'true',
+...                                     truepath, fname])
+>>> out
+[]
+>>> len(content_map['out.json'])
+1
+>>> relfname = os.path.join('..', os.path.basename(fname))
+>>> compilation = content_map['out.json'][0]
+>>> 'directory' in compilation
+True
+>>> expected_compilation = {
+...     'arguments': ['true', '-c', relfname],
+...     'compiler': 'true',
+...     'file': relfname,
+...     'directory': compilation['directory'], # a temporary directory
+...     'language': 'c++',
+...     }
+>>> compilation == expected_compilation
+True
+>>> os.path.dirname(compilation['directory']) == '/tmp'
+True
 
 '''
 
