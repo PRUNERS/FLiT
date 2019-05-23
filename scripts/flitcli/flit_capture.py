@@ -130,7 +130,10 @@ CC = os.getenv('CC', 'cc')
 CXX = os.getenv('CXX', 'c++')
 
 ADDED_EXT_MAP = {}
-_old_classify_source = libscanbuild.compilation.classify_source
+
+_old_classify_source = None
+if enabled:
+    _old_classify_source = libscanbuild.compilation.classify_source
 
 def classify_source_stub(filename, c_compiler=True):
     '''
@@ -145,7 +148,8 @@ def classify_source_stub(filename, c_compiler=True):
         return _old_classify_source(filename, c_compiler)
     return language
 
-libscanbuild.compilation.classify_source = classify_source_stub
+if enabled:
+    libscanbuild.compilation.classify_source = classify_source_stub
 
 class CustomCompilation(Compilation):
     '''
