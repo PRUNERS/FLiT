@@ -366,6 +366,11 @@ def main(arguments, prog=sys.argv[0]):
 
     Copied largely from libscanbuild/intercept.py
     '''
+    if not enabled:
+        print('Warning: failed to import scan-build. Flit capture disabled'
+              file=sys.stderr)
+        return 1
+
     args = parse_args(arguments, prog)
     logging.debug('arguments: %s', args)
     if len(LANG_COMPILER_LISTS) > 0:
@@ -390,8 +395,4 @@ def main(arguments, prog=sys.argv[0]):
     return exit_code
 
 if __name__ == '__main__':
-    if enabled:
-        sys.exit(main(sys.argv[1:]))
-    else:
-        print('Warning: failed to import scan-build. Flit capture disabled')
-        sys.exit(1)
+    sys.exit(main(sys.argv[1:]))
