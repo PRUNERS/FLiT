@@ -101,6 +101,7 @@ import textwrap
 
 try:
     from libear import temporary_directory
+    import libscanbuild.compilation
     from libscanbuild.compilation import (
         Compilation, COMPILER_PATTERN_WRAPPER, COMPILER_PATTERNS_MPI_WRAPPER,
         COMPILER_PATTERNS_CC, COMPILER_PATTERNS_CXX, get_mpi_call
@@ -127,6 +128,24 @@ brief_description = 'Captures source file compilations into a JSON database'
 LANG_COMPILER_LISTS = defaultdict(list)
 CC = os.getenv('CC', 'cc')
 CXX = os.getenv('CXX', 'c++')
+
+ADDED_EXT_MAP = {}
+_old_classify_source = libscanbuild.compilation.classify_source
+
+def classify_source_stub(filename, c_compiler=True):
+    '''
+    Stub for libscanbuild.compilation.classify_source().  The reason for this
+    stub is because the original classify_source function has a hard-coded
+    list of file extensions.  We want to be able to extend that list.
+    '''
+    __, extension = os.path.splitext(os.path.basename(filename))
+
+    language = ADDED_EXT_MAP.get(extension)
+    if language is None:
+        return _old_classify_source(filename, c_compiler)
+    return language
+
+libscanbuild.compilation.classify_source = classify_source_stub
 
 class CustomCompilation(Compilation):
     '''
@@ -226,6 +245,13 @@ def parse_args(arguments, prog=sys.argv[0]):
                             and C++ compilers, so if you wanted to use "g++"
                             for a non-c++ language, you could.
                             ''')
+    parser.add_argument('--add-ext',
+                        metavar='<lang>:<ext>[,<ext>...]',
+                        action='append', dest='added_exts',
+                        help='''
+                            Add recognized file extension(s) for a language,
+                            even for languages added using --add-lang.
+                            ''')
     parser.add_argument('--append', action='store_true',
                         help='''
                             Extend existing compilation database with new
@@ -252,13 +278,21 @@ def parse_args(arguments, prog=sys.argv[0]):
                                    for cxx in args.cxx_compilers.split(','))
         LANG_COMPILER_LISTS['c++'].extend(args.cxx_compilers)
     reconfigure_logging(int(args.verbose) * 2)
+
     if args.added_langs is None:
         args.added_langs = []
-
     for newlang in args.added_langs:
         lang, compilers = newlang.split(':', 1)
         compilers = [os.path.basename(c) for c in compilers.split(',')]
         LANG_COMPILER_LISTS[lang].extend(compilers)
+
+    if args.added_exts is None:
+        args.added_exts = []
+    for newext in args.added_exts:
+        lang, exts = newext.split(':', 1)
+        exts = exts.split(',')
+        for ext in exts:
+            ADDED_EXT_MAP[ext] = lang
 
     return args
 
