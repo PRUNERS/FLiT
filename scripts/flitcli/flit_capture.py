@@ -367,7 +367,7 @@ def main(arguments, prog=sys.argv[0]):
     Copied largely from libscanbuild/intercept.py
     '''
     if not enabled:
-        print('Warning: failed to import scan-build. Flit capture disabled'
+        print('Warning: failed to import scan-build. Flit capture disabled',
               file=sys.stderr)
         return 1
 
