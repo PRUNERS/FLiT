@@ -213,8 +213,6 @@ def parse_args(arguments, prog=sys.argv[0]):
                             in the CXX environment variable will automatically
                             be added.
                             ''')
-    parser.add_argument('--debug', action='store_true',
-                        help='Show logging output up to debug level.')
     # TODO: support adding new file endings for new or existing languages
     parser.add_argument('--add-lang',
                         metavar='<lang>:<compiler>[,<compiler>...]',
@@ -369,8 +367,6 @@ def main(arguments, prog=sys.argv[0]):
     Copied largely from libscanbuild/intercept.py
     '''
     args = parse_args(arguments, prog)
-    if args.debug:
-        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
     logging.debug('arguments: %s', args)
     if len(LANG_COMPILER_LISTS) > 0:
         logging.debug('added language compilers:')
