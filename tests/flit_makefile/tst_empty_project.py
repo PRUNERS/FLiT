@@ -97,8 +97,8 @@ correct files
 ...     if retval != 0:
 ...         raise TestError('Main returned {}'.format(retval))
 ...     files = os.listdir(temp_dir)
-Creating /.../flit-config.toml
 Creating /.../custom.mk
+Creating /.../flit-config.toml
 Creating /.../main.cpp
 Creating /.../tests/Empty.cpp
 Creating /.../Makefile

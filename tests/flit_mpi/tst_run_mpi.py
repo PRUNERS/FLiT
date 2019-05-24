@@ -133,8 +133,8 @@ and run the FLiT test with MPI
 ...         '--timing-repeats', '1',
 ...         '--timing-loops', '-1',
 ...         ], stderr=subp.STDOUT)
-Creating /.../flit-config.toml
 Creating /.../custom.mk
+Creating /.../flit-config.toml
 Creating /.../main.cpp
 Creating /.../tests/Empty.cpp
 Creating /.../Makefile

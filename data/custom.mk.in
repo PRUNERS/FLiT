@@ -91,6 +91,7 @@
 #   then add in your own source files
 SOURCE         += $(wildcard *.cpp)
 SOURCE         += $(wildcard tests/*.cpp)
+{MORE_SOURCES}
 
 # required compiler flags
 # for example, include directories
@@ -98,6 +99,7 @@ SOURCE         += $(wildcard tests/*.cpp)
 # or defines
 #   CC_REQUIRED += -DDEBUG_ENABLED=1
 CC_REQUIRED    +=
+{MORE_CXX_FLAGS}
 
 # required linker flags
 # for example, link libraries
@@ -105,6 +107,7 @@ CC_REQUIRED    +=
 # or rpath
 #   LD_REQUIRED += -Wl,-rpath=<abs-path-to-library-dir>
 LD_REQUIRED    +=
+{MORE_LINK_FLAGS}
 
 # compiler and linker flags respectively - specifically for a dev build
 # - DEV_CFLAGS:   non-recorded compiler flags (such as includes)

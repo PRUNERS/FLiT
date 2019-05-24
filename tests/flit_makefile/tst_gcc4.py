@@ -113,8 +113,8 @@ verify correct usage.
 
 Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
-Creating .../flit-config.toml
 Creating .../custom.mk
+Creating .../flit-config.toml
 Creating .../main.cpp
 Creating .../tests/Empty.cpp
 Creating .../Makefile

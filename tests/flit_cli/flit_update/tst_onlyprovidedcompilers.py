@@ -99,8 +99,8 @@ Tests only providing gcc and no other compiler.  Tests that
 Get default values for each compiler from the default configuration
 
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
-Creating .../flit-config.toml
 Creating .../custom.mk
+Creating .../flit-config.toml
 Creating .../main.cpp
 Creating .../tests/Empty.cpp
 Creating .../Makefile

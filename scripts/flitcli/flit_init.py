@@ -86,6 +86,7 @@ import argparse
 import os
 import shutil
 import sys
+from tempfile import NamedTemporaryFile
 
 import flitargformatter
 import flitconfig as conf
@@ -120,12 +121,6 @@ def main(arguments, prog=sys.argv[0]):
     args = parse_args(arguments, prog)
     os.makedirs(args.directory, exist_ok=True)
 
-    # write flit-config.toml
-    flit_config_dest = os.path.join(args.directory, 'flit-config.toml')
-    print('Creating {0}'.format(flit_config_dest))
-    with open(flit_config_dest, 'w') as fout:
-        fout.write(flitutil.get_default_toml_string())
-
     def copy_files(dest_to_src, remove_license=True):
         '''
         @param dest_to_src: dictionary of dest -> src for copies
@@ -137,10 +132,12 @@ def main(arguments, prog=sys.argv[0]):
             realdest = os.path.join(args.directory, dest)
             print('Creating {0}'.format(realdest))
             if not args.overwrite and os.path.exists(realdest):
-                print('Warning: {0} already exists, not overwriting'.format(realdest),
+                print('Warning: {0} already exists, not overwriting'
+                      .format(realdest),
                       file=sys.stderr)
                 continue
-            os.makedirs(os.path.dirname(os.path.realpath(realdest)), exist_ok=True)
+            os.makedirs(os.path.dirname(os.path.realpath(realdest)),
+                        exist_ok=True)
             if remove_license:
                 with open(src, 'r') as fin:
                     with open(realdest, 'w') as fout:
@@ -149,13 +146,26 @@ def main(arguments, prog=sys.argv[0]):
                 shutil.copy(src, realdest)
 
     # Copy the remaining files over
-    to_copy = {
-        'custom.mk': os.path.join(conf.data_dir, 'custom.mk'),
-        'main.cpp': os.path.join(conf.data_dir, 'main.cpp'),
-        'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
-        }
+    TempFile = lambda: NamedTemporaryFile(mode='w')
+    with TempFile() as tmp_custommk, TempFile() as tmp_flitconfig:
+        tmp_flitconfig.write(flitutil.get_default_toml_string())
+        tmp_flitconfig.flush()
+        custommk_vals = {
+            'MORE_SOURCES': '',
+            'MORE_CXX_FLAGS': '',
+            'MORE_LINK_FLAGS': '',
+            }
+        flitutil.process_in_file(os.path.join(conf.data_dir, 'custom.mk.in'),
+                                 tmp_custommk.name, custommk_vals,
+                                 overwrite=True)
+        to_copy = {
+            'flit-config.toml': tmp_flitconfig.name,
+            'custom.mk': tmp_custommk.name,
+            'main.cpp': os.path.join(conf.data_dir, 'main.cpp'),
+            'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
+            }
 
-    copy_files(to_copy, remove_license=True)
+        copy_files(to_copy, remove_license=True)
 
     # Add litmus tests too
     if args.litmus_tests:
