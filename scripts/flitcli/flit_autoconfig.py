@@ -105,6 +105,7 @@ brief_description = 'Autogenerates custom.mk from a JSON compilation database'
 
 def parse_args(arguments, prog=sys.argv[0]):
     'Parse arguments and return parsed args'
+    # TODO: update description to reflect limitations of this autoconfig
     parser = argparse.ArgumentParser(
         prog=prog,
         formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
@@ -116,7 +117,8 @@ def parse_args(arguments, prog=sys.argv[0]):
             ''',
         )
     # TODO: add --output
-    # TODO: add --append
+    # TODO: add --append (do we want to append by default if it is already
+    # TODO- there?)
     # TODO: add --overwrite
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Show debugging information')
@@ -302,7 +304,6 @@ def main(arguments, prog=sys.argv[0]):
     gen_custom_makefile(
         files=attributes['files'],
         cxxflags=attributes['cxxflags'],
-        append=True,
         )
 
     return 0
