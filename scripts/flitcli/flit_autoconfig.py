@@ -219,7 +219,6 @@ def extract_cxxflags(arguments, command_cwd='.'):
         '-D',          # define macro
         '-U',          # undefine macro
         ]
-    # TODO: filter out optimization level
     # TODO: filter out flags that are specified in flit-config.toml
     args = iter(arguments)
     for arg in args:
@@ -345,9 +344,9 @@ def gen_custom_makefile(outfile='custom.mk', files=None, cxxflags=None,
     # only append entries that are not there
     if os.path.isfile(outfile) and not overwrite:
         makevars = util.extract_make_vars(outfile)
-        existing_files = set(makevars[files_makevar])
-        existing_cxxflags = set(makevars[cxxflags_makevar])
-        existing_ldflags = set(makevars[ldflags_makevar])
+        existing_files = set(makevars.get(files_makevar, []))
+        existing_cxxflags = set(makevars.get(cxxflags_makevar, []))
+        existing_ldflags = set(makevars.get(ldflags_makevar, []))
 
         # For debugging purposes, log what would be filtered out
         logging.debug('Files already found in %s: %s',
