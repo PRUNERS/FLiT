@@ -151,7 +151,7 @@ BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 FPIC_OBJ         := $(addprefix \
     $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_fPIC.o)))
-FPIC_OBJ         := $(addprefix \
+FPIC_OBJ         += $(addprefix \
     $(BISECT_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_bisect_$(TROUBLE_ID)_fPIC.o)))
 FPIC_DEPS        := $(FPIC_OBJ:%.o=%.d)
 SPLIT_OBJ        := $(addprefix \
@@ -242,12 +242,7 @@ bisect-smallclean:
 	rm -f $(TROUBLE_TARGET)
 	rm -f $(TROUBLE_TARGET_OUT)
 	rm -f $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
-	rm -f $(TROUBLE_SYMBOLS)
-	rm -f $(FPIC_OBJ)
-	rm -f $(FPIC_DEPS)
-	rm -f $(SPLIT_OBJ)
-	rm -f $(SPLIT_DEPS)
-	-rmdir $(BISECT_OBJ_DIR)
+	rm -rf $(BISECT_OBJ_DIR)
 
 bisect-clean: bisect-smallclean
 	rm -f $(TROUBLE_TARGET_OBJ)
@@ -255,7 +250,6 @@ bisect-clean: bisect-smallclean
 	rm -f $(GT_LIB_TARGET)
 	rm -f $(GT_LIB_OUT)
 	rm -f $(addsuffix *.dat,$(GT_LIB_OUT))
-	-rmdir $(BISECT_OBJ_DIR)
 
 bisect-distclean: bisect-clean
 	rm -f bisect.log
