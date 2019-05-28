@@ -440,19 +440,15 @@ runbuild: $(TARGETS) groundtruth
 
 .PHONY: clean
 clean:
-	@# Here we do it this way because we were running into the error of too many
-	@# arguments given to rm.
-	$(foreach obj,$(OBJ_CLEAN),rm -f $(obj);)
-	$(foreach obj,$(DEP_CLEAN),rm -f $(obj);)
-	-rmdir $(OBJ_DIR)
+	rm -rf $(OBJ_DIR)
 
 .PHONY: veryclean distclean
 veryclean: distclean
 distclean: clean
 	rm -f $(DEV_TARGET)
-	rm -f $(TARGET_OUTS)
-	rm -f $(TARGET_RESULTS)
-	rm -f $(addsuffix *.dat,$(TARGET_OUTS))
+	find $(RESULTS_DIR) -name \*-out -delete
+	find $(RESULTS_DIR) -name \*-out\*.dat -delete
+	find $(RESULTS_DIR) -name \*-out-comparison.csv -delete
 	rm -f $(TARGETS)
 	rm -f $(GT_TARGET)
 	rm -f $(GT_OUT)
