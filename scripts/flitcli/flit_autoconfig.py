@@ -145,21 +145,43 @@ def parse_args(arguments, prog=sys.argv[0]):
         logging.basicConfig(level=logging.DEBUG)
     return args
 
-def extract_cxxflags(arguments):
+def first(iterable, condition):
+    '''
+    Returns the first element from iterable such that condition(x) evaluates to
+    True.  It is efficient because it exits early.
+
+    >>> first(['a', 'b', 'c', 'b'], lambda x: x == 'b')
+    'b'
+    >>> first([], lambda x: False)
+    >>> first([3, 2, 1, -1, -5], lambda x: x < 3)
+    2
+    '''
+    for value in iterable:
+        if condition(value):
+            return value
+    return None
+
+def extract_cxxflags(arguments, command_cwd='.'):
     '''
     Extracts the command-line arguments that are c++ flags.
 
     @param arguments (list(str)) command-line arguments for a compilation.
-    @return (list(str)) filtered out command-line arguments related to
+    @param command_cwd (str) directory where command was given (for path
+        evaulation)
+    @return (list(str)) filtered out command-line arguments related to the C++
+        compilation
     '''
     cxxflags = []
     # Map of ignored compiler option for the creation of a compilation database.
     #
     # Option names are mapped to the number of following arguments which should
     # be skipped.
+    # TODO: skip more than these?
     flags_to_ignore = {
         '-c': 0,
         # preprocessor macros
+        '-M': 0,
+        '-MM': 0,
         '-MD': 0,
         '-MMD': 0,
         '-MG': 0,
@@ -185,6 +207,20 @@ def extract_cxxflags(arguments):
         # output
         '-o': 1,
         }
+    path_flags = [
+        '-I',          # include
+        '-isystem',    # include as system path
+        '-iquote',     # include only for quoted includes
+        '-idirafter',  # include after system includes
+        '-include',    # include specified file
+        '-imacros',    # include specified file for macros only
+        ]
+    define_flags = [
+        '-D',          # define macro
+        '-U',          # undefine macro
+        ]
+    # TODO: filter out optimization level
+    # TODO: filter out flags that are specified in flit-config.toml
     args = iter(arguments)
     for arg in args:
         if not arg.startswith('-'):
@@ -194,9 +230,31 @@ def extract_cxxflags(arguments):
             for _ in range(count):
                 next(args)
             continue
-        if arg == '-I':
-            cxxflags.append(arg)
-            cxxflags.append(next(args))
+        # filter out link flags
+        if any(arg.startswith(x) for x in ('-l', '-L', '-Wl,')):
+            continue
+        # filter out optimization level
+        if arg.startswith('-O'):
+            continue
+        if any(arg.startswith(flag) for flag in path_flags):
+            # allow for space separation and not space separation
+            if arg in path_flags:
+                flag = arg
+                path = next(args)
+            else:
+                flag = first(path_flags, arg.startswith)
+                path = arg[len(flag):]
+            # relativize path, unless it is already absolute
+            if not os.path.isabs(path):
+                path = os.path.relpath(
+                    os.path.join(command_cwd, path))
+            cxxflags.append(flag + path)
+        elif any(arg.startswith(flag) for flag in define_flags):
+            # allow for space separation and not space separation
+            if arg in define_flags:
+                cxxflags.append(arg + next(args))
+            else:
+                cxxflags.append(arg)
         else:
             cxxflags.append(arg)
     return cxxflags
@@ -241,24 +299,30 @@ def extract_compilation_attributes(compilations):
     files = []
     cxxflags = None
     for compilation in compilations:
-        logging.debug('compilation = {}'.format(compilation))
+        logging.debug('compilation = %s', compilation)
         if compilation['language'] != 'c++':
             continue
         filepath = os.path.join(compilation['directory'], compilation['file'])
         files.append(os.path.relpath(filepath))
         if cxxflags is None:
-            cxxflags = extract_cxxflags(compilation['arguments'])
-            logging.debug('cxxflags = {}'.format(cxxflags))
+            cxxflags = extract_cxxflags(compilation['arguments'],
+                                        compilation['directory'])
+            logging.debug('cxxflags = %s', cxxflags)
         else:
-            assert set(cxxflags) == \
-                set(extract_cxxflags(compilation['arguments']))
-    logging.debug('files = {}'.format(files))
+            this_cxxflags = extract_cxxflags(compilation['arguments'],
+                                             compilation['directory'])
+            if set(cxxflags) != set(this_cxxflags):
+                print('Error: cxxflags mismatch')
+                print('  cxxflags = {}'.format(cxxflags))
+                print('  this_cxxflags = {}'.format(this_cxxflags))
+                raise RuntimeError('cxxflags mismatch')
+    logging.debug('files = %s', files)
     if cxxflags is None:
         cxxflags = []
     return {'files': files, 'cxxflags': cxxflags}
 
-def gen_custom_makefile(outfile='custom.mk', files=[], cxxflags=[], ldflags=[],
-                        overwrite=False):
+def gen_custom_makefile(outfile='custom.mk', files=None, cxxflags=None,
+                        ldflags=None, overwrite=False):
     '''
     Generate the custom.mk file.
 
@@ -270,6 +334,11 @@ def gen_custom_makefile(outfile='custom.mk', files=[], cxxflags=[], ldflags=[],
         append to the end of the existing file.
     @return None
     '''
+    # handle default values
+    files = files if files is not None else []
+    cxxflags = cxxflags if cxxflags is not None else []
+    ldflags = ldflags if ldflags is not None else []
+
     files_makevar = 'SOURCE'
     cxxflags_makevar = 'CC_REQUIRED'
     ldflags_makevar = 'LD_REQUIRED'
@@ -281,15 +350,13 @@ def gen_custom_makefile(outfile='custom.mk', files=[], cxxflags=[], ldflags=[],
         existing_ldflags = set(makevars[ldflags_makevar])
 
         # For debugging purposes, log what would be filtered out
-        logging.debug('Files already found in {}: {}'
-                      .format(outfile,
-                              sorted(existing_files.intersection(files))))
-        logging.debug('C++ flags already found in {}: {}'
-                      .format(outfile,
-                              sorted(existing_cxxflags.intersection(cxxflags))))
-        logging.debug('Link flags already found in {}: {}'
-                      .format(outfile,
-                              sorted(existing_ldflags.intersection(ldflags))))
+        logging.debug('Files already found in %s: %s',
+                      outfile, sorted(existing_files.intersection(files)))
+        logging.debug('C++ flags already found in %s: %s',
+                      outfile,
+                      sorted(existing_cxxflags.intersection(cxxflags)))
+        logging.debug('Link flags already found in %s: %s',
+                      outfile, sorted(existing_ldflags.intersection(ldflags)))
 
         # We use list comprehension here instead of set subtraction so as to
         # preserve the original ordering, just filtered
@@ -338,7 +405,6 @@ def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     args = parse_args(arguments, prog)
     logging.debug('arguments: %s', args)
-    exit_code = 0
 
     with open(args.compilation_database, 'r') as infile:
         compilations = json.load(infile)
