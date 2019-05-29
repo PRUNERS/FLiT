@@ -313,6 +313,9 @@ REC_DIRS        := $(foreach c, $(COMPILERS),\
                          $(OBJ_DIR)/$c_$(HOSTNAME)_$s_$o)))
 ALL_DIRS        += $(REC_DIRS)
 
+RUNBUILD_DIR := bin
+ALL_DIRS     += $(RUNBUILD_DIR)
+
 # will be set internally when doing recursive calls.  Get set to variable names
 # containing the information (e.g. R_CUR_COMPILER=CLANG)
 R_CUR_COMPILER  ?=
@@ -329,7 +332,7 @@ $(ALL_DIRS):
 ifdef R_IS_RECURSED
 
 R_ID            := $(R_CUR_COMPILER)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
-R_TARGET        := $(RESULTS_DIR)/$(R_ID)
+R_TARGET        := $(RUNBUILD_DIR)/$(R_ID)
 R_OBJ_DIR       := $(OBJ_DIR)/$(R_ID)
 R_OBJ           := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
 R_DEP           := $(R_OBJ:%.o=%.d)
@@ -350,7 +353,7 @@ ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_COMPILER))),0)
 endif
 endif
 
-$(R_TARGET): $(R_OBJ)
+$(R_TARGET): $(R_OBJ) | $(RUNBUILD_DIR)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
 	  $($(R_CUR_COMPILER)_REQUIRED) $(CC_REQUIRED) \
 	  $(R_OBJ) -o $@ \
@@ -395,13 +398,13 @@ endif
 
 # Set these as empty "simply-expanded variables".  This affects the "+=" operator.
 # see https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html
-TARGET_OUTS :=
+TARGET_OUTS  :=
 
 # @param 1: compiler variable name (e.g. CLANG)
 # @param 2: optimization level variable name (e.g. O2)
 # @param 3: switches variable name (e.g. USE_FAST_MATH)
 define RECURSION_RULE
-TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
+TARGETS     += $$(RUNBUILD_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 # TODO: use the variable $$(MAKECMDGOALS) to get the original make target
 # TODO- or see if it is even necessary
@@ -410,13 +413,13 @@ TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 # depends on that target, but we know that when $$(GT_TARGET) needs to be
 # rebuilt, so does each recursive target.
 
-$$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RESULTS_DIR)
-	-+$$(MAKE) rec --no-print-directory \
+$$(RUNBUILD_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RUNBUILD_DIR)
+	-+@$$(MAKE) rec --no-print-directory \
 	  R_IS_RECURSED=True \
 	  R_CUR_COMPILER=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
 	  R_CUR_SWITCHES=$(strip $3)
-	-test -f $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
+	-test -f $$(RUNBUILD_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 
 endef
 
@@ -424,10 +427,10 @@ $(foreach c, $(COMPILERS),                 \
   $(foreach s, $(SWITCHES_$(strip $c)),    \
     $(foreach o, $(OPCODES_$(strip $c)),               \
       $(eval $(call RECURSION_RULE, $c, $o, $s)))))
-TARGET_OUTS     := $(TARGETS:%=%-out)
+TARGET_OUTS     := $(addprefix $(RESULTS_DIR)/,$(notdir $(TARGETS:%=%-out)))
 TARGET_RESULTS  := $(TARGET_OUTS:%=%-comparison.csv)
 
-%-out: %
+$(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 	$(RUNWRAP) ./$< $(TEST_RUN_ARGS) --output $@ || touch $@
 
 # specify how to get comparison
@@ -459,17 +462,12 @@ clean:
 .PHONY: veryclean distclean
 veryclean: distclean
 distclean: clean
+	rm -rf $(RESULTS_DIR)
+	rm -rf $(RUNBUILD_DIR)
 	rm -f $(DEV_TARGET)
-	if [ -d "$(RESULTS_DIR)" ]; then \
-	  find "$(RESULTS_DIR)" -name \*-out -delete; \
-	  find "$(RESULTS_DIR)" -name \*-out\*.dat -delete; \
-	  find "$(RESULTS_DIR)" -name \*-out-comparison.csv -delete; \
-	fi
-	rm -f $(TARGETS)
 	rm -f $(GT_TARGET)
 	rm -f $(GT_OUT)
 	rm -f $(addsuffix *.dat,$(GT_OUT))
-	-rmdir $(RESULTS_DIR)
 
 Makefile: flit-config.toml
 Makefile: $(FLIT_DATA_DIR)/Makefile.in
