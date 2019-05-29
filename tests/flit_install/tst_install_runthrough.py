@@ -86,24 +86,24 @@ Tests FLiT's capabilities to run simple commands on an installation
 The tests are below using doctest
 
 Let's now make a temporary directory and install there.  Here we are simply
-testing that the following command complete without error.
+testing that the following commands complete without error.
 >>> import glob
 >>> import os
 >>> import subprocess as subp
 >>> with th.tempdir() as temp_dir:
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...     _ = subp.check_call(['make',
+...                          '-C', os.path.join(th.config.lib_dir, '..'),
 ...                          'install', 'PREFIX=' + temp_dir],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 ...     flit = os.path.join(temp_dir, 'bin', 'flit')
-...     _ = subp.check_call([flit, 'init', '-C', os.path.join(temp_dir, 'sandbox')],
+...     sandbox_dir = os.path.join(temp_dir, 'sandbox')
+...     _ = subp.check_call([flit, 'init', '-C', sandbox_dir],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     _ = subp.check_call(['mkdir', '-p', os.path.join(temp_dir, 'sandbox', 'obj'),
-...                          os.path.join(temp_dir, 'sandbox', 'results')],
+...     _ = subp.check_call(['make', '-C', sandbox_dir, 'dirs'],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     _ = subp.check_call(['make', '-C', os.path.join(temp_dir, 'sandbox'),
-...                          '--touch', 'run'],
+...     _ = subp.check_call(['make', '-C', sandbox_dir, '--touch', 'run'],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     os.chdir(os.path.join(temp_dir, 'sandbox'))
+...     os.chdir(sandbox_dir)
 ...     _ = subp.check_call([flit, 'import'] + glob.glob('results/*.csv'),
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 '''

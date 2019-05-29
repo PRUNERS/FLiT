@@ -140,6 +140,7 @@ endif # IS_OPENMPI == true
 endif # ENABLE_MPI == yes
 
 OBJ_DIR         := obj
+ALL_DIRS        := $(OBJ_DIR)
 
 CC_REQUIRED     += $(FFLAGS)
 # This flag specifies NOT to build position-independent executables
@@ -211,6 +212,7 @@ help:
 	@echo
 	@echo '  help        Show this help and exit (default target)'
 	@echo '  dev         Only run the devel compilation to test things out'
+	@echo '  dirs        Make only the directories, no files'
 	@echo '  groundtruth Compile the ground-truth version'
 	@echo '  gt          Same as groundtruth'
 	@echo '  runbuild    Build all executables needed for the run target'
@@ -231,15 +233,20 @@ SOURCE          := $(sort $(SOURCE))
 # We are done adding to VPATH, so consolidate it for speed (removing duplicates)
 VPATH           := $(sort $(VPATH))
 
-DEV_OBJ          = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_dev.o)))
-DEV_DEPS         = $(DEV_OBJ:%.o=%.d)
-GT_OBJ           = $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_gt.o)))
-GT_DEPS          = $(GT_OBJ:%.o=%.d)
-GT_OBJ_FPIC      = $(GT_OBJ:%.o=%_fPIC.o)
+DEV_OBJ_DIR     := $(OBJ_DIR)/dev
+ALL_DIRS        += $(DEV_OBJ_DIR)
+DEV_OBJ         := $(addprefix $(DEV_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
+DEV_DEPS        := $(DEV_OBJ:%.o=%.d)
+GT_OBJ_DIR      := $(OBJ_DIR)/gt
+ALL_DIRS        += $(GT_OBJ_DIR)
+GT_OBJ          := $(addprefix $(GT_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
+GT_DEPS         := $(GT_OBJ:%.o=%.d)
+GT_OBJ_FPIC     := $(GT_OBJ:%.o=%_fPIC.o)
 
 HOSTNAME        := {hostname}
 
 RESULTS_DIR     := results
+ALL_DIRS        += $(RESULTS_DIR)
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
@@ -291,7 +298,7 @@ endif
 # @param 6: target filename
 # @param 7: extra compiler flags
 define COMPILE_RULE
-$2: $1 Makefile custom.mk | $(OBJ_DIR)
+$2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	$3 $4 $5 -c $7 $(CC_REQUIRED) $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
@@ -300,21 +307,31 @@ $2: $1 Makefile custom.mk | $(OBJ_DIR)
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
 endef
 
+REC_DIRS        := $(foreach c, $(COMPILERS),\
+                     $(foreach s, $(SWITCHES_$(strip $c)),\
+                       $(foreach o, $(OPCODES_$(strip $c)),\
+                         $(OBJ_DIR)/$c_$(HOSTNAME)_$s_$o)))
+ALL_DIRS        += $(REC_DIRS)
+
 # will be set internally when doing recursive calls.  Get set to variable names
 # containing the information (e.g. R_CUR_COMPILER=CLANG)
 R_CUR_COMPILER  ?=
 R_CUR_OPTL      ?=
 R_CUR_SWITCHES  ?=
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+.PHONY: dirs
+dirs: $(ALL_DIRS)
+
+$(ALL_DIRS):
+	mkdir -p $@
 
 # If we are in a recursion
 ifdef R_IS_RECURSED
 
 R_ID            := $(R_CUR_COMPILER)_$(HOSTNAME)_$(R_CUR_SWITCHES)_$(R_CUR_OPTL)
 R_TARGET        := $(RESULTS_DIR)/$(R_ID)
-R_OBJ           := $(addprefix $(OBJ_DIR)/,$(notdir $(SOURCE:%=%_$(R_ID).o)))
+R_OBJ_DIR       := $(OBJ_DIR)/$(R_ID)
+R_OBJ           := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
 R_DEP           := $(R_OBJ:%.o=%.d)
 
 -include $(R_DEP)
@@ -342,7 +359,7 @@ $(R_TARGET): $(R_OBJ)
 $(foreach s,$(SOURCE), \
   $(eval $(call COMPILE_RULE,\
     $s,\
-    $(OBJ_DIR)/$(notdir $s)_$(R_ID).o,\
+    $(R_OBJ_DIR)/$(notdir $s).o,\
     $($(R_CUR_COMPILER)),\
     $($(R_CUR_OPTL)),\
     $($(R_CUR_SWITCHES)),\
@@ -372,9 +389,6 @@ ifeq ($(call IS_VER_4_OR_5,$(GT_CXX)),0)
 endif
 endif
 
-$(RESULTS_DIR):
-	mkdir -p $(RESULTS_DIR)
-
 #
 # Define the recursion rules
 #
@@ -397,7 +411,7 @@ TARGETS     += $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2)
 # rebuilt, so does each recursive target.
 
 $$(RESULTS_DIR)/$(strip $1)_$$(HOSTNAME)_$(strip $3)_$(strip $2): $$(GT_TARGET) | $$(OBJ_DIR) $$(RESULTS_DIR)
-	-+$$(MAKE) rec \
+	-+$$(MAKE) rec --no-print-directory \
 	  R_IS_RECURSED=True \
 	  R_CUR_COMPILER=$(strip $1) \
 	  R_CUR_OPTL=$(strip $2) \
@@ -446,9 +460,11 @@ clean:
 veryclean: distclean
 distclean: clean
 	rm -f $(DEV_TARGET)
-	find $(RESULTS_DIR) -name \*-out -delete
-	find $(RESULTS_DIR) -name \*-out\*.dat -delete
-	find $(RESULTS_DIR) -name \*-out-comparison.csv -delete
+	if [ -d "$(RESULTS_DIR)" ]; then \
+	  find "$(RESULTS_DIR)" -name \*-out -delete; \
+	  find "$(RESULTS_DIR)" -name \*-out\*.dat -delete; \
+	  find "$(RESULTS_DIR)" -name \*-out-comparison.csv -delete; \
+	fi
 	rm -f $(TARGETS)
 	rm -f $(GT_TARGET)
 	rm -f $(GT_OUT)
@@ -465,8 +481,8 @@ Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 
 # We have a different solution if we are on a mac
 ifeq ($(UNAME_S),Darwin)
-lib/libflit.so: $(FLIT_LIB_DIR)/libflit.so
-	mkdir -p lib
+ALL_DIRS       += lib
+lib/libflit.so: $(FLIT_LIB_DIR)/libflit.so | lib
 	cp $< $@
 
 .PHONY: cleanlibflit
@@ -500,7 +516,7 @@ $(DEV_TARGET): $(DEV_OBJ) Makefile custom.mk
 $(foreach s,$(SOURCE),\
   $(eval $(call COMPILE_RULE,\
     $s,\
-    $(OBJ_DIR)/$(notdir $s)_dev.o,\
+    $(DEV_OBJ_DIR)/$(notdir $s).o,\
     $(DEV_CXX),\
     $(DEV_OPTL),\
     $(DEV_SWITCHES),\
@@ -518,7 +534,7 @@ $(GT_TARGET): $(GT_OBJ) Makefile custom.mk
 $(foreach s,$(SOURCE),\
   $(eval $(call COMPILE_RULE,\
     $s,\
-    $(OBJ_DIR)/$(notdir $s)_gt.o,\
+    $(GT_OBJ_DIR)/$(notdir $s).o,\
     $(GT_CXX),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\
@@ -528,7 +544,7 @@ $(foreach s,$(SOURCE),\
 $(foreach s,$(SOURCE),\
   $(eval $(call COMPILE_RULE,\
     $s,\
-    $(OBJ_DIR)/$(notdir $s)_gt_fPIC.o,\
+    $(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(GT_CXX),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\

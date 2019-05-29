@@ -95,24 +95,27 @@ The tests are below using doctest
 Test that the dev target will be rebuilt if one of the files is updated.
 We use 'make --touch' to simply touch files it would create and then we will
 test that the correct files are updated.
->>> def compile_target(directory, target):
+>>> def compile_target(directory, target, touch=True):
 ...     'Compiles the dev target using "make --touch" and returns the output'
-...     output = subp.check_output(['make', '-C', directory, '--touch', target])
+...     command = ['make', '-C', directory, target]
+...     if touch:
+...         command.append('--touch')
+...     output = subp.check_output(command)
 ...     return output.decode('utf-8').strip()
 >>> compile_dev = lambda x: compile_target(x, 'dev')
 >>> with th.tempdir() as temp_dir:
 ...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
 ...     # fake the built elements -- don't actually build for time's sake
-...     os.mkdir(os.path.join(temp_dir, 'obj'))
+...     _ = compile_target(temp_dir, 'dirs', touch=False)
 ...     before_build = compile_dev(temp_dir)
 ...     # this next build should say nothing to do
 ...     after_build = compile_dev(temp_dir)
 ...     # update one file and recompile
 ...     with open(os.path.join(temp_dir, 'main.cpp'), 'a') as mainfile:
 ...         mainfile.write('#include "new_header.h"\\n')
-...     maindepname = os.path.join(temp_dir, 'obj', 'main.cpp_dev.d')
+...     maindepname = os.path.join(temp_dir, 'obj', 'dev', 'main.cpp.d')
 ...     with open(maindepname, 'w') as maindep:
-...         maindep.write('obj/main.cpp_dev.o: main.cpp new_header.h\\n')
+...         maindep.write('obj/dev/main.cpp.o: main.cpp new_header.h\\n')
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_dev(temp_dir)
 ...     # touch the header file and make sure it recompiles again
@@ -129,16 +132,16 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['devrun', 'obj/Empty.cpp_dev.o', 'obj/main.cpp_dev.o']
+['devrun', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_build)
 []
 
 >>> touched_files(after_modify)
-['devrun', 'obj/main.cpp_dev.o']
+['devrun', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_touch)
-['devrun', 'obj/main.cpp_dev.o']
+['devrun', 'obj/dev/main.cpp.o']
 
 Now, let's test the same thing with the "gt" target
 
@@ -146,16 +149,16 @@ Now, let's test the same thing with the "gt" target
 >>> with th.tempdir() as temp_dir:
 ...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
 ...     # fake the built elements -- don't actually build for time's sake
-...     os.mkdir(os.path.join(temp_dir, 'obj'))
+...     compile_target(temp_dir, 'dirs', touch=False)
 ...     before_build = compile_gt(temp_dir)
 ...     # this next build should say nothing to do
 ...     after_build = compile_gt(temp_dir)
 ...     # update one file and recompile
 ...     with open(os.path.join(temp_dir, 'main.cpp'), 'a') as mainfile:
 ...         mainfile.write('#include "new_header.h"\\n')
-...     maindepname = os.path.join(temp_dir, 'obj', 'main.cpp_gt.d')
+...     maindepname = os.path.join(temp_dir, 'obj', 'gt', 'main.cpp.d')
 ...     with open(maindepname, 'w') as maindep:
-...         maindep.write('obj/main.cpp_gt.o: main.cpp new_header.h\\n')
+...         maindep.write('obj/gt/main.cpp.o: main.cpp new_header.h\\n')
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_gt(temp_dir)
 ...     # touch the header file and make sure it recompiles again
@@ -167,16 +170,16 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['gtrun', 'obj/Empty.cpp_gt.o', 'obj/main.cpp_gt.o']
+['gtrun', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_build)
 []
 
 >>> touched_files(after_modify)
-['gtrun', 'obj/main.cpp_gt.o']
+['gtrun', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_touch)
-['gtrun', 'obj/main.cpp_gt.o']
+['gtrun', 'obj/gt/main.cpp.o']
 '''
 
 # Test setup before the docstring is run.
