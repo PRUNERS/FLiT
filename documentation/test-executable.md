@@ -32,7 +32,8 @@ update`.
   Separated from doing the run because you may not want to execute tests in
   parallel in case (1) there is contention between them, or (2) they would
   interfere with proper timing measurements.  The compiled executables will be
-  placed in the `results` directory.
+  placed in the `bin` directory.  You may build in parallel using this target
+  and then run sequentially using the `run` target.
 - **run:** Build and execute all of the tests under all combinations of
   compilers, optimization levels, and flags.  If the **runbuild** target has
   already been invoked, then this only runs the tests and generates results
@@ -40,7 +41,7 @@ update`.
 - **clean:** Remove all intermediate files such as object files.  Does not
   remove executables or results.
 - **distclean:** Remove everything including executables and results (but not
-  the database).
+  the results database).
 
 ## Test Executable Details
 

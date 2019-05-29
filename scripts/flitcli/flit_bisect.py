@@ -566,8 +566,7 @@ _extract_symbols_memos = {}
 def extract_symbols(file_or_filelist, objdir):
     '''
     Extracts symbols for the given source file(s).  The corresponding object is
-    assumed to be in the objdir with the filename replaced with the GNU Make
-    pattern %=%_gt.o.
+    assumed to be in the objdir with ".o" appended to the end of the filename.
 
     @param file_or_filelist: (str or list(str)) source file(s) for which to get
         symbols.
@@ -593,7 +592,7 @@ def extract_symbols(file_or_filelist, objdir):
     # now we know it is a string, so assume it is a filename
     fname = file_or_filelist
     fbase = os.path.basename(fname)
-    fobj = os.path.join(objdir, fbase + '_gt.o')
+    fobj = os.path.join(objdir, fbase + '.o')
 
     if fobj in _extract_symbols_memos:
         return _extract_symbols_memos[fobj]
@@ -1369,7 +1368,8 @@ def search_for_symbol_problems(args, bisect_path, replacements, sources,
                  indent)
     logging.debug('%sSymbols:', indent)
     fsymbol_tuples, remaining_symbols = \
-        extract_symbols(differing_source, os.path.join(args.directory, 'obj'))
+        extract_symbols(differing_source,
+                        os.path.join(args.directory, 'obj', 'gt'))
     for sym in fsymbol_tuples:
         message = '{indent}  {sym.fname}:{sym.lineno} {sym.symbol} ' \
                   '-- {sym.demangled}'.format(indent=indent, sym=sym)
@@ -1773,7 +1773,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
             logging.info('%s', message)
             fsymbol_tuples, remaining_symbols = \
                 extract_symbols([x[0] for x in differing_sources],
-                                os.path.join(args.directory, 'obj'))
+                                os.path.join(args.directory, 'obj', 'gt'))
             checker = _gen_bisect_symbol_checker(
                 args, bisect_path, replacements, sources, fsymbol_tuples,
                 remaining_symbols)
