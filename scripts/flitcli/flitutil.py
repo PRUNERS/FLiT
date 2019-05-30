@@ -95,35 +95,45 @@ import tempfile
 
 import flitconfig as conf
 
-# cached values
-_default_toml = None
-_default_toml_string = None
+def _cache_result(func):
+    '''
+    Decorator to decorate a function func (with no arguments) and cache the
+    result after the first call to func.
+
+    @param func (func): function taking no parameters and returning a value
+    @return (func) a function that caches the result and only calls func() the
+        first time (or more if func() previously returned None).
+    '''
+    def helper():
+        if not hasattr(helper, 'cache'):
+            helper.cache = func()
+        return helper.cache
+    return helper
+
 SUPPORTED_COMPILER_TYPES = ('clang', 'gcc', 'intel')
 
+@_cache_result
 def get_default_toml_string():
     '''
     Gets the default toml configuration file for FLiT and returns the string.
     '''
-    if _default_toml_string is None:
-        _default_toml_string = process_in_string(
-            os.path.join(conf.config_dir, 'flit-default.toml.in'),
-            {
-                'flit_path': os.path.join(conf.script_dir, 'flit.py'),
-                'config_dir': conf.config_dir,
-                'hostname': socket.gethostname(),
-                'flit_version': conf.version,
-            })
-    return _default_toml_string
+    return process_in_string(
+        os.path.join(conf.config_dir, 'flit-default.toml.in'),
+        {
+            'flit_path': os.path.join(conf.script_dir, 'flit.py'),
+            'config_dir': conf.config_dir,
+            'hostname': socket.gethostname(),
+            'flit_version': conf.version,
+        })
 
+@_cache_result
 def get_default_toml():
     '''
     Gets the default toml configuration file for FLIT and returns the
     configuration object.
     '''
     import toml
-    if _default_toml is None:
-        _default_toml = toml.loads(get_default_toml_string())
-    return _default_toml
+    return toml.loads(get_default_toml_string())
 
 def fill_defaults(vals, defaults=None):
     '''
