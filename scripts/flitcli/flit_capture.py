@@ -110,7 +110,7 @@ try:
         setup_environment, exec_trace_files, parse_exec_trace
         )
     from libscanbuild import run_build, reconfigure_logging
-except:
+except ImportError:
     enabled = False
     # fake out failed imports
     Compilation = object
@@ -119,10 +119,6 @@ else:
 
 import flitargformatter
 
-# TODO: in order to handle new file endings, we need to override the function
-# TODO-   libscanbuild.compilation.classify_source(fname)
-# TODO- to be able to handle our own custom list of supported file endings
-
 brief_description = 'Captures source file compilations into a JSON database'
 
 LANG_COMPILER_LISTS = defaultdict(list)
@@ -130,6 +126,10 @@ CC = os.getenv('CC', 'cc')
 CXX = os.getenv('CXX', 'c++')
 
 ADDED_EXT_MAP = {}
+
+# in order to handle new file endings, we need to override the function
+#   libscanbuild.compilation.classify_source(fname)
+# to be able to handle our own custom list of supported file endings
 
 _old_classify_source = None
 if enabled:
@@ -236,7 +236,7 @@ def parse_args(arguments, prog=sys.argv[0]):
                             in the CXX environment variable will automatically
                             be added.
                             ''')
-    # TODO: support adding new file endings for new or existing languages
+    # support adding new file endings for new or existing languages
     parser.add_argument('--add-lang',
                         metavar='<lang>:<compiler>[,<compiler>...]',
                         action='append', dest='added_langs',
@@ -397,7 +397,6 @@ def uniquify_db_duplicates(entries):
             last = entry
             yield entry
 
-# TODO: handle other languages such as FORTRAN and CUDA
 def main(arguments, prog=sys.argv[0]):
     '''
     Main logic here

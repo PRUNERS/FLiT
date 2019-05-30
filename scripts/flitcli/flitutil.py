@@ -84,8 +84,6 @@
 Utility functions shared between multiple flit subcommands.
 '''
 
-import flitconfig as conf
-
 import copy
 import logging
 import os
@@ -94,6 +92,8 @@ import sqlite3
 import subprocess as subp
 import sys
 import tempfile
+
+import flitconfig as conf
 
 # cached values
 _default_toml = None
@@ -104,7 +104,6 @@ def get_default_toml_string():
     '''
     Gets the default toml configuration file for FLiT and returns the string.
     '''
-    global _default_toml_string
     if _default_toml_string is None:
         _default_toml_string = process_in_string(
             os.path.join(conf.config_dir, 'flit-default.toml.in'),
@@ -122,7 +121,6 @@ def get_default_toml():
     configuration object.
     '''
     import toml
-    global _default_toml
     if _default_toml is None:
         _default_toml = toml.loads(get_default_toml_string())
     return _default_toml
@@ -169,8 +167,8 @@ def fill_defaults(vals, defaults=None):
                 fill_defaults(vals[key], defaults[key])
     elif isinstance(vals, list):
         assert isinstance(defaults, list)
-        for x in vals:
-            fill_defaults(x, defaults[0])
+        for value in vals:
+            fill_defaults(value, defaults[0])
     return vals
 
 def load_projconf(directory='.'):
@@ -326,22 +324,23 @@ def remove_license_lines(lines):
     >>> remove_license_lines(lines)
     ['hello']
     '''
-    BEFORE = 0
-    IN_LICENSE = 1
-    AFTER = 2
+    # states
+    state_before = 0
+    state_in_license = 1
+    state_after = 2
 
-    state = BEFORE
+    state = state_before
     filtered = []
     for line in lines:
         # state transitions
-        if state == BEFORE and '-- LICENSE BEGIN --' in line:
-            state = IN_LICENSE
+        if state == state_before and '-- LICENSE BEGIN --' in line:
+            state = state_in_license
             continue
-        if state == IN_LICENSE and '-- LICENSE END --' in line:
-            state = AFTER
+        if state == state_in_license and '-- LICENSE END --' in line:
+            state = state_after
             continue
 
-        if state != IN_LICENSE:
+        if state != state_in_license:
             filtered.append(line)
 
     return filtered
@@ -368,8 +367,6 @@ def sqlite_open(filepath):
 
 def is_sqlite(filename):
     'Returns true if the file is likely an sqlite file.'
-    from os.path import isfile, getsize
-
     if not os.path.isfile(filename):
         return False
 
@@ -377,8 +374,8 @@ def is_sqlite(filename):
     if os.path.getsize(filename) < 100:
         return False
 
-    with open(filename, 'rb') as fd:
-        header = fd.read(100)
+    with open(filename, 'rb') as file_in:
+        header = file_in.read(100)
 
     return header[:16] == b'SQLite format 3\000'
 

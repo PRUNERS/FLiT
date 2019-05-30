@@ -393,11 +393,11 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
             if not verbose:
                 subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
             else:
-                ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
-                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
-                ps.communicate()
-                if ps.returncode != 0:
-                    raise subp.CalledProcessError(ps.returncode, command)
+                proc = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
+                subp.check_call(['tee', tmpout.name], stdin=proc.stdout)
+                proc.communicate()
+                if proc.returncode != 0:
+                    raise subp.CalledProcessError(proc.returncode, command)
         except:
             tmpout.flush()
             with open(tmpout.name, 'r') as tmpin:

@@ -146,8 +146,8 @@ def main(arguments, prog=sys.argv[0]):
                 shutil.copy(src, realdest)
 
     # Copy the remaining files over
-    TempFile = lambda: NamedTemporaryFile(mode='w')
-    with TempFile() as tmp_custommk, TempFile() as tmp_flitconfig:
+    temp_file = lambda: NamedTemporaryFile(mode='w')
+    with temp_file() as tmp_custommk, temp_file() as tmp_flitconfig:
         tmp_flitconfig.write(flitutil.get_default_toml_string())
         tmp_flitconfig.flush()
         custommk_vals = {

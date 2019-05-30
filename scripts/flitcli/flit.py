@@ -185,11 +185,39 @@ def main(arguments, outstream=None, errstream=None):
         sys.stdout = oldout
         sys.stderr = olderr
 
+def _handle_help_subcommand(arguments, subcommand_map, help_string):
+    '''
+    Handles the 'flit help' subcommand.
+
+    @param arguments (list(str)): command-line arguments coming after
+        'flit help'
+    @param subcommand_map (dict{'str': module}): dictionary of all subcommands
+        and their corresponding Python modules.
+    @return 0 on success and 1 on failure
+    '''
+    if len(arguments) == 0:
+        help_subcommand = 'help'
+    else:
+        help_subcommand = arguments.pop(0)
+
+    if help_subcommand in ('-h', '--help', 'help'):
+        print(help_string)
+        return 0
+
+    if help_subcommand not in subcommand_map:
+        sys.stderr.write('Error: invalid subcommand: {0}.\n' \
+                         .format(help_subcommand))
+        sys.stderr.write('Call with --help for more information\n')
+        return 1
+
+    # just forward to the documentation from the submodule
+    return subcommand_map[help_subcommand].main(
+        ['--help'], prog='{0} {1}'.format(sys.argv[0], help_subcommand))
+
 def _main_impl(arguments):
     'Implementation of main'
     script_dir = os.path.dirname(os.path.realpath(__file__))
     sys.path.insert(0, script_dir)
-    import flitconfig as conf
 
     subcom_map = import_helper_modules(script_dir)
 
@@ -199,37 +227,21 @@ def _main_impl(arguments):
         return 0
 
     if arguments[0] in ('-v', '--version'):
+        import flitconfig as conf
         print('flit version', conf.version)
         return 0
 
-    all_subcommands = ['help'] + list(subcom_map.keys())
     subcommand = arguments.pop(0)
 
-    if subcommand not in all_subcommands:
-        sys.stderr.write('Error: invalid subcommand: {0}.\n' \
+    if subcommand == 'help':
+        return _handle_help_subcommand(arguments, subcom_map,
+                                       help_subcommand_str)
+
+    if subcommand not in subcom_map:
+        sys.stderr.write('Error: invalid subcommand: {0}.\n'
                          .format(subcommand))
         sys.stderr.write('Call with --help for more information\n')
         return 1
-
-    if subcommand == 'help':
-        if len(arguments) == 0:
-            help_subcommand = 'help'
-        else:
-            help_subcommand = arguments.pop(0)
-
-        if help_subcommand in ('-h', '--help', 'help'):
-            print(help_subcommand_str)
-            return 0
-
-        if help_subcommand not in all_subcommands:
-            sys.stderr.write('Error: invalid subcommand: {0}.\n' \
-                             .format(subcommand))
-            sys.stderr.write('Call with --help for more information\n')
-            return 1
-
-        # just forward to the documentation from the submodule
-        return subcom_map[help_subcommand].main(
-            ['--help'], prog='{0} {1}'.format(sys.argv[0], help_subcommand))
 
     # it is one of the other subcommands.  Just forward the request on
     return subcom_map[subcommand].main(
