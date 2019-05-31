@@ -95,6 +95,73 @@ import tempfile
 
 import flitconfig as conf
 
+SUPPORTED_COMPILER_TYPES = ('clang', 'gcc', 'intel')
+
+class Memoizer:
+    '''
+    A memoization decorator generator class.
+
+    Example usage:
+    >>> @Memoizer()
+    ... def myfunction(i, j, k):
+    ...     print('myfunction()')
+    ...     return i
+    >>> myfunction(1, 2, 3)
+    myfunction()
+    1
+    >>> myfunction(1, 2, 3)
+    1
+    >>> myfunction(2, 3, 4)
+    myfunction()
+    2
+    >>> myfunction(1, 2, 3)
+    1
+    >>> myfunction(2, 3, 4)
+    2
+    >>> myfunction(1, 3, 4)
+    myfunction()
+    1
+
+    >>> @Memoizer(key=lambda i, j, k: i)
+    ... def myfunction2(i, j, k):
+    ...     print('myfunction2()')
+    ...     return i
+    >>> myfunction2(1, 2, 3)
+    myfunction2()
+    1
+    >>> myfunction2(1, 3, 4)
+    1
+    >>> myfunction2(1, 2, 3)
+    1
+    >>> myfunction2(2, 3, 4)
+    myfunction2()
+    2
+    >>> myfunction2(1, 2, 3)
+    1
+    >>> myfunction2(2, 3, 4)
+    2
+    >>> myfunction2(1, 3, 4)
+    1
+    '''
+
+    def __init__(self, key=lambda *args, **kwargs: str(args) + str(kwargs)):
+        self.key = key
+        self.cache = {}
+
+    def __call__(self, func):
+        'Performs the decoration on func, using the given key function'
+        def helper(*args, **kwargs):
+            mykey = self.key(*args, **kwargs)
+            if mykey not in self.cache:
+                self.cache[mykey] = func(*args, **kwargs)
+            return self.cache[mykey]
+        # preserve the docstring (also for doctest to work)
+        helper.__doc__ = func.__doc__
+        return helper
+
+    def __repr__(self):
+        return repr(self.key)
+
 def _cache_result(func):
     '''
     Decorator to decorate a function func (with no arguments) and cache the
@@ -103,14 +170,27 @@ def _cache_result(func):
     @param func (func): function taking no parameters and returning a value
     @return (func) a function that caches the result and only calls func() the
         first time (or more if func() previously returned None).
+
+    >>> @_cache_result
+    ... def hello():
+    ...     'print hi there'
+    ...     print('called hello()')
+    ...     return 'hello'
+    >>> hello()
+    called hello()
+    'hello'
+    >>> hello()
+    'hello'
+    >>> hello()
+    'hello'
     '''
     def helper():
         if not hasattr(helper, 'cache'):
             helper.cache = func()
         return helper.cache
+    # preserve the docstring (also for doctest to work)
+    helper.__doc__ = func.__doc__
     return helper
-
-SUPPORTED_COMPILER_TYPES = ('clang', 'gcc', 'intel')
 
 @_cache_result
 def get_default_toml_string():
@@ -425,6 +505,11 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     var_values = output.split('=', maxsplit=1)[1].split()
     return var_values
 
+def _extract_make_vars_memoizer_key(makefile='Makefile', directory='.'):
+    'Key function for the memoizer of extract_make_vars()'
+    return (directory, makefile)
+
+@Memoizer(key=_extract_make_vars_memoizer_key)
 def extract_make_vars(makefile='Makefile', directory='.'):
     '''
     Extracts all GNU Make variables from the given Makefile, except for those
@@ -445,6 +530,15 @@ def extract_make_vars(makefile='Makefile', directory='.'):
     ['hello', 'there', 'sweetheart']
     >>> allvars['B']
     []
+
+    >>> allvars == extract_make_vars(fout.name)
+    True
+    >>> allvars == extract_make_vars(fout.name, '.')
+    True
+    >>> allvars == extract_make_vars(makefile=fout.name)
+    True
+    >>> allvars == extract_make_vars(directory='.', makefile=fout.name)
+    True
 
     What if the file does not exist?  It throws an exception:
 
