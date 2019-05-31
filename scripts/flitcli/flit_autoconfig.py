@@ -221,21 +221,18 @@ def extract_cxxflags(arguments, command_cwd='.'):
         ]
     # TODO: filter out flags that are specified in flit-config.toml
     args = iter(arguments)
+    is_optl = lambda x: x.startswith('-O')
+    is_link = lambda x: any(x.startswith(flag)
+                            for flag in ('-l', '-L', '-Wl,'))
     for arg in args:
-        if not arg.startswith('-'):
-            continue
+        # filter out stuff
         if arg in flags_to_ignore:
             count = flags_to_ignore[arg]
             for _ in range(count):
                 next(args)
-            continue
-        # filter out link flags
-        if any(arg.startswith(x) for x in ('-l', '-L', '-Wl,')):
-            continue
-        # filter out optimization level
-        if arg.startswith('-O'):
-            continue
-        if any(arg.startswith(flag) for flag in path_flags):
+        elif not arg.startswith('-') or is_optl(arg) or is_link(arg):
+            pass
+        elif any(arg.startswith(flag) for flag in path_flags):
             # allow for space separation and not space separation
             if arg in path_flags:
                 flag = arg
@@ -267,10 +264,11 @@ def extract_compilation_attributes(compilations):
         database file.
     @return (dict) fields needed for custom.mk
         - 'files': (list(str)) relative paths to compiled files
-        - 'cxxflags': (list(str)) compilation flags
+        - 'cxxflag_intersection': (list(str)) compilation flags in common
+        - 'cxxflag_union': (list(str)) union of all compilation flags
 
     >>> extract_compilation_attributes([])
-    {'files': [], 'cxxflags': []}
+    {'files': [], 'cxxflag_union': [], 'cxxflag_intersection': []}
 
     >>> attributes = extract_compilation_attributes([{
     ...     "arguments": [
@@ -292,95 +290,52 @@ def extract_compilation_attributes(compilations):
     ...     }])
     >>> attributes['files']
     ['src/FlitCsv.cpp']
-    >>> attributes['cxxflags']
-    ['-g', '-fPIC', '-std=c++11', '-Wall', '-I.']
+    >>> attributes['cxxflag_union']
+    ['-I.', '-Wall', '-fPIC', '-g', '-std=c++11']
+    >>> attributes['cxxflag_intersection']
+    ['-I.', '-Wall', '-fPIC', '-g', '-std=c++11']
     '''
     files = []
-    cxxflags = None
+    cxxflag_union = set()
+    cxxflag_intersection = None
     for compilation in compilations:
         logging.debug('compilation = %s', compilation)
         if compilation['language'] != 'c++':
             continue
         filepath = os.path.join(compilation['directory'], compilation['file'])
         files.append(os.path.relpath(filepath))
-        if cxxflags is None:
-            cxxflags = extract_cxxflags(compilation['arguments'],
-                                        compilation['directory'])
-            logging.debug('cxxflags = %s', cxxflags)
+        cxxflags = extract_cxxflags(compilation['arguments'],
+                                    compilation['directory'])
+        logging.debug('cxxflags = %s', cxxflags)
+        cxxflag_union.update(cxxflags)
+        if cxxflag_intersection is None:
+            cxxflag_intersection = set(cxxflags)
         else:
-            this_cxxflags = extract_cxxflags(compilation['arguments'],
-                                             compilation['directory'])
-            if set(cxxflags) != set(this_cxxflags):
-                print('Error: cxxflags mismatch')
-                print('  cxxflags = {}'.format(cxxflags))
-                print('  this_cxxflags = {}'.format(this_cxxflags))
-                raise RuntimeError('cxxflags mismatch')
+            cxxflag_intersection.intersection_update(cxxflags)
+
+    # don't let it remain None if there were no compilations
+    if cxxflag_intersection is None:
+        cxxflag_intersection = []
+
+    # convert the union and intersection into lists
+    cxxflag_union = sorted(cxxflag_union)
+    cxxflag_intersection = sorted(cxxflag_intersection)
+
+    # logging
     logging.debug('files = %s', files)
-    if cxxflags is None:
-        cxxflags = []
-    return {'files': files, 'cxxflags': cxxflags}
+    logging.debug('cxxflag_union = %s', cxxflag_union)
+    logging.debug('cxxflag_intersection = %s', cxxflag_intersection)
+    if cxxflag_union != cxxflag_intersection:
+        logging.warning('cxxflags mismatch')
 
-def gen_custom_makefile(outfile='custom.mk', files=None, cxxflags=None,
-                        ldflags=None, overwrite=False):
-    '''
-    Generate the custom.mk file.
-
-    @param outfile (str): filepath to output
-    @param files (list(str)): list of source files
-    @param cxxflags (list(str)): list of compiler flags
-    @param ldflags (list(str)): list of linker flags
-    @param overwrite (boolean): If true, will overwrite the file, else will
-        append to the end of the existing file.
-    @return None
-    '''
-    # handle default values
-    files = files if files is not None else []
-    cxxflags = cxxflags if cxxflags is not None else []
-    ldflags = ldflags if ldflags is not None else []
-
-    files_makevar = 'SOURCE'
-    cxxflags_makevar = 'CC_REQUIRED'
-    ldflags_makevar = 'LD_REQUIRED'
-    # only append entries that are not there
-    if os.path.isfile(outfile) and not overwrite:
-        makevars = util.extract_make_vars(outfile)
-        existing_files = set(makevars.get(files_makevar, []))
-        existing_cxxflags = set(makevars.get(cxxflags_makevar, []))
-        existing_ldflags = set(makevars.get(ldflags_makevar, []))
-
-        # For debugging purposes, log what would be filtered out
-        logging.debug('Files already found in %s: %s',
-                      outfile, sorted(existing_files.intersection(files)))
-        logging.debug('C++ flags already found in %s: %s',
-                      outfile,
-                      sorted(existing_cxxflags.intersection(cxxflags)))
-        logging.debug('Link flags already found in %s: %s',
-                      outfile, sorted(existing_ldflags.intersection(ldflags)))
-
-        # We use list comprehension here instead of set subtraction so as to
-        # preserve the original ordering, just filtered
-        files = [f for f in files if f not in existing_files]
-        cxxflags = [flag for flag in cxxflags if flag not in existing_cxxflags]
-        ldflags = [flag for flag in ldflags if flag not in existing_ldflags]
-
-    sources_str = ''
-    if len(files) > 0:
-        var_str = '{:14} += '.format(files_makevar)
-        sources_str = var_str + ('\n' + var_str).join(files)
-    cxxflags_str = ''
-    if len(cxxflags) > 0:
-        var_str = '{:14} += '.format(cxxflags_makevar)
-        cxxflags_str = var_str + ('\n' + var_str).join(cxxflags)
-    ldflags_str = ''
-    if len(ldflags) > 0:
-        var_str = '{:14} += '.format(ldflags_makevar)
-        ldflags_str = var_str + ('\n' + var_str).join(ldflags)
-    replacements = {
-        'MORE_SOURCES': sources_str,
-        'MORE_CXX_FLAGS': cxxflags_str,
-        'MORE_LINK_FLAGS': ldflags_str,
+    return {
+        'files': files,
+        'cxxflag_union': cxxflag_union,
+        'cxxflag_intersection': cxxflag_intersection,
         }
 
+def _output_custom_makefile(outfile, replacements, overwrite):
+    'Actually outputs to the given file'
     if os.path.isfile(outfile) and not overwrite:
         print('Appending to {}'.format(outfile))
         keys = ('MORE_SOURCES', 'MORE_CXX_FLAGS', 'MORE_LINK_FLAGS')
@@ -400,6 +355,77 @@ def gen_custom_makefile(outfile='custom.mk', files=None, cxxflags=None,
         util.process_in_file(os.path.join(conf.data_dir, 'custom.mk.in'),
                              outfile, replacements, overwrite=True)
 
+# Makefile variables
+_FILES_MAKEVAR = 'SOURCE'
+_CXXFLAGS_MAKEVAR = 'CC_REQUIRED'
+_LDFLAGS_MAKEVAR = 'LD_REQUIRED'
+
+def _filter_out_existing_makevars(files, cxxflags, ldflags, outfile):
+    'Filter out from variables (in place) existing values in outfile.'
+    makevars = util.extract_make_vars(outfile)
+    existing_files = set(makevars.get(_FILES_MAKEVAR, []))
+    existing_cxxflags = set(makevars.get(_CXXFLAGS_MAKEVAR, []))
+    existing_ldflags = set(makevars.get(_LDFLAGS_MAKEVAR, []))
+
+    # For debugging purposes, log what would be filtered out
+    logging.debug('Files already found in %s: %s',
+                  outfile, sorted(existing_files.intersection(files)))
+    logging.debug('C++ flags already found in %s: %s',
+                  outfile,
+                  sorted(existing_cxxflags.intersection(cxxflags)))
+    logging.debug('Link flags already found in %s: %s',
+                  outfile, sorted(existing_ldflags.intersection(ldflags)))
+
+    filter_out = lambda orig, existing: [x for x in orig if x not in existing]
+
+    # We use list comprehension here instead of set subtraction so as to
+    # preserve the original ordering, just filtered
+    files[:] = filter_out(files, existing_files)
+    cxxflags[:] = filter_out(cxxflags, existing_cxxflags)
+    ldflags[:] = filter_out(ldflags, existing_ldflags)
+
+def gen_custom_makefile(outfile='custom.mk', files=None, cxxflags=None,
+                        ldflags=None, overwrite=False):
+    '''
+    Generate the custom.mk file.
+
+    @param outfile (str): filepath to output
+    @param files (list(str)): list of source files
+    @param cxxflags (list(str)): list of compiler flags
+    @param ldflags (list(str)): list of linker flags
+    @param overwrite (boolean): If true, will overwrite the file, else will
+        append to the end of the existing file.
+    @return None
+    '''
+    # handle default values
+    files = list(files) if files is not None else []
+    cxxflags = list(cxxflags) if cxxflags is not None else []
+    ldflags = list(ldflags) if ldflags is not None else []
+
+    # only append entries that are not there
+    if os.path.isfile(outfile) and not overwrite:
+        _filter_out_existing_makevars(files, cxxflags, ldflags, outfile)
+
+    sources_str = ''
+    if len(files) > 0:
+        var_str = '{:14} += '.format(_FILES_MAKEVAR)
+        sources_str = var_str + ('\n' + var_str).join(files)
+    cxxflags_str = ''
+    if len(cxxflags) > 0:
+        var_str = '{:14} += '.format(_CXXFLAGS_MAKEVAR)
+        cxxflags_str = var_str + ('\n' + var_str).join(cxxflags)
+    ldflags_str = ''
+    if len(ldflags) > 0:
+        var_str = '{:14} += '.format(_LDFLAGS_MAKEVAR)
+        ldflags_str = var_str + ('\n' + var_str).join(ldflags)
+    replacements = {
+        'MORE_SOURCES': sources_str,
+        'MORE_CXX_FLAGS': cxxflags_str,
+        'MORE_LINK_FLAGS': ldflags_str,
+        }
+
+    _output_custom_makefile(outfile, replacements, overwrite)
+
 def main(arguments, prog=sys.argv[0]):
     'Main logic here'
     args = parse_args(arguments, prog)
@@ -411,7 +437,7 @@ def main(arguments, prog=sys.argv[0]):
     gen_custom_makefile(
         outfile=args.output,
         files=attributes['files'],
-        cxxflags=attributes['cxxflags'],
+        cxxflags=attributes['cxxflag_union'],
         overwrite=args.overwrite,
         )
 
