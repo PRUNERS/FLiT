@@ -82,6 +82,7 @@
  */
 
 #include "test_harness.h"
+#include "fsutil.h"
 
 #define time_function wrap_time_function
 #define time_function_autoloop wrap_time_function_autoloop
@@ -316,7 +317,7 @@ RunSetup<F> run_setup() {
   char * argv[1] { name };
   char ** argvref = argv;
   flit::MpiEnvironment mpi_env(argc, argvref);
-  std::string id("This is my ID");
+  std::string id("This-is-my-ID");
   MocTest<F> test(id);
   RunSetup<F> setup {MocTest<F>(id), mpi_env};
   flit::mpi = &setup.mpi;
@@ -602,8 +603,25 @@ void tst_TestBase_run_specifiedLoops() {
 TH_REGISTER(tst_TestBase_run_specifiedLoops);
 
 void tst_TestBase_run_outputFileUsingFilebase() {
-  TH_SKIP("unimplemented");
-  // TODO: test the output file using the filebase
+  // test the output file using the filebase
+  auto setup = run_setup<double>();
+  auto &test = setup.test;
+  test.inputsPerRun = 0;
+  test.to_return = std::vector<double> { 1, 2, 3 };
+
+  std::vector<double> ti {};
+  fsutil::TempDir tmpdir;
+  auto filebase = tmpdir.name() + "/my-file-base";
+  bool shouldTime = false;
+  auto results = test.run(ti, filebase, shouldTime);
+  TH_EQUAL(results.size(), 1);
+  TH_EQUAL(results[0].result(), flit::Variant());
+
+  auto dir_contents = fsutil::listdir(tmpdir.name());
+  TH_VERIFY(std::any_of(dir_contents.begin(), dir_contents.end(),
+            [] (std::string fname) {
+              return fname == "my-file-base_This-is-my-ID_d.dat";
+            }));
 }
 TH_REGISTER(tst_TestBase_run_outputFileUsingFilebase);
 
