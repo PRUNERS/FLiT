@@ -212,6 +212,9 @@ inline TempDir::~TempDir() {
 #endif
                  ": " << ex.what() << std::endl;
   }
+  catch (std::runtime_error &ex) {
+    std::cerr << "Error: " << ex.what() << std::endl;
+  }
 }
 
 inline TinyDir::TinyDir(const std::string &directory) {
@@ -269,7 +272,9 @@ inline std::vector<std::string> listdir(const std::string &directory) {
   std::vector<std::string> ls;
   TinyDir dir(directory);
   for (auto file : dir) {
-    ls.emplace_back(file.name);
+    if (file.name != std::string(".") && file.name != std::string("..")) {
+      ls.emplace_back(file.name);
+    }
   }
   return ls;
 }
@@ -288,12 +293,14 @@ inline void printdir(const std::string &directory) {
 
 inline void rec_rmdir(const std::string &directory) {
   // remove contents first
+  const std::string separator = "/";
   auto contents = listdir(directory);
-  for (auto &path : contents) {
+  for (auto &name : contents) {
+    std::string path = directory + separator + name;
     tinydir_file file;
     tinydir_file_open(&file, path.c_str());
     if (file.is_dir) {
-      rec_rmdir(file.name);
+      rec_rmdir(path);
     } else {
       std::remove(path.c_str());
     }
