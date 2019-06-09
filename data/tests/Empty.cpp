@@ -83,6 +83,8 @@
 
 #include <string>
 
+#include <cmath>
+
 /** An example test class to show how to make FLiT tests
  *
  * You will want to rename this file and rename the class.  Then implement
@@ -131,7 +133,7 @@ public:
   virtual long double compare(long double ground_truth,
                               long double test_results) const override {
     // absolute error
-    return test_results - ground_truth;
+    return std::abs(test_results - ground_truth);
   }
 
   /** There is no good default implementation comparing two strings */

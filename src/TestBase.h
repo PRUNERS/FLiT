@@ -104,6 +104,8 @@
 #include <utility>
 #include <vector>
 
+#include <cmath>
+
 namespace flit {
 
 struct TestResult {
@@ -357,7 +359,7 @@ public:
   virtual long double compare(long double ground_truth,
                               long double test_results) const {
     // absolute error
-    return test_results - ground_truth;
+    return std::abs(test_results - ground_truth);
   }
 
   /** There is no good default implementation comparing two strings */
