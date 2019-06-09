@@ -96,6 +96,7 @@
 #include <fstream>
 #include <ios>          // for std::ios_base::failure
 #include <iostream>
+#include <sstream>      // for std::istringstream
 #include <stdexcept>    // for std::runtime_error
 #include <string>
 #include <vector>
@@ -106,6 +107,9 @@
 #endif
 
 namespace fsutil {
+
+// constants
+const std::string separator = "/";
 
 // declarations
 inline std::vector<std::string> listdir(const std::string &directory);
@@ -268,6 +272,31 @@ inline void TinyDir::checkerr(int err, std::string msg) const {
   }
 }
 
+inline void _join_impl(std::ostream &out, const std::string &piece) {
+  out << piece;
+}
+
+template <typename ... Args>
+inline void _join_impl(std::ostream &out, const std::string &piece,
+                              Args ... args)
+{
+  out << piece << separator;
+  _join_impl(out, args ...);
+}
+
+template <typename ... Args>
+inline std::string join(Args ... args) {
+  std::ostringstream path_builder;
+  _join_impl(path_builder, args ...);
+  return path_builder.str();
+}
+
+inline std::string readfile(std::string path) {
+  std::ifstream input(path);
+  return std::string(std::istreambuf_iterator<char>(input),
+                     std::istreambuf_iterator<char>());
+}
+
 inline std::vector<std::string> listdir(const std::string &directory) {
   std::vector<std::string> ls;
   TinyDir dir(directory);
@@ -285,7 +314,7 @@ inline void printdir(const std::string &directory) {
   for (auto file : dir) {
     std::cout << "  " << file.name;
     if (file.is_dir) {
-      std::cout << "/";
+      std::cout << separator;
     }
     std::cout << std::endl;
   }
@@ -293,10 +322,9 @@ inline void printdir(const std::string &directory) {
 
 inline void rec_rmdir(const std::string &directory) {
   // remove contents first
-  const std::string separator = "/";
   auto contents = listdir(directory);
   for (auto &name : contents) {
-    std::string path = directory + separator + name;
+    std::string path = join(directory, name);
     tinydir_file file;
     tinydir_file_open(&file, path.c_str());
     if (file.is_dir) {

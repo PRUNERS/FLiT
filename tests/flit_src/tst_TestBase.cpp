@@ -145,7 +145,6 @@ int_fast64_t wrap_time_function_autoloop(
 
 } // end of namespace flit
 
-
 namespace TestResultTests {
 
 void tst_TestResult_constructor() {
@@ -208,7 +207,7 @@ void tst_TestResult_stream() {
 }
 TH_REGISTER(tst_TestResult_stream);
 
-}
+} // end of namespace TestResultTests
 
 namespace TestBase {
 
@@ -611,33 +610,54 @@ void tst_TestBase_run_outputFileUsingFilebase() {
 
   std::vector<double> ti {};
   fsutil::TempDir tmpdir;
-  auto filebase = tmpdir.name() + "/my-file-base";
+  auto filebase = fsutil::join(tmpdir.name(), "my-file-base");
   bool shouldTime = false;
   auto results = test.run(ti, filebase, shouldTime);
   TH_EQUAL(results.size(), 1);
   TH_EQUAL(results[0].result(), flit::Variant());
 
   auto dir_contents = fsutil::listdir(tmpdir.name());
+  std::string filename = "my-file-base_This-is-my-ID_d.dat";
   TH_VERIFY(std::any_of(dir_contents.begin(), dir_contents.end(),
-            [] (std::string fname) {
-              return fname == "my-file-base_This-is-my-ID_d.dat";
+            [&filename] (std::string fname) {
+              return fname == filename;
             }));
+  auto contents = fsutil::readfile(fsutil::join(tmpdir.name(), filename));
+  auto read_results = flit::Variant::fromString(contents);
+  TH_EQUAL(flit::Variant(test.to_return), read_results);
 }
 TH_REGISTER(tst_TestBase_run_outputFileUsingFilebase);
 
 void tst_TestBase_run_outputVariantsToFile() {
-  TH_SKIP("unimplemented");
-  // TODO: test each variant type that they each go to file except long double
-  // TODO- perhaps do it using a foreach loop with the enum:
-  // TODO-   for (auto vtype : std::range(flit::Variant::Type::None,
-  // TODO-                                flit::Variant::Type::Error)) { ... }
+  // test each variant type that they each go to file except long double
+  auto setup = run_setup<double>();
+  auto &test = setup.test;
+  test.inputsPerRun = 0;
+
+  auto test_variant_type = [&test](const flit::Variant &to_return) {
+    test.to_return = to_return;
+
+    std::vector<double> ti {};
+    fsutil::TempDir tmpdir;
+    auto filebase = fsutil::join(tmpdir.name(), "my-file-base");
+    bool shouldTime = false;
+    auto results = test.run(ti, filebase, shouldTime);
+    TH_EQUAL(results.size(), 1);
+    TH_EQUAL(results[0].result(), flit::Variant());
+
+    auto dir_contents = fsutil::listdir(tmpdir.name());
+    std::string filename = "my-file-base_This-is-my-ID_d.dat";
+    auto contents = fsutil::readfile(fsutil::join(tmpdir.name(), filename));
+    auto read_results = flit::Variant::fromString(contents);
+    TH_EQUAL(flit::Variant(test.to_return), read_results);
+  };
+
+  test_variant_type(std::string("hello world!"));
+  test_variant_type(std::vector<float> { 3.1f, 3.2f, 3.3e6f, 5.f });
+  test_variant_type(std::vector<double> {});
+  test_variant_type(std::vector<long double> { 3.14159 });
 }
 TH_REGISTER(tst_TestBase_run_outputVariantsToFile);
 
-void tst_TestBase_run_variantValueInFile() {
-  TH_SKIP("unimplemented");
-  // TODO: test the values of the variants that go to file
-}
-TH_REGISTER(tst_TestBase_run_variantValueInFile);
+} // end of namespace TestBase
 
-}
