@@ -85,6 +85,7 @@
 #include "fsutil.h"
 
 #include <algorithm>
+#include <memory>
 
 namespace {
   
@@ -172,22 +173,63 @@ TH_REGISTER(tst_chdir);
 namespace tst_PushDir {
 
 void tst_PushDir_constructor_existing_dir() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir temp;
+  std::string curdir = fsutil::curdir();
+  fsutil::PushDir pd(temp.name());
+  TH_EQUAL(curdir, pd.previous_dir());
+  TH_EQUAL(temp.name(), fsutil::curdir());
 }
 TH_REGISTER(tst_PushDir_constructor_existing_dir);
 
 void tst_PushDir_constructor_missing_dir() {
-  TH_SKIP("unimplemented");
+  TH_THROWS(fsutil::PushDir pd("/does/not/exist"), std::runtime_error);
 }
 TH_REGISTER(tst_PushDir_constructor_missing_dir);
 
 void tst_PushDir_destructor_existing_dir() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir temp1;
+  fsutil::TempDir temp2;
+  auto curdir = fsutil::curdir();
+  {
+    fsutil::PushDir pd1(temp1.name());
+    TH_EQUAL(curdir, pd1.previous_dir());
+    {
+      fsutil::PushDir pd2(temp2.name());
+      TH_EQUAL(temp1.name(), pd2.previous_dir());
+      TH_EQUAL(temp2.name(), fsutil::curdir());
+    }
+    TH_EQUAL(temp1.name(), fsutil::curdir());
+  }
+  TH_EQUAL(curdir, fsutil::curdir());
 }
 TH_REGISTER(tst_PushDir_destructor_existing_dir);
 
 void tst_PushDir_destructor_missing_dir() {
-  TH_SKIP("unimplemented");
+  // TODO: capture stderr and assert on its output
+  auto curdir = fsutil::curdir();
+  {
+    fsutil::TempDir temp2;
+    std::unique_ptr<fsutil::PushDir> pd1;
+    {
+      std::unique_ptr<fsutil::PushDir> pd2;
+      {
+        fsutil::TempDir temp1;
+
+        pd1.reset(new fsutil::PushDir(temp1.name()));
+        TH_EQUAL(curdir, pd1->previous_dir());
+        TH_EQUAL(temp1.name(), fsutil::curdir());
+
+        pd2.reset(new fsutil::PushDir(temp2.name()));
+        TH_EQUAL(temp1.name(), pd2->previous_dir());
+        TH_EQUAL(temp2.name(), fsutil::curdir());
+      } // deletes temp1
+      TH_EQUAL(temp2.name(), fsutil::curdir());
+    } // deletes pd2, with temp1.name() not existing
+    // should be unable to go to temp1.name() since it doesn't exist
+    // but no exception since it is from a destructor
+    TH_EQUAL(temp2.name(), fsutil::curdir());
+  } // deletes pd1 and temp2
+  TH_EQUAL(curdir, fsutil::curdir());
 }
 TH_REGISTER(tst_PushDir_destructor_missing_dir);
 
