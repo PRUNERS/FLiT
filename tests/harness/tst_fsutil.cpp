@@ -169,6 +169,30 @@ TH_REGISTER(tst_chdir);
 
 } // end of namespace tst_functions
 
+namespace tst_PushDir {
+
+void tst_PushDir_constructor_existing_dir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_PushDir_constructor_existing_dir);
+
+void tst_PushDir_constructor_missing_dir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_PushDir_constructor_missing_dir);
+
+void tst_PushDir_destructor_existing_dir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_PushDir_destructor_existing_dir);
+
+void tst_PushDir_destructor_missing_dir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_PushDir_destructor_missing_dir);
+
+} // end of namespace tst_PushDir
+
 namespace tst_TempFile {
 
 void tst_TempFile_constructor() {

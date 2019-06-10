@@ -113,10 +113,13 @@
 
 namespace fsutil {
 
-// constants
+//= CONSTANTS =//
+
 const std::string separator = "/";
 
-// declarations
+
+//= DECLARATIONS =//
+
 template <typename ... Args> inline std::string join(Args ... args);
 inline std::string readfile(const std::string &path);
 inline std::vector<std::string> listdir(const std::string &directory);
@@ -128,6 +131,20 @@ inline std::string curdir();
 inline void chdir(const std::string &directory);
 inline void touch(const std::string &path);
 
+/** constructor changes current dir, destructor undoes it */
+class PushDir {
+public:
+  PushDir(const std::string &directory);
+  ~PushDir();
+  const std::string& previous_dir() { return _old_curdir; };
+private:
+  std::string _old_curdir;
+};
+
+/** Constructs a temporary named file with an associated stream.
+ *
+ * The file will be deleted in the destructor
+ */
 struct TempFile {
   std::string name;
   std::ofstream out;
@@ -135,6 +152,10 @@ struct TempFile {
   ~TempFile();
 };
 
+/** Constructs a temporary named directory with 0700 permissions.
+ *
+ * The directory, and all contents, will be deleted in the destructor.
+ */
 class TempDir {
 public:
   TempDir();
@@ -144,6 +165,10 @@ private:
   std::string _name;
 };
 
+/** Allows listing of a directory.
+ *
+ * Class wrapper around tinydir.h C library.
+ */
 class TinyDir {
 public:
   TinyDir(const std::string &directory);
@@ -152,6 +177,7 @@ public:
   bool hasnext();
   void nextfile();
 
+  /** Iterator class for iterating contents of a directory */
   class Iterator {
   public:
     Iterator(TinyDir *td) : _td(td) {}
@@ -173,7 +199,22 @@ private:
   tinydir_dir _dir;
 };
 
-// definitions
+
+//= DEFINITIONS =//
+
+PushDir::PushDir(const std::string &directory)
+  : _old_curdir(::fsutil::curdir())
+{
+  ::fsutil::chdir(directory);
+}
+
+PushDir::~PushDir() {
+  try {
+    ::fsutil::chdir(_old_curdir);
+  } catch (std::runtime_error &ex) {
+    std::cerr << "Runtime error: " << ex.what() << std::endl;
+  }
+}
 
 inline TempFile::TempFile() {
   char fname_buf[L_tmpnam];
