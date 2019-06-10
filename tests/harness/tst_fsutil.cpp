@@ -308,15 +308,21 @@ TH_REGISTER(tst_TinyDir_iterator);
 
 namespace tst_FileCloser {
 
-void tst_FileCloser_constructor() {
-  TH_SKIP("unimplemented");
+void tst_FileCloser() {
+  fsutil::TempDir temp_dir;
+  std::string content = "hello world!";
+  std::string fname = fsutil::join(temp_dir.name(), "tmp.txt");
+  FILE* temp_file = fopen(fname.c_str(), "w");
+  {
+    fsutil::FileCloser closer(temp_file);
+    fprintf(temp_file, "%s", content.c_str());
+  }
+  TH_EQUAL(content, fsutil::readfile(fname));
+  // Unfortunately, there is no way to check that the FILE* pointer was closed
+  // without stubbing.  This is because it is undefined behavior if you use the
+  // FILE* pointer in any way after fclose().
 }
-TH_REGISTER(tst_FileCloser_constructor);
-
-void tst_FileCloser_destructor() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_FileCloser_destructor);
+TH_REGISTER(tst_FileCloser);
 
 } // end of namespace tst_FileCloser
 

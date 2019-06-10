@@ -199,7 +199,7 @@ private:
   tinydir_dir _dir;
 };
 
-/** Closes the file in the destructor */
+/** Closes the FILE* in the destructor */
 struct FileCloser {
   FILE* file;
   int fd;
