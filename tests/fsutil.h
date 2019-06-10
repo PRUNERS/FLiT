@@ -262,6 +262,20 @@ inline std::string readfile(const std::string &path) {
                      std::istreambuf_iterator<char>());
 }
 
+inline std::string readfile(FILE* file) {
+  fseek(file, 0, SEEK_END);
+  auto size = ftell(file);
+  rewind(file);
+  std::vector<char> buffer(size + 1, '\0');
+  long read_size = fread(buffer.data(), 1, size, file);
+  if (read_size != size) {
+    throw std::ios_base::failure(
+        "Did not read in one go (" + std::to_string(size) + ", "
+        + std::to_string(read_size) + ")");
+  }
+  return std::string(buffer.data());
+}
+
 inline std::vector<std::string> listdir(const std::string &directory) {
   std::vector<std::string> ls;
   TinyDir dir(directory);

@@ -107,14 +107,23 @@ void tst_join() {
 }
 TH_REGISTER(tst_join);
 
-void tst_readfile() {
+void tst_readfile_filename() {
   fsutil::TempFile f;
   std::string content = "My string value";
   f.out << content;
   f.out.flush();
   TH_EQUAL(content, fsutil::readfile(f.name));
 }
-TH_REGISTER(tst_readfile);
+TH_REGISTER(tst_readfile_filename);
+
+void tst_readfile_filepointer() {
+  fsutil::FileCloser temporary_file(tmpfile());
+  std::string content = "My string value";
+  fprintf(temporary_file.file, "%s", content.c_str());
+  fflush(temporary_file.file);
+  TH_EQUAL(content, fsutil::readfile(temporary_file.file));
+}
+TH_REGISTER(tst_readfile_filepointer);
 
 void tst_listdir() {
   fsutil::TempDir dir;
@@ -313,28 +322,52 @@ TH_REGISTER(tst_FileCloser_destructor);
 
 namespace tst_FdReplace {
 
-void tst_FdReplace_constructor() {
-  TH_SKIP("unimplemented");
+void tst_FdReplace() {
+  fsutil::FileCloser t1(tmpfile());
+  fsutil::FileCloser t2(tmpfile());
+  fprintf(t1.file, "hi there");
+  {
+    fsutil::FdReplace replacer(t1.file, t2.file);
+    fprintf(t1.file, "hello ");
+    fflush(t1.file);
+    fprintf(t2.file, "world");
+    fflush(t2.file);
+    TH_EQUAL("hello world", fsutil::readfile(t1.file));
+    TH_EQUAL("hello world", fsutil::readfile(t2.file));
+  }
+  TH_EQUAL("hi there", fsutil::readfile(t1.file));
+  TH_EQUAL("hello world", fsutil::readfile(t2.file));
 }
-TH_REGISTER(tst_FdReplace_constructor);
+TH_REGISTER(tst_FdReplace);
 
-void tst_FdReplace_destructor() {
-  TH_SKIP("unimplemented");
+void tst_FdReplace_nullptr() {
+  fsutil::FileCloser t1(tmpfile());
+  fsutil::FileCloser t2(tmpfile());
+  TH_THROWS(fsutil::FdReplace(nullptr, nullptr), std::ios_base::failure);
+  TH_THROWS(fsutil::FdReplace(t1.file, nullptr), std::ios_base::failure);
+  TH_THROWS(fsutil::FdReplace(nullptr, t1.file), std::ios_base::failure);
 }
-TH_REGISTER(tst_FdReplace_destructor);
 
 } // end of namespace tst_FdReplace
 
 namespace tst_StreamBufReplace {
 
-void tst_StreamBufReplace_constructor() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_StreamBufReplace_constructor);
+void tst_StreamBufReplace() {
+  std::stringstream s1;
+  std::stringstream s2;
+  s1 << "hi there";
+  TH_EQUAL(s1.str(), "hi there");
+  {
+    fsutil::StreamBufReplace stream_replacer(s1, s2);
+    s1 << "hello ";
+    TH_EQUAL(s2.str(), "hello ");
 
-void tst_StreamBufReplace_destructor() {
-  TH_SKIP("unimplemented");
+    s2 << "world";
+    TH_EQUAL(s2.str(), "hello world");
+  }
+  TH_EQUAL(s1.str(), "hi there");
+  TH_EQUAL(s2.str(), "hello world");
 }
-TH_REGISTER(tst_StreamBufReplace_destructor);
+TH_REGISTER(tst_StreamBufReplace);
 
 } // end of namespace tst_StreamBufReplace
