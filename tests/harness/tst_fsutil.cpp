@@ -116,6 +116,11 @@ void tst_readfile_filename() {
 }
 TH_REGISTER(tst_readfile_filename);
 
+void tst_readfile_filename_doesnt_exist() {
+  TH_THROWS(fsutil::readfile("/does/not/exist.txt"), std::ios_base::failure);
+}
+TH_REGISTER(tst_readfile_filename_doesnt_exist);
+
 void tst_readfile_filepointer() {
   fsutil::FileCloser temporary_file(tmpfile());
   std::string content = "My string value";
@@ -260,15 +265,29 @@ TH_REGISTER(tst_TempFile_destructor);
 
 namespace tst_TempDir {
 
-void tst_TempDir_constructor() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_TempDir_constructor);
+void tst_TempDir() {
+  std::string tmpdir_name;
+  std::string filename = "myfile.txt";
+  std::string filepath;
 
-void tst_TempDir_destructor() {
-  TH_SKIP("unimplemented");
+  {
+    fsutil::TempDir tmpdir;
+    tmpdir_name = tmpdir.name();
+    filepath = fsutil::join(tmpdir_name, filename);
+    fsutil::touch(filepath);
+    auto listing = fsutil::listdir(tmpdir_name);
+    std::vector<std::string> expected_listing { filename };
+    TH_EQUAL(expected_listing, listing);
+    TH_EQUAL("", fsutil::readfile(filepath));
+  }
+
+  // check that the directory no longer exists
+  TH_THROWS(fsutil::listdir(tmpdir_name), std::ios_base::failure);
+
+  // check that the file no longer exists
+  TH_THROWS(fsutil::readfile(filepath), std::ios_base::failure);
 }
-TH_REGISTER(tst_TempDir_destructor);
+TH_REGISTER(tst_TempDir);
 
 } // end of namespace tst_TempDir
 

@@ -257,7 +257,13 @@ inline std::string join(Args ... args) {
 }
 
 inline std::string readfile(const std::string &path) {
-  std::ifstream input(path);
+  std::ifstream input;
+
+  // setting the failbit will cause an exception if path does not exist
+  input.exceptions(std::ios::failbit);
+  input.open(path);
+  input.exceptions(std::ios::goodbit);
+
   return std::string(std::istreambuf_iterator<char>(input),
                      std::istreambuf_iterator<char>());
 }
