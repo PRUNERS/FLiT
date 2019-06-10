@@ -89,9 +89,14 @@
 
 #include "tinydir.h"    // to list directory contents
 
+#if defined(_WIN32)
+#include <dirent.h>
+#include <direct.h>
+#else // !defined(_WIN32)
 #include <sys/types.h>  // required for stat.h
 #include <sys/stat.h>   // for mkdir()
 #include <unistd.h>     // for rmdir()
+#endif // defined _MSC_VER
 
 #include <fstream>
 #include <ios>          // for std::ios_base::failure
@@ -112,9 +117,15 @@ namespace fsutil {
 const std::string separator = "/";
 
 // declarations
+template <typename ... Args> inline std::string join(Args ... args);
+inline std::string readfile(const std::string &path);
 inline std::vector<std::string> listdir(const std::string &directory);
 inline void printdir(const std::string &directory);
 inline void rec_rmdir(const std::string &directory);
+inline void mkdir(const std::string &directory, int mode = 0777);
+inline void rmdir(const std::string &directory);
+inline std::string curdir();
+inline void chdir(const std::string &directory);
 
 struct TempFile {
   std::string name;
@@ -190,17 +201,7 @@ inline TempDir::TempDir() {
 
   _name = fname_buf;
   _name += "-flit-testdir";    // this makes the danger much less likely
-  int err = 0;
-#if defined(_WIN32)
-  err = _mkdir(_name.c_str()); // windows-specific
-#else
-  err = mkdir(_name.c_str(), 0700); // drwx------
-#endif
-  if (err != 0) {
-    std::string msg = "Could not create temporary directory: ";
-    msg += strerror(err);
-    throw std::runtime_error(msg);
-  }
+  ::fsutil::mkdir(_name, 0700);
 }
 
 inline TempDir::~TempDir() {
@@ -291,7 +292,7 @@ inline std::string join(Args ... args) {
   return path_builder.str();
 }
 
-inline std::string readfile(std::string path) {
+inline std::string readfile(const std::string &path) {
   std::ifstream input(path);
   return std::string(std::istreambuf_iterator<char>(input),
                      std::istreambuf_iterator<char>());
@@ -334,14 +335,65 @@ inline void rec_rmdir(const std::string &directory) {
     }
   }
   // now remove the directory
+  ::fsutil::rmdir(directory);
+}
+
+inline void mkdir(const std::string &directory, int mode) {
   int err = 0;
 #if defined(_WIN32)
-  err = _rmdir(directory.c_str());
+  err = ::_mkdir(directory.c_str()); // windows-specific
 #else
-  err = rmdir(directory.c_str());
+  err = ::mkdir(directory.c_str(), mode); // drwx------
 #endif
   if (err != 0) {
-    throw std::runtime_error("Could not delete directory");
+    std::string msg = "Could not create temporary directory: ";
+    msg += strerror(err);
+    throw std::runtime_error(msg);
+  }
+}
+
+inline void rmdir(const std::string &directory) {
+  int err = 0;
+#if defined(_WIN32)
+  err = ::_rmdir(directory.c_str());
+#else
+  err = ::rmdir(directory.c_str());
+#endif
+  if (err != 0) {
+    std::string msg = "Could not create temporary directory '" + directory
+                      + "': ";
+    msg += strerror(err);
+    throw std::runtime_error(msg);
+  }
+}
+
+inline std::string curdir() {
+  const int bufsize = 10000; // you never know...
+  char buffer[bufsize]; // where to store the current directory
+  char *ret = nullptr;
+#if defined(_WIN32)
+  ret = ::_getcwd(buffer, bufsize);
+#else
+  ret = ::getcwd(buffer, bufsize);
+#endif
+  if (ret == nullptr) {
+    throw std::runtime_error("Could not get current directory");
+  }
+  return std::string(buffer);
+}
+
+inline void chdir(const std::string &directory) {
+  int err = 0;
+#if defined(_WIN32)
+  err = ::_chdir(directory.c_str());
+#else
+  err = ::chdir(directory.c_str());
+#endif
+  if (err != 0) {
+    std::string msg = "Could not change directory '" + directory
+                      + "': ";
+    msg += strerror(err);
+    throw std::runtime_error(msg);
   }
 }
 

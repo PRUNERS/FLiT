@@ -90,6 +90,16 @@ namespace {
 
 namespace tst_functions {
 
+void tst_join() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_join);
+
+void tst_readfile() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_readfile);
+
 void tst_listdir() {
   TH_SKIP("unimplemented");
 }
@@ -105,33 +115,87 @@ void tst_rec_rmdir() {
 }
 TH_REGISTER(tst_rec_rmdir);
 
+void tst_mkdir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_mkdir);
+
+void tst_rmdir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_rmdir);
+
+void tst_curdir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_curdir);
+
+void tst_chdir() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_chdir);
+
 } // end of namespace tst_functions
 
 namespace tst_TempFile {
 
+void tst_TempFile_constructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TempFile_constructor);
 
-
-
+void tst_TempFile_destructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TempFile_destructor);
 
 } // end of namespace tst_TempFile
 
 namespace tst_TempDir {
   
+void tst_TempDir_constructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TempDir_constructor);
 
-
-
-
-
+void tst_TempDir_destructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TempDir_destructor);
 
 } // end of namespace tst_TempDir
 
 namespace tst_TinyDir {
   
+void tst_TinyDir_constructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TinyDir_constructor);
 
+void tst_TinyDir_destructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TinyDir_destructor);
 
+void tst_TinyDir_readfile() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TinyDir_readfile);
 
+void tst_TinyDir_hasnext() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TinyDir_hasnext);
 
+void tst_TinyDir_iterate() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TinyDir_iterate);
 
+void tst_TinyDir_iterator() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_TinyDir_iterator);
 
 } // end of namespace tst_TinyDir
 
