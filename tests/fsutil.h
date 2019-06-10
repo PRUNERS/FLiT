@@ -126,6 +126,7 @@ inline void mkdir(const std::string &directory, int mode = 0777);
 inline void rmdir(const std::string &directory);
 inline std::string curdir();
 inline void chdir(const std::string &directory);
+inline void touch(const std::string &path);
 
 struct TempFile {
   std::string name;
@@ -395,6 +396,11 @@ inline void chdir(const std::string &directory) {
     msg += strerror(err);
     throw std::runtime_error(msg);
   }
+}
+
+inline void touch(const std::string &path) {
+  // Just creating an output stream and closing it will touch the file.
+  std::ofstream out(path);
 }
 
 } // end of namespace fsutil
