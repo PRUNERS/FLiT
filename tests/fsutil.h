@@ -199,121 +199,28 @@ private:
   tinydir_dir _dir;
 };
 
+/** Closes the file in the destructor */
+struct FileCloser {
+  FILE* file;
+  int fd;
+  FileCloser(FILE* _file);
+  ~FileCloser() { fclose(file); }
+};
+
+/** Replaces a file descriptor with another to redirect output */
+struct FdReplace {
+  int old_fd;
+  int replace_fd;
+  int old_fd_copy;
+  FILE* old_file;
+  FILE* replace_file;
+
+  FdReplace(FILE* _old_file, FILE* _replace_file);
+  ~FdReplace();
+};
+
 
 //= DEFINITIONS =//
-
-PushDir::PushDir(const std::string &directory)
-  : _old_curdir(::fsutil::curdir())
-{
-  ::fsutil::chdir(directory);
-}
-
-PushDir::~PushDir() {
-  try {
-    ::fsutil::chdir(_old_curdir);
-  } catch (std::runtime_error &ex) {
-    std::cerr << "Runtime error: " << ex.what() << std::endl;
-  }
-}
-
-inline TempFile::TempFile() {
-  char fname_buf[L_tmpnam];
-  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-  if (s != fname_buf) {
-    throw std::runtime_error("Could not create temporary file");
-  }
-
-  name = fname_buf;
-  name += "-flit-testfile.in";    // this makes the danger much less likely
-  out.exceptions(std::ios::failbit);
-  out.open(name);
-}
-
-inline TempFile::~TempFile() {
-  out.close();
-  std::remove(name.c_str());
-}
-
-inline TempDir::TempDir() {
-  char fname_buf[L_tmpnam];
-  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-  if (s != fname_buf) {
-    throw std::runtime_error("Could not find temporary directory name");
-  }
-
-  _name = fname_buf;
-  _name += "-flit-testdir";    // this makes the danger much less likely
-  ::fsutil::mkdir(_name, 0700);
-}
-
-inline TempDir::~TempDir() {
-  try {
-    // recursively remove all directories and files found
-    rec_rmdir(_name.c_str());
-  }
-  catch (std::ios_base::failure &ex) {
-    std::cerr << "Error"
-#ifdef FSUTIL_IS_NOT_GCC_4_8
-// This was an unimplemented part of C++11 from GCC 4.8
-                 " (" << ex.code() << ")"
-#endif
-                 ": " << ex.what() << std::endl;
-  }
-  catch (std::runtime_error &ex) {
-    std::cerr << "Error: " << ex.what() << std::endl;
-  }
-}
-
-inline TinyDir::TinyDir(const std::string &directory) {
-  int err = tinydir_open(&_dir, directory.c_str());
-  checkerr(err, "Error opening directory: ");
-}
-
-inline TinyDir::~TinyDir() { tinydir_close(&_dir); }
-
-inline tinydir_file TinyDir::readfile() const {
-  tinydir_file file;
-  int err = tinydir_readfile(&_dir, &file);
-  std::string msg = "Error reading file '";
-  msg += file.name;
-  msg += "' from directory: ";
-  checkerr(err, msg);
-  return file;
-}
-
-inline bool TinyDir::hasnext() {
-  return static_cast<bool>(_dir.has_next);
-}
-
-inline void TinyDir::nextfile() {
-  int err = tinydir_next(&_dir);
-  checkerr(err, "Error getting next file from directory: ");
-}
-
-inline TinyDir::Iterator& TinyDir::Iterator::operator++() {
-  if (_td != nullptr) {
-    if (_td->hasnext()) {
-      _td->nextfile();
-    }
-    if (!_td->hasnext()) {
-      _td = nullptr;
-    }
-  }
-  return *this;
-}
-
-inline void TinyDir::checkerr(int err, std::string msg) const {
-  // TODO: handle broken symlinks
-  if (err != 0) {
-    throw std::ios_base::failure(
-        msg + strerror(errno)
-#ifdef FSUTIL_IS_NOT_GCC_4_8
-// This was an unimplemented part of C++11 from GCC 4.8
-        , std::error_code(errno, std::generic_category())
-#endif
-        );
-  }
-}
 
 inline void _join_impl(std::ostream &out, const std::string &piece) {
   out << piece;
@@ -442,6 +349,159 @@ inline void chdir(const std::string &directory) {
 inline void touch(const std::string &path) {
   // Just creating an output stream and closing it will touch the file.
   std::ofstream out(path);
+}
+
+PushDir::PushDir(const std::string &directory)
+  : _old_curdir(::fsutil::curdir())
+{
+  ::fsutil::chdir(directory);
+}
+
+PushDir::~PushDir() {
+  try {
+    ::fsutil::chdir(_old_curdir);
+  } catch (std::runtime_error &ex) {
+    std::cerr << "Runtime error: " << ex.what() << std::endl;
+  }
+}
+
+inline TempFile::TempFile() {
+  char fname_buf[L_tmpnam];
+  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
+  if (s != fname_buf) {
+    throw std::runtime_error("Could not create temporary file");
+  }
+
+  name = fname_buf;
+  name += "-flit-testfile.in";    // this makes the danger much less likely
+  out.exceptions(std::ios::failbit);
+  out.open(name);
+}
+
+inline TempFile::~TempFile() {
+  out.close();
+  std::remove(name.c_str());
+}
+
+inline TempDir::TempDir() {
+  char fname_buf[L_tmpnam];
+  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
+  if (s != fname_buf) {
+    throw std::runtime_error("Could not find temporary directory name");
+  }
+
+  _name = fname_buf;
+  _name += "-flit-testdir";    // this makes the danger much less likely
+  ::fsutil::mkdir(_name, 0700);
+}
+
+inline TempDir::~TempDir() {
+  try {
+    // recursively remove all directories and files found
+    rec_rmdir(_name.c_str());
+  }
+  catch (std::ios_base::failure &ex) {
+    std::cerr << "Error"
+#ifdef FSUTIL_IS_NOT_GCC_4_8
+// This was an unimplemented part of C++11 from GCC 4.8
+                 " (" << ex.code() << ")"
+#endif
+                 ": " << ex.what() << std::endl;
+  }
+  catch (std::runtime_error &ex) {
+    std::cerr << "Error: " << ex.what() << std::endl;
+  }
+}
+
+inline TinyDir::TinyDir(const std::string &directory) {
+  int err = tinydir_open(&_dir, directory.c_str());
+  checkerr(err, "Error opening directory: ");
+}
+
+inline TinyDir::~TinyDir() { tinydir_close(&_dir); }
+
+inline tinydir_file TinyDir::readfile() const {
+  tinydir_file file;
+  int err = tinydir_readfile(&_dir, &file);
+  std::string msg = "Error reading file '";
+  msg += file.name;
+  msg += "' from directory: ";
+  checkerr(err, msg);
+  return file;
+}
+
+inline bool TinyDir::hasnext() {
+  return static_cast<bool>(_dir.has_next);
+}
+
+inline void TinyDir::nextfile() {
+  int err = tinydir_next(&_dir);
+  checkerr(err, "Error getting next file from directory: ");
+}
+
+inline TinyDir::Iterator& TinyDir::Iterator::operator++() {
+  if (_td != nullptr) {
+    if (_td->hasnext()) {
+      _td->nextfile();
+    }
+    if (!_td->hasnext()) {
+      _td = nullptr;
+    }
+  }
+  return *this;
+}
+
+inline void TinyDir::checkerr(int err, std::string msg) const {
+  // TODO: handle broken symlinks
+  if (err != 0) {
+    throw std::ios_base::failure(
+        msg + strerror(errno)
+#ifdef FSUTIL_IS_NOT_GCC_4_8
+// This was an unimplemented part of C++11 from GCC 4.8
+        , std::error_code(errno, std::generic_category())
+#endif
+        );
+  }
+}
+
+FileCloser::FileCloser(FILE* _file) : file(_file) {
+  if (file == nullptr) {
+    throw std::ios_base::failure("Null FILE pointer passed to FileCloser");
+  }
+  fd = fileno(file);
+  if (fd < 0) {
+    throw std::ios_base::failure("Could not get file descriptor");
+  }
+}
+
+FdReplace::FdReplace(FILE* _old_file, FILE* _replace_file)
+  : old_file(_old_file)
+  , replace_file(_replace_file)
+{
+  if (old_file == nullptr || replace_file == nullptr) {
+    throw std::ios_base::failure("Null FILE pointer passed to FdReplace");
+  }
+  old_fd = fileno(old_file);
+  replace_fd = fileno(replace_file);
+  if (old_fd < 0) {
+    throw std::ios_base::failure("Could not get fileno of old_fd");
+  }
+  if (replace_fd < 0) {
+    throw std::ios_base::failure("Could not get fileno of replace_fd");
+  }
+  fflush(old_file);
+  old_fd_copy = dup(old_fd);
+  if (old_fd_copy < 0) {
+    throw std::ios_base::failure("Could not dup old_fd");
+  }
+  if (dup2(replace_fd, old_fd) < 0) {
+    throw std::ios_base::failure("Could not replace old_fd");
+  }
+}
+
+FdReplace::~FdReplace() {
+  fflush(old_file);
+  dup2(old_fd_copy, old_fd);
 }
 
 } // end of namespace fsutil
