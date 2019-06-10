@@ -88,7 +88,7 @@
 #include <memory>
 
 namespace {
-  
+
 } // end of unnamed namespace
 
 namespace tst_functions {
@@ -250,7 +250,7 @@ TH_REGISTER(tst_TempFile_destructor);
 } // end of namespace tst_TempFile
 
 namespace tst_TempDir {
-  
+
 void tst_TempDir_constructor() {
   TH_SKIP("unimplemented");
 }
@@ -264,7 +264,7 @@ TH_REGISTER(tst_TempDir_destructor);
 } // end of namespace tst_TempDir
 
 namespace tst_TinyDir {
-  
+
 void tst_TinyDir_constructor() {
   TH_SKIP("unimplemented");
 }
@@ -297,3 +297,44 @@ TH_REGISTER(tst_TinyDir_iterator);
 
 } // end of namespace tst_TinyDir
 
+namespace tst_FileCloser {
+
+void tst_FileCloser_constructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_FileCloser_constructor);
+
+void tst_FileCloser_destructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_FileCloser_destructor);
+
+} // end of namespace tst_FileCloser
+
+namespace tst_FdReplace {
+
+void tst_FdReplace_constructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_FdReplace_constructor);
+
+void tst_FdReplace_destructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_FdReplace_destructor);
+
+} // end of namespace tst_FdReplace
+
+namespace tst_StreamBufReplace {
+
+void tst_StreamBufReplace_constructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_StreamBufReplace_constructor);
+
+void tst_StreamBufReplace_destructor() {
+  TH_SKIP("unimplemented");
+}
+TH_REGISTER(tst_StreamBufReplace_destructor);
+
+} // end of namespace tst_StreamBufReplace

@@ -207,7 +207,10 @@ struct FileCloser {
   ~FileCloser() { fclose(file); }
 };
 
-/** Replaces a file descriptor with another to redirect output */
+/** Replaces a file descriptor with another to redirect output.
+ *
+ * Destructor restores the file descriptor.
+ */
 struct FdReplace {
   int old_fd;
   int replace_fd;
@@ -217,6 +220,18 @@ struct FdReplace {
 
   FdReplace(FILE* _old_file, FILE* _replace_file);
   ~FdReplace();
+};
+
+/** Replaces a stream buffer with another to redirect output.
+ *
+ * Destructor restores the buffer.
+ */
+struct StreamBufReplace {
+  std::ios &old_stream;
+  std::ios &replace_stream;
+  std::streambuf *old_buffer;
+  StreamBufReplace(std::ios &_old_stream, std::ios &_replace_stream);
+  ~StreamBufReplace();
 };
 
 
@@ -502,6 +517,19 @@ FdReplace::FdReplace(FILE* _old_file, FILE* _replace_file)
 FdReplace::~FdReplace() {
   fflush(old_file);
   dup2(old_fd_copy, old_fd);
+}
+
+StreamBufReplace::StreamBufReplace(std::ios &_old_stream,
+                                   std::ios &_replace_stream)
+  : old_stream(_old_stream)
+  , replace_stream(_replace_stream)
+  , old_buffer(_old_stream.rdbuf())
+{
+  old_stream.rdbuf(replace_stream.rdbuf());
+}
+
+StreamBufReplace::~StreamBufReplace() {
+  old_stream.rdbuf(old_buffer);
 }
 
 } // end of namespace fsutil
