@@ -84,6 +84,8 @@
 #include "test_harness.h"
 #include "fsutil.h"
 
+#include <algorithm>
+
 namespace {
   
 } // end of unnamed namespace
@@ -91,17 +93,47 @@ namespace {
 namespace tst_functions {
 
 void tst_join() {
-  TH_SKIP("unimplemented");
+  TH_EQUAL("path/to/my/object/file with spaces.txt",
+           fsutil::join("path/to/my/object/file with spaces.txt"));
+  TH_EQUAL("path/to/my/object/file with spaces.txt",
+           fsutil::join("path/to/my/object", "file with spaces.txt"));
+  TH_EQUAL("path/to/my/object/file with spaces.txt",
+           fsutil::join("path/to", "my/object", "file with spaces.txt"));
+  TH_EQUAL("path/to/my/object/file with spaces.txt",
+           fsutil::join("path/to", "my", "object", "file with spaces.txt"));
+  TH_EQUAL("path/to/my/object/file with spaces.txt",
+           fsutil::join("path", "to", "my", "object", "file with spaces.txt"));
 }
 TH_REGISTER(tst_join);
 
 void tst_readfile() {
-  TH_SKIP("unimplemented");
+  fsutil::TempFile f;
+  std::string content = "My string value";
+  f.out << content;
+  f.out.flush();
+  TH_EQUAL(content, fsutil::readfile(f.name));
 }
 TH_REGISTER(tst_readfile);
 
 void tst_listdir() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir dir;
+  auto listing = fsutil::listdir(dir.name());
+  TH_EQUAL(std::vector<std::string> {}, listing);
+
+  std::vector<std::string> expected_listing {
+    "file1.txt",
+    "file2.txt",
+    "file3.txt",
+    "file4.txt",
+  };
+  for (auto &fname : expected_listing) {
+    fsutil::touch(fsutil::join(dir.name(), fname));
+  }
+
+  listing = fsutil::listdir(dir.name());
+  std::sort(listing.begin(), listing.end());
+
+  TH_EQUAL(expected_listing, listing);
 }
 TH_REGISTER(tst_listdir);
 
