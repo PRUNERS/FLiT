@@ -476,7 +476,7 @@ void tst_Variant_assignmentOperator_reference() {
   TH_NOT_EQUAL(v1, c1);
   TH_NOT_EQUAL(v2, c2);
   TH_NOT_EQUAL(v3, c3);
-  TH_NOT_EQUAL(v4, c4);
+  TH_NOT_EQUAL(v4, c3);
   TH_NOT_EQUAL(v5, c5);
   TH_NOT_EQUAL(v6, c6);
   TH_NOT_EQUAL(v7, c7);
@@ -565,8 +565,8 @@ void tst_Variant_assignmentOperator_rvalueReference() {
 
   m7 = std::move(c1);
   m6 = std::move(c2);
-  m5 = std::move(c3);
-  m4 = std::move(c4);
+  m5 = std::move(c4);
+  m4 = std::move(c3);
   m3 = std::move(c5);
   m2 = std::move(c6);
   m1 = std::move(c7);
@@ -587,8 +587,8 @@ void tst_Variant_assignmentOperator_rvalueReference() {
   TH_NOT_EQUAL(v7, m7);
   TH_EQUAL(v1, m7);
   TH_EQUAL(v2, m6);
-  TH_EQUAL(v3, m5);
-  TH_EQUAL(v4, m4);
+  TH_EQUAL(v3, m4);
+  TH_EQUAL(v4, m5);
   TH_EQUAL(v5, m3);
   TH_EQUAL(v6, m2);
   TH_EQUAL(v7, m1);
@@ -631,7 +631,7 @@ void tst_Variant_equals() {
   TH_VERIFY(!v1.equals(c1));
   TH_VERIFY(!v2.equals(c2));
   TH_VERIFY(!v3.equals(c3));
-  TH_VERIFY(!v4.equals(c4));
+  TH_VERIFY(!v4.equals(c3));
   TH_VERIFY(!v5.equals(c5));
   TH_VERIFY(!v6.equals(c6));
   TH_VERIFY(!v7.equals(c7));
@@ -659,9 +659,9 @@ void tst_Variant_toString() {
                           "99609375)");
   TH_EQUAL(v3.toString(), "Variant(string(len=11, val=\"hello there\"))");
   TH_EQUAL(v4.toString(), "Variant(vectorString{"
-                          "string(len=1, val=\"a\")"
-                          "string(len=1, val=\"b\")"
-                          "string(len=3, val=\"cde\")"
+                          "string(len=1, val=\"a\"), "
+                          "string(len=1, val=\"b\"), "
+                          "string(len=3, val=\"cde\"), "
                           "string(len=3, val=\"fgh\")})");
   TH_EQUAL(v5.toString(), "Variant(vectorFloat{314159})");
   TH_EQUAL(v6.toString(), "Variant(vectorDouble{3.14158999999999985030911531236"
@@ -807,9 +807,9 @@ void tst_Variant_streamOutputOperator() {
                          "5022144317626953125)");
   TH_EQUAL(toString(v3), "Variant(string(len=11, val=\"hello there\"))");
   TH_EQUAL(toString(v4), "Variant(vectorString{"
-                         "string(len=1, val=\"a\")"
-                         "string(len=1, val=\"b\")"
-                         "string(len=3, val=\"cde\")"
+                         "string(len=1, val=\"a\"), "
+                         "string(len=1, val=\"b\"), "
+                         "string(len=3, val=\"cde\"), "
                          "string(len=3, val=\"fgh\")})");
   TH_EQUAL(toString(v5), "Variant(vectorFloat{314159})");
   TH_EQUAL(toString(v6), "Variant(vectorDouble{3.141589999999999850309115312363"

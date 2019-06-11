@@ -189,6 +189,9 @@ Variant& Variant::operator=(const Variant &other) {
     case Type::String:
       _str_val = other._str_val;
       break;
+    case Type::VectorString:
+      _vecstr_val = other._vecstr_val;
+      break;
     case Type::VectorFloat:
       _vecflt_val = other._vecflt_val;
       break;
@@ -217,6 +220,9 @@ Variant& Variant::operator=(Variant &&other) {
     case Type::String:
       _str_val = std::move(other._str_val);
       break;
+    case Type::VectorString:
+      _vecstr_val = std::move(other._vecstr_val);
+      break;
     case Type::VectorFloat:
       _vecflt_val = std::move(other._vecflt_val);
       break;
@@ -244,6 +250,8 @@ bool Variant::equals(const Variant &other) const {
       return _ld_val == other._ld_val;
     case Type::String:
       return _str_val == other._str_val;
+    case Type::VectorString:
+      return _vecstr_val == other._vecstr_val;
     case Type::VectorFloat:
       return _vecflt_val == other._vecflt_val;
     case Type::VectorDouble:
