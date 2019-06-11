@@ -285,14 +285,14 @@ int main(int argCount, char *argList[]) {
       failed_tests.emplace_back(test_name);
     } catch (const std::exception &err) {
       if (!quiet) {
-        std::cout << test_name << ": Uncought exception\n  "
+        std::cout << test_name << ": Uncaught exception\n  "
                   << typeid(err).name() << ": " << err.what() << "\n";
       }
       failed_tests.emplace_back(test_name);
     } catch (...) {
       auto err = std::current_exception;
       if (!quiet) {
-        std::cout << test_name << ": Uncought throw (not a std::exception)\n";
+        std::cout << test_name << ": Uncaught throw (not a std::exception)\n";
       }
       failed_tests.emplace_back(test_name);
     }
