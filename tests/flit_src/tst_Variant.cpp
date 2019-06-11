@@ -590,6 +590,16 @@ void tst_Variant_toString() {
 }
 TH_REGISTER(tst_Variant_toString);
 
+void tst_Variant_toString_challenging() {
+  using V = flit::Variant;
+  V v1("hi there)\"\" \";))");
+  V v2(");'hello my friend ''\" \" \b\b\b");
+
+  TH_EQUAL(v1.toString(), "Variant(\"" + v1.string() + "\")");
+  TH_EQUAL(v2.toString(), "Variant(\"" + v2.string() + "\")");
+}
+TH_REGISTER(tst_Variant_toString_challenging);
+
 void tst_Variant_fromString() {
   std::string s1 = "Variant(None)";
   std::string s2 = "Variant(3.1415899999999998826183400524314492940902709960937"
@@ -665,6 +675,17 @@ void tst_Variant_fromString() {
             std::invalid_argument);
 }
 TH_REGISTER(tst_Variant_fromString);
+
+void tst_Variant_fromString_challenging() {
+  using V = flit::Variant;
+  using S = std::string;
+  S s1 = "hi there)\"\" \";))";
+  S s2 = ");'hello my friend ''\" \" \b\b\b";
+
+  TH_EQUAL(s1, V::fromString("Variant(\"" + s1 + "\")"));
+  TH_EQUAL(s2, V::fromString("Variant(\"" + s2 + "\")"));
+}
+TH_REGISTER(tst_Variant_fromString_challenging);
 
 void tst_Variant_streamOutputOperator() {
   flit::Variant v1;
