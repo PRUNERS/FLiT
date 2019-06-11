@@ -85,6 +85,10 @@
 
 #include "Variant.h"
 
+#include <sstream>
+#include <string>
+#include <vector>
+
 namespace {
 
 std::ostream& operator<<(std::ostream& out, std::vector<std::string> vec) {
@@ -100,6 +104,13 @@ std::ostream& operator<<(std::ostream& out, std::vector<std::string> vec) {
   out << "]";
   return out;
 }
+
+void tst_vector_stream_operator() {
+  std::ostringstream out;
+  out << std::vector<std::string> {"a", "b", "cde"};
+  TH_EQUAL("[\"a\", \"b\", \"cde\"]", out.str());
+}
+TH_REGISTER(tst_vector_stream_operator);
 
 } // end of unnamed namespace
 
