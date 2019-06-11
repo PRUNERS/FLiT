@@ -89,6 +89,40 @@
 
 namespace {
 
+bool string_startswith(const std::string main, const std::string needle) {
+  if (main.size() < needle.size()) { return false; }
+  if (main.size() == needle.size()) { return main == needle; }
+  return main.substr(0, needle.size()) == needle;
+}
+
+bool string_endswith(const std::string main, const std::string needle) {
+  if (main.size() < needle.size()) { return false; }
+  if (main.size() == needle.size()) { return main == needle; }
+  return main.substr(main.size() - needle.size(), needle.size()) == needle;
+}
+
+void tst_string_startswith() {
+  TH_VERIFY(!string_startswith("michae", "michael"));
+  TH_VERIFY( string_startswith("michael", "michael"));
+  TH_VERIFY( string_startswith("", ""));
+  TH_VERIFY( string_startswith("a", ""));
+  TH_VERIFY(!string_startswith("", "b"));
+  TH_VERIFY( string_startswith("michael bentley", "michael"));
+  TH_VERIFY(!string_startswith("michael bentley", "bentley"));
+}
+TH_REGISTER(tst_string_startswith);
+
+void tst_string_endswith() {
+  TH_VERIFY(!string_endswith("michae", "michael"));
+  TH_VERIFY( string_endswith("michael", "michael"));
+  TH_VERIFY( string_endswith("", ""));
+  TH_VERIFY( string_endswith("a", ""));
+  TH_VERIFY(!string_endswith("", "b"));
+  TH_VERIFY( string_endswith("michael bentley", "bentley"));
+  TH_VERIFY(!string_endswith("michael bentley", "michael"));
+}
+TH_REGISTER(tst_string_endswith);
+
 } // end of unnamed namespace
 
 namespace tst_functions {
@@ -221,6 +255,8 @@ TH_REGISTER(tst_PushDir_destructor_existing_dir);
 void tst_PushDir_destructor_missing_dir() {
   // TODO: capture stderr and assert on its output
   auto curdir = fsutil::curdir();
+  std::ostringstream captured;
+  fsutil::StreamBufReplace buffer_replacer(std::cerr, captured);
   {
     fsutil::TempDir temp2;
     std::unique_ptr<fsutil::PushDir> pd1;
@@ -238,12 +274,17 @@ void tst_PushDir_destructor_missing_dir() {
         TH_EQUAL(temp2.name(), fsutil::curdir());
       } // deletes temp1
       TH_EQUAL(temp2.name(), fsutil::curdir());
+      TH_EQUAL("", captured.str());
     } // deletes pd2, with temp1.name() not existing
     // should be unable to go to temp1.name() since it doesn't exist
     // but no exception since it is from a destructor
+    TH_VERIFY(string_startswith(captured.str(),
+                                "Runtime error: Could not change directory"));
     TH_EQUAL(temp2.name(), fsutil::curdir());
   } // deletes pd1 and temp2
   TH_EQUAL(curdir, fsutil::curdir());
+  // make sure there is at most one newline and it is at the end
+  TH_VERIFY(captured.str().find('\n') == captured.str().size() - 1);
 }
 TH_REGISTER(tst_PushDir_destructor_missing_dir);
 
