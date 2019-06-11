@@ -153,6 +153,7 @@
   TH_Registered_Test_##test_name r_##test_name
 
 // includes
+
 #include <exception>
 #include <iostream>
 #include <map>
@@ -205,15 +206,60 @@ namespace th {
     }
   };
 
-};
+
+}; // end of namespace th
+
+void printUsage(char *progname) {
+  std::cout <<
+    "Usage:\n"
+    "  " << progname << " --help\n"
+    "  " << progname << " [--verbose|--quiet|--list-tests]\n"
+    "\n"
+    "Description:\n"
+    "  Runs unit tests and reports back.\n"
+    "\n"
+    "Return Code:\n"
+    "  Returns the number of failed tests.\n"
+    "\n"
+    "Options:\n"
+    "  -h, --help      Print this usage and exit\n"
+    "  -v, --verbose   Print verbose information\n"
+    "  -q, --quiet     Do not print anything, just use return codes\n"
+    "  --list-tests    Only list tests and exit; don't run anything\n";
+}
 
 int main(int argCount, char *argList[]) {
   bool quiet = false;
-  if (argCount > 1 &&
-      (argList[1] == std::string("--quiet") ||
-       argList[1] == std::string("-q")))
-  {
-    quiet = true;
+  bool verbose = false;
+  for (int i = 1; i < argCount; i++) {
+    if (argList[i] == std::string("--quiet") ||
+        argList[i] == std::string("-q"))
+    {
+      quiet = true;
+      verbose = false;
+    }
+    else if (argList[i] == std::string("--verbose") ||
+             argList[i] == std::string("-v"))
+    {
+      quiet = false;
+      verbose = true;
+    }
+    else if (argList[i] == std::string("--help") ||
+             argList[i] == std::string("-h"))
+    {
+      printUsage(argList[0]);
+      return 0;
+    }
+    else if (argList[i] == std::string("--list-tests")) {
+      for (auto &test_pair : th::tests) {
+        std::cout << test_pair.first << std::endl;
+      }
+      return 0;
+    }
+    else {
+      std::cerr << "Error: Unrecognized argument: " << argList[i] << std::endl;
+      return 1;
+    }
   }
   std::vector<std::string> failed_tests;
   std::vector<std::string> skipped_tests;
@@ -224,21 +270,30 @@ int main(int argCount, char *argList[]) {
     th::current_test = test_name;
     try {
       test_ptr();
+      if (verbose) {
+        std::cout << test_name << ": PASSED\n";
+      }
     } catch (const th::SkipError &err) {
       if (!quiet) {
         std::cout << test_name << ": " << err.what() << "\n";
       }
       skipped_tests.emplace_back(test_name);
     } catch (const th::AssertionError &err) {
-      std::cout << test_name << ":\n  " << err.what() << "\n";
+      if (!quiet) {
+        std::cout << test_name << ":\n  " << err.what() << "\n";
+      }
       failed_tests.emplace_back(test_name);
     } catch (const std::exception &err) {
-      std::cout << test_name << ": Uncought exception\n  "
-                << typeid(err).name() << ": " << err.what() << "\n";
+      if (!quiet) {
+        std::cout << test_name << ": Uncaught exception\n  "
+                  << typeid(err).name() << ": " << err.what() << "\n";
+      }
       failed_tests.emplace_back(test_name);
     } catch (...) {
       auto err = std::current_exception;
-      std::cout << test_name << ": Uncought throw (not a std::exception)\n";
+      if (!quiet) {
+        std::cout << test_name << ": Uncaught throw (not a std::exception)\n";
+      }
       failed_tests.emplace_back(test_name);
     }
   }

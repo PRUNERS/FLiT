@@ -165,6 +165,26 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
+template <typename T>
+long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
+  static_assert(std::is_floating_point<T>::value,
+                "Can only use floating-point types for l2norm()");
+  long double score = 0.0L;
+  int len = std::min(v1.size(), v2.size());
+  for (int i = 0; i < len; i++) {
+    T diff = v1[i] - v2[i];
+    score += diff * diff;
+  }
+  // remaining elements
+  for (decltype(v1.size()) i = len; i < v1.size(); i++) {
+    score += v1[i] * v1[i];
+  }
+  for (decltype(v2.size()) i = len; i < v2.size(); i++) {
+    score += v2[i] * v2[i];
+  }
+  return score;
+}
+
 /** Opens a file, but on failure, throws std::ios::failure
  *
  * T must be one of {fstream, ifstream, ofstream}

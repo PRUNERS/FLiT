@@ -104,9 +104,9 @@
 #include <utility>
 #include <vector>
 
-namespace flit {
+#include <cmath>
 
-void setWatching(bool watch = true);
+namespace flit {
 
 struct TestResult {
 public:
@@ -177,7 +177,7 @@ public:
    *        automatically determine timing loops.
    * @param timingRepeats how many times to repeat the timing.
    * @param idx which test to run if it is data driven, zero-based indexing.  A
-   *        value less than one means to run them all.
+   *        value less than zero means to run them all.
    *
    * @return A vector of test results
    *
@@ -270,11 +270,11 @@ public:
         name += "_idx" + std::to_string(i);
       }
       std::string resultfile;
-      if (testResult.type() == Variant::Type::String) {
+      if (testResult.type() != Variant::Type::LongDouble) {
         resultfile = filebase + "_" + name + "_" + typeid(T).name() + ".dat";
         std::ofstream resultout;
         flit::ofopen(resultout, resultfile);
-        resultout << testResult.string();
+        resultout << testResult.toString();
         testResult = Variant(); // empty the result to release memory
       }
       results.emplace_back(name, typeid(T).name(), testResult,
@@ -307,8 +307,20 @@ public:
                             test_results.string());
         break;
 
+      case Variant::Type::VectorString:
+        val = this->compare(ground_truth.vectorString(),
+                            test_results.vectorString());
+        break;
+
+      case Variant::Type::VectorFloat:
+      case Variant::Type::VectorDouble:
+      case Variant::Type::VectorLongDouble:
+        val = this->compare(ground_truth.val<std::vector<T>>(),
+                            test_results.val<std::vector<T>>());
+        break;
+
       default:
-        throw std::runtime_error("Unimplemented Variant type");
+        throw std::invalid_argument("Unimplemented Variant type");
     }
     return val;
   }
@@ -352,7 +364,7 @@ public:
   virtual long double compare(long double ground_truth,
                               long double test_results) const {
     // absolute error
-    return test_results - ground_truth;
+    return std::abs(test_results - ground_truth);
   }
 
   /** There is no good default implementation comparing two strings */
@@ -361,6 +373,20 @@ public:
     FLIT_UNUSED(ground_truth);
     FLIT_UNUSED(test_results);
     return 0.0;
+  }
+
+  /** There is no good default implementation comparing two string vectors */
+  virtual long double compare(const std::vector<std::string> &ground_truth,
+                              const std::vector<std::string> &test_results)
+  const {
+    FLIT_UNUSED(ground_truth);
+    FLIT_UNUSED(test_results);
+    return 0.0;
+  }
+
+  virtual long double compare(const std::vector<T> &ground_truth,
+                              const std::vector<T> &test_results) const {
+    return flit::l2norm(ground_truth, test_results);
   }
 
 protected:
@@ -389,8 +415,9 @@ public:
   NullTest(std::string id) : TestBase<T>(std::move(id)) {}
   virtual std::vector<T> getDefaultInput() override { return {}; }
   virtual size_t getInputsPerRun() override { return 0; }
-  virtual std::vector<TestResult> run(
-      const std::vector<T>&, const bool, const size_t) override { return {}; }
+  virtual std::vector<TestResult> run(const std::vector<T>&, const
+      std::string&, const bool, const int, const int, const int) override
+  { return {}; }
 protected:
   virtual Variant run_impl(const std::vector<T>&) override { return {}; }
 };

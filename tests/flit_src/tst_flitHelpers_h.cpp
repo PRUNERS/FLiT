@@ -259,3 +259,20 @@ void tst_as_int_128bit() {
   TH_EQUAL(flit::as_int(val), expected);
 }
 TH_REGISTER(tst_as_int_128bit);
+
+void tst_l2norm() {
+  std::vector<float> empty;
+  std::vector<float> one_elem { 1.0L };
+  std::vector<float> two_elems { 3.5L, 1.0L };
+
+  TH_EQUAL(flit::l2norm(empty    , empty    ),  0.0L );
+  TH_EQUAL(flit::l2norm(one_elem , empty    ),  1.0L );
+  TH_EQUAL(flit::l2norm(empty    , one_elem ),  1.0L );
+  TH_EQUAL(flit::l2norm(one_elem , one_elem ),  0.0L );
+  TH_EQUAL(flit::l2norm(two_elems, empty    ), 13.25L);
+  TH_EQUAL(flit::l2norm(two_elems, one_elem ),  7.25L);
+  TH_EQUAL(flit::l2norm(empty    , two_elems), 13.25L);
+  TH_EQUAL(flit::l2norm(one_elem , two_elems),  7.25L);
+  TH_EQUAL(flit::l2norm(two_elems, two_elems),  0.0L );
+}
+TH_REGISTER(tst_l2norm);

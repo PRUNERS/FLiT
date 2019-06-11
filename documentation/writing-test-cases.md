@@ -40,24 +40,30 @@ you must implement for it to compile):
 - `run_impl()`: This is where the actual test lives.  It receives a vector of
   floating-point values as input that will be exactly as long as what
   `getInputsPerRun()` returns.  The test returns a `flit::Variant` object,
-  which of the time of this writing can handle `long double` and `std::string`.
+  which of the time of this writing can handle `long double`, `std::string`,
+  `std::vector<std::string>`, and `std::vector<T>`, where T is the
+  floating-point type of the templated test class instance.
 
 There are some optional functions that you can override as well.  The default
 implementation is provided for you in `Empty.cpp` so you can see if you would
 like to override that behavior.
 
-- `compare(long double, long double)`: This is a custom comparison value that
-  is used to compare the results from the ground-truth compilation and all
-  other compilations.  If your test returns a floating-point value, then this
-  compare function is the one that is used.  Common examples of comparisons
-  here are absolute error and relative error.
-- `compare(string, string)`: This is a custom comparison value that is used to
-  compare the results from the ground-truth compilation and all other
-  compilations.  If your test returns a `std::string`, then this compare
-  function is the one that is used.  There was no good default, so it is highly
-  recommended to implement your own.  For example, your strings may represent a
-  grid of values, in which case you could convert them back to grids and
-  perform an $\ell_2$ norm between the two grids.
+- `compare()`: This is a custom comparison value that is used to compare the
+  results from the ground-truth compilation and all other compilations.  There
+  are multiple versions of this function.  Override the correct one for the
+  value returned from `run_impl()`.
+    - `compare(long double, long double)`: used if your test returns a
+      floating-point value.  The default implementation is to calculate the
+      absolute error.
+    - `compare(string, string)`: used if your test returns a string.  There is
+      no good default implementation, so be sure to override this if used.
+    - `compare(std::vector<string>, std::vector<string>)`: used if your test
+      returns a vector of strings.  There is no good default implementation, so
+      be sure to override this if used.
+    - `compare(std::vector<T>, std::vector<T>)`: used if your test returns a
+      vector of floating-point values.  The default implementation calculates
+      the L2 norm (using `flit::l2norm()`), which is great if that is what you
+      want.  Otherwise, you will want to override this function.
 
 
 ## Disabling Test Cases

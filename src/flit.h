@@ -91,6 +91,7 @@
 #include "MpiEnvironment.h"
 #include "TestBase.h"
 #include "flitHelpers.h"
+#include "fsutil.h"
 
 #include <algorithm>
 #include <chrono>
@@ -192,9 +193,6 @@ static std::string info =
   "  Optimization level: \"" FLIT_OPTL     "\"\n"
   "  Compiler flags:     \"" FLIT_SWITCHES "\"\n"
   "  Filename:           \"" FLIT_FILENAME "\"\n";
-
-/// Read file contents entirely into a string
-std::string readFile(const std::string &filename);
 
 /// Parse the results file into a vector of results
 std::vector<TestResult> parseResults(std::istream &in);
@@ -362,8 +360,8 @@ void runTestWithDefaultInput(TestFactory* factory,
                              int timingRepeats = 3,
                              int idx = -1) {
   auto test = factory->get<F>();
-  auto ip = test->getDefaultInput();
-  auto results = test->run(ip, filebase, shouldTime, timingLoops,
+  auto test_input = test->getDefaultInput();
+  auto results = test->run(test_input, filebase, shouldTime, timingLoops,
                            timingRepeats, idx);
   totResults.insert(totResults.end(), results.begin(), results.end());
   info_stream.flushout();
@@ -382,11 +380,11 @@ long double runComparison_impl(TestFactory* factory, const TestResult &gt,
       throw std::invalid_argument("baseline comparison type is not None when"
                                   " the resultfile is defined");
     }
-    return test->compare(readFile(gt.resultfile()),
-                         readFile(res.resultfile()));
-  } else if (gt.result().type() == Variant::Type::LongDouble) {
-    return test->compare(gt.result().longDouble(), res.result().longDouble());
-  } else { throw std::runtime_error("Unsupported variant type"); }
+    Variant gtval = Variant::fromString(fsutil::readfile(gt.resultfile()));
+    Variant resval = Variant::fromString(fsutil::readfile(res.resultfile()));
+    return test->variant_compare(gtval, resval);
+  }
+  return test->variant_compare(gt.result(), res.result());
 }
 
 inline long double runComparison(TestFactory* factory, const TestResult &gt,

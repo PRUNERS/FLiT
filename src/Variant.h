@@ -87,6 +87,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace flit {
 
@@ -102,6 +103,10 @@ public:
     None = 1,
     LongDouble = 2,
     String = 3,
+    VectorString = 4,
+    VectorFloat = 5,
+    VectorDouble = 6,
+    VectorLongDouble = 7,
   };
 
   Variant() : _type(Type::None) { }
@@ -110,20 +115,69 @@ public:
     : _type(Type::LongDouble)
     , _ld_val(val) { }
 
-  Variant(std::string &val)
-    : _type(Type::String)
-    , _str_val(val) { }
   Variant(const std::string &val)
     : _type(Type::String)
     , _str_val(val) { }
   Variant(std::string &&val)
     : _type(Type::String)
-    , _str_val(val) { }
+    , _str_val(std::move(val)) { }
   Variant(const char* val)
     : _type(Type::String)
     , _str_val(val) { }
 
+  Variant(const std::vector<std::string> &val)
+    : _type(Type::VectorString)
+    , _vecstr_val(val) { }
+  Variant(std::vector<std::string> &&val)
+    : _type(Type::VectorString)
+    , _vecstr_val(std::move(val)) { }
+
+  Variant(const std::vector<float> &val)
+    : _type(Type::VectorFloat)
+    , _vecflt_val(val) { }
+  Variant(std::vector<float> &&val)
+    : _type(Type::VectorFloat)
+    , _vecflt_val(std::move(val)) { }
+
+  Variant(const std::vector<double> &val)
+    : _type(Type::VectorDouble)
+    , _vecdbl_val(val) { }
+  Variant(std::vector<double> &&val)
+    : _type(Type::VectorDouble)
+    , _vecdbl_val(std::move(val)) { }
+
+  Variant(const std::vector<long double> &val)
+    : _type(Type::VectorLongDouble)
+    , _vecldbl_val(val) { }
+  Variant(std::vector<long double> &&val)
+    : _type(Type::VectorLongDouble)
+    , _vecldbl_val(std::move(val)) { }
+
+  Variant(const Variant &other)
+    : _type(other._type)
+  {
+    *this = other;
+  }
+
+  Variant(Variant &&other)
+    : _type(other._type)
+    , _ld_val(other._ld_val)
+    , _str_val(std::move(other._str_val))
+    , _vecstr_val(std::move(other._vecstr_val))
+    , _vecflt_val(std::move(other._vecflt_val))
+    , _vecdbl_val(std::move(other._vecdbl_val))
+    , _vecldbl_val(std::move(other._vecldbl_val))
+  {
+    other._type = Type::None;
+  }
+
   Type type() const { return _type; }
+  template <typename T> T val() const;
+  Variant& operator=(const Variant &other);
+  Variant& operator=(Variant &&other);
+  bool equals(const Variant &other) const;
+  std::string toString() const;
+  static Variant fromString(const std::string val);
 
   long double longDouble() const {
     if (_type != Type::LongDouble) {
@@ -132,41 +186,88 @@ public:
     return _ld_val;
   }
 
-  std::string string() const {
+  const std::string& string() const {
     if (_type != Type::String) {
       throw std::runtime_error("Variant is not of type String");
     }
     return _str_val;
   }
 
-  template <typename T> T val() const;
+  const std::vector<std::string>& vectorString() const {
+    if (_type != Type::VectorString) {
+      throw std::runtime_error(
+          "Variant is not of type std::vector<std::string>");
+    }
+    return _vecstr_val;
+  }
 
-  bool equals(const Variant &other) const {
-    if (_type != other._type) {
-      return false;
+  const std::vector<float>& vectorFloat() const {
+    if (_type != Type::VectorFloat) {
+      throw std::runtime_error("Variant is not of type std::vector<float>");
     }
-    switch (_type) {
-      case Type::None:
-        return true;
-      case Type::LongDouble:
-        return _ld_val == other._ld_val;
-      case Type::String:
-        return _str_val == other._str_val;
-      default:
-        throw std::logic_error("Unimplemented Variant type in equals()");
+    return _vecflt_val;
+  }
+
+  const std::vector<double>& vectorDouble() const {
+    if (_type != Type::VectorDouble) {
+      throw std::runtime_error("Variant is not of type std::vector<double>");
     }
+    return _vecdbl_val;
+  }
+
+  const std::vector<long double>& vectorLongDouble() const {
+    if (_type != Type::VectorLongDouble) {
+      throw std::runtime_error(
+          "Variant is not of type std::vector<long double>");
+    }
+    return _vecldbl_val;
   }
 
 private:
-  Type _type;
+  Type _type { Type::None };
   long double _ld_val { 0.0l };
   std::string _str_val { "" };
+  std::vector<std::string> _vecstr_val { };
+  std::vector<float> _vecflt_val { };
+  std::vector<double> _vecdbl_val { };
+  std::vector<long double> _vecldbl_val { };
 };
 
-std::ostream& operator<< (std::ostream&, const Variant&);
+inline std::ostream& operator<< (std::ostream& out, const Variant& val) {
+  out << val.toString();
+  return out;
+}
 
 inline bool operator== (const Variant& lhs, const Variant& rhs) {
   return lhs.equals(rhs);
+}
+
+inline bool operator!= (const Variant& lhs, const Variant& rhs) {
+  return !(lhs == rhs);
+}
+
+template <> inline long double Variant::val() const {
+  return this->longDouble();
+}
+
+template <> inline std::string Variant::val() const {
+  return this->string();
+}
+
+template <> inline std::vector<std::string> Variant::val() const {
+  return this->vectorString();
+}
+
+template <> inline std::vector<float> Variant::val() const {
+  return this->vectorFloat();
+}
+
+template <> inline std::vector<double> Variant::val() const {
+  return this->vectorDouble();
+}
+
+template <> inline std::vector<long double> Variant::val() const {
+  return this->vectorLongDouble();
 }
 
 } // end of namespace flit
