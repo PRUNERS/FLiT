@@ -113,13 +113,13 @@ static const std::string separator = "/";
 
 // inline
 template <typename ... Args> inline std::string join(Args ... args);
-inline std::string readfile(FILE* filepointer);
+inline std::string readfile(const std::string &path);
 inline std::vector<std::string> listdir(const std::string &directory);
 inline void printdir(const std::string &directory);
 inline void touch(const std::string &path);
 
 // non-inlined
-std::string readfile(const std::string &path);
+std::string readfile(FILE* filepointer);
 void rec_rmdir(const std::string &directory);
 void mkdir(const std::string &directory, int mode = 0755);
 void rmdir(const std::string &directory);
