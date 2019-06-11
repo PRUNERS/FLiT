@@ -134,6 +134,7 @@ bool substrEquals(const std::string &a, size_t pos, const std::string &b) {
   return std::equal(b.begin(), b.end(), a.begin() + pos);
 }
 
+// separates a comma-separated list and converts them using operator>>() to T
 template <typename T>
 std::vector<T> stringToVec(std::string str) {
   std::istringstream stream(str);
@@ -203,30 +204,6 @@ std::vector<std::string> split_variant_strings (const std::string &str) {
 } // end of unnamed namespace
 
 namespace flit {
-
-template <> long double Variant::val() const {
-  return this->longDouble();
-}
-
-template <> std::string Variant::val() const {
-  return this->string();
-}
-
-template <> std::vector<std::string> Variant::val() const {
-  return this->vectorString();
-}
-
-template <> std::vector<float> Variant::val() const {
-  return this->vectorFloat();
-}
-
-template <> std::vector<double> Variant::val() const {
-  return this->vectorDouble();
-}
-
-template <> std::vector<long double> Variant::val() const {
-  return this->vectorLongDouble();
-}
 
 Variant& Variant::operator=(const Variant &other) {
   _type = other._type;

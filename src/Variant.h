@@ -130,28 +130,28 @@ public:
     , _vecstr_val(val) { }
   Variant(std::vector<std::string> &&val)
     : _type(Type::VectorString)
-    , _vecstr_val(val) { }
+    , _vecstr_val(std::move(val)) { }
 
   Variant(const std::vector<float> &val)
     : _type(Type::VectorFloat)
     , _vecflt_val(val) { }
   Variant(std::vector<float> &&val)
     : _type(Type::VectorFloat)
-    , _vecflt_val(val) { }
+    , _vecflt_val(std::move(val)) { }
 
   Variant(const std::vector<double> &val)
     : _type(Type::VectorDouble)
     , _vecdbl_val(val) { }
   Variant(std::vector<double> &&val)
     : _type(Type::VectorDouble)
-    , _vecdbl_val(val) { }
+    , _vecdbl_val(std::move(val)) { }
 
   Variant(const std::vector<long double> &val)
     : _type(Type::VectorLongDouble)
     , _vecldbl_val(val) { }
   Variant(std::vector<long double> &&val)
     : _type(Type::VectorLongDouble)
-    , _vecldbl_val(val) { }
+    , _vecldbl_val(std::move(val)) { }
 
   Variant(const Variant &other)
     : _type(other._type)
@@ -244,6 +244,30 @@ inline bool operator== (const Variant& lhs, const Variant& rhs) {
 
 inline bool operator!= (const Variant& lhs, const Variant& rhs) {
   return !(lhs == rhs);
+}
+
+template <> inline long double Variant::val() const {
+  return this->longDouble();
+}
+
+template <> inline std::string Variant::val() const {
+  return this->string();
+}
+
+template <> inline std::vector<std::string> Variant::val() const {
+  return this->vectorString();
+}
+
+template <> inline std::vector<float> Variant::val() const {
+  return this->vectorFloat();
+}
+
+template <> inline std::vector<double> Variant::val() const {
+  return this->vectorDouble();
+}
+
+template <> inline std::vector<long double> Variant::val() const {
+  return this->vectorLongDouble();
 }
 
 } // end of namespace flit
