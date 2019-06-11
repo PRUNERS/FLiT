@@ -101,6 +101,7 @@
 #include <fstream>
 #include <ios>          // for std::ios_base::failure
 #include <iostream>
+#include <stdexcept>    // for std::runtime_error
 #include <sstream>      // for std::istringstream
 #include <string>
 #include <vector>
