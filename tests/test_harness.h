@@ -153,7 +153,7 @@
   TH_Registered_Test_##test_name r_##test_name
 
 // includes
- 
+
 #include <exception>
 #include <iostream>
 #include <map>

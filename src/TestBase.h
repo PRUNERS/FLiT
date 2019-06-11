@@ -307,6 +307,11 @@ public:
                             test_results.string());
         break;
 
+      case Variant::Type::VectorString:
+        val = this->compare(ground_truth.vectorString(),
+                            test_results.vectorString());
+        break;
+
       case Variant::Type::VectorFloat:
       case Variant::Type::VectorDouble:
       case Variant::Type::VectorLongDouble:
@@ -365,6 +370,15 @@ public:
   /** There is no good default implementation comparing two strings */
   virtual long double compare(const std::string &ground_truth,
                               const std::string &test_results) const {
+    FLIT_UNUSED(ground_truth);
+    FLIT_UNUSED(test_results);
+    return 0.0;
+  }
+
+  /** There is no good default implementation comparing two string vectors */
+  virtual long double compare(const std::vector<std::string> &ground_truth,
+                              const std::vector<std::string> &test_results)
+  const {
     FLIT_UNUSED(ground_truth);
     FLIT_UNUSED(test_results);
     return 0.0;

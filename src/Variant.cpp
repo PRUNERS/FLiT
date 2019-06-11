@@ -106,6 +106,26 @@ std::ostream& vecToStream(std::ostream& out, std::vector<T> vec) {
   return out;
 }
 
+std::ostream& stringToStream(std::ostream& out, std::string val) {
+  out << "string(len=" << val.size() << ", val=\"" << val << "\")";
+  return out;
+}
+
+std::ostream& vecStringToStream(std::ostream& out,
+                                std::vector<std::string> vec) {
+  out << "{";
+  bool first = true;
+  for (auto item : vec) {
+    if (!first) {
+      out << ", ";
+    }
+    first = false;
+    stringToStream(out, item);
+  }
+  out << "}";
+  return out;
+}
+
 // Tests if a[pos:pos+b.size()] == b[:]
 bool substrEquals(const std::string &a, size_t pos, const std::string &b) {
   if (a.size() <= pos || a.size() - pos < b.size()) {
@@ -128,6 +148,58 @@ std::vector<T> stringToVec(std::string str) {
   return vec;
 }
 
+// creates a vector of parsed std::string from split string(len=...) pieces
+std::vector<std::string> split_variant_strings (const std::string &str) {
+  std::vector<std::string> strings;
+  const std::string begin("string(len=");
+  const std::string mid(", val=\"");
+  const std::string end("\")");
+
+  size_t current_idx = 0;
+  while ((current_idx = str.find(begin, current_idx))
+          != std::string::npos)
+  {
+    std::string lenstring;
+    for (int i = current_idx + begin.size(); std::isdigit(str[i]); i++) {
+      lenstring.push_back(str[i]);
+    }
+    if (lenstring.size() == 0) {
+      throw std::invalid_argument("Not a valid string variant string, "
+                                  "must specify a string length");
+    }
+    long length = std::stol(lenstring);
+    if (length < 0) {
+      throw std::invalid_argument("Not a valid string variant string, "
+                                  "string length must be non-negative");
+    }
+    if (!substrEquals(str, current_idx + begin.size() + lenstring.size(),
+                      mid))
+    {
+      throw std::invalid_argument("Not a valid string variant string, "
+                                  "mid pattern expected ('" + mid + "')");
+    }
+    if (!substrEquals(
+           str,
+           current_idx + begin.size() + lenstring.size() + mid.size() + length,
+           end))
+    {
+      throw std::invalid_argument("Not a valid string variant string, "
+                                  "ending pattern expected ('" + end + "')");
+    }
+    if (str.size() <= current_idx + begin.size() + lenstring.size()
+                      + mid.size() + length + end.size())
+    {
+      throw std::invalid_argument("Not a valid string variant string, "
+                                  "value ends prematurely");
+    }
+    auto val_begin = str.begin() + current_idx + begin.size()
+                     + lenstring.size() + mid.size();
+    strings.emplace_back(val_begin, val_begin + length);
+    current_idx += length;
+  }
+  return strings;
+}
+
 } // end of unnamed namespace
 
 namespace flit {
@@ -138,6 +210,10 @@ template <> long double Variant::val() const {
 
 template <> std::string Variant::val() const {
   return this->string();
+}
+
+template <> std::vector<std::string> Variant::val() const {
+  return this->vectorString();
 }
 
 template <> std::vector<float> Variant::val() const {
@@ -162,6 +238,9 @@ Variant& Variant::operator=(const Variant &other) {
       break;
     case Type::String:
       _str_val = other._str_val;
+      break;
+    case Type::VectorString:
+      _vecstr_val = other._vecstr_val;
       break;
     case Type::VectorFloat:
       _vecflt_val = other._vecflt_val;
@@ -191,6 +270,9 @@ Variant& Variant::operator=(Variant &&other) {
     case Type::String:
       _str_val = std::move(other._str_val);
       break;
+    case Type::VectorString:
+      _vecstr_val = std::move(other._vecstr_val);
+      break;
     case Type::VectorFloat:
       _vecflt_val = std::move(other._vecflt_val);
       break;
@@ -218,6 +300,8 @@ bool Variant::equals(const Variant &other) const {
       return _ld_val == other._ld_val;
     case Type::String:
       return _str_val == other._str_val;
+    case Type::VectorString:
+      return _vecstr_val == other._vecstr_val;
     case Type::VectorFloat:
       return _vecflt_val == other._vecflt_val;
     case Type::VectorDouble:
@@ -240,8 +324,14 @@ std::string Variant::toString() const {
       out << "Variant(" << longDouble() << ")";
       break;
     case Variant::Type::String:
-      out << "Variant(string(len=" << string().size()
-          << ", val=\"" << string() << "\"))";
+      out << "Variant(";
+      stringToStream(out, string());
+      out << ")";
+      break;
+    case Variant::Type::VectorString:
+      out << "Variant(vectorString";
+      vecStringToStream(out, vectorString());
+      out << ")";
       break;
     case Variant::Type::VectorFloat:
       out << "Variant(vectorFloat";
@@ -284,18 +374,25 @@ Variant Variant::fromString(const std::string val) {
 
   // Type::String
   if (substrEquals(val, 8, "string(len=")) {
-    if (!substrEquals(val, val.size() - 3, "\"))")) {
-      throw std::invalid_argument("Not a valid Type::String variant string");
+    auto strings = split_variant_strings(val);
+    if (strings.size() == 0) {
+      throw std::invalid_argument("Not a valid Type::String variant string, "
+                                  "a complete string was not found");
     }
-    std::string lenstr;
-    for (int i = 19; std::isdigit(val[i]); i++) {
-      lenstr.push_back(val[i]);
+    if (strings.size() > 1) {
+      throw std::invalid_argument("Not a valid Type::String variant string, "
+                                  "more than one string found");
     }
-    if (!substrEquals(val, 19 + lenstr.size(), ", val=\"")) {
-      throw std::invalid_argument("Not a valid Type::String variant string");
+    return Variant(strings[0]);
+  }
+
+  // Type::VectorString
+  if (substrEquals(val, 8, "vectorString{")) {
+    if (val[val.size() - 2] != '}') {
+      throw std::invalid_argument("Not a valid Type::VectorString variant "
+                                  "string");
     }
-    return Variant(val.substr(26 + lenstr.size(),
-                              val.size() - 29 - lenstr.size()));
+    return Variant(split_variant_strings(val));
   }
 
   // Type::VectorFloat

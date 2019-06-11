@@ -41,8 +41,8 @@ you must implement for it to compile):
   floating-point values as input that will be exactly as long as what
   `getInputsPerRun()` returns.  The test returns a `flit::Variant` object,
   which of the time of this writing can handle `long double`, `std::string`,
-  and `std::vector<T>`, where T is the floating-point type of the templated
-  test class instance.
+  `std::vector<std::string>`, and `std::vector<T>`, where T is the
+  floating-point type of the templated test class instance.
 
 There are some optional functions that you can override as well.  The default
 implementation is provided for you in `Empty.cpp` so you can see if you would
@@ -56,7 +56,10 @@ like to override that behavior.
       floating-point value.  The default implementation is to calculate the
       absolute error.
     - `compare(string, string)`: used if your test returns a string.  There is
-      no good default implementation, so be sure to override this.
+      no good default implementation, so be sure to override this if used.
+    - `compare(std::vector<string>, std::vector<string>)`: used if your test
+      returns a vector of strings.  There is no good default implementation, so
+      be sure to override this if used.
     - `compare(std::vector<T>, std::vector<T>)`: used if your test returns a
       vector of floating-point values.  The default implementation calculates
       the L2 norm (using `flit::l2norm()`), which is great if that is what you
