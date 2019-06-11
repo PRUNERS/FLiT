@@ -127,7 +127,7 @@ before_install:
 script:
   - make -j 4
   - make -j 4 -C tests
-  - tests/harness/tst_fsutil
+  - tests/harness/tst_fsutil --verbose
   - make check
 
 #notifications:
