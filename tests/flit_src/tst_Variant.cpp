@@ -581,7 +581,7 @@ void tst_Variant_toString() {
   TH_EQUAL(v1.toString(), "Variant(None)");
   TH_EQUAL(v2.toString(), "Variant(3.141589999999999882618340052431449294090270"
                           "99609375)");
-  TH_EQUAL(v3.toString(), "Variant(\"hello there\")");
+  TH_EQUAL(v3.toString(), "Variant(string(len=11, val=\"hello there\"))");
   TH_EQUAL(v4.toString(), "Variant(vectorFloat{314159})");
   TH_EQUAL(v5.toString(), "Variant(vectorDouble{3.14158999999999985030911531236"
                           "341716066817753016948699951171875e-05, 5})");
@@ -592,11 +592,14 @@ TH_REGISTER(tst_Variant_toString);
 
 void tst_Variant_toString_challenging() {
   using V = flit::Variant;
+  using S = std::string;
   V v1("hi there)\"\" \";))");
   V v2(");'hello my friend ''\" \" \b\b\b");
+  S s1 = "Variant(string(len=16, val=\"hi there)\"\" \";))\"))";
+  S s2 = "Variant(string(len=28, val=\");'hello my friend ''\" \" \b\b\b\"))";
 
-  TH_EQUAL(v1.toString(), "Variant(\"" + v1.string() + "\")");
-  TH_EQUAL(v2.toString(), "Variant(\"" + v2.string() + "\")");
+  TH_EQUAL(s1, v1.toString());
+  TH_EQUAL(s2, v2.toString());
 }
 TH_REGISTER(tst_Variant_toString_challenging);
 
@@ -604,7 +607,7 @@ void tst_Variant_fromString() {
   std::string s1 = "Variant(None)";
   std::string s2 = "Variant(3.1415899999999998826183400524314492940902709960937"
                    "5)";
-  std::string s3 = "Variant(\"hello there\")";
+  std::string s3 = "Variant(string(len=11, val=\"hello there\"))";
   std::string s4 = "Variant(vectorFloat{314159})";
   std::string s5 = "Variant(vectorDouble{3.14159e-05, 5})";
   std::string s6 = "Variant(vectorLongDouble{4.45235e+06, 6, 7e+54})";
@@ -651,7 +654,8 @@ void tst_Variant_fromString() {
             std::invalid_argument);
 
   // Starts as a string but does not have a matching end quote
-  TH_THROWS(flit::Variant::fromString("Variant(\"Non-matching quotes)"),
+  TH_THROWS(flit::Variant::fromString(
+              "Variant(string(len=19, \"Non-matching quotes))"),
             std::invalid_argument);
 
   // Looks like "Variant(None)", but with an unexpected space in there
@@ -679,11 +683,13 @@ TH_REGISTER(tst_Variant_fromString);
 void tst_Variant_fromString_challenging() {
   using V = flit::Variant;
   using S = std::string;
-  S s1 = "hi there)\"\" \";))";
-  S s2 = ");'hello my friend ''\" \" \b\b\b";
+  S s1 = "Variant(string(len=16, val=\"hi there)\"\" \";))\"))";
+  S s2 = "Variant(string(len=28, val=\");'hello my friend ''\" \" \b\b\b\"))";
+  V expected1("hi there)\"\" \";))");
+  V expected2(");'hello my friend ''\" \" \b\b\b");
 
-  TH_EQUAL(s1, V::fromString("Variant(\"" + s1 + "\")"));
-  TH_EQUAL(s2, V::fromString("Variant(\"" + s2 + "\")"));
+  TH_EQUAL(expected1, V::fromString(s1));
+  TH_EQUAL(expected2, V::fromString(s2));
 }
 TH_REGISTER(tst_Variant_fromString_challenging);
 
@@ -704,7 +710,7 @@ void tst_Variant_streamOutputOperator() {
   TH_EQUAL(toString(v1), "Variant(None)");
   TH_EQUAL(toString(v2), "Variant(3.1415899999999999999290151153630290536966640"
                          "5022144317626953125)");
-  TH_EQUAL(toString(v3), "Variant(\"hello there\")");
+  TH_EQUAL(toString(v3), "Variant(string(len=11, val=\"hello there\"))");
   TH_EQUAL(toString(v4), "Variant(vectorFloat{314159})");
   TH_EQUAL(toString(v5), "Variant(vectorDouble{3.141589999999999850309115312363"
                          "41716066817753016948699951171875e-05, 5})");

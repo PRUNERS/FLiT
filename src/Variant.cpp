@@ -83,7 +83,11 @@
 
 #include "Variant.h"
 
+#include <memory>   // for std::unique_ptr()
 #include <sstream>
+#include <string>   // for std::stol()
+
+#include <cctype>   // for std::isdigit()
 
 namespace {
 
@@ -236,7 +240,8 @@ std::string Variant::toString() const {
       out << "Variant(" << longDouble() << ")";
       break;
     case Variant::Type::String:
-      out << "Variant(\"" << string() << "\")";
+      out << "Variant(string(len=" << string().size()
+          << ", val=\"" << string() << "\"))";
       break;
     case Variant::Type::VectorFloat:
       out << "Variant(vectorFloat";
@@ -278,11 +283,19 @@ Variant Variant::fromString(const std::string val) {
   }
 
   // Type::String
-  if (val[8] == '"') {
-    if (val[val.size() - 2] != '"') {
+  if (substrEquals(val, 8, "string(len=")) {
+    if (!substrEquals(val, val.size() - 3, "\"))")) {
       throw std::invalid_argument("Not a valid Type::String variant string");
     }
-    return Variant(val.substr(9, val.size() - 11));
+    std::string lenstr;
+    for (int i = 19; std::isdigit(val[i]); i++) {
+      lenstr.push_back(val[i]);
+    }
+    if (!substrEquals(val, 19 + lenstr.size(), ", val=\"")) {
+      throw std::invalid_argument("Not a valid Type::String variant string");
+    }
+    return Variant(val.substr(26 + lenstr.size(),
+                              val.size() - 29 - lenstr.size()));
   }
 
   // Type::VectorFloat
