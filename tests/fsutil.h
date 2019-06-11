@@ -102,7 +102,6 @@
 #include <ios>          // for std::ios_base::failure
 #include <iostream>
 #include <sstream>      // for std::istringstream
-#include <stdexcept>    // for std::runtime_error
 #include <string>
 #include <vector>
 
@@ -396,8 +395,8 @@ PushDir::PushDir(const std::string &directory)
 PushDir::~PushDir() {
   try {
     ::fsutil::chdir(_old_curdir);
-  } catch (std::runtime_error &ex) {
-    std::cerr << "Runtime error: " << ex.what() << std::endl;
+  } catch (std::ios_base::failure &ex) {
+    std::cerr << "ios_base error: " << ex.what() << std::endl;
   }
 }
 
@@ -405,7 +404,7 @@ inline TempFile::TempFile() {
   char fname_buf[L_tmpnam];
   char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
   if (s != fname_buf) {
-    throw std::runtime_error("Could not create temporary file");
+    throw std::ios_base::failure("Could not create temporary file");
   }
 
   name = fname_buf;
@@ -423,7 +422,7 @@ inline TempDir::TempDir() {
   char fname_buf[L_tmpnam];
   char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
   if (s != fname_buf) {
-    throw std::runtime_error("Could not find temporary directory name");
+    throw std::ios_base::failure("Could not find temporary directory name");
   }
 
   _name = fname_buf;
@@ -443,8 +442,7 @@ inline TempDir::~TempDir() {
                  " (" << ex.code() << ")"
 #endif
                  ": " << ex.what() << std::endl;
-  }
-  catch (std::runtime_error &ex) {
+  } catch (std::runtime_error &ex) {
     std::cerr << "Error: " << ex.what() << std::endl;
   }
 }

@@ -504,7 +504,7 @@ void tst_PushDir_destructor_missing_dir() {
     // should be unable to go to temp1.name() since it doesn't exist
     // but no exception since it is from a destructor
     TH_VERIFY(string_startswith(captured.str(),
-                                "Runtime error: Could not change directory"));
+                                "ios_base error: Could not change directory"));
     TH_EQUAL(temp2.name(), fsutil::curdir());
   } // deletes pd1 and temp2
   TH_EQUAL(curdir, fsutil::curdir());
