@@ -106,6 +106,26 @@ std::ostream& vecToStream(std::ostream& out, std::vector<T> vec) {
   return out;
 }
 
+std::ostream& stringToStream(std::ostream& out, std::string val) {
+  out << "string(len=" << val.size() << ", val=\"" << val << "\")";
+  return out;
+}
+
+std::ostream& vecStringToStream(std::ostream& out,
+                                std::vector<std::string> vec) {
+  out << "{";
+  bool first = true;
+  for (auto item : vec) {
+    if (!first) {
+      out << ", ";
+    }
+    first = false;
+    stringToStream(out, item);
+  }
+  out << "}";
+  return out;
+}
+
 // Tests if a[pos:pos+b.size()] == b[:]
 bool substrEquals(const std::string &a, size_t pos, const std::string &b) {
   if (a.size() <= pos || a.size() - pos < b.size()) {
@@ -128,6 +148,8 @@ std::vector<T> stringToVec(std::string str) {
   return vec;
 }
 
+
+
 } // end of unnamed namespace
 
 namespace flit {
@@ -138,6 +160,10 @@ template <> long double Variant::val() const {
 
 template <> std::string Variant::val() const {
   return this->string();
+}
+
+template <> std::vector<std::string> Variant::val() const {
+  return this->vectorString();
 }
 
 template <> std::vector<float> Variant::val() const {
@@ -240,8 +266,14 @@ std::string Variant::toString() const {
       out << "Variant(" << longDouble() << ")";
       break;
     case Variant::Type::String:
-      out << "Variant(string(len=" << string().size()
-          << ", val=\"" << string() << "\"))";
+      out << "Variant(";
+      stringToStream(out, string());
+      out << ")";
+      break;
+    case Variant::Type::VectorString:
+      out << "Variant(vectorString";
+      vecStringToStream(out, vectorString());
+      out << ")";
       break;
     case Variant::Type::VectorFloat:
       out << "Variant(vectorFloat";

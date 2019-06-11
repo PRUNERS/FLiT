@@ -103,9 +103,10 @@ public:
     None = 1,
     LongDouble = 2,
     String = 3,
-    VectorFloat = 4,
-    VectorDouble = 5,
-    VectorLongDouble = 6,
+    VectorString = 4,
+    VectorFloat = 5,
+    VectorDouble = 6,
+    VectorLongDouble = 7,
   };
 
   Variant() : _type(Type::None) { }
@@ -123,6 +124,13 @@ public:
   Variant(const char* val)
     : _type(Type::String)
     , _str_val(val) { }
+
+  Variant(const std::vector<std::string> &val)
+    : _type(Type::VectorString)
+    , _vecstr_val(val) { }
+  Variant(std::vector<std::string> &&val)
+    : _type(Type::VectorString)
+    , _vecstr_val(val) { }
 
   Variant(const std::vector<float> &val)
     : _type(Type::VectorFloat)
@@ -155,6 +163,7 @@ public:
     : _type(other._type)
     , _ld_val(other._ld_val)
     , _str_val(std::move(other._str_val))
+    , _vecstr_val(std::move(other._vecstr_val))
     , _vecflt_val(std::move(other._vecflt_val))
     , _vecdbl_val(std::move(other._vecdbl_val))
     , _vecldbl_val(std::move(other._vecldbl_val))
@@ -184,6 +193,14 @@ public:
     return _str_val;
   }
 
+  const std::vector<std::string>& vectorString() const {
+    if (_type != Type::VectorString) {
+      throw std::runtime_error(
+          "Variant is not of type std::vector<std::string>");
+    }
+    return _vecstr_val;
+  }
+
   const std::vector<float>& vectorFloat() const {
     if (_type != Type::VectorFloat) {
       throw std::runtime_error("Variant is not of type std::vector<float>");
@@ -210,6 +227,7 @@ private:
   Type _type { Type::None };
   long double _ld_val { 0.0l };
   std::string _str_val { "" };
+  std::vector<std::string> _vecstr_val { };
   std::vector<float> _vecflt_val { };
   std::vector<double> _vecdbl_val { };
   std::vector<long double> _vecldbl_val { };
