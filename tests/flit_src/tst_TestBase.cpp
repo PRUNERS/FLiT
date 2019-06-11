@@ -220,20 +220,28 @@ public:
   virtual std::vector<F> getDefaultInput() { return defaultInputs; }
 
   virtual long double compare(long double ground_truth,
-                              long double test_results) const {
+                              long double test_results) const override {
     compareT(ground_truth, test_results);
     return 1;
   }
 
   /** There is no good default implementation comparing two strings */
   virtual long double compare(const std::string &ground_truth,
-                              const std::string &test_results) const {
+                              const std::string &test_results) const override {
     compareT(ground_truth, test_results);
     return 2;
   }
 
+  virtual long double compare(const std::vector<std::string> &ground_truth,
+                              const std::vector<std::string> &test_results)
+  const override {
+    compareT(ground_truth, test_results);
+    return 4;
+  }
+
   virtual long double compare(const std::vector<F> &ground_truth,
-                              const std::vector<F> &test_results) const {
+                              const std::vector<F> &test_results)
+  const override {
     compareT(ground_truth, test_results);
     return 3;
   }
@@ -275,32 +283,35 @@ void tst_TestBase_variant_compare() {
   MocTest<float> t1(id);
   MocTest<float> t2(id);
   MocTest<float> t3(id);
-  MocTest<double> t4(id);
-  MocTest<long double> t5(id);
+  MocTest<float> t4(id);
+  MocTest<double> t5(id);
+  MocTest<long double> t6(id);
   std::vector<flit::Variant> gts {
     3.14L,
     "Bentley",
-    std::vector<float>{3.14f, 3.f},
-    std::vector<double>{3.14},
-    std::vector<long double>{},
+    std::vector<std::string> {"a", "b", "c", "def"},
+    std::vector<float> {3.14f, 3.f},
+    std::vector<double> {3.14},
+    std::vector<long double> {},
   };
 
   // different types
-  TH_THROWS(t3.variant_compare(gts[0], gts[1]), std::runtime_error);
+  TH_THROWS(t4.variant_compare(gts[0], gts[1]), std::runtime_error);
 
   // test<T> not matching vector<F>
-  TH_THROWS(t3.variant_compare(gts[3], gts[3]), std::runtime_error);
-  TH_THROWS(t3.variant_compare(gts[4], gts[4]), std::runtime_error);
-  TH_THROWS(t4.variant_compare(gts[2], gts[2]), std::runtime_error);
   TH_THROWS(t4.variant_compare(gts[4], gts[4]), std::runtime_error);
-  TH_THROWS(t5.variant_compare(gts[2], gts[2]), std::runtime_error);
+  TH_THROWS(t4.variant_compare(gts[5], gts[5]), std::runtime_error);
   TH_THROWS(t5.variant_compare(gts[3], gts[3]), std::runtime_error);
+  TH_THROWS(t5.variant_compare(gts[5], gts[5]), std::runtime_error);
+  TH_THROWS(t6.variant_compare(gts[3], gts[3]), std::runtime_error);
+  TH_THROWS(t6.variant_compare(gts[4], gts[4]), std::runtime_error);
 
   TH_EQUAL(t1.variant_compare(gts[0], gts[0]), 1.0L);
   TH_EQUAL(t2.variant_compare(gts[1], gts[1]), 2.0L);
-  TH_EQUAL(t3.variant_compare(gts[2], gts[2]), 3.0L);
+  TH_EQUAL(t3.variant_compare(gts[2], gts[2]), 4.0L);
   TH_EQUAL(t4.variant_compare(gts[3], gts[3]), 3.0L);
   TH_EQUAL(t5.variant_compare(gts[4], gts[4]), 3.0L);
+  TH_EQUAL(t6.variant_compare(gts[5], gts[5]), 3.0L);
 }
 TH_REGISTER(tst_TestBase_variant_compare);
 
@@ -654,6 +665,8 @@ void tst_TestBase_run_outputVariantsToFile() {
   };
 
   test_variant_type(std::string("hello world!"));
+  test_variant_type(std::vector<std::string>
+                    { "hi", "there", "(mike bentley!)" });
   test_variant_type(std::vector<float> { 3.1f, 3.2f, 3.3e6f, 5.f });
   test_variant_type(std::vector<double> {});
   test_variant_type(std::vector<long double> { 3.14159 });
