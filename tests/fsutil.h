@@ -122,10 +122,11 @@ const std::string separator = "/";
 
 template <typename ... Args> inline std::string join(Args ... args);
 inline std::string readfile(const std::string &path);
+inline std::string readfile(FILE* filepointer);
 inline std::vector<std::string> listdir(const std::string &directory);
 inline void printdir(const std::string &directory);
 inline void rec_rmdir(const std::string &directory);
-inline void mkdir(const std::string &directory, int mode = 0777);
+inline void mkdir(const std::string &directory, int mode = 0755);
 inline void rmdir(const std::string &directory);
 inline std::string curdir();
 inline void chdir(const std::string &directory);
@@ -330,9 +331,9 @@ inline void mkdir(const std::string &directory, int mode) {
   err = ::mkdir(directory.c_str(), mode); // drwx------
 #endif
   if (err != 0) {
-    std::string msg = "Could not create temporary directory: ";
+    std::string msg = "Could not create directory: ";
     msg += strerror(err);
-    throw std::runtime_error(msg);
+    throw std::ios_base::failure(msg);
   }
 }
 
@@ -344,10 +345,10 @@ inline void rmdir(const std::string &directory) {
   err = ::rmdir(directory.c_str());
 #endif
   if (err != 0) {
-    std::string msg = "Could not create temporary directory '" + directory
+    std::string msg = "Could not remove directory: '" + directory
                       + "': ";
     msg += strerror(err);
-    throw std::runtime_error(msg);
+    throw std::ios_base::failure(msg);
   }
 }
 
@@ -361,7 +362,7 @@ inline std::string curdir() {
   ret = ::getcwd(buffer, bufsize);
 #endif
   if (ret == nullptr) {
-    throw std::runtime_error("Could not get current directory");
+    throw std::ios_base::failure("Could not get current directory");
   }
   return std::string(buffer);
 }
@@ -377,7 +378,7 @@ inline void chdir(const std::string &directory) {
     std::string msg = "Could not change directory '" + directory
                       + "': ";
     msg += strerror(err);
-    throw std::runtime_error(msg);
+    throw std::ios_base::failure(msg);
   }
 }
 

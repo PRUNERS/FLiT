@@ -101,6 +101,25 @@ bool string_endswith(const std::string main, const std::string needle) {
   return main.substr(main.size() - needle.size(), needle.size()) == needle;
 }
 
+std::vector<std::string> splitlines(const std::string &tosplit) {
+  std::vector<std::string> lines;
+  std::string line;
+  std::istringstream input(tosplit);
+  while (std::getline(input, line)) {
+    lines.push_back(line);
+  }
+  return lines;
+}
+
+void verify_listdir(const std::string &dir,
+                    std::vector<std::string> expected)
+{
+  auto listing = fsutil::listdir(dir);
+  std::sort(listing.begin(), listing.end());
+  std::sort(expected.begin(), expected.end());
+  TH_EQUAL(expected, listing);
+}
+
 void tst_string_startswith() {
   TH_VERIFY(!string_startswith("michae", "michael"));
   TH_VERIFY( string_startswith("michael", "michael"));
@@ -122,6 +141,44 @@ void tst_string_endswith() {
   TH_VERIFY(!string_endswith("michael bentley", "michael"));
 }
 TH_REGISTER(tst_string_endswith);
+
+void tst_splitlines() {
+  using v = std::vector<std::string>;
+
+  v expected = v{};
+  TH_EQUAL(expected, splitlines(""));
+
+  expected = v{"x"};
+  TH_EQUAL(expected, splitlines("x"));
+
+  expected = v{"x", "y", "", ""};
+  TH_EQUAL(expected, splitlines("x\ny\n\n\n"));
+
+  expected = v{"", "", "", "x"};
+  TH_EQUAL(expected, splitlines("\n\n\nx"));
+}
+TH_REGISTER(tst_splitlines);
+
+void tst_verify_listdir_exists() {
+  fsutil::TempDir tempdir;
+
+  // check that this fails
+  TH_THROWS(verify_listdir(tempdir.name(), {"hello"}), th::AssertionError);
+
+  verify_listdir(tempdir.name(), {});
+
+  fsutil::touch(fsutil::join(tempdir.name(), "hello"));
+  verify_listdir(tempdir.name(), {"hello"});
+
+  fsutil::touch(fsutil::join(tempdir.name(), "apple of my eye"));
+  verify_listdir(tempdir.name(), {"hello", "apple of my eye"});
+}
+TH_REGISTER(tst_verify_listdir_exists);
+
+void tst_verify_listdir_doesnt_exist() {
+  TH_THROWS(verify_listdir("/does/not/exist", {}), std::ios_base::failure);
+}
+TH_REGISTER(tst_verify_listdir_doesnt_exist);
 
 } // end of unnamed namespace
 
@@ -186,35 +243,203 @@ void tst_listdir() {
 }
 TH_REGISTER(tst_listdir);
 
-void tst_printdir() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_printdir);
+void tst_printdir_exists() {
+  // a lambda function to verify the string output of printdir()
+  auto verify_printdir = [] (
+      const std::string &directory,
+      const std::vector<std::string> &expected_contents)
+  {
+    // capture standard out
+    std::ostringstream captured;
+    fsutil::StreamBufReplace replacer(std::cout, captured);
 
-void tst_rec_rmdir() {
-  TH_SKIP("unimplemented");
+    // call function under test
+    fsutil::printdir(directory);
+
+    // grab the output lines
+    auto lines = splitlines(captured.str());
+    std::sort(lines.begin() + 1, lines.end());
+
+    // extend the expected contents to include the first line and sort
+    // we also need to prepend contents with an indent of 2
+    std::vector<std::string> copy;
+    copy.push_back("Directory contents for " + directory);
+    copy.insert(copy.end(), expected_contents.begin(),
+                expected_contents.end());
+    std::transform(copy.begin() + 1, copy.end(), copy.begin() + 1,
+                   [] (const std::string &x) { return "  " + x; });
+    std::sort(copy.begin() + 1, copy.end());
+
+    TH_EQUAL(copy, lines);
+  };
+
+  // create a directory to list
+  fsutil::TempDir tempdir;
+  verify_printdir(tempdir.name(), { "./", "../" });
+
+  // add some files to the directory
+  fsutil::touch(fsutil::join(tempdir.name(), "file1.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file2.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file3.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file4.txt"));
+  fsutil::mkdir(fsutil::join(tempdir.name(), "dir1"), 0700);
+  fsutil::mkdir(fsutil::join(tempdir.name(), "dir2"), 0700);
+  fsutil::touch(fsutil::join(tempdir.name(), "dir1", "myfile1.tex"));
+  fsutil::touch(fsutil::join(tempdir.name(), "dir1", "myfile2.tex"));
+
+  verify_printdir(tempdir.name(),
+                  {"./", "../", "file1.txt", "file2.txt", "file3.txt",
+                   "file4.txt", "dir1/", "dir2/"});
+  verify_printdir(fsutil::join(tempdir.name(), "dir1"),
+                  {"./", "../", "myfile1.tex", "myfile2.tex"});
+  verify_printdir(fsutil::join(tempdir.name(), "dir2"), {"./", "../"});
 }
-TH_REGISTER(tst_rec_rmdir);
+TH_REGISTER(tst_printdir_exists);
+
+void tst_printdir_doesnt_exist() {
+  TH_THROWS(fsutil::printdir("/dir/does/not/exist"), std::ios_base::failure);
+}
+TH_REGISTER(tst_printdir_doesnt_exist);
+
+void tst_rec_rmdir_exists() {
+  using fsutil::TempDir;
+  using fsutil::mkdir;
+  using fsutil::touch;
+  using fsutil::join;
+  using fsutil::rec_rmdir;
+
+  // make a directory structure
+  TempDir tempdir;
+  mkdir(join(tempdir.name(), "dir1"));
+  mkdir(join(tempdir.name(), "dir1", "subdir1"));
+  mkdir(join(tempdir.name(), "dir1", "subdir2"));
+  mkdir(join(tempdir.name(), "dir1", "subdir3"));
+  mkdir(join(tempdir.name(), "dir2"));
+  touch(join(tempdir.name(), "superfile1.txt"));
+  touch(join(tempdir.name(), "superfile2.txt"));
+  touch(join(tempdir.name(), "dir1", "file1.txt"));
+  touch(join(tempdir.name(), "dir1", "file2.txt"));
+  touch(join(tempdir.name(), "dir1", "file3.txt"));
+  touch(join(tempdir.name(), "dir1", "file4.txt"));
+  touch(join(tempdir.name(), "dir1", "subdir1", "subfile1-1.txt"));
+  touch(join(tempdir.name(), "dir1", "subdir1", "subfile1-2.txt"));
+  touch(join(tempdir.name(), "dir1", "subdir2", "subfile2-1.txt"));
+
+  verify_listdir(tempdir.name(),
+                 {"dir1", "dir2", "superfile1.txt", "superfile2.txt"});
+  verify_listdir(join(tempdir.name(), "dir1"),
+                 {"subdir1", "subdir2", "subdir3", "file1.txt", "file2.txt",
+                  "file3.txt", "file4.txt"});
+  verify_listdir(join(tempdir.name(), "dir1", "subdir1"),
+                 {"subfile1-1.txt", "subfile1-2.txt"});
+  verify_listdir(join(tempdir.name(), "dir1", "subdir2"), {"subfile2-1.txt"});
+  verify_listdir(join(tempdir.name(), "dir2"), {});
+
+  // remove an empty directory
+  rec_rmdir(join(tempdir.name(), "dir2"));
+  verify_listdir(tempdir.name(), {"dir1", "superfile1.txt", "superfile2.txt"});
+
+  // remove one that has some things
+  rec_rmdir(join(tempdir.name(), "dir1", "subdir2"));
+  verify_listdir(join(tempdir.name(), "dir1"),
+                 {"subdir1", "subdir3", "file1.txt", "file2.txt", "file3.txt",
+                  "file4.txt"});
+
+  // remove a directory that also has non-empty subdirectories
+  rec_rmdir(join(tempdir.name(), "dir1"));
+  verify_listdir(tempdir.name(), {"superfile1.txt", "superfile2.txt"});
+}
+TH_REGISTER(tst_rec_rmdir_exists);
+
+void tst_rec_rmdir_doesnt_exist() {
+  TH_THROWS(fsutil::rec_rmdir("/dir/does/not/exist"), std::ios_base::failure);
+}
+TH_REGISTER(tst_rec_rmdir_doesnt_exist);
+
+void tst_rec_rmdir_on_file() {
+  fsutil::TempFile tmpfile;
+  TH_THROWS(fsutil::rec_rmdir(tmpfile.name), std::ios_base::failure);
+}
+TH_REGISTER(tst_rec_rmdir_on_file);
 
 void tst_mkdir() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir tempdir;
+  verify_listdir(tempdir.name(), {});
+  fsutil::mkdir(fsutil::join(tempdir.name(), "dir1"));
+  verify_listdir(tempdir.name(), {"dir1"});
+  verify_listdir(fsutil::join(tempdir.name(), "dir1"), {});
 }
 TH_REGISTER(tst_mkdir);
 
-void tst_rmdir() {
-  TH_SKIP("unimplemented");
+void tst_rmdir_empty() {
+  fsutil::TempDir tempdir;
+  fsutil::mkdir(fsutil::join(tempdir.name(), "dir1"));
+  verify_listdir(tempdir.name(), {"dir1"});
+  fsutil::rmdir(fsutil::join(tempdir.name(), "dir1"));
+  verify_listdir(tempdir.name(), {});
 }
-TH_REGISTER(tst_rmdir);
+TH_REGISTER(tst_rmdir_empty);
+
+void tst_rmdir_full() {
+  fsutil::TempDir tempdir;
+  fsutil::mkdir(fsutil::join(tempdir.name(), "dir1"));
+  fsutil::touch(fsutil::join(tempdir.name(), "dir1", "file.txt"));
+  verify_listdir(tempdir.name(), {"dir1"});
+  verify_listdir(fsutil::join(tempdir.name(), "dir1"), {"file.txt"});
+  TH_THROWS(fsutil::rmdir(fsutil::join(tempdir.name(), "dir1")),
+            std::ios_base::failure);
+  verify_listdir(tempdir.name(), {"dir1"});
+  verify_listdir(fsutil::join(tempdir.name(), "dir1"), {"file.txt"});
+}
+TH_REGISTER(tst_rmdir_full);
+
+void tst_rmdir_doesnt_exist() {
+  TH_THROWS(fsutil::rmdir("/does/not/exist"), std::ios_base::failure);
+}
+TH_REGISTER(tst_rmdir_doesnt_exist);
 
 void tst_curdir() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir tempdir1;
+  fsutil::TempDir tempdir2;
+  auto originaldir = fsutil::curdir();
+  {
+    fsutil::PushDir pd1(tempdir1.name());
+    TH_EQUAL(tempdir1.name(), fsutil::curdir());
+    {
+      fsutil::PushDir pd2(tempdir2.name());
+      TH_EQUAL(tempdir2.name(), fsutil::curdir());
+    }
+    TH_EQUAL(tempdir1.name(), fsutil::curdir());
+  }
+  TH_EQUAL(originaldir, fsutil::curdir());
 }
 TH_REGISTER(tst_curdir);
 
-void tst_chdir() {
-  TH_SKIP("unimplemented");
+void tst_chdir_exists() {
+  fsutil::TempDir tempdir;
+  auto originaldir = fsutil::curdir();
+  try {
+    fsutil::chdir(tempdir.name());
+    TH_EQUAL(tempdir.name(), fsutil::curdir());
+  } catch (...) {
+    fsutil::chdir(originaldir);
+    throw;
+  }
+  fsutil::chdir(originaldir);
+  TH_EQUAL(originaldir, fsutil::curdir());
 }
-TH_REGISTER(tst_chdir);
+TH_REGISTER(tst_chdir_exists);
+
+void tst_chdir_doesnt_exist() {
+  TH_THROWS(fsutil::chdir("/does/not/exist"), std::ios_base::failure);
+}
+TH_REGISTER(tst_chdir_doesnt_exist);
+
+void tst_chdir_on_file() {
+  fsutil::TempFile tempfile;
+  TH_THROWS(fsutil::chdir(tempfile.name), std::ios_base::failure);
+}
+TH_REGISTER(tst_chdir_on_file);
 
 } // end of namespace tst_functions
 
@@ -230,7 +455,7 @@ void tst_PushDir_constructor_existing_dir() {
 TH_REGISTER(tst_PushDir_constructor_existing_dir);
 
 void tst_PushDir_constructor_missing_dir() {
-  TH_THROWS(fsutil::PushDir pd("/does/not/exist"), std::runtime_error);
+  TH_THROWS(fsutil::PushDir pd("/does/not/exist"), std::ios_base::failure);
 }
 TH_REGISTER(tst_PushDir_constructor_missing_dir);
 
@@ -253,9 +478,9 @@ void tst_PushDir_destructor_existing_dir() {
 TH_REGISTER(tst_PushDir_destructor_existing_dir);
 
 void tst_PushDir_destructor_missing_dir() {
-  // TODO: capture stderr and assert on its output
   auto curdir = fsutil::curdir();
   std::ostringstream captured;
+  // capture stderr and assert on its output
   fsutil::StreamBufReplace buffer_replacer(std::cerr, captured);
   {
     fsutil::TempDir temp2;
@@ -292,15 +517,20 @@ TH_REGISTER(tst_PushDir_destructor_missing_dir);
 
 namespace tst_TempFile {
 
-void tst_TempFile_constructor() {
-  TH_SKIP("unimplemented");
+void tst_TempFile() {
+  std::string filename;
+  std::string contents = "hello, my name is Michael\n...\nBentley, that is.";
+  {
+    fsutil::TempFile tempfile;
+    filename = tempfile.name;
+    tempfile.out << contents;
+    tempfile.out.flush();
+    TH_EQUAL(contents, fsutil::readfile(filename));
+  }
+  // make sure the file has been deleted.
+  TH_THROWS(fsutil::readfile(filename), std::ios_base::failure);
 }
-TH_REGISTER(tst_TempFile_constructor);
-
-void tst_TempFile_destructor() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_TempFile_destructor);
+TH_REGISTER(tst_TempFile);
 
 } // end of namespace tst_TempFile
 
@@ -334,33 +564,56 @@ TH_REGISTER(tst_TempDir);
 
 namespace tst_TinyDir {
 
-void tst_TinyDir_constructor() {
-  TH_SKIP("unimplemented");
+void tst_TinyDir_constructor_doesnt_exist() {
+  TH_THROWS(fsutil::TinyDir("/dir/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_TinyDir_constructor);
-
-void tst_TinyDir_destructor() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_TinyDir_destructor);
-
-void tst_TinyDir_readfile() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_TinyDir_readfile);
-
-void tst_TinyDir_hasnext() {
-  TH_SKIP("unimplemented");
-}
-TH_REGISTER(tst_TinyDir_hasnext);
+TH_REGISTER(tst_TinyDir_constructor_doesnt_exist);
 
 void tst_TinyDir_iterate() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir tempdir;
+  fsutil::touch(fsutil::join(tempdir.name(), "file1.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file2.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file3.txt"));
+  std::vector<std::string> listing;
+  std::vector<std::string> expected_listing {
+    ".",
+    "..",
+    "file1.txt",
+    "file2.txt",
+    "file3.txt",
+  };
+  fsutil::TinyDir tinydir(tempdir.name());
+  while (tinydir.hasnext()) {
+    auto file = tinydir.readfile();
+    tinydir.nextfile();
+    listing.push_back(file.name);
+  }
+  std::sort(listing.begin(), listing.end());
+  std::sort(expected_listing.begin(), expected_listing.end());
+  TH_EQUAL(expected_listing, listing);
 }
 TH_REGISTER(tst_TinyDir_iterate);
 
 void tst_TinyDir_iterator() {
-  TH_SKIP("unimplemented");
+  fsutil::TempDir tempdir;
+  fsutil::touch(fsutil::join(tempdir.name(), "file1.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file2.txt"));
+  fsutil::touch(fsutil::join(tempdir.name(), "file3.txt"));
+  std::vector<std::string> listing;
+  std::vector<std::string> expected_listing {
+    ".",
+    "..",
+    "file1.txt",
+    "file2.txt",
+    "file3.txt",
+  };
+  fsutil::TinyDir tinydir(tempdir.name());
+  for (auto file : tinydir) {
+    listing.push_back(file.name);
+  }
+  std::sort(listing.begin(), listing.end());
+  std::sort(expected_listing.begin(), expected_listing.end());
+  TH_EQUAL(expected_listing, listing);
 }
 TH_REGISTER(tst_TinyDir_iterator);
 
