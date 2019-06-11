@@ -200,7 +200,8 @@ void tst_TestResult_stream() {
 
   out << r;
   std::string expected(
-      "hello:double,Variant(\"string result\"),0.000000,1900");
+      "hello:double,Variant(string(len=13, val=\"string result\")),"
+      "0.000000,1900");
   std::string actual(out.str());
 
   TH_EQUAL(actual, expected);

@@ -158,11 +158,11 @@ Make sure the console messages are there, but they can be out of order
 The string output files should only be written from rank 0, not rank 1
 
 >>> contents_f
-'Variant("MpiHello: hello from rank 0 of 2\\n")'
+'Variant(string(len=33, val="MpiHello: hello from rank 0 of 2\\n"))'
 >>> contents_d
-'Variant("MpiHello: hello from rank 0 of 2\\n")'
+'Variant(string(len=33, val="MpiHello: hello from rank 0 of 2\\n"))'
 >>> contents_e
-'Variant("MpiHello: hello from rank 0 of 2\\n")'
+'Variant(string(len=33, val="MpiHello: hello from rank 0 of 2\\n"))'
 
 Run #2 was with 2 mpi processes only running the test with double precision.
 First make sure that the warning about looping only once is issued.
