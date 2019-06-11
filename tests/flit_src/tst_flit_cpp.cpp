@@ -98,7 +98,7 @@
 
 #include <cstdio>
 
-using fsutil::TempFile;
+using flit::fsutil::TempFile;
 
 namespace {
 template <typename T>
@@ -488,28 +488,6 @@ void tst_usage() {
   TH_VERIFY(usage_contains("'all'"));
 }
 TH_REGISTER(tst_usage);
-
-void tst_readFile_exists() {
-  TempFile tmpf;
-  std::string contents =
-    "This is the sequence of characters and lines\n"
-    "that I want to check that the readFile()\n"
-    "can return.\n"
-    "\n"
-    "\n"
-    "You okay with that?";
-  tmpf.out << contents;
-  tmpf.out.flush();
-
-  TH_EQUAL(contents, flit::readFile(tmpf.name));
-}
-TH_REGISTER(tst_readFile_exists);
-
-void tst_readFile_doesnt_exist() {
-  TH_THROWS(flit::readFile("/this/file/should/not/exist"),
-            std::ios_base::failure);
-}
-TH_REGISTER(tst_readFile_doesnt_exist);
 
 namespace flit {
   // Note: if you do not put this in the flit namespace, then I cannot do a

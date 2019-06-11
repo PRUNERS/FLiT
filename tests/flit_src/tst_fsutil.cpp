@@ -87,6 +87,11 @@
 #include <algorithm>
 #include <memory>
 
+namespace fsutil {
+  // import all fsutil names into this new namespace
+  using namespace ::flit::fsutil;
+} // end of namespace fsutil
+
 namespace {
 
 bool string_startswith(const std::string main, const std::string needle) {

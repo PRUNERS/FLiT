@@ -382,15 +382,6 @@ std::string usage(std::string progName) {
   return messanger.str();
 }
 
-std::string readFile(const std::string &filename) {
-  std::ifstream filein;
-  filein.exceptions(std::ios::failbit);
-  filein.open(filename);
-  std::stringstream buffer;
-  buffer << filein.rdbuf();
-  return buffer.str();
-}
-
 std::vector<TestResult> parseResults(std::istream &in) {
   std::vector<TestResult> results;
 

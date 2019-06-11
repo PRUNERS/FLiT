@@ -196,6 +196,8 @@ extern "C" {
 	#define _TINYDIR_FREE(_ptr)    free(_ptr)
 #endif /* !defined(_TINYDIR_MALLOC) */
 
+namespace flit {
+
 typedef struct tinydir_file
 {
 	_tinydir_char_t path[_TINYDIR_PATH_MAX];
@@ -820,6 +822,8 @@ size_t _tinydir_dirent_buf_size(_TINYDIR_DIR *dirp)
 #ifdef __cplusplus
 }
 #endif
+
+} // end of namespace flit
 
 # if defined (_MSC_VER)
 # pragma warning(pop)

@@ -94,6 +94,9 @@
  
 #include <sstream>
 
+// move namespace flit::fsutil into namespace fsutil
+namespace fsutil { using namespace flit::fsutil; }
+
 namespace {
 
 std::ostream& operator<<(std::ostream& out, std::vector<std::string> vec) {

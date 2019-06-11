@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2019, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -81,13 +81,12 @@
  * -- LICENSE END --
  */
 
-/**
- * Some simple functionality for cross-platform file operations, such as
- * deleting an entire directory, creating a temporary file or temporary folder
- * with a name, and listing the contents of a directory.
- */
+#include "fsutil.h"
 
-#include "tinydir.h"    // to list directory contents
+#if !defined(__GNUC__) || defined(__clang__) || \
+    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8))
+#define FSUTIL_IS_NOT_GCC_4_8
+#endif
 
 #if defined(_WIN32)
 #include <dirent.h>
@@ -106,170 +105,10 @@
 #include <string>
 #include <vector>
 
-#if !defined(__GNUC__) || defined(__clang__) || \
-    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8))
-#define FSUTIL_IS_NOT_GCC_4_8
-#endif
-
+namespace flit {
 namespace fsutil {
 
-//= CONSTANTS =//
-
-const std::string separator = "/";
-
-
-//= DECLARATIONS =//
-
-template <typename ... Args> inline std::string join(Args ... args);
-inline std::string readfile(const std::string &path);
-inline std::string readfile(FILE* filepointer);
-inline std::vector<std::string> listdir(const std::string &directory);
-inline void printdir(const std::string &directory);
-inline void rec_rmdir(const std::string &directory);
-inline void mkdir(const std::string &directory, int mode = 0755);
-inline void rmdir(const std::string &directory);
-inline std::string curdir();
-inline void chdir(const std::string &directory);
-inline void touch(const std::string &path);
-
-/** constructor changes current dir, destructor undoes it */
-class PushDir {
-public:
-  PushDir(const std::string &directory);
-  ~PushDir();
-  const std::string& previous_dir() { return _old_curdir; };
-private:
-  std::string _old_curdir;
-};
-
-/** Constructs a temporary named file with an associated stream.
- *
- * The file will be deleted in the destructor
- */
-struct TempFile {
-  std::string name;
-  std::ofstream out;
-  TempFile();
-  ~TempFile();
-};
-
-/** Constructs a temporary named directory with 0700 permissions.
- *
- * The directory, and all contents, will be deleted in the destructor.
- */
-class TempDir {
-public:
-  TempDir();
-  ~TempDir();
-  const std::string& name() { return _name; }
-private:
-  std::string _name;
-};
-
-/** Allows listing of a directory.
- *
- * Class wrapper around tinydir.h C library.
- */
-class TinyDir {
-public:
-  TinyDir(const std::string &directory);
-  ~TinyDir();
-  tinydir_file readfile() const;
-  bool hasnext();
-  void nextfile();
-
-  /** Iterator class for iterating contents of a directory */
-  class Iterator {
-  public:
-    Iterator(TinyDir *td) : _td(td) {}
-    ~Iterator() = default;
-    Iterator& operator++();
-    bool operator!=(const Iterator &other) const { return _td != other._td; }
-    tinydir_file operator*() const { return _td->readfile(); }
-  private:
-    TinyDir *_td;
-  };
-
-  Iterator begin() { return Iterator(this); }
-  Iterator end() const { return Iterator(nullptr); }
-
-private:
-  void checkerr(int err, std::string msg) const;
-
-private:
-  tinydir_dir _dir;
-};
-
-/** Closes the FILE* in the destructor */
-struct FileCloser {
-  FILE* file;
-  int fd;
-  FileCloser(FILE* _file);
-  ~FileCloser() { fclose(file); }
-};
-
-/** Replaces a file descriptor with another to redirect output.
- *
- * Destructor restores the file descriptor.
- */
-struct FdReplace {
-  int old_fd;
-  int replace_fd;
-  int old_fd_copy;
-  FILE* old_file;
-  FILE* replace_file;
-
-  FdReplace(FILE* _old_file, FILE* _replace_file);
-  ~FdReplace();
-};
-
-/** Replaces a stream buffer with another to redirect output.
- *
- * Destructor restores the buffer.
- */
-struct StreamBufReplace {
-  std::ios &old_stream;
-  std::ios &replace_stream;
-  std::streambuf *old_buffer;
-  StreamBufReplace(std::ios &_old_stream, std::ios &_replace_stream);
-  ~StreamBufReplace();
-};
-
-
-//= DEFINITIONS =//
-
-inline void _join_impl(std::ostream &out, const std::string &piece) {
-  out << piece;
-}
-
-template <typename ... Args>
-inline void _join_impl(std::ostream &out, const std::string &piece,
-                              Args ... args)
-{
-  out << piece << separator;
-  _join_impl(out, args ...);
-}
-
-template <typename ... Args>
-inline std::string join(Args ... args) {
-  std::ostringstream path_builder;
-  _join_impl(path_builder, args ...);
-  return path_builder.str();
-}
-
-inline std::string readfile(const std::string &path) {
-  std::ifstream input;
-
-  // setting the failbit will cause an exception if path does not exist
-  input.exceptions(std::ios::failbit);
-  input.open(path);
-  input.exceptions(std::ios::goodbit);
-
-  return std::string(std::istreambuf_iterator<char>(input),
-                     std::istreambuf_iterator<char>());
-}
-
-inline std::string readfile(FILE* file) {
+std::string readfile(FILE* file) {
   fseek(file, 0, SEEK_END);
   auto size = ftell(file);
   rewind(file);
@@ -283,30 +122,7 @@ inline std::string readfile(FILE* file) {
   return std::string(buffer.data());
 }
 
-inline std::vector<std::string> listdir(const std::string &directory) {
-  std::vector<std::string> ls;
-  TinyDir dir(directory);
-  for (auto file : dir) {
-    if (file.name != std::string(".") && file.name != std::string("..")) {
-      ls.emplace_back(file.name);
-    }
-  }
-  return ls;
-}
-
-inline void printdir(const std::string &directory) {
-  TinyDir dir(directory);
-  std::cout << "Directory contents for " << directory << std::endl;
-  for (auto file : dir) {
-    std::cout << "  " << file.name;
-    if (file.is_dir) {
-      std::cout << separator;
-    }
-    std::cout << std::endl;
-  }
-}
-
-inline void rec_rmdir(const std::string &directory) {
+void rec_rmdir(const std::string &directory) {
   // remove contents first
   auto contents = listdir(directory);
   for (auto &name : contents) {
@@ -320,10 +136,10 @@ inline void rec_rmdir(const std::string &directory) {
     }
   }
   // now remove the directory
-  ::fsutil::rmdir(directory);
+  ::flit::fsutil::rmdir(directory);
 }
 
-inline void mkdir(const std::string &directory, int mode) {
+void mkdir(const std::string &directory, int mode) {
   int err = 0;
 #if defined(_WIN32)
   err = ::_mkdir(directory.c_str()); // windows-specific
@@ -337,7 +153,7 @@ inline void mkdir(const std::string &directory, int mode) {
   }
 }
 
-inline void rmdir(const std::string &directory) {
+void rmdir(const std::string &directory) {
   int err = 0;
 #if defined(_WIN32)
   err = ::_rmdir(directory.c_str());
@@ -352,7 +168,7 @@ inline void rmdir(const std::string &directory) {
   }
 }
 
-inline std::string curdir() {
+std::string curdir() {
   const int bufsize = 10000; // you never know...
   char buffer[bufsize]; // where to store the current directory
   char *ret = nullptr;
@@ -367,7 +183,7 @@ inline std::string curdir() {
   return std::string(buffer);
 }
 
-inline void chdir(const std::string &directory) {
+void chdir(const std::string &directory) {
   int err = 0;
 #if defined(_WIN32)
   err = ::_chdir(directory.c_str());
@@ -382,26 +198,7 @@ inline void chdir(const std::string &directory) {
   }
 }
 
-inline void touch(const std::string &path) {
-  // Just creating an output stream and closing it will touch the file.
-  std::ofstream out(path);
-}
-
-PushDir::PushDir(const std::string &directory)
-  : _old_curdir(::fsutil::curdir())
-{
-  ::fsutil::chdir(directory);
-}
-
-PushDir::~PushDir() {
-  try {
-    ::fsutil::chdir(_old_curdir);
-  } catch (std::ios_base::failure &ex) {
-    std::cerr << "ios_base error: " << ex.what() << std::endl;
-  }
-}
-
-inline TempFile::TempFile() {
+TempFile::TempFile() {
   char fname_buf[L_tmpnam];
   char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
   if (s != fname_buf) {
@@ -414,12 +211,7 @@ inline TempFile::TempFile() {
   out.open(name);
 }
 
-inline TempFile::~TempFile() {
-  out.close();
-  std::remove(name.c_str());
-}
-
-inline TempDir::TempDir() {
+TempDir::TempDir() {
   char fname_buf[L_tmpnam];
   char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
   if (s != fname_buf) {
@@ -428,10 +220,10 @@ inline TempDir::TempDir() {
 
   _name = fname_buf;
   _name += "-flit-testdir";    // this makes the danger much less likely
-  ::fsutil::mkdir(_name, 0700);
+  ::flit::fsutil::mkdir(_name, 0700);
 }
 
-inline TempDir::~TempDir() {
+TempDir::~TempDir() {
   try {
     // recursively remove all directories and files found
     rec_rmdir(_name.c_str());
@@ -448,45 +240,7 @@ inline TempDir::~TempDir() {
   }
 }
 
-inline TinyDir::TinyDir(const std::string &directory) {
-  int err = tinydir_open(&_dir, directory.c_str());
-  checkerr(err, "Error opening directory: ");
-}
-
-inline TinyDir::~TinyDir() { tinydir_close(&_dir); }
-
-inline tinydir_file TinyDir::readfile() const {
-  tinydir_file file;
-  int err = tinydir_readfile(&_dir, &file);
-  std::string msg = "Error reading file '";
-  msg += file.name;
-  msg += "' from directory: ";
-  checkerr(err, msg);
-  return file;
-}
-
-inline bool TinyDir::hasnext() {
-  return static_cast<bool>(_dir.has_next);
-}
-
-inline void TinyDir::nextfile() {
-  int err = tinydir_next(&_dir);
-  checkerr(err, "Error getting next file from directory: ");
-}
-
-inline TinyDir::Iterator& TinyDir::Iterator::operator++() {
-  if (_td != nullptr) {
-    if (_td->hasnext()) {
-      _td->nextfile();
-    }
-    if (!_td->hasnext()) {
-      _td = nullptr;
-    }
-  }
-  return *this;
-}
-
-inline void TinyDir::checkerr(int err, std::string msg) const {
+void TinyDir::checkerr(int err, std::string msg) const {
   // TODO: handle broken symlinks
   if (err != 0) {
     throw std::ios_base::failure(
@@ -496,16 +250,6 @@ inline void TinyDir::checkerr(int err, std::string msg) const {
         , std::error_code(errno, std::generic_category())
 #endif
         );
-  }
-}
-
-FileCloser::FileCloser(FILE* _file) : file(_file) {
-  if (file == nullptr) {
-    throw std::ios_base::failure("Null FILE pointer passed to FileCloser");
-  }
-  fd = fileno(file);
-  if (fd < 0) {
-    throw std::ios_base::failure("Could not get file descriptor");
   }
 }
 
@@ -539,18 +283,5 @@ FdReplace::~FdReplace() {
   dup2(old_fd_copy, old_fd);
 }
 
-StreamBufReplace::StreamBufReplace(std::ios &_old_stream,
-                                   std::ios &_replace_stream)
-  : old_stream(_old_stream)
-  , replace_stream(_replace_stream)
-  , old_buffer(_old_stream.rdbuf())
-{
-  old_stream.rdbuf(replace_stream.rdbuf());
-}
-
-StreamBufReplace::~StreamBufReplace() {
-  old_stream.rdbuf(old_buffer);
-}
-
 } // end of namespace fsutil
-
+} // end of namespace flit
