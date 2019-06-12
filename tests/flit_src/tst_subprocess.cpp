@@ -129,10 +129,10 @@ void tst_subprocess() {
   TH_EQUAL("hi", retval.err);
 
   retval = flit::call_with_output("/no/such/command");
-  std::cout << retval << std::endl;
   TH_EQUAL(127, retval.ret);
   TH_EQUAL("", retval.out);
-  TH_EQUAL("sh: /no/such/command: No such file or directory\n", retval.err);
+  // This is not robust as different versions output different messages
+  //TH_EQUAL("sh: /no/such/command: No such file or directory\n", retval.err);
 }
 TH_REGISTER(tst_subprocess);
 
