@@ -124,7 +124,7 @@ before_install: pip3 install --user toml $extra_pip
 script:
   - make -j4
   - make -j4 -C tests
-  - ./tests/flit_src/tst_subprocess --verbose
+  - (cd ./tests/flit_src && ./tst_subprocess --verbose)
   - make check
 
 #notifications:
