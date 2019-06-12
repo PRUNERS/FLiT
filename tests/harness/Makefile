@@ -38,7 +38,7 @@ run_tst_test_harness: tst_test_harness
 run_% : %
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@./$< --quiet
+	@./$< --semi-quiet
 
 % : %.cpp $(HARNESS) Makefile
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
