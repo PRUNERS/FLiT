@@ -121,7 +121,11 @@ matrix:
 
 before_install: pip3 install --user toml $extra_pip
 
-script: make -j4 && make -j4 -C tests && make check
+script:
+  - make -j4
+  - make -j4 -C tests
+  - ./tests/flit_cli/tst_subprocess --verbose
+  - make check
 
 #notifications:
 #  email: false
