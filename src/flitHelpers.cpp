@@ -89,8 +89,12 @@
 
 #include <iostream>
 #include <mutex>
+#include <map>
+#include <string>
 
 namespace flit {
+
+const char* g_program_name = nullptr;
 
 thread_local InfoStream info_stream;
 

@@ -81,8 +81,23 @@
  * -- LICENSE END --
  */
 
+// We need to add some stuff to main() to get call_main() to work
+#define main th_main
 #include "test_harness.h"
+#undef main
+
 #include "subprocess.h"
+#include "flitHelpers.h"
+#include "flit.h"
+
+int main(int argCount, char* argList[]) {
+  // Fast track means calling a user's main() function
+  if (flit::isFastTrack(argCount, argList)) {
+    return flit::callFastTrack(argCount, argList);
+  }
+  // otherwise, run tests
+  return th_main(argCount, argList);
+}
 
 void tst_subprocess() {
   using flit::operator<<;
@@ -119,3 +134,112 @@ void tst_subprocess() {
   TH_EQUAL("sh: /no/such/command: No such file or directory\n", retval.err);
 }
 TH_REGISTER(tst_subprocess);
+
+namespace mymains {
+
+void print_main (std::ostream& out, const char* name, int argCount,
+                 char* argList[])
+{
+  out << name << "(" << argCount << ", {";
+  bool first = true;
+  for (int i = 0; i < argCount; i++) {
+    if (!first) {
+      out << ", ";
+    }
+    first = false;
+    out << argList[i];
+  }
+  out << "})\n";
+}
+
+int mymain_1 (int argCount, char* argList[]) {
+  print_main(std::cout, "mymain_1", argCount, argList);
+  std::cerr << "Called from mymain_1" << std::endl;
+  return 0;
+}
+FLIT_REGISTER_MAIN(mymain_1)
+
+int mymain_2 (int argCount, char* argList[]) {
+  print_main(std::cout, "mymain_2", argCount, argList);
+  std::cerr << "Called from mymain_2" << std::endl;
+  std::exit(3);
+}
+FLIT_REGISTER_MAIN(mymain_2)
+
+int mymain_3 (int argCount, char* argList[]) {
+  return 2;
+}
+FLIT_REGISTER_MAIN(mymain_3)
+
+int unregistered_main (int argCount, char* argList[]) {
+  print_main(std::cout, "mymain_2", argCount, argList);
+  std::cerr << "Called from mymain_2" << std::endl;
+  std::exit(3);
+}
+// unregistered_main is not registered
+
+}
+
+void tst_register_main_func() {
+  // just test that the previously registered ones are there
+  TH_EQUAL(flit::find_main_func("mymain_1"), mymains::mymain_1);
+  TH_EQUAL(flit::find_main_func("mymain_2"), mymains::mymain_2);
+  TH_EQUAL(flit::find_main_func("mymain_3"), mymains::mymain_3);
+
+  TH_EQUAL(flit::find_main_name(mymains::mymain_1), "mymain_1");
+  TH_EQUAL(flit::find_main_name(mymains::mymain_2), "mymain_2");
+  TH_EQUAL(flit::find_main_name(mymains::mymain_3), "mymain_3");
+
+  // test with elements not registered
+  TH_THROWS(flit::find_main_func("unregistered_main"), std::out_of_range);
+  TH_THROWS(flit::find_main_name(mymains::unregistered_main),
+            std::out_of_range);
+
+  // test find_main_name with a nullptr
+  TH_THROWS(flit::find_main_name(nullptr), std::invalid_argument);
+
+  // test that we cannot add duplicate names or function pointers
+  TH_THROWS(flit::register_main_func("mymain_1", mymains::unregistered_main),
+            std::logic_error);
+  TH_THROWS(flit::register_main_func("unregistered_main", mymains::mymain_1),
+            std::logic_error);
+
+  // test with a null pointer
+  TH_THROWS(flit::register_main_func("unique", nullptr), std::invalid_argument);
+}
+TH_REGISTER(tst_register_main_func);
+
+// This test sufficiently exercises isFastTrack() and callFastTrack()
+// Therefore, we do not need to test those functions in isolation
+void tst_call_main() {
+  // this is a prerequisite to calling call_main()
+  flit::g_program_name = "./tst_subprocess";
+
+  auto result = flit::call_main(mymains::mymain_1, "arbitrary_name",
+                                "the remaining args");
+  TH_EQUAL(0, result.ret);
+  TH_EQUAL("mymain_1(4, {arbitrary_name, the, remaining, args})\n", result.out);
+  TH_EQUAL("Called from mymain_1\n", result.err);
+
+  result = flit::call_main(mymains::mymain_2, "another name",
+                           "'only one argument'");
+  TH_EQUAL(3, result.ret);
+  TH_EQUAL("mymain_2(2, {another name, only one argument})\n", result.out);
+  TH_EQUAL("Called from mymain_2\n", result.err);
+
+  result = flit::call_main(mymains::mymain_2, "main2", "");
+  TH_EQUAL(3, result.ret);
+  TH_EQUAL("mymain_2(1, {main2})\n", result.out);
+  TH_EQUAL("Called from mymain_2\n", result.err);
+
+  result = flit::call_main(mymains::mymain_3, "", "");
+  TH_EQUAL(2, result.ret);
+  TH_EQUAL("", result.out);
+  TH_EQUAL("", result.err);
+
+  // throws if the function was not registered.
+  TH_THROWS(flit::call_main(mymains::unregistered_main, "unregistered_main",
+                            "arguments"),
+            std::logic_error);
+}
+TH_REGISTER(tst_call_main);

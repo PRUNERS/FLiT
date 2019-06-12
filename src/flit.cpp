@@ -101,11 +101,22 @@
 
 namespace {
 
-
 /** Returns true if the element is in the container */
 template<typename Container, typename Element>
 bool isIn(Container c, Element e) {
   return std::find(std::begin(c), std::end(c), e) != std::end(c);
+}
+
+/** Calls the main function with correct arguments */
+int call_real_main(flit::MainFunc *func, char* progname,
+                   int remainingCount, char *remainingArgs[])
+{
+  int argc = remainingCount + 1;
+  std::unique_ptr<char*> argv(new char*[argc]);
+  argv.get()[0] = progname;
+  std::copy(remainingArgs, remainingArgs + remainingCount, argv.get() + 1);
+  int retval = func(argc, argv.get());
+  return retval;
 }
 
 } // end of unnamed namespace
@@ -140,8 +151,60 @@ std::string FlitOptions::toString() const {
   return messanger.str();
 }
 
+bool isFastTrack(int argCount, char const* const argList[]) {
+  auto begin = argList + 1;
+  auto end = argList + argCount;
+  const std::string callmainOpt = "--call-main";
+  return std::find(begin, end, callmainOpt) != end;
+}
+
+int callFastTrack(int argCount, char* argList[]) {
+  char *prog_name = nullptr;
+  char *main_name = nullptr;
+  std::vector<char*> remaining;
+
+  const std::string prognameOpt = "--progname";
+  const std::string callmainOpt = "--call-main";
+
+  // populate prog_name, main_name, and remaining
+  auto end = argList + argCount;
+  for (char** current = argList + 1; current != end; current++) {
+    if (*current == prognameOpt) {
+      current++;
+      if (current == end) {
+        throw std::logic_error(prognameOpt + " needs a value");
+      }
+      prog_name = *current;
+    } else if (*current == callmainOpt) {
+      current++;
+      if (current == end) {
+        throw std::logic_error(callmainOpt + " needs a value");
+      }
+      main_name = *current;
+    } else {
+      remaining.push_back(*current);
+    }
+  }
+  if (prog_name == nullptr) {
+    throw std::logic_error("Must provide " + prognameOpt);
+  }
+  if (main_name == nullptr) {
+    throw std::logic_error("Must provide " + callmainOpt);
+  }
+
+  // call the real main function
+  auto main_func = find_main_func(main_name);
+  return call_real_main(main_func, prog_name,
+                        remaining.size(), remaining.data());
+}
+
 FlitOptions parseArguments(int argCount, char const* const* argList) {
   FlitOptions options;
+
+  // capture the name of this program
+  if (argCount > 0 && g_program_name == nullptr) {
+    g_program_name = argList[0];
+  }
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };
   std::vector<std::string> infoOpts          = { "--info" };

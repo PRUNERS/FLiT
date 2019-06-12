@@ -92,6 +92,7 @@
 #include "TestBase.h"
 #include "flitHelpers.h"
 #include "fsutil.h"
+#include "subprocess.h"
 
 #include <algorithm>
 #include <chrono>
@@ -180,6 +181,8 @@ struct pair_hash {
 };
 
 /// Parse arguments
+bool isFastTrack(int argCount, char const* const argList[]);
+int callFastTrack(int argCount, char* argList[]);
 FlitOptions parseArguments(int argCount, char const* const argList[]);
 
 /// Returns the usage information as a string
@@ -417,6 +420,9 @@ private:
 };
 
 inline int runFlitTests(int argc, char* argv[]) {
+  // Fast track means calling a user's main() function
+  if (isFastTrack(argc, argv)) { return callFastTrack(argc, argv); }
+
   // Now only used for MPI, but basically a boolean to say whether this process
   // is the main one
   MpiEnvironment mpi_env(argc, argv);

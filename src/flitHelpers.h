@@ -108,6 +108,8 @@
 
 namespace flit {
 
+extern const char* g_program_name; // = argv[0]
+
 extern thread_local InfoStream info_stream;
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
