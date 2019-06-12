@@ -143,7 +143,7 @@ private:
 struct TempFile {
   std::string name;
   std::ofstream out;
-  TempFile();
+  TempFile(const std::string &parent = "/tmp");
   ~TempFile();
 };
 
@@ -153,7 +153,7 @@ struct TempFile {
  */
 class TempDir {
 public:
-  TempDir();
+  TempDir(const std::string &parent = "/tmp");
   ~TempDir();
   const std::string& name() { return _name; }
 private:

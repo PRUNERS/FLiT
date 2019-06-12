@@ -104,6 +104,7 @@
 #include <sstream>      // for std::istringstream
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace flit {
 namespace fsutil {
@@ -198,29 +199,22 @@ void chdir(const std::string &directory) {
   }
 }
 
-TempFile::TempFile() {
-  char fname_buf[L_tmpnam];
-  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-  if (s != fname_buf) {
-    throw std::ios_base::failure("Could not create temporary file");
-  }
-
-  name = fname_buf;
-  name += "-flit-testfile.in";    // this makes the danger much less likely
+TempFile::TempFile(const std::string &parent) {
+  std::string ftemplate = join(parent, "flit-tempfile-XXXXXX");
+  std::unique_ptr<char> fname_buf(new char[ftemplate.size() + 1]);
+  strcpy(fname_buf.get(), ftemplate.data());
+  mkstemp(fname_buf.get());
+  name = fname_buf.get();
   out.exceptions(std::ios::failbit);
   out.open(name);
 }
 
-TempDir::TempDir() {
-  char fname_buf[L_tmpnam];
-  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-  if (s != fname_buf) {
-    throw std::ios_base::failure("Could not find temporary directory name");
-  }
-
-  _name = fname_buf;
-  _name += "-flit-testdir";    // this makes the danger much less likely
-  ::flit::fsutil::mkdir(_name, 0700);
+TempDir::TempDir(const std::string &parent) {
+  std::string dtemplate = join(parent, "flit-tempfile-XXXXXX");
+  std::unique_ptr<char> dname_buf(new char[dtemplate.size() + 1]);
+  strcpy(dname_buf.get(), dtemplate.data());
+  mkdtemp(dname_buf.get());
+  _name = dname_buf.get();
 }
 
 TempDir::~TempDir() {
