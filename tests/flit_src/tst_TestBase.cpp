@@ -90,8 +90,6 @@
 #undef time_function
 #undef time_function_autoloop
 
-#include "MpiEnvironment.h"
- 
 #include <sstream>
 
 // move namespace flit::fsutil into namespace fsutil
@@ -321,7 +319,6 @@ TH_REGISTER(tst_TestBase_variant_compare);
 template <typename F>
 struct RunSetup {
   MocTest<F> test;
-  flit::MpiEnvironment mpi;
 };
 
 template <typename F>
@@ -330,11 +327,9 @@ RunSetup<F> run_setup() {
   char name[] = "run()";
   char * argv[1] { name };
   char ** argvref = argv;
-  flit::MpiEnvironment mpi_env(argc, argvref);
   std::string id("This-is-my-ID");
   MocTest<F> test(id);
-  RunSetup<F> setup {MocTest<F>(id), mpi_env};
-  flit::mpi = &setup.mpi;
+  RunSetup<F> setup {MocTest<F>(id)};
   return setup;
 }
 

@@ -13,6 +13,24 @@ namespace {
 std::map<std::string, flit::MainFunc*> main_name_map;
 std::map<flit::MainFunc*, std::string> main_func_map;
 
+flit::ProcResult call_main_impl(
+    flit::MainFunc *func, std::string run_wrap, std::string progname,
+    std::string remaining_args)
+{
+  // calls myself
+  auto funcname = flit::find_main_name(func);
+  if (progname == "") {
+    progname = flit::g_program_name;
+  }
+  std::ostringstream command_builder;
+  command_builder << run_wrap << " "
+                  << '"' << flit::g_program_name << '"'
+                  << " --progname \"" << progname << "\""
+                  << " --call-main " << funcname
+                  << " " << remaining_args;
+  return flit::call_with_output(command_builder.str());
+}
+
 } // end of unnamed namespace
 
 namespace flit {
@@ -48,10 +66,10 @@ ProcResult call_with_output(const std::string &command) {
 }
 
 std::ostream& operator<<(std::ostream& out, const ProcResult &res) {
-  out << "ProcResult(\""
-      << res.out << "\", \""
-      << res.err << "\", "
-      << res.ret << ")";
+  out << "ProcResult("
+      << "ret="   << res.ret << ", "
+      << "out=\"" << res.out << "\", "
+      << "err=\"" << res.err << "\")";
   return out;
 }
 
@@ -83,17 +101,14 @@ std::string find_main_name(MainFunc *main_func) {
 ProcResult call_main(MainFunc *func, std::string progname,
                      std::string remaining_args)
 {
-  // calls myself
-  auto funcname = find_main_name(func);
-  if (progname == "") {
-    progname = g_program_name;
-  }
-  std::ostringstream command_builder;
-  command_builder << '"' << g_program_name << '"'
-                  << " --progname \"" << progname << "\""
-                  << " --call-main " << funcname
-                  << " " << remaining_args;
-  return call_with_output(command_builder.str());
+  std::string run_wrapper = "";
+  return call_main_impl(func, run_wrapper, progname, remaining_args);
+}
+
+ProcResult call_mpi_main(MainFunc *func, std::string mpirun_command,
+                         std::string progname, std::string remaining_args)
+{
+  return call_main_impl(func, mpirun_command, progname, remaining_args);
 }
 
 } // end of namespace flit

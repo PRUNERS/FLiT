@@ -88,7 +88,6 @@
 #define FLIT_H 0
 
 #include "FlitCsv.h"
-#include "MpiEnvironment.h"
 #include "TestBase.h"
 #include "flitHelpers.h"
 #include "fsutil.h"
@@ -423,71 +422,47 @@ inline int runFlitTests(int argc, char* argv[]) {
   // Fast track means calling a user's main() function
   if (isFastTrack(argc, argv)) { return callFastTrack(argc, argv); }
 
-  // Now only used for MPI, but basically a boolean to say whether this process
-  // is the main one
-  MpiEnvironment mpi_env(argc, argv);
-  flit::mpi = &mpi_env;
-
   // Argument parsing
   FlitOptions options;
   try {
     options = parseArguments(argc, argv);
   } catch (ParseException &ex) {
-    if (mpi->is_root()) {
-      std::cerr << "Error: " << ex.what() << "\n"
-                << "  Use the --help option for more information\n";
-    }
+    std::cerr << "Error: " << ex.what() << "\n"
+              << "  Use the --help option for more information\n";
     return 1;
   }
 
   if (options.help) {
-    if (mpi->is_root()) {
-      std::cout << usage(argv[0]);
-    }
+    std::cout << usage(argv[0]);
     return 0;
   }
 
   if (options.info) {
-    if (mpi->is_root()) {
-      std::cout << info;
-    }
+    std::cout << info;
     return 0;
   }
 
   if (options.listTests) {
-    if (mpi->is_root()) {
-      for (auto& test : getKeys(getTests())) {
-        std::cout << test << std::endl;
-      }
+    for (auto& test : getKeys(getTests())) {
+      std::cout << test << std::endl;
     }
     return 0;
   }
 
-  if (options.verbose && mpi->is_root()) {
+  if (options.verbose) {
     info_stream.show();
-  }
-
-  // When MPI is enabled, we cannot use the automatic timing loop algorithm,
-  // otherwise we could deadlock
-  if (mpi->size > 1 && options.timing && options.timingLoops < 1) {
-    if (mpi->is_root()) {
-      std::cerr << "Warning: cannot run auto-looping with MPI; "
-                   "Looping set to 1\n";
-    }
-    options.timingLoops = 1;
   }
 
   std::unique_ptr<std::ostream> stream_deleter;
   std::ostream *outstream = &std::cout;
   std::string test_result_filebase(FLIT_FILENAME);
-  if (!options.output.empty() && mpi->is_root()) {
+  if (!options.output.empty()) {
     stream_deleter.reset(new std::ofstream());
     outstream = stream_deleter.get();
     try {
       flit::ofopen(static_cast<std::ofstream&>(*outstream), options.output);
     } catch (std::ios::failure &ex) {
       std::cerr << "Error: failed to open " << options.output << std::endl;
-      mpi->abort(1);
       return 1;
     }
     test_result_filebase = options.output;
@@ -546,7 +521,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   std::sort(results.begin(), results.end(), testComparator);
 
   // Let's now run the ground-truth comparisons
-  if (options.compareMode && mpi->is_root()) {
+  if (options.compareMode) {
     TestResultMap comparisonResults;
 
     for (auto fname : options.compareFiles) {
@@ -554,7 +529,6 @@ inline int runFlitTests(int argc, char* argv[]) {
         comparisonResults.loadfile(fname);
       } catch (std::ios::failure &ex) {
         std::cerr << "Error: failed to open file " << fname << std::endl;
-        mpi->abort(1);
         return 1;
       }
     }
@@ -580,7 +554,6 @@ inline int runFlitTests(int argc, char* argv[]) {
           flit::ifopen(fin, fname);
         } catch (std::ios_base::failure &ex) {
           std::cerr << "Error: file does not exist: " << fname << std::endl;
-          mpi->abort(1);
           return 1;
         }
         metadata = parseMetadata(fin);
@@ -603,7 +576,6 @@ inline int runFlitTests(int argc, char* argv[]) {
           flit::ofopen(fout, fname + options.compareSuffix);
         } catch (std::ios::failure &ex) {
           std::cerr << "Error: could not write to " << fname << std::endl;
-          mpi->abort(1);
           return 1;
         }
         outputResults(
@@ -620,9 +592,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   }
 
   // Create the main results output
-  if (mpi->is_root()) {
-    outputResults(results, *outstream);
-  }
+  outputResults(results, *outstream);
 
   return 0;
 }

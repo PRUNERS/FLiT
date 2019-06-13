@@ -154,6 +154,9 @@ std::string find_main_name(MainFunc *main_func);
 ProcResult call_main(MainFunc *func, std::string progname = "",
                      std::string remaining_args = "");
 
+ProcResult call_mpi_main(MainFunc *func, std::string mpirun_command = "mpirun",
+                         std::string progname = "",
+                         std::string remaining_args = "");
 } // end of namespace flit
 
 #endif // SUBPROCESS_H
