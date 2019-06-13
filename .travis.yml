@@ -121,7 +121,15 @@ matrix:
 
 before_install: pip3 install --user toml $extra_pip
 
-script: make -j4 && make -j4 -C tests && make check
+script:
+  - make -j4 && make -j4 -C tests
+  - ./scripts/flitcli/flit.py init -C sandbox
+  - cp tests/flit_mpi/data/MpiHello.cpp sandbox/tests/
+  - rm sandbox/tests/Empty.cpp
+  - cp tests/flit_mpi/data/flit-config.toml sandbox/
+  - make ground-truth.csv -C sandbox
+  - hexdump -C sandbox/*.dat
+  - make check
 
 #notifications:
 #  email: false
