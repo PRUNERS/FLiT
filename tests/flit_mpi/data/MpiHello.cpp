@@ -88,6 +88,8 @@
 #include <string>
 #include <sstream>
 
+#include <cstring>
+
 // this is the real test, run under MPI in separate processes
 int mpi_main(int argCount, char* argList[]) {
   MPI_Init(&argCount, &argList);
@@ -110,8 +112,9 @@ int mpi_main(int argCount, char* argList[]) {
 
   // send a message from rank 0 to rank 1
   if (rank == 0) {
-    std::string message("hello world!");
-    MPI_Send(message.data(), message.size(), MPI_BYTE, 1, 0, MPI_COMM_WORLD);
+    char message[13];
+    strcpy(message, "hello world!");
+    MPI_Send(message, 13, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
     std::cout << "Sending '" << message << "' from rank 0\n";
   } else if (rank == 1) {
     char buffer[13];
