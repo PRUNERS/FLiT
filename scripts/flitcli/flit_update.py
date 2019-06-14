@@ -275,7 +275,6 @@ def main(arguments, prog=sys.argv[0]):
         'flit_version': conf.version,
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
-        'mpirun_args': projconf['run']['mpirun_args'],
         'compiler_defs': gen_assignments({
             key: val for key, val in base_compilers.items()}),
         'compilers': ' '.join([compiler['type'].upper()

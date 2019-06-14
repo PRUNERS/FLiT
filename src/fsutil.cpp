@@ -82,6 +82,7 @@
  */
 
 #include "fsutil.h"
+#include "flitHelpers.h"  // for flit::split()
 
 #if !defined(__GNUC__) || defined(__clang__) || \
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8))
@@ -197,6 +198,43 @@ void chdir(const std::string &directory) {
     msg += strerror(err);
     throw std::ios_base::failure(msg);
   }
+}
+
+std::string which(const std::string &command) {
+  const char* path_env = std::getenv("PATH");
+  std::string path;
+  if (path_env != nullptr) {
+    path = path_env;
+  }
+  return which(command, path);
+}
+
+std::string realpath(const std::string &relative) {
+  char* fullpath = ::realpath(relative.c_str(), nullptr);
+  std::string fullpath_string(fullpath);
+  free(fullpath);
+  return fullpath_string;
+}
+
+std::string which(const std::string &command, const std::string &path) {
+  if (command == "") { return ""; }
+  if (command[0] == '/') { return command; }
+  if (command.find('/') != std::string::npos) { return realpath(command); }
+
+  auto pieces = flit::split(path, ':');
+
+  for (auto &piece : pieces) {
+    auto candidate = join(piece, command);
+    try {
+      auto status = file_status(candidate);
+      if (status.is_reg) {
+        return candidate;
+      }
+    } catch (std::ios_base::failure&) {
+      continue;
+    }
+  }
+  throw std::ios_base::failure("Could not find " + command + " in path");
 }
 
 TempFile::TempFile(const std::string &parent) {

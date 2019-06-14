@@ -68,7 +68,6 @@ timing = true
 timing_loops = -1
 timing_repeats = 3
 enable_mpi = false
-mpirun_args = ''
 ```
 
 Here we have information about how to execute the tests.  More specifically
@@ -92,9 +91,6 @@ not the timing ones since `flit bisect` does not care so much about timing.
   [test executable](test-executable.md#Timing).
 * `enable_mpi`: Turns on compiling and running tests with MPI support.  See the
   [MPI Support](mpi-support.md) page for more information.
-* `mpirun_args`: Arguments to pass to `mpirun`.  This is where you specify how
-  many processes to run, for example `-n 16` to run 16 instances of the tests
-  under MPI.
 
 **A note about MPI:** FLiT requires the tests to be deterministic.  If the
 tests employ MPI, it is the test creator's responsibility to ensure that the
@@ -310,7 +306,6 @@ timing = true
 timing_loops = -1
 timing_repeats = 3
 enable_mpi = false
-mpirun_args = ''
 
 [dev_build]
 compiler_name = 'g++'

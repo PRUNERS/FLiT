@@ -214,7 +214,7 @@ TH_REGISTER(tst_register_main_func);
 // Therefore, we do not need to test those functions in isolation
 void tst_call_main() {
   // this is a prerequisite to calling call_main()
-  flit::g_program_name = "./tst_subprocess";
+  flit::g_program_path = flit::fsutil::which("./tst_subprocess");
 
   auto result = flit::call_main(mymains::mymain_1, "arbitrary_name",
                                 "the remaining args");

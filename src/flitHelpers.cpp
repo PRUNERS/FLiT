@@ -94,7 +94,7 @@
 
 namespace flit {
 
-const char* g_program_name = nullptr;
+std::string g_program_path;
 
 thread_local InfoStream info_stream;
 

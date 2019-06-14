@@ -20,11 +20,11 @@ flit::ProcResult call_main_impl(
   // calls myself
   auto funcname = flit::find_main_name(func);
   if (progname == "") {
-    progname = flit::g_program_name;
+    progname = flit::g_program_path;
   }
   std::ostringstream command_builder;
   command_builder << run_wrap << " "
-                  << '"' << flit::g_program_name << '"'
+                  << '"' << flit::g_program_path << '"'
                   << " --progname \"" << progname << "\""
                   << " --call-main " << funcname
                   << " " << remaining_args;
