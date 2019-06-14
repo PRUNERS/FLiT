@@ -87,6 +87,7 @@
 
 #include <string>
 #include <sstream>
+#include <fstream>
 
 // TODO: put these into FLiT?
 template <typename F> MPI_Datatype mpi_type();
@@ -126,27 +127,31 @@ int mpi_main_F(int argCount, char* argList[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::cout << std::endl;
-  std::cout << "hello from rank " << rank << " of " << world_size << std::endl;
-  std::cout << "mpi_main_F<" << typeid(F).name() << ">(" << argCount << ", {";
+  std::string logfile = "out-" + std::to_string(rank) + ".log";
+  std::ofstream out(logfile);
+
+  out << "\n";
+  out << "hello from rank " << rank << " of " << world_size << "\n";
+  out << "mpi_main_F<" << typeid(F).name() << ">(" << argCount << ", {";
   bool first = true;
   for (int i = 0; i < argCount; i++) {
-    if (!first) { std::cout << ", "; }
+    if (!first) { out << ", "; }
     first = false;
-    std::cout << argList[i];
+    out << argList[i];
   }
-  std::cout << "})\n";
+  out << "})\n";
 
   // send a message from rank 0 to rank 1
   if (rank == 0) {
     F msg = 3.14159;
     MPI_Send(&msg, 1, mpi_type<F>(), 1, 0, MPI_COMM_WORLD);
-    std::cout << "Sending '" << msg<< "' from rank 0\n";
+    out << "Sending '" << msg<< "' from rank 0\n";
+    out.flush();
   } else if (rank == 1) {
     F received = 0;
     MPI_Recv(&received, 1, mpi_type<F>(), 0, 0, MPI_COMM_WORLD,
              MPI_STATUS_IGNORE);
-    std::cout << "Received '" << received << "' from rank 0 to rank 1\n";
+    out << "Received '" << received << "' from rank 0 to rank 1\n";
   } else {
     throw std::logic_error("there should only be two ranks");
   }
@@ -197,11 +202,32 @@ protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
     FLIT_UNUSED(ti);
     auto main_func = get_mpi_main<T>();
-    auto result = flit::call_mpi_main(main_func, "mpirun -n 2", "mympi",
-                                      "remaining arguments");
-    std::ostringstream all;
-    all << result;
-    return all.str();
+    flit::fsutil::TempDir tempdir;      // create a temp dir
+    flit::ProcResult result;
+
+    // change to a different directory when calling main
+    // this is so that the output files will be put into the temporary dir
+    // rather than in the current directory.
+    // This trick is nice because it now makes this test reentrant since each
+    // invocation will executed from a separate directory.
+    {
+      flit::fsutil::PushDir pushd(tempdir.name());  // go to it
+      auto result = flit::call_mpi_main(main_func, "mpirun -n 2", "mympi",
+                                        "remaining arguments");
+    }
+
+    auto logcontents_0 = flit::fsutil::readfile(
+        flit::fsutil::join(tempdir.name(), "out-0.log"));
+    auto logcontents_1 = flit::fsutil::readfile(
+        flit::fsutil::join(tempdir.name(), "out-1.log"));
+
+    std::vector<std::string> vec_result;
+    vec_result.emplace_back(std::to_string(result.ret));
+    vec_result.emplace_back(result.out);
+    vec_result.emplace_back(result.err);
+    vec_result.emplace_back(logcontents_0);
+    vec_result.emplace_back(logcontents_1);
+    return vec_result;
   }
 
 protected:
