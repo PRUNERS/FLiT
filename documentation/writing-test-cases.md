@@ -16,6 +16,13 @@ with an ending of `.cpp`.  Rename the class inside, and you're good to go.  If
 you name it with a different ending than `.cpp`, then you will need to ensure
 it is included from within `custom.mk` in the `SOURCE` variable.
 
+- [Test Case Requirements](#test-case-requirements)
+- [Disabling Test Cases](#disabling-test-cases)
+- [Only Using Particular Precisions](#only-using-particular-precisions)
+- [Writing Tests With More Template Parameters](#writing-tests-with-more-template-parameters)
+- [Wrapping Around a Main Function](#wrapping-around-a-main-function)
+- [Writing MPI Tests](#writing-mpi-tests)
+
 
 ## Test Case Requirements
 
@@ -187,7 +194,7 @@ DOT_PRODUCT_REGISTRATION(10000)
 ```
 
 
-## Wrapping Around Main Function
+## Wrapping Around a Main Function
 
 Often times, we want to test our entire application with FLiT.  In that case,
 you may want to wrap around the `main()` function of all of your code.  Well,
@@ -421,7 +428,7 @@ In the above example, we only use the double precision variant of the test
 class
 (see [Only Using Particular Precisions](#only-using-particular-precisions)]).
 Also, the `main()` function is being called in a separate process (see
-[Wrapping Around Main Function](#wrapping-around-main-function)) with four
+[Wrapping Around a Main Function](#wrapping-around-a-main-function)) with four
 processes, because of the `"mpirun -n 4"` argument passed to
 `flit::call_mpi_main()`.
 
@@ -503,6 +510,8 @@ command-line arguments (after `args[0])`are "--data", and "../data/star.dat".
 The returned value from `flit::call_mpi_main()` is a `flit::ProcessResult`
 struct that has standard output, standard error, and the return status.  Using
 these values and possibly files created or written from `mpiapp_main()`.
+
+For more examples, look in `FLiT/tests/flit_mpi/data`.
 
 
 [Prev](available-compiler-flags.md)
