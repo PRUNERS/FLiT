@@ -673,3 +673,122 @@ TH_REGISTER(tst_TestBase_run_outputVariantsToFile);
 
 } // end of namespace TestBase
 
+namespace TestFactory {
+
+class NullTestFactory : public flit::TestFactory {
+public:
+  int create_count = 0;
+protected:
+  virtual createType create() override {
+    create_count++;
+    return std::make_tuple(
+        std::make_shared<flit::NullTest<float>>("NullTest"),
+        std::make_shared<flit::NullTest<double>>("NullTest"),
+        std::make_shared<flit::NullTest<long double>>("NullTest")
+        );
+  }
+};
+
+void tst_TestFactory_get() {
+  // calling get<float>() creates them
+  NullTestFactory factory1;
+  TH_EQUAL(0, factory1.create_count);
+
+  auto null_float = factory1.get<float>();
+  TH_EQUAL(1, factory1.create_count);
+  TH_NOT_EQUAL(nullptr, null_float.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<float>*>(null_float.get()));
+
+  auto null_double = factory1.get<double>();
+  TH_EQUAL(1, factory1.create_count);
+  TH_NOT_EQUAL(nullptr, null_double.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<double>*>(null_double.get()));
+
+  auto null_ldouble = factory1.get<long double>();
+  TH_EQUAL(1, factory1.create_count);
+  TH_NOT_EQUAL(nullptr, null_ldouble.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<long double>*>(null_ldouble.get()));
+
+  // calling get<double>() creates them
+  NullTestFactory factory2;
+  TH_EQUAL(0, factory2.create_count);
+
+  null_double = factory2.get<double>();
+  TH_EQUAL(1, factory2.create_count);
+  TH_NOT_EQUAL(nullptr, null_double.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<double>*>(null_double.get()));
+
+  null_float = factory2.get<float>();
+  TH_EQUAL(1, factory2.create_count);
+  TH_NOT_EQUAL(nullptr, null_float.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<float>*>(null_float.get()));
+
+  null_ldouble = factory2.get<long double>();
+  TH_EQUAL(1, factory2.create_count);
+  TH_NOT_EQUAL(nullptr, null_ldouble.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<long double>*>(null_ldouble.get()));
+
+  // calling get<long double>() creates them
+  NullTestFactory factory3;
+  TH_EQUAL(0, factory3.create_count);
+
+  null_ldouble = factory3.get<long double>();
+  TH_EQUAL(1, factory3.create_count);
+  TH_NOT_EQUAL(nullptr, null_ldouble.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<long double>*>(null_ldouble.get()));
+
+  null_double = factory3.get<double>();
+  TH_EQUAL(1, factory3.create_count);
+  TH_NOT_EQUAL(nullptr, null_double.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<double>*>(null_double.get()));
+
+  null_float = factory3.get<float>();
+  TH_EQUAL(1, factory3.create_count);
+  TH_NOT_EQUAL(nullptr, null_float.get());
+  TH_NOT_EQUAL(nullptr,
+               dynamic_cast<flit::NullTest<float>*>(null_float.get()));
+}
+TH_REGISTER(tst_TestFactory_get);
+
+} // end of namespace TestFactory
+
+namespace Functions {
+
+void tst_registerTest() {
+  TestFactory::NullTestFactory factory;
+
+  // Test the registration works
+  // Reregistering with the same pointer is fine
+  TH_EQUAL(0, flit::getTests().count("factory"));
+  flit::registerTest("factory", &factory);
+  TH_EQUAL(1, flit::getTests().count("factory"));
+  flit::registerTest("factory", &factory);
+  TH_EQUAL(1, flit::getTests().count("factory"));
+
+  // Test the registration works for a second one
+  TH_EQUAL(0, flit::getTests().count("factory2"));
+  flit::registerTest("factory2", &factory);
+  TH_EQUAL(1, flit::getTests().count("factory2"));
+  flit::registerTest("factory2", &factory);
+  TH_EQUAL(1, flit::getTests().count("factory"));
+
+  // Reregistering a factory name with a different factory is fine
+  TestFactory::NullTestFactory another_factory;
+  TH_THROWS(flit::registerTest("factory", &another_factory), std::logic_error);
+
+  // Registering a nullptr throws
+  TH_THROWS(flit::registerTest("another_factory", nullptr),
+            std::invalid_argument);
+}
+TH_REGISTER(tst_registerTest);
+
+} // end of namespace Functions
+

@@ -77,11 +77,16 @@ void register_main_func(const std::string &main_name, MainFunc* main_func) {
   if (main_func == nullptr) {
     throw std::invalid_argument("Main func is null");
   }
-  if (main_name_map.find(main_name) != main_name_map.end()) {
-    throw std::logic_error("Main name already registered: " + main_name);
+  auto tmp_func = main_name_map.find(main_name);
+  if (tmp_func != main_name_map.end() && tmp_func->second != main_func) {
+    throw std::logic_error("Main name already registered "
+                           "to a different function: " + main_name);
   }
-  if (main_func_map.find(main_func) != main_func_map.end()) {
-    throw std::logic_error("Main func already registered with " + main_name);
+  auto tmp_name = main_func_map.find(main_func);
+  if (tmp_name != main_func_map.end() && tmp_name->second != main_name) {
+    throw std::logic_error("Main func already registered "
+                           "with a different name: " + main_name
+                           + " != " + tmp_name->second);
   }
   main_name_map[main_name] = main_func;
   main_func_map[main_func] = main_name;
