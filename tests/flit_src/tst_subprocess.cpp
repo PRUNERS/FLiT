@@ -210,6 +210,27 @@ void tst_register_main_func() {
 }
 TH_REGISTER(tst_register_main_func);
 
+int othermain_1(int, char**) { return 0; }
+int othermain_2(int, char**) { return 0; }
+
+void tst_register_main_duplicate_func() {
+  // register the main functions
+  flit::register_main_func("othermain_1", othermain_1);
+  flit::register_main_func("othermain_2", othermain_2);
+
+  // test that registering already registered things are okay, as long as they
+  // match.
+  flit::register_main_func("othermain_1", othermain_1);
+  flit::register_main_func("othermain_2", othermain_2);
+
+  // test that registering already registered things with new mappings is an
+  // error.
+  TH_THROWS(flit::register_main_func("othermain_2", othermain_1),
+            std::logic_error);
+  TH_THROWS(flit::register_main_func("othermain_1", othermain_2),
+            std::logic_error);
+}
+
 // This test sufficiently exercises isFastTrack() and callFastTrack()
 // Therefore, we do not need to test those functions in isolation
 void tst_call_main() {
