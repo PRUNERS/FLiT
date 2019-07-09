@@ -253,15 +253,15 @@ Test that the --compiler-type flag value made it into the bisect Makefile
 Now testing the second bisect run
 
 Verify that only the test file was found to be variable
->>> sorted([x.split(':')[0].split()[-1] for x in bisect2_out[0]
+>>> sorted([x.split(':')[0].split()[-1] for x in bisect2_out
 ...         if x.startswith('    Found differing source file')])
 ['tests/ProblemInTest.cpp']
 
 Verify we found the function of interest
 >>> print('\\n'.join(
-...     sorted([' '.join(x.split()[-6:]) for x in bisect2_out
-...             if x.startswith('    Found different symbol on line')])))
-line 88 -- real_test() (score 1.0)
+...     sorted([' '.join(x.split()[-7:]) for x in bisect2_out
+...             if x.startswith('    Found differing symbol on line')])))
+line 99 -- real_test(int, char**) (score 1.0)
 
 TODO: test the log_contents variable
 '''
