@@ -119,9 +119,20 @@ and run FLiT bisect
 ...                               outstream=ostream)
 ...         if retval != 0:
 ...             raise BisectTestError(
-...                 'Could not bisect (retval={0}):\\n'.format(retval) +
+...                 'Could not bisect (1) (retval={0}):\\n'.format(retval) +
 ...                 ostream.getvalue())
 ...         bisect_out = ostream.getvalue().splitlines()
+...     with StringIO() as ostream:
+...         retval = th.flit.main(['bisect', '-C', temp_dir,
+...                                '--compiler-type', 'gcc',
+...                                '--precision', 'double',
+...                                'g++ -O3', 'ProblemInTest'],
+...                               outstream=ostream)
+...         if retval != 0:
+...             raise BisectTestError(
+...                 'Could not bisect (2) (retval={0}):\\n'.format(retval) +
+...                 ostream.getvalue())
+...         bisect2_out = ostream.getvalue().splitlines()
 ...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
 ...         raw_log = fin.readlines()
 ...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
@@ -238,6 +249,19 @@ Test that the --compiler-type flag value made it into the bisect Makefile
 ['g++']
 >>> troublecxx_type
 ['gcc']
+
+Now testing the second bisect run
+
+Verify that only the test file was found to be variable
+>>> sorted([x.split(':')[0].split()[-1] for x in bisect2_out[0]
+...         if x.startswith('    Found differing source file')])
+['tests/ProblemInTest.cpp']
+
+Verify we found the function of interest
+>>> print('\\n'.join(
+...     sorted([' '.join(x.split()[-6:]) for x in bisect2_out
+...             if x.startswith('    Found different symbol on line')])))
+line 88 -- real_test() (score 1.0)
 
 TODO: test the log_contents variable
 '''
