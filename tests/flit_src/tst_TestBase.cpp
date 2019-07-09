@@ -782,7 +782,8 @@ void tst_registerTest() {
 
   // Reregistering a factory name with a different factory is fine
   TestFactory::NullTestFactory another_factory;
-  TH_THROWS(flit::registerTest("factory", &another_factory), std::logic_error);
+  flit::registerTest("factory", &another_factory);
+  TH_EQUAL(1, flit::getTests().count("factory"));
 
   // Registering a nullptr throws
   TH_THROWS(flit::registerTest("another_factory", nullptr),
