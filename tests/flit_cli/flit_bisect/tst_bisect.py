@@ -122,17 +122,6 @@ and run FLiT bisect
 ...                 'Could not bisect (1) (retval={0}):\\n'.format(retval) +
 ...                 ostream.getvalue())
 ...         bisect_out = ostream.getvalue().splitlines()
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['bisect', '-C', temp_dir,
-...                                '--compiler-type', 'gcc',
-...                                '--precision', 'double',
-...                                'g++ -O3', 'ProblemInTest'],
-...                               outstream=ostream)
-...         if retval != 0:
-...             raise BisectTestError(
-...                 'Could not bisect (2) (retval={0}):\\n'.format(retval) +
-...                 ostream.getvalue())
-...         bisect2_out = ostream.getvalue().splitlines()
 ...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
 ...         raw_log = fin.readlines()
 ...         stripped_log = [line[line.index(' bisect:')+8:].rstrip()
@@ -161,29 +150,42 @@ Let's see that the ground truth results are updated first
 
 Verify that all source files were found and output during the search
 >>> sorted([x.split(':')[0].split()[-1] for x in bisect_out
-...         if x.startswith('    Found differing source file')])
-['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cxx']
+...         if x.startswith('    Found differing source file')]
+...       ) # doctest: +NORMALIZE_WHITESPACE
+['tests/A.cpp',
+ 'tests/BisectTest.cpp',
+ 'tests/file1.cpp',
+ 'tests/file2.cpp',
+ 'tests/file3.cpp',
+ 'tests/file4.cxx']
 
 Verify that the four differing sources were output in the "differing sources:"
 section
 >>> idx = bisect_out.index('all variability inducing source file(s):')
->>> print('\\n'.join(bisect_out[idx+1:idx+6]))
+>>> print('\\n'.join(bisect_out[idx+1:idx+7]))
+  tests/BisectTest.cpp (score 50.0)
   tests/file4.cxx (score 30.0)
   tests/file1.cpp (score 10.0)
   tests/file2.cpp (score 7.0)
   tests/file3.cpp (score 4.0)
   tests/A.cpp (score 2.0)
->>> bisect_out[idx+6].startswith('Searching for differing symbols in:')
+>>> bisect_out[idx+7].startswith('Searching for differing symbols in:')
 True
 
 Verify that all four files were searched individually
 >>> sorted([x.split()[-1] for x in bisect_out
-...         if x.startswith('Searching for differing symbols in:')])
-['tests/A.cpp', 'tests/file1.cpp', 'tests/file2.cpp', 'tests/file3.cpp', 'tests/file4.cxx']
+...         if x.startswith('Searching for differing symbols in:')]
+...       ) # doctest: +NORMALIZE_WHITESPACE
+['tests/A.cpp',
+ 'tests/BisectTest.cpp',
+ 'tests/file1.cpp',
+ 'tests/file2.cpp',
+ 'tests/file3.cpp',
+ 'tests/file4.cxx']
 
 Verify all non-templated functions were identified during the symbol searches
 >>> print('\\n'.join(
-...     sorted([' '.join(x.split()[-6:]) for x in bisect_out
+...     sorted([' '.join(x.split()[4:]) for x in bisect_out
 ...             if x.startswith('    Found differing symbol on line')])))
 line 100 -- file1_func3_PROBLEM() (score 2.0)
 line 103 -- file3_func5_PROBLEM() (score 3.0)
@@ -193,6 +195,7 @@ line 90 -- file2_func1_PROBLEM() (score 7.0)
 line 92 -- file1_func2_PROBLEM() (score 5.0)
 line 92 -- file3_func2_PROBLEM() (score 1.0)
 line 95 -- A::fileA_method1_PROBLEM() (score 2.0)
+line 99 -- real_problem_test(int, char**) (score 50.0)
 
 Verify the differing symbols section for file1.cpp
 >>> idx = bisect_out.index('  All differing symbols in tests/file1.cpp:')
@@ -232,9 +235,17 @@ Verify the bad symbols section for fileA.cpp
 >>> bisect_out[idx+2].startswith(' ')
 False
 
+Verify the bad symbols section for BisectTest.cpp
+>>> idx = bisect_out.index('  All differing symbols in tests/BisectTest.cpp:')
+>>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
+    line 99 -- real_problem_test(int, char**) (score 50.0)
+>>> bisect_out[idx+2].startswith(' ')
+False
+
 Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
+  /.../typeinfo:99 ... -- real_problem_test(int, char**) (score 50.0)
   tests/file4.cxx:106 ... -- file4_all() (score 30.0)
   tests/file2.cpp:90 ... -- file2_func1_PROBLEM() (score 7.0)
   tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
@@ -249,19 +260,6 @@ Test that the --compiler-type flag value made it into the bisect Makefile
 ['g++']
 >>> troublecxx_type
 ['gcc']
-
-Now testing the second bisect run
-
-Verify that only the test file was found to be variable
->>> sorted([x.split(':')[0].split()[-1] for x in bisect2_out
-...         if x.startswith('    Found differing source file')])
-['tests/ProblemInTest.cpp']
-
-Verify we found the function of interest
->>> print('\\n'.join(
-...     sorted([' '.join(x.split()[-7:]) for x in bisect2_out
-...             if x.startswith('    Found differing symbol on line')])))
-line 99 -- real_test(int, char**) (score 1.0)
 
 TODO: test the log_contents variable
 '''
