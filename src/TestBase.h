@@ -486,10 +486,6 @@ inline void registerTest(const std::string& name, TestFactory *factory) {
   if (factory == nullptr) {
     throw std::invalid_argument("factory pointer is null");
   }
-  if (getTests().count(name) > 0 && getTests()[name] != factory) {
-    throw std::logic_error("factory is already registered to a different "
-                           "pointer: " + name);
-  }
   getTests()[name] = factory;
 }
 
