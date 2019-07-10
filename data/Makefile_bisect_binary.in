@@ -290,10 +290,10 @@ $(MORE_DIRS):
 define FPIC_COMPILE_RULE
 $2: $1 Makefile custom.mk | $(LOCAL_OBJ_DIR)
 	if [ -f "$3" ]; then \
-		@$(call color_out,CYAN,  ../../$(strip $3) -> $@)
+		$(call color_out,CYAN,  ../../$(strip $3) -> $@) \
 	  ln -s "../../$(strip $3)" "$(strip $2)"; \
 	else \
-		@$(call color_out,CYAN,  $< -> $@)
+		$(call color_out,CYAN,  $< -> $@) \
 	  $4 $5 $6 -c $8 $(CC_REQUIRED) -fPIC $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
 	    -DFLIT_HOST='"$(HOSTNAME)"' \
 	    -DFLIT_COMPILER='"$(strip $4)"' \
