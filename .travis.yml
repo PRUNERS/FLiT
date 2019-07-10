@@ -121,9 +121,7 @@ matrix:
 
 before_install: pip3 install --user toml $extra_pip
 
-script:
-  - make -j4 && make -j4 -C tests && make check
-  - readelf --debug-dump=info src/InfoStream.o | head
+script: make -j4 && make -j4 -C tests && make check
 
 #notifications:
 #  email: false
