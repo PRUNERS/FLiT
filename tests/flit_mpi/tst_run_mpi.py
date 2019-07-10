@@ -95,6 +95,10 @@ and run the FLiT test with MPI
 
 >>> class TestError(RuntimeError): pass
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 >>> with th.tempdir() as temp_dir:
 ...     retval = th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
 ...     if retval != 0:
@@ -107,9 +111,11 @@ and run the FLiT test with MPI
 ...     if retval != 0:
 ...         raise TestError('Main #2 returned with {}, failed to update'
 ...                         .format(retval))
-...     compile_str = subp.check_output(['make', '-C', temp_dir, 'gt'],
+...     compile_str = subp.check_output(['make', '-C', temp_dir, 'gt',
+...                                      'VERBOSE=1'],
 ...                                     stderr=subp.STDOUT)
-...     run_str = subp.check_output(['make', '-C', temp_dir, 'ground-truth.csv'],
+...     run_str = subp.check_output(['make', '-C', temp_dir,
+...                                  'ground-truth.csv', 'VERBOSE=1'],
 ...                                 stderr=subp.STDOUT)
 ...     file_d = os.path.join(temp_dir, 'ground-truth.csv_MpiHello_d.dat')
 ...     with open(file_d, 'r') as fin: contents_d = fin.read()

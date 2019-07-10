@@ -15,6 +15,10 @@ build: $(BUILD_TARGETS)
 
 include color_out.mk
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 check: run_tester_py $(CHECK_TARGETS)
 	@$(call color_out,GREEN,All tests pass)
 
@@ -31,7 +35,7 @@ clean: $(CLEAN_TARGETS)
 run_tester_py: $(HARNESS_PY)
 	@$(call color_out_noline,BROWN,  testing)
 	@echo " $(HARNESS_PY)"
-	@python3 -m doctest $(HARNESS_PY)
+	python3 -m doctest $(HARNESS_PY)
 
 build__%:
 	@$(MAKE) build --directory $*
