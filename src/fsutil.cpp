@@ -241,9 +241,8 @@ std::string which(const std::string &command, const std::string &path) {
 
   for (auto &piece : pieces) {
     try {
-      auto candidate = join(piece, command);
-      if (is_file(candidate)) {
-        return realpath(candidate);
+      if (is_file(join(piece, command))) {
+        return join(realpath(piece), command);
       }
     } catch (std::ios_base::failure&) {
       continue;
