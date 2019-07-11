@@ -82,6 +82,7 @@
  */
 
 #include "fsutil.h"
+#include "flitHelpers.h"  // for flit::split()
 
 #if !defined(__GNUC__) || defined(__clang__) || \
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 8))
@@ -104,6 +105,7 @@
 #include <sstream>      // for std::istringstream
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace flit {
 namespace fsutil {
@@ -198,29 +200,73 @@ void chdir(const std::string &directory) {
   }
 }
 
-TempFile::TempFile() {
-  char fname_buf[L_tmpnam];
-  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-  if (s != fname_buf) {
-    throw std::ios_base::failure("Could not create temporary file");
+std::string which(const std::string &command) {
+  const char* path_env = std::getenv("PATH");
+  std::string path;
+  if (path_env != nullptr) {
+    path = path_env;
+  }
+  return which(command, path);
+}
+
+std::string realpath(const std::string &relative) {
+  char* fullpath = ::realpath(relative.c_str(), nullptr);
+  if (fullpath == nullptr) {
+    throw std::ios_base::failure(std::strerror(errno));
+  }
+  std::string fullpath_string(fullpath);
+  free(fullpath);
+  return fullpath_string;
+}
+
+std::string which(const std::string &command, const std::string &path) {
+  if (command == "") {
+    throw std::ios_base::failure("no such file named ''");
   }
 
-  name = fname_buf;
-  name += "-flit-testfile.in";    // this makes the danger much less likely
+  auto is_file = [](const std::string &fname) {
+    auto status = file_status(fname);
+    return status.is_reg;
+  };
+
+  // relative and absolute paths can be treated the same
+  if (command.find('/') != std::string::npos) {
+    if (is_file(command)) {
+      return realpath(command);
+    }
+    throw std::ios_base::failure(command + " is not a file");
+  }
+
+  auto pieces = flit::split(path, ':');
+
+  for (auto &piece : pieces) {
+    try {
+      if (is_file(join(piece, command))) {
+        return join(realpath(piece), command);
+      }
+    } catch (std::ios_base::failure&) {
+      continue;
+    }
+  }
+  throw std::ios_base::failure("Could not find " + command + " in path");
+}
+
+TempFile::TempFile(const std::string &parent) {
+  std::string ftemplate = join(parent, "flit-tempfile-XXXXXX");
+  std::unique_ptr<char> fname_buf(new char[ftemplate.size() + 1]);
+  strcpy(fname_buf.get(), ftemplate.data());
+  mkstemp(fname_buf.get());
+  name = fname_buf.get();
   out.exceptions(std::ios::failbit);
   out.open(name);
 }
 
-TempDir::TempDir() {
-  char fname_buf[L_tmpnam];
-  char *s = std::tmpnam(fname_buf);    // gives a warning, but I'm not worried
-  if (s != fname_buf) {
-    throw std::ios_base::failure("Could not find temporary directory name");
-  }
-
-  _name = fname_buf;
-  _name += "-flit-testdir";    // this makes the danger much less likely
-  ::flit::fsutil::mkdir(_name, 0700);
+TempDir::TempDir(const std::string &parent) {
+  std::string dtemplate = join(parent, "flit-tempfile-XXXXXX");
+  std::unique_ptr<char> dname_buf(new char[dtemplate.size() + 1]);
+  strcpy(dname_buf.get(), dtemplate.data());
+  mkdtemp(dname_buf.get());
+  _name = dname_buf.get();
 }
 
 TempDir::~TempDir() {

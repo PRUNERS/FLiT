@@ -96,6 +96,7 @@
 #include <mutex>
 #include <ostream>
 #include <random>
+#include <string>
 #include <sstream>
 #include <type_traits>
 #include <vector>
@@ -108,10 +109,21 @@
 
 namespace flit {
 
+extern std::string g_program_path; // = realpath(argv[0])
+
 extern thread_local InfoStream info_stream;
 
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
+
+inline
+std::vector<std::string> split(const std::string &tosplit, char delimiter) {
+  std::vector<std::string> pieces;
+  std::string piece;
+  std::istringstream stream(tosplit);
+  while (std::getline(stream, piece, delimiter)) { pieces.emplace_back(piece); }
+  return pieces;
+}
 
 template <typename F, typename I>
 F as_float_impl(I val) {

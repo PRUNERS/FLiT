@@ -92,10 +92,6 @@ public:
   InfoStream();
   ~InfoStream();
 
-  // enable move
-  InfoStream(InfoStream &&other) = default;
-  InfoStream& operator=(InfoStream &&other) = default;
-
   void show();
   void hide();
   void flushout();

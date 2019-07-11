@@ -88,7 +88,6 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "MpiEnvironment.h"
 #include "Variant.h"
 #include "flitHelpers.h"
 #include "timeFunction.h"
@@ -261,8 +260,7 @@ public:
         testResult = runner(runInput);
       }
       // If the test returns a dummy value, then do not record this run.
-      // Also, recording of values is only needed in the MPI root process
-      if (!mpi->is_root() || testResult.type() == Variant::Type::None) {
+      if (testResult.type() == Variant::Type::None) {
         continue;
       }
       std::string name = id;
@@ -485,6 +483,9 @@ inline std::shared_ptr<TestBase<long double>> TestFactory::get<long double> () {
 std::map<std::string, TestFactory*>& getTests();
 
 inline void registerTest(const std::string& name, TestFactory *factory) {
+  if (factory == nullptr) {
+    throw std::invalid_argument("factory pointer is null");
+  }
   getTests()[name] = factory;
 }
 

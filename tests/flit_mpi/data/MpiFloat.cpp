@@ -87,11 +87,39 @@
 
 #include <string>
 #include <sstream>
+#include <fstream>
 
-#include <cstring>
+// TODO: put these into FLiT?
+template <typename F> MPI_Datatype mpi_type();
+template <> inline MPI_Datatype mpi_type<char> () { return MPI_BYTE; }
+template <> inline MPI_Datatype mpi_type<short> () { return MPI_SHORT; }
+template <> inline MPI_Datatype mpi_type<int> () { return MPI_INT; }
+template <> inline MPI_Datatype mpi_type<long> () { return MPI_LONG; }
+template <> inline MPI_Datatype mpi_type<long long> () { return MPI_LONG_LONG; }
+template <> inline MPI_Datatype mpi_type<unsigned char> () {
+  return MPI_UNSIGNED_CHAR;
+}
+template <> inline MPI_Datatype mpi_type<unsigned short> () {
+  return MPI_UNSIGNED_SHORT;
+}
+template <> inline MPI_Datatype mpi_type<unsigned int> () {
+  return MPI_UNSIGNED;
+}
+template <> inline MPI_Datatype mpi_type<unsigned long> () {
+  return MPI_UNSIGNED_LONG;
+}
+template <> inline MPI_Datatype mpi_type<unsigned long long> () {
+  return MPI_UNSIGNED_LONG_LONG;
+}
+template <> inline MPI_Datatype mpi_type<float> () { return MPI_FLOAT; }
+template <> inline MPI_Datatype mpi_type<double> () { return MPI_DOUBLE; }
+template <> inline MPI_Datatype mpi_type<long double> () {
+  return MPI_LONG_DOUBLE;
+}
 
 // this is the real test, run under MPI in separate processes
-int mpi_main(int argCount, char* argList[]) {
+template <typename F>
+int mpi_main_F(int argCount, char* argList[]) {
   MPI_Init(&argCount, &argList);
 
   int world_size = -1;
@@ -99,27 +127,31 @@ int mpi_main(int argCount, char* argList[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::cout << std::endl;
-  std::cout << "hello from rank " << rank << " of " << world_size << std::endl;
-  std::cout << "mpi_main(" << argCount << ", {";
+  std::string logfile = "out-" + std::to_string(rank) + ".log";
+  std::ofstream out(logfile);
+
+  out << "\n";
+  out << "hello from rank " << rank << " of " << world_size << "\n";
+  out << "mpi_main_F<" << typeid(F).name() << ">(" << argCount << ", {";
   bool first = true;
   for (int i = 0; i < argCount; i++) {
-    if (!first) { std::cout << ", "; }
+    if (!first) { out << ", "; }
     first = false;
-    std::cout << argList[i];
+    out << argList[i];
   }
-  std::cout << "})\n";
+  out << "})\n";
 
   // send a message from rank 0 to rank 1
   if (rank == 0) {
-    char message[13];
-    strcpy(message, "hello world!");
-    MPI_Send(message, 13, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
-    std::cout << "Sending '" << message << "' from rank 0\n";
+    F msg = 3.14159;
+    MPI_Send(&msg, 1, mpi_type<F>(), 1, 0, MPI_COMM_WORLD);
+    out << "Sending '" << msg<< "' from rank 0\n";
+    out.flush();
   } else if (rank == 1) {
-    char buffer[13];
-    MPI_Recv(buffer, 13, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    std::cout << "Received '" << buffer << "' from rank 0 to rank 1\n";
+    F received = 0;
+    MPI_Recv(&received, 1, mpi_type<F>(), 0, 0, MPI_COMM_WORLD,
+             MPI_STATUS_IGNORE);
+    out << "Received '" << received << "' from rank 0 to rank 1\n";
   } else {
     throw std::logic_error("there should only be two ranks");
   }
@@ -128,12 +160,38 @@ int mpi_main(int argCount, char* argList[]) {
 
   return 0;
 }
-FLIT_REGISTER_MAIN(mpi_main);
+
+int mpi_main_float(int argc, char** argv) {
+  return mpi_main_F<float>(argc, argv);
+}
+
+int mpi_main_double(int argc, char** argv) {
+  return mpi_main_F<double>(argc, argv);
+}
+
+int mpi_main_long_double(int argc, char** argv) {
+  return mpi_main_F<long double>(argc, argv);
+}
+
+FLIT_REGISTER_MAIN(mpi_main_float);
+FLIT_REGISTER_MAIN(mpi_main_double);
+FLIT_REGISTER_MAIN(mpi_main_long_double);
+
+template <typename F> flit::MainFunc* get_mpi_main();
+template <> inline flit::MainFunc* get_mpi_main<float>() {
+  return mpi_main_float;
+}
+template <> inline flit::MainFunc* get_mpi_main<double>() {
+  return mpi_main_double;
+}
+template <> inline flit::MainFunc* get_mpi_main<long double>() {
+  return mpi_main_long_double;
+}
 
 template <typename T>
-class MpiHello : public flit::TestBase<T> {
+class MpiFloat : public flit::TestBase<T> {
 public:
-  MpiHello(std::string id) : flit::TestBase<T>(std::move(id)) {}
+  MpiFloat(std::string id) : flit::TestBase<T>(std::move(id)) {}
 
   virtual size_t getInputsPerRun() override { return 1; }
   virtual std::vector<T> getDefaultInput() override {
@@ -143,23 +201,37 @@ public:
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
     FLIT_UNUSED(ti);
-    return flit::Variant();
+    auto main_func = get_mpi_main<T>();
+    flit::fsutil::TempDir tempdir;      // create a temp dir
+    flit::ProcResult result;
+
+    // change to a different directory when calling main
+    // this is so that the output files will be put into the temporary dir
+    // rather than in the current directory.
+    // This trick is nice because it now makes this test reentrant since each
+    // invocation will executed from a separate directory.
+    {
+      flit::fsutil::PushDir pushd(tempdir.name());  // go to it
+      auto result = flit::call_mpi_main(main_func, "mpirun -n 2", "mympi",
+                                        "remaining arguments");
+    }
+
+    auto logcontents_0 = flit::fsutil::readfile(
+        flit::fsutil::join(tempdir.name(), "out-0.log"));
+    auto logcontents_1 = flit::fsutil::readfile(
+        flit::fsutil::join(tempdir.name(), "out-1.log"));
+
+    std::vector<std::string> vec_result;
+    vec_result.emplace_back(std::to_string(result.ret));
+    vec_result.emplace_back(result.out);
+    vec_result.emplace_back(result.err);
+    vec_result.emplace_back(logcontents_0);
+    vec_result.emplace_back(logcontents_1);
+    return vec_result;
   }
 
 protected:
   using flit::TestBase<T>::id;
 };
 
-// only implement double precision
-template<>
-flit::Variant MpiHello<double>::run_impl(const std::vector<double> &ti)
-{
-  FLIT_UNUSED(ti);
-  auto result = flit::call_mpi_main(mpi_main, "mpirun -n 2", "mympi",
-                                    "remaining arguments");
-  std::ostringstream all;
-  all << result;
-  return all.str();
-}
-
-REGISTER_TYPE(MpiHello)
+REGISTER_TYPE(MpiFloat)

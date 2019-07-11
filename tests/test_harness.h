@@ -213,7 +213,7 @@ void printUsage(char *progname) {
   std::cout <<
     "Usage:\n"
     "  " << progname << " --help\n"
-    "  " << progname << " [--verbose|--quiet|--list-tests]\n"
+    "  " << progname << " [--verbose|--quiet|--semi-quiet|--list-tests]\n"
     "\n"
     "Description:\n"
     "  Runs unit tests and reports back.\n"
@@ -224,24 +224,34 @@ void printUsage(char *progname) {
     "Options:\n"
     "  -h, --help      Print this usage and exit\n"
     "  -v, --verbose   Print verbose information\n"
+    "  --semi-quiet    Only print if something goes wrong\n"
     "  -q, --quiet     Do not print anything, just use return codes\n"
     "  --list-tests    Only list tests and exit; don't run anything\n";
 }
 
 int main(int argCount, char *argList[]) {
+  // quiet implies semiquiet
   bool quiet = false;
+  bool semiquiet = false;
   bool verbose = false;
   for (int i = 1; i < argCount; i++) {
     if (argList[i] == std::string("--quiet") ||
         argList[i] == std::string("-q"))
     {
       quiet = true;
+      semiquiet = true;
+      verbose = false;
+    }
+    else if (argList[i] == std::string("--semi-quiet")) {
+      quiet = false;
+      semiquiet = true;
       verbose = false;
     }
     else if (argList[i] == std::string("--verbose") ||
              argList[i] == std::string("-v"))
     {
       quiet = false;
+      semiquiet = false;
       verbose = true;
     }
     else if (argList[i] == std::string("--help") ||
@@ -274,7 +284,7 @@ int main(int argCount, char *argList[]) {
         std::cout << test_name << ": PASSED\n";
       }
     } catch (const th::SkipError &err) {
-      if (!quiet) {
+      if (!semiquiet) {
         std::cout << test_name << ": " << err.what() << "\n";
       }
       skipped_tests.emplace_back(test_name);
@@ -299,7 +309,7 @@ int main(int argCount, char *argList[]) {
   }
 
   // print results
-  if (!quiet) {
+  if (!semiquiet) {
     if (failed_tests.size() > 0 || skipped_tests.size() > 0) {
       std::cout << "\n----------------------------------------"
                    "----------------------------------------\n\n";
