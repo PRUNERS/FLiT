@@ -211,24 +211,38 @@ std::string which(const std::string &command) {
 
 std::string realpath(const std::string &relative) {
   char* fullpath = ::realpath(relative.c_str(), nullptr);
+  if (fullpath == nullptr) {
+    throw std::ios_base::failure(std::strerror(errno));
+  }
   std::string fullpath_string(fullpath);
   free(fullpath);
   return fullpath_string;
 }
 
 std::string which(const std::string &command, const std::string &path) {
-  if (command == "") { return ""; }
-  if (command[0] == '/') { return command; }
-  if (command.find('/') != std::string::npos) { return realpath(command); }
+  if (command == "") {
+    throw std::ios_base::failure("no such file named ''");
+  }
+
+  auto is_file = [](const std::string &fname) {
+    auto status = file_status(fname);
+    return status.is_reg;
+  };
+
+  // relative and absolute paths can be treated the same
+  if (command.find('/') != std::string::npos) {
+    if (is_file(command)) {
+      return realpath(command);
+    }
+    throw std::ios_base::failure(command + " is not a file");
+  }
 
   auto pieces = flit::split(path, ':');
 
   for (auto &piece : pieces) {
-    auto candidate = join(piece, command);
     try {
-      auto status = file_status(candidate);
-      if (status.is_reg) {
-        return candidate;
+      if (is_file(join(piece, command))) {
+        return join(realpath(piece), command);
       }
     } catch (std::ios_base::failure&) {
       continue;

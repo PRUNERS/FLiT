@@ -78,8 +78,7 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
+ * -- LICENSE END -- */
 
 #include <iostream>
 #include <stdio.h>
@@ -87,18 +86,10 @@
 #include <assert.h>
 #include <string>
 #include <vector>
-#include "s3fp_utils.h"
 
 #include "simple_convex_hull.h"
 
-#ifndef IFT
-#define IFT float
-#endif
-
-#ifndef OFT
-#define OFT long double
-#endif
-
+namespace convex_hull {
 
 long N = 0;
 bool RAISE_ASSERTION = false;
@@ -468,3 +459,5 @@ OFT CheckConsistency () {
 
   return 1;
 }
+
+} // end of namespace convex_hull
