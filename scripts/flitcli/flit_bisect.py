@@ -260,13 +260,13 @@ def create_bisect_makefile(directory, replacements, gt_src,
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
     if 'cpp_flags' in repl_copy:
-        repl_copy['EXTRA_CC_FLAGS'] = '\n'.join([
-            'CC_REQUIRED      += {0}'.format(x)
+        repl_copy['EXTRA_CXXFLAGS'] = '\n'.join([
+            'CXXFLAGS         += {0}'.format(x)
             for x in repl_copy['cpp_flags']])
         del repl_copy['cpp_flags']
     if 'link_flags' in repl_copy:
-        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join([
-            'LD_REQUIRED      += {0}'.format(x)
+        repl_copy['EXTRA_LDFLAGS'] = '\n'.join([
+            'LDFLAGS          += {0}'.format(x)
             for x in repl_copy['link_flags']])
         del repl_copy['link_flags']
 

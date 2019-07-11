@@ -255,17 +255,17 @@ ALL_DIRS        += $(RESULTS_DIR)
 
 # on systems with non-standard gcc installations (such as module), clang may
 # be unable to determine the correct gcc toolchain
-CLANG_REQUIRED  :=
+CLANG_CXXFLAGS  :=
 ifeq ($(findstring GCC,$(COMPILERS)),GCC)
 GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
-CLANG_REQUIRED  += --gcc-toolchain=$(GCC_TOOLCHAIN)
+CLANG_CXXFLAGS  += --gcc-toolchain=$(GCC_TOOLCHAIN)
 endif
 
 ifeq ($(DEV_CXX_TYPE),$(CLANG_TYPE))
-DEV_CXXFLAGS    += $(CLANG_REQUIRED)
+DEV_CXXFLAGS    += $(CLANG_CXXFLAGS)
 endif
 ifeq ($(GT_CXX_TYPE),$(CLANG_TYPE))
-GT_CXXFLAGS     += $(CLANG_REQUIRED)
+GT_CXXFLAGS     += $(CLANG_CXXFLAGS)
 endif
 
 # Compiler setting targets
@@ -360,7 +360,7 @@ endif
 
 $(R_TARGET): $(R_OBJ) | $(RUNBUILD_DIR)
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
-	  $($(R_CUR_COMPILER)_REQUIRED) $(CXXFLAGS) \
+	  $($(R_CUR_COMPILER)_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) -o $@ \
 	  $(LDFLAGS) $(LDLIBS)
 
@@ -372,7 +372,7 @@ $(foreach s,$(SOURCE), \
     $($(R_CUR_OPTL)),\
     $($(R_CUR_SWITCHES)),\
     $(R_ID),\
-    $($(R_CUR_COMPILER)_REQUIRED))))
+    $($(R_CUR_COMPILER)_CXXFLAGS))))
 
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
