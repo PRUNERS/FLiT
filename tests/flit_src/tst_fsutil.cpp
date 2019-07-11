@@ -83,6 +83,7 @@
 
 #include "test_harness.h"
 #include "fsutil.h"
+#include "subprocess.h"
 
 #include <algorithm>
 #include <memory>
@@ -445,6 +446,118 @@ void tst_chdir_on_file() {
   TH_THROWS(fsutil::chdir(tempfile.name), std::ios_base::failure);
 }
 TH_REGISTER(tst_chdir_on_file);
+
+void tst_which_defaultpath_empty() {
+  TH_THROWS(fsutil::which(""), std::ios_base::failure);
+}
+TH_REGISTER(tst_which_defaultpath_empty);
+
+void tst_which_defaultpath_absolute() {
+  fsutil::TempDir tempdir;
+  TH_THROWS(fsutil::which(fsutil::join(tempdir.name(), "does/not/exist")),
+            std::ios_base::failure);
+
+  fsutil::TempFile tempfile;
+  TH_EQUAL(tempfile.name, fsutil::which(tempfile.name));
+}
+TH_REGISTER(tst_which_defaultpath_absolute);
+
+void tst_which_defaultpath_relative() {
+  fsutil::TempDir tempdir;
+  fsutil::PushDir pusher(tempdir.name());
+
+  TH_THROWS(fsutil::which("does/not/exist"), std::ios_base::failure);
+
+  fsutil::mkdir("does");
+  fsutil::touch("does/exist");
+  TH_EQUAL(fsutil::join(tempdir.name(), "does/exist"),
+           fsutil::which("does/exist"));
+
+  // in current directory
+  fsutil::touch("exists");
+  TH_EQUAL(fsutil::join(tempdir.name(), "exists"), fsutil::which("./exists"));
+  TH_THROWS(fsutil::which("exists"), std::ios_base::failure);
+}
+TH_REGISTER(tst_which_defaultpath_relative);
+
+void tst_which_defaultpath_tofind() {
+  fsutil::TempDir tempdir;
+  fsutil::PushDir pusher(tempdir.name());
+
+  TH_THROWS(fsutil::which("does-not-exist"), std::ios_base::failure);
+  auto bash_path = flit::call_with_output("which bash").out;
+  TH_EQUAL(bash_path, fsutil::which("bash"));
+}
+TH_REGISTER(tst_which_defaultpath_tofind);
+
+void tst_which_givenpath_empty() {
+  fsutil::TempDir path_piece1, path_piece2;
+  auto path = path_piece1.name() + ":" + path_piece2.name();
+
+  TH_THROWS(fsutil::which("", path), std::ios_base::failure);
+}
+TH_REGISTER(tst_which_givenpath_empty);
+
+void tst_which_givenpath_absolute() {
+  fsutil::TempDir path_piece1, path_piece2;
+  auto path = path_piece1.name() + ":" + path_piece2.name();
+
+  fsutil::TempDir tempdir;
+  TH_THROWS(fsutil::which(fsutil::join(tempdir.name(), "does/not/exist"), path),
+            std::ios_base::failure);
+
+  fsutil::TempFile tempfile;
+  TH_EQUAL(tempfile.name, fsutil::which(tempfile.name, path));
+}
+TH_REGISTER(tst_which_givenpath_absolute);
+
+void tst_which_givenpath_relative() {
+  fsutil::TempDir path_piece1, path_piece2;
+  auto path = path_piece1.name() + ":" + path_piece2.name();
+
+  fsutil::TempDir tempdir;
+  fsutil::PushDir pusher(tempdir.name());
+
+  TH_THROWS(fsutil::which("does/not/exist", path), std::ios_base::failure);
+
+  fsutil::mkdir("does");
+  fsutil::touch("does/exist");
+  TH_EQUAL(fsutil::join(tempdir.name(), "does/exist"),
+           fsutil::which("does/exist", path));
+
+  // in current directory
+  fsutil::touch("exists");
+  TH_EQUAL(fsutil::join(tempdir.name(), "exists"), fsutil::which("./exists", path));
+  TH_THROWS(fsutil::which("./exists", path), std::ios_base::failure);
+}
+TH_REGISTER(tst_which_givenpath_relative);
+
+void tst_which_givenpath_tofind() {
+  fsutil::TempDir path_piece1, path_piece2;
+  auto path = path_piece1.name() + ":" + path_piece2.name();
+
+  fsutil::TempDir tempdir;
+  fsutil::PushDir pusher(tempdir.name());
+
+  TH_THROWS(fsutil::which("does-not-exist", path), std::ios_base::failure);
+
+  std::string file1_name("first-file");
+  std::string file2_name("second-file");
+  auto file1 = fsutil::join(path_piece1.name(), file1_name);
+  auto file2 = fsutil::join(path_piece2.name(), file2_name);
+  fsutil::touch(file1);
+  fsutil::touch(file2);
+
+  TH_EQUAL(file1, fsutil::which(file1_name, path));
+  TH_EQUAL(file2, fsutil::which(file2_name, path));
+
+  // check that the first one is returned if there are duplicates
+  path = ".:" + path;
+  fsutil::touch(file1_name);
+  TH_EQUAL(fsutil::join(tempdir.name(), file1_name),
+           fsutil::which(file1_name, path));
+}
+TH_REGISTER(tst_which_givenpath_tofind);
 
 } // end of namespace tst_functions
 
