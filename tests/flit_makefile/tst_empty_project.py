@@ -131,8 +131,15 @@ True
 True
 >>> '-o devrun obj/dev/main.cpp.o obj/dev/Empty.cpp.o' in actual
 True
->>> '-lm -lstdc++ -L{libdir} -lflit -Wl,-rpath={libdir}' \\
-... .format(libdir=th.config.lib_dir) in actual
+>>> '-L{libdir}'.format(libdir=th.config.lib_dir) in actual
+True
+>>> '-Wl,-rpath={libdir}'.format(libdir=th.config.lib_dir) in actual
+True
+>>> '-lm' in actual
+True
+>>> '-lstdc++' in actual
+True
+>>> '-lflit' in actual
 True
 
 The same test, but with the 'gt' target
@@ -155,8 +162,15 @@ True
 True
 >>> '-o gtrun obj/gt/main.cpp.o obj/gt/Empty.cpp.o' in actual
 True
->>> '-lm -lstdc++ -L{libdir} -lflit -Wl,-rpath={libdir}' \\
-... .format(libdir=th.config.lib_dir) in actual
+>>> '-L{libdir}'.format(libdir=th.config.lib_dir) in actual
+True
+>>> '-Wl,-rpath={libdir}'.format(libdir=th.config.lib_dir) in actual
+True
+>>> '-lm' in actual
+True
+>>> '-lstdc++' in actual
+True
+>>> '-lflit' in actual
 True
 
 Let's actually now compile and run the empty test under different circumstances

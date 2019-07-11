@@ -28,17 +28,18 @@ The `custom.mk` file is already populated with variables that you may want to
 use.  Simply add to these variables to compile your application.
 
 - `SOURCE`: This variable contains source files to compile
-- `CC_REQUIRED`: Compiler flags to use across the board, for the dev build,
+- `CXXFLAGS`: Compiler flags to use across the board, for the dev build,
   ground-truth build, and all other builds.  Here is where you set macro
   variables, include paths, and perhaps warning flags.
-- `LD_REQUIRED`: Linker flags to use across the board, for the dev build,
+- `LDFLAGS`: Linker flags to use across the board, for the dev build,
   ground-truth build, and all other builds.  Here is where you include library
-  paths (with `-L`), link in libraries (with `-l`), and maybe even some rpath
-  magic (with `-Wl,-rpath=<path>`).
-- `DEV_CFLAGS`: Extra compiler flags specifically for the dev build.  This will
-  be added to the `CC_REQUIRED` when compiling the dev target.
+  paths (with `-L`), and maybe even some rpath magic (with
+  `-Wl,-rpath=<path>`).
+- `LDLIBS`: Used libraries to link in (with `-l`)
+- `DEV_CXXFLAGS`: Extra compiler flags specifically for the dev build.  This will
+  be added to the `CXXFLAGS` when compiling the dev target.
 - `DEV_LDFLAGS`: Extra linker flags specifically for the dev build.  This will
-  be added to the `LD_REQUIRED` when compiling the dev target.
+  be added to the `LDFLAGS` when compiling the dev target.
 - `RUN_WRAPPER`: a program to wrap all invocations of test executable runs.
   This gives the user the opportunity to control test executions if desired.
 
@@ -71,7 +72,7 @@ SOURCE         += $(wildcard ../../general/*.cpp)
 SOURCE         += $(wildcard ../../linalg/*.cpp)
 SOURCE         += $(wildcard ../../mesh/*.cpp)
 
-CC_REQUIRED    += -I../..
+CXXFLAGS       += -I../..
 ```
 
 It turns out that not all of those source files were required for the given
@@ -130,7 +131,7 @@ SOURCE         += ../../mesh/tetrahedron.cpp
 SOURCE         += ../../mesh/triangle.cpp
 SOURCE         += ../../mesh/vertex.cpp           # 12/16 of the mesh files
 
-CC_REQUIRED    += -I../..
+CXXFLAGS       += -I../..
 ```
 
 Reducing the files to the minimal set increases performance by approximately
@@ -212,19 +213,19 @@ executing the Laghos `Makefile` with verbosity turned on.  The flags that were
 extracted are below:
 
 ```make
-CC_REQUIRED    += -D__LAMBDA__
-CC_REQUIRED    += -D__TEMPLATES__
-CC_REQUIRED    += -I$(CUDA_DIR)/samples/common/inc
-CC_REQUIRED    += -I$(MFEM_DIR)
-CC_REQUIRED    += -I$(MFEM_DIR)/../hypre-2.10.0b/src/hypre/include
-CC_REQUIRED    += -I$(MPI_HOME)/include
+CXXFLAGS       += -D__LAMBDA__
+CXXFLAGS       += -D__TEMPLATES__
+CXXFLAGS       += -I$(CUDA_DIR)/samples/common/inc
+CXXFLAGS       += -I$(MFEM_DIR)
+CXXFLAGS       += -I$(MFEM_DIR)/../hypre-2.10.0b/src/hypre/include
+CXXFLAGS       += -I$(MPI_HOME)/include
 # Note: The local cub directory needs to be included before raja because some
 #       files shadow the same header files found in raja.
-CC_REQUIRED    += -I../cub
-CC_REQUIRED    += -I..
-CC_REQUIRED    += -I$(RAJA_DIR)/include
-CC_REQUIRED    += -fopenmp
-CC_REQUIRED    += -m64
+CXXFLAGS       += -I../cub
+CXXFLAGS       += -I..
+CXXFLAGS       += -I$(RAJA_DIR)/include
+CXXFLAGS       += -fopenmp
+CXXFLAGS       += -m64
 ```
 
 As you can see from the note above is that we have some shadowing of header
@@ -235,14 +236,21 @@ Next, we need to specify the linker flags.  This again was gathered by looking
 at the compilation flags used by the Laghos `Makefile` when running it.
 
 ```make
-LD_REQUIRED    += -L$(MFEM_DIR) -lmfem
-LD_REQUIRED    += -L$(MFEM_DIR)/../hypre-2.10.0b/src/hypre/lib -lHYPRE
-LD_REQUIRED    += -L$(MFEM_DIR)/../metis-4.0 -lmetis
-LD_REQUIRED    += -lrt
-LD_REQUIRED    += $(RAJA_DIR)/lib/libRAJA.a
-LD_REQUIRED    += -Wl,-rpath -Wl,$(CUDA_DIR)/lib64
-LD_REQUIRED    += -L$(CUDA_DIR)/lib64 -lcuda -lcudart -lcudadevrt -lnvToolsExt
-LD_REQUIRED    += -ldl
+LDFLAGS        += -L$(MFEM_DIR)
+LDLIBS         += -lmfem
+LDFLAGS        += -L$(MFEM_DIR)/../hypre-2.10.0b/src/hypre/lib
+LDLIBS         += -lHYPRE
+LDFLAGS        += -L$(MFEM_DIR)/../metis-4.0
+LDLIBS         += -lmetis
+LDFLAGS        += -lrt
+LDFLAGS        += $(RAJA_DIR)/lib/libRAJA.a
+LDFLAGS        += -Wl,-rpath -Wl,$(CUDA_DIR)/lib64
+LDFLAGS        += -L$(CUDA_DIR)/lib64
+LDLIBS         += -lcuda
+LDLIBS         += -lcudart
+LDLIBS         += -lcudadevrt
+LDLIBS         += -lnvToolsExt
+LDLIBS         += -ldl
 ```
 
 Again, the order here may matter.  I didn't test that, but rather just used the
