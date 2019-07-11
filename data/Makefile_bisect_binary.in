@@ -267,7 +267,7 @@ bisect-distclean: bisect-clean
 dirs: $(MORE_DIRS)
 
 $(MORE_DIRS):
-	mkdir -p $@
+	+mkdir -p $@
 
 # Copied mostly from Makefile.in COMPILE_RULE, but customized for bisect
 # Compiles a single object file with -fPIC, checking first for a precompiled

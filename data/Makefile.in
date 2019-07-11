@@ -328,7 +328,7 @@ R_CUR_SWITCHES  ?=
 dirs: $(ALL_DIRS)
 
 $(ALL_DIRS):
-	mkdir -p $@
+	+mkdir -p $@
 
 # If we are in a recursion
 ifdef R_IS_RECURSED
