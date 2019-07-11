@@ -238,9 +238,6 @@ GT_CXXFLAGS     += $(GT_CFLAGS)
 # TODO: Remove in FLiT version 3.0
 SOURCE          := $(sort $(SOURCE))
 
-# We are done adding to VPATH, so consolidate it for speed (removing duplicates)
-VPATH           := $(sort $(VPATH))
-
 DEV_OBJ_DIR     := $(OBJ_DIR)/dev
 ALL_DIRS        += $(DEV_OBJ_DIR)
 DEV_OBJ         := $(addprefix $(DEV_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
