@@ -78,8 +78,7 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
+ * -- LICENSE END -- */
 
 #ifndef SIMPLE_CONVEX_HULL_H
 #define SIMPLE_CONVEX_HULL_H
