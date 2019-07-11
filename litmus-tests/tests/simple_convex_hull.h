@@ -78,11 +78,10 @@
  *    shall not be used for advertising or product endorsement
  *    purposes.
  *
- * -- LICENSE END --
- */
+ * -- LICENSE END -- */
 
 #ifndef SIMPLE_CONVEX_HULL_H
-#define SIMPLE_CONVEX_HULL_H 0
+#define SIMPLE_CONVEX_HULL_H
 
 #include <iostream>
 #include <stdio.h>
@@ -90,7 +89,6 @@
 #include <assert.h>
 #include <string>
 #include <vector>
-#include "s3fp_utils.h"
 
 #ifndef IFT
 #define IFT float
@@ -100,7 +98,11 @@
 #define OFT long double
 #endif
 
+#ifndef WFT
 #define WFT float
+#endif
+
+namespace convex_hull {
 
 struct Point {
   long id;
@@ -367,5 +369,7 @@ void VerifyHull(FILE *outfile);
   return -1 for failing consistency check
  */
 OFT CheckConsistency ();
+
+} // end of namespace convex_hull
 
 #endif // SIMPLE_CONVEX_HULL_H
