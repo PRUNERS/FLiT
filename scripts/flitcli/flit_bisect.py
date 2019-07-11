@@ -294,17 +294,18 @@ def create_bisect_makefile(directory, replacements, gt_src,
         repl_copy,
         overwrite=True)
 
-    # Create the obj directory
+    # Create the obj/symbols directory
     if len(split_symbol_map) > 0:
-        try:
-            os.mkdir(os.path.join(directory, 'obj'))
-        except FileExistsError:
-            pass # ignore if the directory already exists
+        for subdir in ('obj', os.path.join('obj', 'symbols')):
+            try:
+                os.mkdir(os.path.join(directory, subdir))
+            except FileExistsError:
+                pass # ignore if the directory already exists
 
     # Create the txt files containing symbol lists within the obj directory
     for split_srcfile, split_symbols in split_symbol_map.items():
         split_basename = os.path.basename(split_srcfile)
-        split_base = os.path.join(directory, 'obj', split_basename)
+        split_base = os.path.join(directory, 'obj', 'symbols', split_basename)
         trouble_symbols_fname = split_base + '_trouble_symbols_' \
                 + repl_copy['number'] + '.txt'
         gt_symbols_fname = split_base + '_gt_symbols_' \

@@ -102,6 +102,8 @@ TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
 TROUBLE_CXX_TYPE := {trouble_type}
 BISECT_LINK      := $(GT_CXX)
+RM               := rm -f
+RMDIR            := rm -rf
 
 TROUBLE_ID       := {trouble_id}
 
@@ -109,9 +111,16 @@ MAKEFILE         := {makefile}
 NUMBER           := {number}
 BISECT_DIR       := {bisect_dir}
 LOCAL_OBJ_DIR    := $(BISECT_DIR)/obj
+FPIC_DIR         := $(LOCAL_OBJ_DIR)/fpic
+SPLIT_DIR        := $(LOCAL_OBJ_DIR)/split
+SYMBOLS_DIR      := $(LOCAL_OBJ_DIR)/symbols
+
 BISECT_OBJ_DIR   := $(OBJ_DIR)/bisect/$(TROUBLE_ID)
 MORE_DIRS        += $(BISECT_DIR)
 MORE_DIRS        += $(LOCAL_OBJ_DIR)
+MORE_DIRS        += $(FPIC_DIR)
+MORE_DIRS        += $(SPLIT_DIR)
+MORE_DIRS        += $(SYMBOLS_DIR)
 MORE_DIRS        += $(BISECT_OBJ_DIR)
 BISECT_TARGET    := $(BISECT_DIR)/runbisect-$(NUMBER)
 TROUBLE_TARGET   := $(BISECT_DIR)/runtrouble-$(TROUBLE_ID)
@@ -154,18 +163,18 @@ BISECT_OBJ       := $(BISECT_GT_OBJ)
 BISECT_OBJ       += $(TROUBLE_OBJ)
 TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
 FPIC_OBJ         := $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_fPIC.o)))
+    $(FPIC_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_fPIC.o)))
 FPIC_OBJ         += $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_fPIC.o)))
+    $(FPIC_DIR)/,$(notdir $(SPLIT_SRC:%=%_fPIC.o)))
 FPIC_DEPS        := $(FPIC_OBJ:%.o=%.d)
 SPLIT_OBJ        := $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_split_$(NUMBER).o)))
+    $(SPLIT_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_split_$(NUMBER).o)))
 SPLIT_OBJ        += $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir \
+    $(SPLIT_DIR)/,$(notdir \
       $(SPLIT_SRC:%=%_trouble_split_$(NUMBER).o)))
 SPLIT_DEPS       := $(SPLIT_OBJ:%.o=%.d)
 TROUBLE_SYMBOLS  := $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir \
+    $(SYMBOLS_DIR)/,$(notdir \
       $(SPLIT_SRC:%=%_trouble_symbols_$(NUMBER).txt)))
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
@@ -242,27 +251,30 @@ bisect: $(BISECT_RESULT) $(BISECT_OUT)
 clean: bisect-clean
 distclean: bisect-distclean
 bisect-smallclean:
-	rm -f $(BISECT_TARGET)
-	rm -f $(BISECT_OUT)
-	rm -f $(addsuffix *.dat,$(BISECT_OUT))
-	rm -f $(TROUBLE_TARGET)
-	rm -f $(TROUBLE_TARGET_OUT)
-	rm -f $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
-	rm -rf $(LOCAL_OBJ_DIR)
+	$(RM) $(BISECT_TARGET)
+	$(RM) $(BISECT_OUT)
+	$(RM) $(addsuffix *.dat,$(BISECT_OUT))
+	$(RM) $(TROUBLE_TARGET)
+	$(RM) $(TROUBLE_TARGET_OUT)
+	$(RM) $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
+	$(RMDIR) $(SPLIT_DIR)
 
 bisect-clean: bisect-smallclean
-	rm -f $(TROUBLE_TARGET_OBJ)
-	rm -f $(TROUBLE_TARGET_DEPS)
-	rm -f $(GT_LIB_TARGET)
-	rm -f $(GT_LIB_OUT)
-	rm -f $(addsuffix *.dat,$(GT_LIB_OUT))
+	$(RM) $(TROUBLE_TARGET_OBJ)
+	$(RM) $(TROUBLE_TARGET_DEPS)
+	$(RM) $(GT_LIB_TARGET)
+	$(RM) $(GT_LIB_OUT)
+	$(RM) $(addsuffix *.dat,$(GT_LIB_OUT))
+	$(RMDIR) $(FPIC_DIR)
 
 bisect-distclean: bisect-clean
-	rm -f bisect.log
-	rm -f $(TROUBLE_TARGET_RESULT)
-	rm -f $(BISECT_RESULT)
-	rm -f $(MAKEFILE)
-	-rmdir $(BISECT_DIR)
+	$(RM) bisect.log
+	$(RM) $(TROUBLE_TARGET_RESULT)
+	$(RM) $(BISECT_RESULT)
+	$(RM) $(MAKEFILE)
+	$(RMDIR) $(SYMBOLS_DIR)
+	$(RMDIR) $(LOCAL_OBJ_DIR)
+	-rmdir --ignore-fail-on-non-empty $(BISECT_DIR)
 
 dirs: $(MORE_DIRS)
 
@@ -281,7 +293,7 @@ $(MORE_DIRS):
 # @param 7: target filename
 # @param 8: extra compiler flags
 define FPIC_COMPILE_RULE
-$2: $1 Makefile custom.mk | $(LOCAL_OBJ_DIR)
+$2: $1 Makefile custom.mk | $(FPIC_DIR)
 	if [ -f "$3" ]; then \
 	  ln -s "../../$(strip 3)" "$(strip $2)"; \
 	else \
@@ -297,7 +309,7 @@ endef
 $(foreach s,$(SOURCE),\
   $(eval $(call FPIC_COMPILE_RULE,\
     $s,\
-    $(LOCAL_OBJ_DIR)/$(notdir $s)_gt_fPIC.o,\
+    $(FPIC_DIR)/$(notdir $s)_gt_fPIC.o,\
 		$(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(GT_CXX),\
     $(GT_OPTL),\
@@ -320,7 +332,7 @@ $(foreach s,$(SOURCE),\
 $(foreach s,$(SOURCE),\
   $(eval $(call FPIC_COMPILE_RULE,\
     $s,\
-    $(LOCAL_OBJ_DIR)/$(notdir $s)_fPIC.o,\
+    $(FPIC_DIR)/$(notdir $s)_fPIC.o,\
 		$(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(TROUBLE_CXX),\
     $(TROUBLE_OPTL),\
@@ -328,7 +340,7 @@ $(foreach s,$(SOURCE),\
     bisect-default-out,\
     $(TROUBLE_CXXFLAGS))))
 
-# The fPIC variant built in OBJ_DIR instead of LOCAL_OBJ_DIR
+# The fPIC variant built in OBJ_DIR instead of FPIC_DIR
 $(foreach s,$(SOURCE),\
   $(eval $(call COMPILE_RULE,\
     $s,\
@@ -346,34 +358,34 @@ $(foreach s,$(SOURCE),\
 #     'Example01.cpp')
 define SPLIT_RULE
 
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: | $$(LOCAL_OBJ_DIR)
-	if [ -s "$$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
+$$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: $$(FPIC_DIR)/$1_gt_fPIC.o
+$$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: $$(SYMBOLS_DIR)/$1_trouble_symbols_$$(NUMBER).txt
+$$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
+$$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: | $$(SPLIT_DIR)
+	if [ -s "$$(SYMBOLS_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
-	    --weaken-symbols=$$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	    --weaken-symbols=$$(SYMBOLS_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
+	    $$(FPIC_DIR)/$1_gt_fPIC.o \
+	    $$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o; \
 	else \
 	  cp \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	    $$(FPIC_DIR)/$1_gt_fPIC.o \
+	    $$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o; \
 	fi
 
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_fPIC.o
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(LOCAL_OBJ_DIR)
-	if [ -s "$$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
+$$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: $$(FPIC_DIR)/$1_fPIC.o
+$$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
+$$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: $$(SYMBOLS_DIR)/$1_gt_symbols_$$(NUMBER).txt
+$$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(SPLIT_DIR)
+	if [ -s "$$(SYMBOLS_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
-	    --weaken-symbols=$$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
-	    $$(LOCAL_OBJ_DIR)/$1_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
+	    --weaken-symbols=$$(SYMBOLS_DIR)/$1_gt_symbols_$$(NUMBER).txt \
+	    $$(FPIC_DIR)/$1_fPIC.o \
+	    $$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o; \
 	else \
 	  cp \
-	    $$(LOCAL_OBJ_DIR)/$1_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
+	    $$(FPIC_DIR)/$1_fPIC.o \
+	    $$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o; \
 	fi
 
 endef
