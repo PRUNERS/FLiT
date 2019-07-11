@@ -224,12 +224,15 @@ std::string which(const std::string &command, const std::string &path) {
     throw std::ios_base::failure("no such file named ''");
   }
 
+  auto is_file = [](const std::string &fname) {
+    auto status = file_status(fname);
+    return status.is_reg;
+  };
+
   // relative and absolute paths can be treated the same
   if (command.find('/') != std::string::npos) {
-    auto candidate = realpath(command);
-    auto status = file_status(candidate);
-    if (status.is_reg) {
-      return candidate;
+    if (is_file(command)) {
+      return realpath(command);
     }
     throw std::ios_base::failure(command + " is not a file");
   }
@@ -238,10 +241,9 @@ std::string which(const std::string &command, const std::string &path) {
 
   for (auto &piece : pieces) {
     try {
-      auto candidate = realpath(join(piece, command));
-      auto status = file_status(candidate);
-      if (status.is_reg) {
-        return candidate;
+      auto candidate = join(piece, command);
+      if (is_file(candidate)) {
+        return realpath(candidate);
       }
     } catch (std::ios_base::failure&) {
       continue;

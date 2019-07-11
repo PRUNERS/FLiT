@@ -617,10 +617,6 @@ void tst_which_givenpath_tofind() {
   // check that the first one is returned if there are duplicates
   path = ".:" + path;
   fsutil::touch(file1_name);
-  std::cout << "expected: '" << fsutil::join(tempdir.name(), file1_name)
-            << "'\n"
-            << "actual:   '" << fsutil::which(file1_name, path) << "'\n";
-  std::cout.flush();
   TH_EQUAL(fsutil::join(tempdir.name(), file1_name),
            fsutil::which(file1_name, path));
 
