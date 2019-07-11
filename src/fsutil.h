@@ -100,6 +100,7 @@
 #include <sstream>      // for std::ostringstream
 
 #include <cstdio>       // for FILE*
+#include <cstring>      // for strerror()
 
 namespace flit {
 namespace fsutil {
@@ -117,6 +118,8 @@ inline std::string readfile(const std::string &path);
 inline std::vector<std::string> listdir(const std::string &directory);
 inline void printdir(const std::string &directory);
 inline void touch(const std::string &path);
+// throws a std::ios_base::failure() if not found
+inline tinydir_file file_status(const std::string &filepath);
 
 // non-inlined
 std::string readfile(FILE* filepointer);
@@ -125,6 +128,10 @@ void mkdir(const std::string &directory, int mode = 0755);
 void rmdir(const std::string &directory);
 std::string curdir();
 void chdir(const std::string &directory);
+// throws a std::ios_base::failure() if not found
+std::string which(const std::string &command);
+std::string which(const std::string &command, const std::string &path);
+std::string realpath(const std::string &relative);
 
 /** constructor changes current dir, destructor undoes it */
 class PushDir {
@@ -143,7 +150,7 @@ private:
 struct TempFile {
   std::string name;
   std::ofstream out;
-  TempFile();
+  TempFile(const std::string &parent = "/tmp");
   ~TempFile();
 };
 
@@ -153,7 +160,7 @@ struct TempFile {
  */
 class TempDir {
 public:
-  TempDir();
+  TempDir(const std::string &parent = "/tmp");
   ~TempDir();
   const std::string& name() { return _name; }
 private:
@@ -289,6 +296,16 @@ inline void printdir(const std::string &directory) {
 inline void touch(const std::string &path) {
   // Just creating an output stream and closing it will touch the file.
   std::ofstream out(path);
+}
+
+inline tinydir_file file_status(const std::string &filepath) {
+  tinydir_file filestat;
+  int status = tinydir_file_open(&filestat, filepath.c_str());
+  if (status != 0) {
+    throw std::ios_base::failure("Error reading file " + filepath + " "
+                                 + strerror(errno));
+  }
+  return filestat;
 }
 
 inline PushDir::PushDir(const std::string &directory)

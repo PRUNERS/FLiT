@@ -115,7 +115,6 @@ GT_SWITCHES     := {ground_truth_switches}
 TEST_RUN_ARGS   := {test_run_args}
 
 ENABLE_MPI      := {enable_mpi}
-MPIRUN_ARGS     := {mpirun_args}
 
 # initalize some variables to be appended later
 CXXFLAGS        :=
@@ -126,8 +125,6 @@ LDLIBS          :=
 
 RUNWRAP          = $(RUN_WRAPPER)
 ifeq ($(ENABLE_MPI),yes) # If we are using MPI
-  RUNWRAP       += mpirun $(MPIRUN_ARGS)
-  CXXFLAGS      += -DFLIT_USE_MPI
   IS_OPENMPI    := $(shell mpic++ --showme:compile >/dev/null 2>&1 && echo true)
 ifeq ($(IS_OPENMPI),true)
   CXXFLAGS      += $(shell mpic++ --showme:compile 2>/dev/null)

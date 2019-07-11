@@ -93,6 +93,20 @@
 
 #include <cmath>
 
+int real_problem_test(int, char**) {
+  double answer = 
+      file1_all() +
+      file2_all() +
+      file3_all() +
+      file4_all() +
+      fileA_all();
+  if (std::string(FLIT_OPTL) == "-O3") {
+    answer += 50.0;
+  }
+  return int(answer);
+}
+FLIT_REGISTER_MAIN(real_problem_test)
+
 template <typename T>
 class BisectTest : public flit::TestBase<T> {
 public:
@@ -107,7 +121,8 @@ public:
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
     FLIT_UNUSED(ti);
-    return file1_all() + file2_all() + file3_all() + file4_all() + fileA_all();
+    auto result = flit::call_main(real_problem_test, "my-name", "unused args");
+    return double(result.ret);
   }
 
 protected:

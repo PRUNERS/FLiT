@@ -1,7 +1,9 @@
 harness/tst_test_harness
 harness/tst_fsutil
-flit_src/tst_flit_cpp
-flit_src/tst_flitHelpers_h
 flit_src/tst_FlitCsv
-flit_src/tst_Variant
 flit_src/tst_TestBase
+flit_src/tst_Variant
+flit_src/tst_flitHelpers_h
+flit_src/tst_flit_cpp
+flit_src/tst_fsutil
+flit_src/tst_subprocess

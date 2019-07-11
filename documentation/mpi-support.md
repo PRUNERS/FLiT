@@ -40,7 +40,6 @@ File](flit-configuration-file.md)).  For example:
 ```toml
 [run]
 enable_mpi = true
-mpirun_args = '-n 4'
 ```
 
 With the enabling of MPI, the generated Makefile will automatically pull
@@ -48,10 +47,12 @@ compiler and linker flags from `mpic++`.  The `mpic++` executable will be
 pulled from the system `PATH` variable, so simply make sure your `PATH` is
 pointing to the desired executable.
 
-The `mpirun_args` is a place where you can specify any options you wish for
-`mpirun`.  Again the `mpirun` executable is expected to be found using your
-system `PATH` variable.
-
+The arguments to `mpirun` are specified in your test itself.  To run MPI tests,
+you will need to use the `flit::call_mpi_main()` function after registering a
+main-like function with `FLIT_REGISTER_MAIN()`.  By "main-like" function, we
+mean a function taking in an `int` and a `char**` and returning and `int`.
+Please see [Writing Test Cases: Writing MPI
+Tests](writing-test-cases.md#writing-mpi-tests) for more information.
 
 ## Initializing and Finalizing the MPI Environment
 

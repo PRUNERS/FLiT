@@ -100,7 +100,7 @@ and run the FLiT test with MPI
 ...     if retval != 0:
 ...         raise TestError('Main #1 returned with {}, failed to initialize'
 ...                         .format(retval))
-...     _ = shutil.copy(os.path.join('data', 'MpiHello.cpp'),
+...     _ = shutil.copy(os.path.join('data', 'MpiFloat.cpp'),
 ...                     os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copy(os.path.join('data', 'flit-config.toml'), temp_dir)
 ...     retval = th.flit.main(['update', '-C', temp_dir])
@@ -111,14 +111,20 @@ and run the FLiT test with MPI
 ...                                     stderr=subp.STDOUT)
 ...     run_str = subp.check_output(['make', '-C', temp_dir, 'ground-truth.csv'],
 ...                                 stderr=subp.STDOUT)
-...     file_d = os.path.join(temp_dir, 'ground-truth.csv_MpiHello_d.dat')
+...     file_f = os.path.join(temp_dir, 'ground-truth.csv_MpiFloat_f.dat')
+...     file_d = os.path.join(temp_dir, 'ground-truth.csv_MpiFloat_d.dat')
+...     file_e = os.path.join(temp_dir, 'ground-truth.csv_MpiFloat_e.dat')
+...     with open(file_f, 'r') as fin: contents_f = fin.read()
 ...     with open(file_d, 'r') as fin: contents_d = fin.read()
-...     lines_d = contents_d.splitlines()
+...     with open(file_e, 'r') as fin: contents_e = fin.read()
 Creating /.../flit-config.toml
 Creating /.../custom.mk
 Creating /.../main.cpp
 Creating /.../tests/Empty.cpp
 Creating /.../Makefile
+>>> lines_f = contents_f.splitlines()
+>>> lines_d = contents_d.splitlines()
+>>> lines_e = contents_e.splitlines()
 >>> compile_str = compile_str.decode('utf-8').strip().splitlines()
 >>> run_str = run_str.decode('utf-8').strip().splitlines()
 
@@ -129,16 +135,36 @@ True
 
 Make sure the console messages are there, but they can be out of order
 
->>> lines_d.count('hello from rank 0 of 2')
-1
->>> lines_d.count('hello from rank 1 of 2')
-1
->>> lines_d.count('mpi_main(3, {mympi, remaining, arguments})')
+>>> all_lines = (lines_f, lines_d, lines_e)
+>>> [x.count('hello from rank 0 of 2') for x in all_lines]
+[1, 1, 1]
+>>> [x.count('hello from rank 1 of 2') for x in all_lines]
+[1, 1, 1]
+>>> [x.count("Sending '3.14159' from rank 0") for x in all_lines]
+[1, 1, 1]
+>>> [x.count("Received '3.14159' from rank 0 to rank 1") for x in all_lines]
+[1, 1, 1]
+
+>>> lines_f.count('mpi_main_F<f>(3, {mympi, remaining, arguments})')
 2
->>> lines_d.count("Sending 'hello world!' from rank 0")
-1
->>> lines_d.count("Received 'hello world!' from rank 0 to rank 1")
-1
+>>> lines_f.count('mpi_main_F<d>(3, {mympi, remaining, arguments})')
+0
+>>> lines_f.count('mpi_main_F<e>(3, {mympi, remaining, arguments})')
+0
+
+>>> lines_d.count('mpi_main_F<f>(3, {mympi, remaining, arguments})')
+0
+>>> lines_d.count('mpi_main_F<d>(3, {mympi, remaining, arguments})')
+2
+>>> lines_d.count('mpi_main_F<e>(3, {mympi, remaining, arguments})')
+0
+
+>>> lines_e.count('mpi_main_F<f>(3, {mympi, remaining, arguments})')
+0
+>>> lines_e.count('mpi_main_F<d>(3, {mympi, remaining, arguments})')
+0
+>>> lines_e.count('mpi_main_F<e>(3, {mympi, remaining, arguments})')
+2
 '''
 
 # Test setup before the docstring is run.

@@ -89,8 +89,12 @@
 
 #include <iostream>
 #include <mutex>
+#include <map>
+#include <string>
 
 namespace flit {
+
+std::string g_program_path;
 
 thread_local InfoStream info_stream;
 

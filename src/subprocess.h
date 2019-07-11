@@ -81,72 +81,82 @@
  * -- LICENSE END --
  */
 
-#ifndef MPI_ENVIRONMENT_H
-#define MPI_ENVIRONMENT_H
+#ifndef SUBPROCESS_H
+#define SUBPROCESS_H
 
-#include "flitHelpers.h"
+#define FLIT_REGISTER_MAIN(mainfunc)                           \
+  struct Flit_##mainfunc##Factory {                            \
+    Flit_##mainfunc##Factory() {                               \
+      flit::register_main_func(#mainfunc, mainfunc);           \
+    }                                                          \
+  };                                                           \
+  static Flit_##mainfunc##Factory global_##mainfunc##Factory;  \
 
-#ifdef FLIT_USE_MPI
-#include <mpi.h>
-#endif // FLIT_USE_MPI
+#include <string>
+ 
+namespace flit {
 
-namespace flit{
-
-/** A structure to encompass all necessities of the MPI environment for FLiT
- *
- * This is safe to use if MPI is disabled too.  Be sure to read the
- * documentation to understand how the behavior is different if MPI is
- * disabled.
- *
- * At its construction, this struct initializes the MPI environment, so should
- * be called as soon as possible to the beginning of the application (such as
- * at the beginning of main()).  At its destruction, it will call
- * MPI_Finalize(), meaning the lifetime of this object needs to extend beyond
- * all usages of the MPI runtime.
- */
-struct MpiEnvironment {
-  bool enabled;
-  int rank;
-  int size;
-
-  /// If mpi is enabled, initializes MPI, else does nothing
-  MpiEnvironment(int &argc, char** &argv) {
-#ifdef FLIT_USE_MPI
-    enabled = true;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else // not defined(FLIT_USE_MPI)
-    FLIT_UNUSED(argc);
-    FLIT_UNUSED(argv);
-    enabled = false;
-    rank = 0;
-    size = 1;
-#endif // FLIT_USE_MPI
-  }
-
-  /// If mpi is enabled, calls MPI_Finalize(), else does nothing
-  ~MpiEnvironment() {
-#ifdef FLIT_USE_MPI
-    MPI_Finalize();
-#endif // FLIT_USE_MPI
-  }
-
-  /// If mpi is enabled, calls MPI_Abort(), else does nothing
-  void abort(int retcode) {
-#ifdef FLIT_USE_MPI
-    MPI_Abort(MPI_COMM_WORLD, retcode);
-#else
-    FLIT_UNUSED(retcode);
-#endif // FLIT_USE_MPI
-  }
-
-  /// Returns true if my rank is zero (i.e. I am the root MPI process)
-  bool is_root() { return rank == 0; }
+struct ProcResult {
+  int ret;
+  std::string out;
+  std::string err;
 };
 
-extern MpiEnvironment *mpi;
+/** Calls a command in the shell and returns the output and result */
+ProcResult call_with_output(const std::string &command);
 
+std::ostream& operator<<(std::ostream& out, const ProcResult &res);
+
+using MainFunc = int(int, char**);
+
+/** Don't call this directly.  Use FLIT_REGISTER_MAIN() instead */
+void register_main_func(const std::string &main_name, MainFunc *main_func);
+
+/** Return the registered main function from the name */
+MainFunc* find_main_func(const std::string &main_name);
+
+/** Return the registered main name from the function pointer */
+std::string find_main_name(MainFunc *main_func);
+
+/** Call the main function in a child process
+ *
+ * It is required that the user has not changed to a different directory
+ * from where it was originally called.  That way we can find and run this
+ * executable.
+ *
+ * Example:
+ *
+ *   #define main mymain
+ *   #include "main.cc"
+ *   #undef main
+ *
+ *   #include "flit.h"
+ *
+ *   #include <iostream>
+ *
+ *   FLIT_REGISTER_MAIN(mymain)
+ *
+ *   int run_my_main() {
+ *     auto results = flit::call_main(
+ *         mymain, "myapp", "--data '../My Documents/tmp.dat' --all");
+ *     std::cout << results.out;
+ *     std::cerr << results.err;
+ *     return results.ret;
+ *   }
+ *
+ * @param func: function pointer to a custom renamed main() function
+ * @param progname: the name you want that main to see as the program name
+ *        (i.e., it will be in argv[0])
+ * @param remaining_args: all command-line arguments as would be given in a
+ *        shell.
+ * @return result, including stdout, stderr, and return code.
+ */
+ProcResult call_main(MainFunc *func, std::string progname = "",
+                     std::string remaining_args = "");
+
+ProcResult call_mpi_main(MainFunc *func, std::string mpirun_command = "mpirun",
+                         std::string progname = "",
+                         std::string remaining_args = "");
 } // end of namespace flit
 
-#endif // MPI_ENVIRONMENT_H
+#endif // SUBPROCESS_H
