@@ -189,6 +189,9 @@ cd FLiT
 make
 ```
 
+_Note: if you want to see all of the compilation details, set `VERBOSE=1`,
+e.g., `make VERBOSE=1`_
+
 You can either use the flit command-line tool from the git repository or you
 can install it.  If you choose to install it, it is simply
 

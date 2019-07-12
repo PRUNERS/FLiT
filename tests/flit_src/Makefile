@@ -19,6 +19,10 @@ DEPFLAGS     = -MD -MF $*.d
 
 include ../color_out.mk
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: build check help clean run_%
 build: $(TARGETS)
 
@@ -38,9 +42,10 @@ clean:
 run_% : %
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@./$< --semi-quiet
+	./$< --semi-quiet
 
 % : %.cpp $(HARNESS) Makefile
+	@$(call color_out,CYAN,  $< -> $@)
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
 
 .PRECIOUS: %.d

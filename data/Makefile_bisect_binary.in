@@ -201,12 +201,15 @@ $(GT_LIB_TARGET): $(FLIT_LIB_DIR)/libflit.so
 endif # ifeq ($(UNAME_S),Darwin): meaning we are on a mac
 
 $(GT_LIB_OUT): $(GT_LIB_TARGET)
+	@$(call color_out,CYAN,  $< -> $@)
 	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
 
 $(GT_LIB_TARGET): $(GT_OBJ) Makefile custom.mk $(MAKEFILE)
+	@$(call color_out,BLUE,Building $@)
 	$(GT_CXX) $(CXXFLAGS) -o $@ $(GT_OBJ) $(LDFLAGS) $(LDLIBS)
 
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_LIB_OUT) $(GT_LIB_TARGET)
+	@$(call color_out,CYAN,  $< -> $@)
 	$(RUNWRAP) ./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null
 
 endif # ifeq ($(BUILD_GT_LOCAL),true): meaning we are making a local gt
@@ -217,15 +220,19 @@ endif # ifeq ($(BUILD_GT_LOCAL),true): meaning we are making a local gt
 -include $(SPLIT_DEPS)
 
 $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
+	@$(call color_out,CYAN,  $< -> $@)
 	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 $(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
+	@$(call color_out,CYAN,  $< -> $@)
 	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
 $(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
+	@$(call color_out,BLUE,Building $@)
 	$(GT_CXX) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) \
 	  $(LDFLAGS) $(GT_LDFLAGS) $(LDLIBS)
 
 $(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
+	@$(call color_out,BLUE,Building $@)
 	$(TROUBLE_CXX) $(CXXFLAGS) $(TROUBLE_CXXFLAGS) -o $@ $(TROUBLE_TARGET_OBJ) \
 	  $(LDFLAGS) $(TROUBLE_LDFLAGS) $(LDLIBS)
 
@@ -267,6 +274,8 @@ bisect-distclean: bisect-clean
 dirs: $(MORE_DIRS)
 
 $(MORE_DIRS):
+	@$(call color_out_noline,CYAN,  mkdir)
+	@echo " $@"
 	mkdir -p $@
 
 # Copied mostly from Makefile.in COMPILE_RULE, but customized for bisect
@@ -283,8 +292,10 @@ $(MORE_DIRS):
 define FPIC_COMPILE_RULE
 $2: $1 Makefile custom.mk | $(LOCAL_OBJ_DIR)
 	if [ -f "$3" ]; then \
-	  ln -s "../../$(strip 3)" "$(strip $2)"; \
+	  $(call color_out,CYAN,  ../../$(strip $3) -> $@); \
+	  ln -s "../../$(strip $3)" "$(strip $2)"; \
 	else \
+	  $(call color_out,CYAN,  $< -> $@); \
 	  $4 $5 $6 -c $8 $(CXXFLAGS) -fPIC $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
 	    -DFLIT_HOST='"$(HOSTNAME)"' \
 	    -DFLIT_COMPILER='"$(strip $4)"' \
@@ -298,7 +309,7 @@ $(foreach s,$(SOURCE),\
   $(eval $(call FPIC_COMPILE_RULE,\
     $s,\
     $(LOCAL_OBJ_DIR)/$(notdir $s)_gt_fPIC.o,\
-		$(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
+    $(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(GT_CXX),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\
@@ -321,7 +332,7 @@ $(foreach s,$(SOURCE),\
   $(eval $(call FPIC_COMPILE_RULE,\
     $s,\
     $(LOCAL_OBJ_DIR)/$(notdir $s)_fPIC.o,\
-		$(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
+    $(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(TROUBLE_CXX),\
     $(TROUBLE_OPTL),\
     $(TROUBLE_SWITCHES),\
@@ -350,6 +361,7 @@ $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o
 $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt
 $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: | $$(LOCAL_OBJ_DIR)
+	@$$(call color_out,CYAN,  $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o -> $1_gt_split_$$(NUMBER).o)
 	if [ -s "$$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
 	    --weaken-symbols=$$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
@@ -365,6 +377,7 @@ $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_fPIC.o
 $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt
 $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(LOCAL_OBJ_DIR)
+	@$$(call color_out,CYAN,  $$(LOCAL_OBJ_DIR)/$1_fPIC.o -> $1_trouble_split_$$(NUMBER).o)
 	if [ -s "$$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
 	    --weaken-symbols=$$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \

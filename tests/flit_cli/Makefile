@@ -4,6 +4,10 @@ CHECK_TARGETS := $(addprefix check__,$(SUB_DIRS))
 CLEAN_TARGETS := $(addprefix clean__,$(SUB_DIRS))
 BUILD_TARGETS := $(addprefix build__,$(SUB_DIRS))
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: build check help clean
 build: $(BUILD_TARGETS)
 

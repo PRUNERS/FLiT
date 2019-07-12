@@ -92,12 +92,16 @@ The tests are below using doctest
 >>> import re
 >>> import time
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 Test that the dev target will be rebuilt if one of the files is updated.
 We use 'make --touch' to simply touch files it would create and then we will
 test that the correct files are updated.
 >>> def compile_target(directory, target, touch=True):
 ...     'Compiles the dev target using "make --touch" and returns the output'
-...     command = ['make', '-C', directory, target]
+...     command = ['make', '-C', directory, target, 'VERBOSE=1']
 ...     if touch:
 ...         command.append('--touch')
 ...     output = subp.check_output(command)

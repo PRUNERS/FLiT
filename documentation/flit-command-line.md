@@ -97,6 +97,23 @@ this manually, but this does a few things conveniently for you, such as
 Again, you can do these things manually and have more control.  But for most
 users, this will be the most direct and convenient way to run locally.
 
+If you use the `Makefile` directly, which is totally fine, then there are a few
+things to know.
+
+```bash
+make help
+```
+
+will output help documentation on what targets are available and what they mean.
+
+The output from the `Makefile` will be short by default.  You can output all of
+the details by defining `VERBOSE=1` or `VERBOSE=true` either as an argument to
+`make` or as an environment variable.
+
+```bash
+make VERBOSE=1 ...
+```
+
 ## flit import
 
 Imports flit results into the database configured in `flit-config.toml`.  It

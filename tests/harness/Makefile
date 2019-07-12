@@ -13,6 +13,10 @@ DEPFLAGS     = -MD -MF $*.d
 
 include ../color_out.mk
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: build check help clean run_%
 build: $(TARGETS)
 
@@ -33,14 +37,15 @@ clean:
 run_tst_test_harness: tst_test_harness
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@./tst_test_harness | grep "failures: *10$$" >/dev/null
+	./tst_test_harness | grep "failures: *10$$" >/dev/null
 
 run_% : %
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@./$< --semi-quiet
+	./$< --semi-quiet
 
 % : %.cpp $(HARNESS) Makefile
+	@$(call color_out,CYAN,  $< -> $@)
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -o $@ $(LDFLAGS)
 
 .PRECIOUS: %.d
