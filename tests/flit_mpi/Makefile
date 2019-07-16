@@ -6,6 +6,10 @@ MPICXX      := $(shell command -v mpic++ 2>/dev/null)
 
 include ../color_out.mk
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: check help clean build run_%
 ifeq ($(MPIRUN),)
 check:
@@ -30,4 +34,4 @@ clean:
 run_% : %.py
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@$(RUNNER) $<
+	$(RUNNER) $<

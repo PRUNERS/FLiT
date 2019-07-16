@@ -92,6 +92,10 @@ verify correct usage.
 >>> import shutil
 >>> import subprocess as subp
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 >>> with th.tempdir() as temp_dir:
 ...     with StringIO() as ostream:
 ...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
@@ -107,8 +111,10 @@ verify correct usage.
 ...         _ = conf.write("name = 'fake-clang'\\n")
 ...         _ = conf.write("type = 'clang'\\n")
 ...     _ = shutil.copy('fake_clang34.py', temp_dir)
-...     _ = subp.check_output(['make', '--always-make', 'Makefile', '-C', temp_dir])
-...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir])
+...     _ = subp.check_output(['make', '--always-make', 'Makefile',
+...                            '-C', temp_dir])  
+...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir,
+...                                   'VERBOSE=1'])
 ...     make_out = make_out.decode('utf8').splitlines()
 
 Verify the output of flit init

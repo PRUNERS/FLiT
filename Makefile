@@ -42,6 +42,13 @@ INSTALL_FLIT_CONFIG = $(PREFIX)/share/flit/scripts/flitconfig.py
 CAT            := $(if $(filter $(OS),Windows_NT),type,cat)
 VERSION        := $(shell $(CAT) $(CONFIG_DIR)/version.txt)
 
+-include tests/color_out.mk
+
+# Be silent by default
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY : all
 all: $(TARGET)
 
@@ -67,10 +74,14 @@ help:
 	@echo
 
 $(TARGET): $(OBJ)
+	@$(call color_out_noline,CYAN,  mkdir)
+	@echo " lib"
 	mkdir -p lib
+	@$(call color_out,BLUE,Building $(TARGET))
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 $(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
+	@$(call color_out,CYAN,  $< -> $@)
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 .PRECIOUS: src/%.d
@@ -89,9 +100,11 @@ clean:
 veryclean: distclean
 distclean: clean
 	$(RM) $(TARGET)
+	$(RMDIR) $(LIBDIR)
 
 .PHONY: install
 install: $(TARGET)
+	@$(call color_out,BLUE,Installing...)
 	mkdir -m 0755 -p $(PREFIX)/bin
 	mkdir -m 0755 -p $(PREFIX)/lib
 	mkdir -m 0755 -p $(PREFIX)/include/flit
@@ -123,7 +136,7 @@ install: $(TARGET)
 	install -m 0644 $(LITMUS_TESTS) $(PREFIX)/share/flit/litmus-tests/
 	install -m 0644 LICENSE $(PREFIX)/share/licenses/flit/
 	cp -r benchmarks/* $(PREFIX)/share/flit/benchmarks/
-	@echo "Generating $(INSTALL_FLIT_CONFIG)"
+	@$(call color_out,CYAN,  Generating $(INSTALL_FLIT_CONFIG))
 	@# Make the flitconfig.py script specifying this installation information
 	@echo "'''"                                                                  > $(INSTALL_FLIT_CONFIG)
 	@echo "Contains paths and other configurations for the flit installation."  >> $(INSTALL_FLIT_CONFIG)
@@ -171,6 +184,7 @@ install: $(TARGET)
 
 .PHONY: uninstall
 uninstall:
+	@$(call color_out,BLUE,Uninstalling...)
 	$(RMDIR) $(PREFIX)/include/flit
 	$(RMDIR) $(PREFIX)/share/flit
 	$(RMDIR) $(PREFIX)/share/licenses/flit
