@@ -321,7 +321,7 @@ $(foreach s,$(SOURCE),\
   $(eval $(call FPIC_COMPILE_RULE,\
     $s,\
     $(FPIC_DIR)/$(notdir $s)_gt_fPIC.o,\
-		$(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
+    $(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(GT_CXX),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\
@@ -344,7 +344,7 @@ $(foreach s,$(SOURCE),\
   $(eval $(call FPIC_COMPILE_RULE,\
     $s,\
     $(FPIC_DIR)/$(notdir $s)_fPIC.o,\
-		$(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
+    $(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
     $(TROUBLE_CXX),\
     $(TROUBLE_OPTL),\
     $(TROUBLE_SWITCHES),\
