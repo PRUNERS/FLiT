@@ -373,7 +373,7 @@ $$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: $$(FPIC_DIR)/$1_gt_fPIC.o
 $$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: $$(SYMBOLS_DIR)/$1_trouble_symbols_$$(NUMBER).txt
 $$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(SPLIT_DIR)/$1_gt_split_$$(NUMBER).o: | $$(SPLIT_DIR)
-  @$$(call color_out,CYAN,  $$(SPLIT_DIR)/$1_gt_fPIC.o -> $1_gt_split_$$(NUMBER).o)
+	@$$(call color_out,CYAN,  $$(SPLIT_DIR)/$1_gt_fPIC.o -> $1_gt_split_$$(NUMBER).o)
 	if [ -s "$$(SYMBOLS_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
 	    --weaken-symbols=$$(SYMBOLS_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
@@ -389,7 +389,7 @@ $$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: $$(FPIC_DIR)/$1_fPIC.o
 $$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
 $$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: $$(SYMBOLS_DIR)/$1_gt_symbols_$$(NUMBER).txt
 $$(SPLIT_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(SPLIT_DIR)
-  @$$(call color_out,CYAN,  $$(SPLIT_DIR)/$1_fPIC.o -> $1_trouble_split_$$(NUMBER).o)
+	@$$(call color_out,CYAN,  $$(SPLIT_DIR)/$1_fPIC.o -> $1_trouble_split_$$(NUMBER).o)
 	if [ -s "$$(SYMBOLS_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
 	  objcopy \
 	    --weaken-symbols=$$(SYMBOLS_DIR)/$1_gt_symbols_$$(NUMBER).txt \
