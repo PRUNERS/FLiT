@@ -285,7 +285,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
         else:
             break
 
-    repl_copy['makefile'] = makepath
+    repl_copy['makefile'] = os.path.realpath(makepath)
     repl_copy['number'] = '{0:02d}'.format(num)
     logging.info('Creating makefile: %s', makepath)
     util.process_in_file(
@@ -294,17 +294,18 @@ def create_bisect_makefile(directory, replacements, gt_src,
         repl_copy,
         overwrite=True)
 
-    # Create the obj directory
+    # Create the obj/symbols directory
     if len(split_symbol_map) > 0:
-        try:
-            os.mkdir(os.path.join(directory, 'obj'))
-        except FileExistsError:
-            pass # ignore if the directory already exists
+        for subdir in ('obj', os.path.join('obj', 'symbols')):
+            try:
+                os.mkdir(os.path.join(directory, subdir))
+            except FileExistsError:
+                pass # ignore if the directory already exists
 
     # Create the txt files containing symbol lists within the obj directory
     for split_srcfile, split_symbols in split_symbol_map.items():
         split_basename = os.path.basename(split_srcfile)
-        split_base = os.path.join(directory, 'obj', split_basename)
+        split_base = os.path.join(directory, 'obj', 'symbols', split_basename)
         trouble_symbols_fname = split_base + '_trouble_symbols_' \
                 + repl_copy['number'] + '.txt'
         gt_symbols_fname = split_base + '_gt_symbols_' \
@@ -324,7 +325,8 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
     Runs a make command.  If the build fails, then stdout and stderr will be
     output into the log.
 
-    @param makefilename: Name of the Makefile (default 'Makefile')
+    @param makefilename: Name of the Makefile (either absolute path or relative
+        path to the given directory) (default 'Makefile')
     @param directory: Path to the directory to run in (default '.')
     @param verbose: True means echo the output to the console (default False)
     @param jobs: number of parallel jobs (default #cpus)
@@ -377,6 +379,53 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
     Undo the logger configurations
     >>> for handler in logger.handlers[:]:
     ...     logger.removeHandler(handler)
+
+    Create a temporary directory
+    >>> import tempfile
+    >>> temporary_directory = tempfile.mkdtemp()
+
+    Given a directory and an absolute path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('.PHONY: default', file=makefile)
+    ...     print('default:', file=makefile)
+    ...     print('\\t@false', file=makefile)
+    ...     print('.PHONY: correct', file=makefile)
+    ...     print('correct:', file=makefile)
+    ...     print('\\t@echo correct', file=makefile)
+    ...     print('\\t@cat {}'.format(os.path.basename(makefilepath)),
+    ...           file=makefile)
+    ...     makefile.flush()
+    ...     run_make(makefilename=makefilepath,
+    ...              directory=temporary_directory,
+    ...              target='correct') #doctest: +ELLIPSIS
+
+    Given a directory and a relative path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('.PHONY: default', file=makefile)
+    ...     print('default:', file=makefile)
+    ...     print('\\t@false', file=makefile)
+    ...     print('.PHONY: correct', file=makefile)
+    ...     print('correct:', file=makefile)
+    ...     print('\\t@echo correct', file=makefile)
+    ...     print('\\t@cat {}'.format(os.path.basename(makefilepath)),
+    ...           file=makefile)
+    ...     makefile.flush()
+    ...     curdir = os.path.realpath(os.curdir)
+    ...     try:
+    ...         os.chdir(os.path.dirname(temporary_directory))
+    ...         run_make(os.path.basename(makefilepath),
+    ...                  directory=os.path.basename(temporary_directory),
+    ...                  target='correct') #doctest: +ELLIPSIS
+    ...     except:
+    ...         raise
+    ...     finally:
+    ...         os.chdir(curdir)
+
+    Delete the temporary directory
+    >>> import shutil
+    >>> shutil.rmtree(temporary_directory)
     '''
     command = [
         'make',
@@ -418,7 +467,8 @@ def build_bisect(makefilename, directory,
     recompile for the next bisect step, or
     'distclean' to clean everything, including the generated makefile.
 
-    @param makefilename: the filepath to the makefile
+    @param makefilename: the filepath to the makefile relative to the given
+        directory
     @param directory: where to execute make
     @param target: Makefile target to run
     @param verbose: False means block output from GNU make and running
@@ -447,8 +497,7 @@ def update_gt_results(directory, verbose=False,
 
     @return None
     '''
-    gt_resultfile = util.extract_make_var(
-        'GT_OUT', os.path.join(directory, 'Makefile'))[0]
+    gt_resultfile = util.extract_make_var('GT_OUT', directory=directory)[0]
     logging.info('Updating ground-truth results - %s', gt_resultfile)
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
     run_make(
@@ -1163,14 +1212,15 @@ def test_makefile(args, makepath, testing_list, indent='  '):
     for src in testing_list:
         logging.info('  %s%s', indent, src)
 
+    relmakepath = os.path.relpath(makepath, args.directory)
     try:
-        build_bisect(makepath, args.directory, verbose=args.verbose,
+        build_bisect(relmakepath, args.directory, verbose=args.verbose,
                      jobs=args.jobs)
     finally:
         if args.delete:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
+            build_bisect(relmakepath, args.directory, verbose=args.verbose,
                          jobs=args.jobs, target='bisect-smallclean')
-    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+    resultfile = util.extract_make_var('BISECT_RESULT', relmakepath,
                                        args.directory)[0]
     resultpath = os.path.join(args.directory, resultfile)
     result = get_comparison_result(resultpath)
@@ -1605,8 +1655,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     logging.debug('  trouble hash:               "%s"', trouble_hash)
 
     # get the list of source files from the Makefile
-    sources = util.extract_make_var('SOURCE', 'Makefile',
-                                    directory=args.directory)
+    sources = util.extract_make_var('SOURCE', directory=args.directory)
     logging.debug('Sources')
     for source in sources:
         logging.debug('  %s', source)
@@ -2039,7 +2088,10 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     # Remove the files that were precompiled
     if args.delete:
-        for makepath in glob.iglob('bisect-*/bisect-make-01.mk'):
+        makepaths = glob.iglob(
+            os.path.join(args.directory, 'bisect-*/bisect-make-01.mk'))
+        for makepath in makepaths:
+            makepath = os.path.relpath(makepath, args.directory)
             build_bisect(makepath, args.directory, verbose=args.verbose,
                          jobs=args.jobs, target='bisect-clean')
 

@@ -368,7 +368,7 @@ dirs: $(ALL_DIRS)
 $(ALL_DIRS):
 	@$(call color_out_noline,CYAN,  mkdir)
 	@echo " $@"
-	mkdir -p $@
+	+mkdir -p $@
 
 # If we are in a recursion
 ifdef R_IS_RECURSED

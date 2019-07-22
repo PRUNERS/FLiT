@@ -149,8 +149,9 @@ tst_bisect.py.
 ...     assert verbose == False
 ...     # Get the files being tested out of the makepath, and the BISECT_RESULT
 ...     # variable, and generate the expected results.
-...     sources = util.extract_make_var('TROUBLE_SRC', makepath)
-...     symbol_files = util.extract_make_var('TROUBLE_SYMBOLS', makepath)
+...     sources = util.extract_make_var('TROUBLE_SRC', makepath, directory)
+...     symbol_files = util.extract_make_var('TROUBLE_SYMBOLS', makepath,
+...                                          directory)
 ...     symbols = []
 ...     if symbol_files:
 ...         with open(os.path.join(directory, symbol_files[0]), 'r') as fin:
@@ -158,7 +159,8 @@ tst_bisect.py.
 ...     source_score = sum([all_file_scores[x] for x in sources])
 ...     symbol_score = sum([score for symbol, score in all_symbol_scores.items()
 ...                         if symbol.symbol in symbols])
-...     result_file = util.extract_make_var('BISECT_RESULT', makepath)[0]
+...     result_file = util.extract_make_var('BISECT_RESULT', makepath,
+...                                         directory)[0]
 ...     with open(os.path.join(directory, result_file), 'w') as rout:
 ...         rout.write('comparison\\n')
 ...         rout.write('{}\\n'.format(source_score + symbol_score))

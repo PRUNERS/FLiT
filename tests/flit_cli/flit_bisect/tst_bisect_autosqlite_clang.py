@@ -147,6 +147,11 @@ and run FLiT bisect
 ...         '--no-print-directory', '--always-make',
 ...         '-f', os.path.join('bisect-precompile', 'bisect-make-01.mk')])
 ...     makeout2 = makeout2.strip().decode('utf-8').splitlines()
+...     makeout3 = subp.check_output([
+...         'make', '-C', temp_dir, '--dry-run', 'bisect-smallclean',
+...         '--no-print-directory', '--always-make',
+...         '-f', os.path.join('bisect-precompile', 'bisect-make-01.mk')])
+...     makeout3 = makeout3.strip().decode('utf-8').splitlines()
 ...     troublecxx = util.extract_make_var(
 ...         'TROUBLE_CXX',
 ...         os.path.join('bisect-precompile', 'bisect-make-01.mk'),
@@ -185,6 +190,15 @@ See that the generated Makefile for fake_clang34.py shows the correct type
 ['./fake_clang34.py']
 >>> troublecxx_type
 ['clang']
+
+>>> 'rm -rf bisect-precompile/obj/split' in makeout3
+True
+>>> 'rm -rf bisect-precompile/obj/symbols' not in makeout3
+True
+>>> 'rm -rf bisect-precompile/obj/fpic' not in makeout3
+True
+>>> 'rm -rf bisect-precompile/obj' not in makeout3
+True
 '''
 
 # Test setup before the docstring is run.
