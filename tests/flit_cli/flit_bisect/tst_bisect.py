@@ -112,7 +112,7 @@ and run FLiT bisect
 ...     with open(os.path.join(temp_dir, 'custom.mk'), 'a') as mkout:
 ...         _ = mkout.write('SOURCE += tests/file4.cxx\\n')
 ...     with StringIO() as ostream:
-...         retval = th.flit.main(['bisect', '-C', temp_dir,
+...         retval = th.flit.main(['bisect', '-C', os.path.relpath(temp_dir),
 ...                                '--compiler-type', 'gcc',
 ...                                '--precision', 'double',
 ...                                'g++ -O3', 'BisectTest'],
