@@ -386,6 +386,11 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     '''
     Extracts the value of a particular variable within a particular Makefile.
 
+    @param var: the name of the variable in the Makefile
+    @param makefile: path to the Makefile (either absolute or relative to the
+        given directory)
+    @param directory: directory where the Makefile would be executed
+
     How it works with a valid file:
 
     >>> from tempfile import NamedTemporaryFile as NTF
@@ -406,6 +411,38 @@ def extract_make_var(var, makefile='Makefile', directory='.'):
     Traceback (most recent call last):
     ...
     subprocess.CalledProcessError: Command ... returned non-zero exit status 2.
+
+    Make sure it works with names relative to the given directory
+
+    Create a temporary directory
+    >>> import tempfile
+    >>> temporary_directory = tempfile.mkdtemp()
+
+    Given a directory and an absolute path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('A  = hi there $(C)', file=makefile)
+    ...     print('B  = my friend', file=makefile)
+    ...     print('C := mike', file=makefile)
+    ...     makefile.flush()
+    ...     extract_make_var('A', makefile=makefilepath,
+    ...                      directory=temporary_directory)
+    ['hi', 'there', 'mike']
+
+    Given a directory and a relative path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('A  = hi there $(C)', file=makefile)
+    ...     print('B  = my friend', file=makefile)
+    ...     print('C := mike', file=makefile)
+    ...     makefile.flush()
+    ...     extract_make_var('C', makefile=os.path.basename(makefilepath),
+    ...                      directory=temporary_directory)
+    ['mike']
+
+    Delete the temporary directory
+    >>> import shutil
+    >>> shutil.rmtree(temporary_directory)
     '''
     with tempfile.NamedTemporaryFile(mode='w+') as fout:
         print('print-%:\n'
@@ -423,6 +460,11 @@ def extract_make_vars(makefile='Makefile', directory='.'):
     Extracts all GNU Make variables from the given Makefile, except for those
     that are built-in.  It is returned as a dictionary of
       {'var': ['val', ...]}
+
+    @param makefile: path to the Makefile (absolute or relative to the given
+        directory)
+    @param directory: directory to use as the current directory where the
+        Makefile would be run
 
     @note, all variables are returned, including internal Makefile
     variables.
@@ -445,6 +487,48 @@ def extract_make_vars(makefile='Makefile', directory='.'):
     Traceback (most recent call last):
     ...
     subprocess.CalledProcessError: Command ... returned non-zero exit status 2.
+
+    Make sure it works with names relative to the given directory
+
+    Create a temporary directory
+    >>> import tempfile
+    >>> temporary_directory = tempfile.mkdtemp()
+
+    Given a directory and an absolute path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('A  = hi there $(C)', file=makefile)
+    ...     print('B  = my friend', file=makefile)
+    ...     print('C := mike', file=makefile)
+    ...     makefile.flush()
+    ...     allvars = extract_make_vars(makefile=makefilepath,
+    ...                                 directory=temporary_directory)
+    >>> allvars['A']
+    ['hi', 'there', 'mike']
+    >>> allvars['B']
+    ['my', 'friend']
+    >>> allvars['C']
+    ['mike']
+
+    Given a directory and a relative path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('A  = hi there $(C)', file=makefile)
+    ...     print('B  = my friend', file=makefile)
+    ...     print('C := mike', file=makefile)
+    ...     makefile.flush()
+    ...     allvars = extract_make_vars(makefile=os.path.basename(makefilepath),
+    ...                                 directory=temporary_directory)
+    >>> allvars['A']
+    ['hi', 'there', 'mike']
+    >>> allvars['B']
+    ['my', 'friend']
+    >>> allvars['C']
+    ['mike']
+
+    Delete the temporary directory
+    >>> import shutil
+    >>> shutil.rmtree(temporary_directory)
     '''
     with tempfile.NamedTemporaryFile(mode='w+') as fout:
         print('$(foreach v,$(.VARIABLES),$(info $(v)=$($(v))**==**))\n'
