@@ -285,7 +285,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
         else:
             break
 
-    repl_copy['makefile'] = makepath
+    repl_copy['makefile'] = os.path.realpath(makepath)
     repl_copy['number'] = '{0:02d}'.format(num)
     logging.info('Creating makefile: %s', makepath)
     util.process_in_file(
@@ -497,8 +497,7 @@ def update_gt_results(directory, verbose=False,
 
     @return None
     '''
-    gt_resultfile = util.extract_make_var(
-        'GT_OUT', os.path.join(directory, 'Makefile'))[0]
+    gt_resultfile = util.extract_make_var('GT_OUT', directory=directory)[0]
     logging.info('Updating ground-truth results - %s', gt_resultfile)
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
     run_make(
@@ -1221,7 +1220,7 @@ def test_makefile(args, makepath, testing_list, indent='  '):
         if args.delete:
             build_bisect(relmakepath, args.directory, verbose=args.verbose,
                          jobs=args.jobs, target='bisect-smallclean')
-    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+    resultfile = util.extract_make_var('BISECT_RESULT', relmakepath,
                                        args.directory)[0]
     resultpath = os.path.join(args.directory, resultfile)
     result = get_comparison_result(resultpath)
@@ -1656,8 +1655,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     logging.debug('  trouble hash:               "%s"', trouble_hash)
 
     # get the list of source files from the Makefile
-    sources = util.extract_make_var('SOURCE', 'Makefile',
-                                    directory=args.directory)
+    sources = util.extract_make_var('SOURCE', directory=args.directory)
     logging.debug('Sources')
     for source in sources:
         logging.debug('  %s', source)
