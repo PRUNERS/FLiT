@@ -116,8 +116,7 @@ extern thread_local InfoStream info_stream;
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
-inline
-std::vector<std::string> split(
+inline std::vector<std::string> split(
     const std::string &tosplit, char delimiter,
     std::size_t maxsplit=std::numeric_limits<std::size_t>::max())
 {
@@ -133,6 +132,32 @@ std::vector<std::string> split(
     pieces.emplace_back(remaining.str());
   }
   return pieces;
+}
+
+inline std::string rtrim(const std::string &text) {
+  auto right_iter = std::find_if_not(text.rbegin(), text.rend(),
+      [](unsigned char c) { return std::isspace(c); });
+  auto len = std::distance(right_iter, text.rend());
+  return text.substr(0, len);
+}
+
+inline std::string ltrim(const std::string &text) {
+  auto left_iter = std::find_if_not(text.begin(), text.end(),
+      [](unsigned char c) { return std::isspace(c); });
+  return std::string(left_iter, text.end());
+}
+
+inline std::string trim(const std::string &text) {
+  // could implement as
+  //   return rtrim(ltrim(text))
+  // but that creates more string copies than necessary
+  auto left_iter = std::find_if_not(text.begin(), text.end(),
+      [](unsigned char c) { return std::isspace(c); });
+  auto right_iter = std::find_if_not(text.rbegin(), text.rend(),
+      [](unsigned char c) { return std::isspace(c); });
+  auto left = std::distance(text.begin(), left_iter);
+  auto right = std::distance(right_iter, text.rend());
+  return text.substr(left, right - left);
 }
 
 template <typename F, typename I>

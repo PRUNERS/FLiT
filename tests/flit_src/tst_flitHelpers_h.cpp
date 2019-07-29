@@ -121,6 +121,8 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T> &vec) {
 
 } // end of unnamed namespace
 
+namespace tst_as_float {
+
 void tst_as_float_32bit() {
   uint32_t val = 1067316150;
   float expected = 1.234;
@@ -197,6 +199,10 @@ void tst_as_float_80bit() {
   TH_EQUAL(flit::as_float(val), expected);
 }
 TH_REGISTER(tst_as_float_80bit);
+
+} // end of namespace tst_as_float
+
+namespace tst_as_int {
 
 void tst_as_int_32bit() {
   uint32_t expected = 1067316150;
@@ -275,6 +281,8 @@ void tst_as_int_128bit() {
 }
 TH_REGISTER(tst_as_int_128bit);
 
+} // end of namespace tst_as_int
+
 void tst_l2norm() {
   std::vector<float> empty;
   std::vector<float> one_elem { 1.0L };
@@ -291,6 +299,8 @@ void tst_l2norm() {
   TH_EQUAL(flit::l2norm(two_elems, two_elems),  0.0L );
 }
 TH_REGISTER(tst_l2norm);
+
+namespace tst_split {
 
 void tst_split_empty() {
   TH_EQUAL(flit::split("", '\n'), std::vector<std::string>{});
@@ -351,3 +361,181 @@ void tst_split_maxsplit_many() {
   TH_EQUAL(flit::split(text, ' ', 2), expected_split);
 }
 TH_REGISTER(tst_split_maxsplit_many);
+
+} // end of namespace tst_split
+
+namespace tst_trim {
+
+TH_TEST(tst_trim_empty) {
+  TH_EQUAL(flit::trim(""), "");
+}
+
+TH_TEST(tst_trim_nothing_to_trim) {
+  TH_EQUAL(flit::trim("hello"), "hello");
+}
+
+TH_TEST(tst_trim_left_spaces) {
+  TH_EQUAL(flit::trim("  monty"), "monty");
+}
+
+TH_TEST(tst_trim_right_spaces) {
+  TH_EQUAL(flit::trim("python  "), "python");
+}
+
+TH_TEST(tst_trim_leftright_spaces) {
+  TH_EQUAL(flit::trim("  ROCKS!!  "), "ROCKS!!");
+}
+
+TH_TEST(tst_trim_tabs) {
+  TH_EQUAL(flit::trim("\ttabs-suck!\t\t"), "tabs-suck!");
+}
+
+TH_TEST(tst_trim_newlines) {
+  TH_EQUAL(flit::trim("\nmike-is-cool\n\n"), "mike-is-cool");
+}
+
+TH_TEST(tst_trim_formfeed) {
+  TH_EQUAL(flit::trim("\f\fwho-uses-form-feeds?\f\f\f"),
+           "who-uses-form-feeds?");
+}
+
+TH_TEST(tst_trim_carriagereturn) {
+  TH_EQUAL(flit::trim("\r\rwho-uses-carriage-returns?\r\r"),
+           "who-uses-carriage-returns?");
+}
+
+TH_TEST(tst_trim_verticaltab) {
+  TH_EQUAL(flit::trim("\v\vvertical-tabs?--really?\v\v"),
+           "vertical-tabs?--really?");
+}
+
+TH_TEST(tst_trim_alltypes) {
+  TH_EQUAL(flit::trim(" \t\n\f\r\vall-types \t\f\n\v\r"),
+           "all-types");
+}
+
+TH_TEST(tst_trim_onlywhitespace) {
+  TH_EQUAL(flit::trim("  \t\n \f \r\v \r   \t\n \n"), "");
+}
+
+TH_TEST(tst_trim_whitespace_inside) {
+  TH_EQUAL(flit::trim(" whitespace\tis\ninside of this\rphrase\n  "),
+           "whitespace\tis\ninside of this\rphrase");
+}
+
+TH_TEST(tst_ltrim_empty) {
+  TH_EQUAL(flit::ltrim(""), "");
+}
+
+TH_TEST(tst_ltrim_nothing_to_ltrim) {
+  TH_EQUAL(flit::ltrim("hello"), "hello");
+}
+
+TH_TEST(tst_ltrim_left_spaces) {
+  TH_EQUAL(flit::ltrim("  monty"), "monty");
+}
+
+TH_TEST(tst_ltrim_right_spaces) {
+  TH_EQUAL(flit::ltrim("python  "), "python  ");
+}
+
+TH_TEST(tst_ltrim_leftright_spaces) {
+  TH_EQUAL(flit::ltrim("  ROCKS!!  "), "ROCKS!!  ");
+}
+
+TH_TEST(tst_ltrim_tabs) {
+  TH_EQUAL(flit::ltrim("\ttabs-suck!\t\t"), "tabs-suck!\t\t");
+}
+
+TH_TEST(tst_ltrim_newlines) {
+  TH_EQUAL(flit::ltrim("\nmike-is-cool\n\n"), "mike-is-cool\n\n");
+}
+
+TH_TEST(tst_ltrim_formfeed) {
+  TH_EQUAL(flit::ltrim("\f\fwho-uses-form-feeds?\f\f\f"),
+           "who-uses-form-feeds?\f\f\f");
+}
+
+TH_TEST(tst_ltrim_carriagereturn) {
+  TH_EQUAL(flit::ltrim("\r\rwho-uses-carriage-returns?\r\r"),
+           "who-uses-carriage-returns?\r\r");
+}
+
+TH_TEST(tst_ltrim_verticaltab) {
+  TH_EQUAL(flit::ltrim("\v\vvertical-tabs?--really?\v\v"),
+           "vertical-tabs?--really?\v\v");
+}
+
+TH_TEST(tst_ltrim_alltypes) {
+  TH_EQUAL(flit::ltrim(" \t\n\f\r\vall-types \t\f\n\v\r"),
+           "all-types \t\f\n\v\r");
+}
+
+TH_TEST(tst_ltrim_onlywhitespace) {
+  TH_EQUAL(flit::ltrim("  \t\n \f \r\v \r   \t\n \n"), "");
+}
+
+TH_TEST(tst_ltrim_whitespace_inside) {
+  TH_EQUAL(flit::ltrim(" whitespace\tis\ninside of this\rphrase\n  "),
+           "whitespace\tis\ninside of this\rphrase\n  ");
+}
+
+TH_TEST(tst_rtrim_empty) {
+  TH_EQUAL(flit::rtrim(""), "");
+}
+
+TH_TEST(tst_rtrim_nothing_to_rtrim) {
+  TH_EQUAL(flit::rtrim("hello"), "hello");
+}
+
+TH_TEST(tst_rtrim_left_spaces) {
+  TH_EQUAL(flit::rtrim("  monty"), "  monty");
+}
+
+TH_TEST(tst_rtrim_right_spaces) {
+  TH_EQUAL(flit::rtrim("python  "), "python");
+}
+
+TH_TEST(tst_rtrim_leftright_spaces) {
+  TH_EQUAL(flit::rtrim("  ROCKS!!  "), "  ROCKS!!");
+}
+
+TH_TEST(tst_rtrim_tabs) {
+  TH_EQUAL(flit::rtrim("\ttabs-suck!\t\t"), "\ttabs-suck!");
+}
+
+TH_TEST(tst_rtrim_newlines) {
+  TH_EQUAL(flit::rtrim("\nmike-is-cool\n\n"), "\nmike-is-cool");
+}
+
+TH_TEST(tst_rtrim_formfeed) {
+  TH_EQUAL(flit::rtrim("\f\fwho-uses-form-feeds?\f\f\f"),
+           "\f\fwho-uses-form-feeds?");
+}
+
+TH_TEST(tst_rtrim_carriagereturn) {
+  TH_EQUAL(flit::rtrim("\r\rwho-uses-carriage-returns?\r\r"),
+           "\r\rwho-uses-carriage-returns?");
+}
+
+TH_TEST(tst_rtrim_verticaltab) {
+  TH_EQUAL(flit::rtrim("\v\vvertical-tabs?--really?\v\v"),
+           "\v\vvertical-tabs?--really?");
+}
+
+TH_TEST(tst_rtrim_alltypes) {
+  TH_EQUAL(flit::rtrim(" \t\n\f\r\vall-types \t\f\n\v\r"),
+           " \t\n\f\r\vall-types");
+}
+
+TH_TEST(tst_rtrim_onlywhitespace) {
+  TH_EQUAL(flit::rtrim("  \t\n \f \r\v \r   \t\n \n"), "");
+}
+
+TH_TEST(tst_rtrim_whitespace_inside) {
+  TH_EQUAL(flit::rtrim(" whitespace\tis\ninside of this\rphrase\n  "),
+           " whitespace\tis\ninside of this\rphrase");
+}
+
+
+} // end of namespace tst_trim
