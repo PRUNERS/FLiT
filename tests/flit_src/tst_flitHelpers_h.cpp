@@ -104,6 +104,21 @@ unsigned __int128 combine_to_128(uint64_t left_half, uint64_t right_half) {
   return val;
 }
 
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const std::vector<T> &vec) {
+  out << "[";
+  bool first = true;
+  for (auto &val : vec) {
+    if (!first) {
+      out << ", ";
+    }
+    first = false;
+    out << val;
+  }
+  out << "]";
+  return out;
+}
+
 } // end of unnamed namespace
 
 void tst_as_float_32bit() {
@@ -276,3 +291,63 @@ void tst_l2norm() {
   TH_EQUAL(flit::l2norm(two_elems, two_elems),  0.0L );
 }
 TH_REGISTER(tst_l2norm);
+
+void tst_split_empty() {
+  TH_EQUAL(flit::split("", '\n'), std::vector<std::string>{});
+}
+TH_REGISTER(tst_split_empty);
+
+void tst_split_nonempty() {
+  std::string text("hello");
+  auto actual = flit::split(text, ' ');
+  std::vector<std::string> expected {text};
+  TH_EQUAL(actual, expected);
+}
+TH_REGISTER(tst_split_nonempty);
+
+void tst_split_one_split() {
+  std::string text = "hello there";
+  std::vector<std::string> expected_split = { "hello", "there" };
+  TH_EQUAL(flit::split(text, ' '), expected_split);
+}
+TH_REGISTER(tst_split_one_split);
+
+void tst_split_many_splits() {
+  std::string text = "hello there my friend";
+  std::vector<std::string> expected_split {"hello", "there", "my", "friend"};
+  TH_EQUAL(flit::split(text, ' '), expected_split);
+  expected_split = {
+    "h",
+    "llo th",
+    "r",
+    " my fri",
+    "nd",
+  };
+  TH_EQUAL(flit::split(text, 'e'), expected_split);
+}
+TH_REGISTER(tst_split_many_splits);
+
+void tst_split_maxsplit_zero() {
+  std::string text = "hello there my friend";
+  std::vector<std::string> expected_split { "hello there my friend" };
+  TH_EQUAL(flit::split(text, ' ', 0), expected_split);
+}
+TH_REGISTER(tst_split_maxsplit_zero);
+
+void tst_split_maxsplit_one() {
+  std::string text = "hello there my friend";
+  std::vector<std::string> expected_split { "hello", "there my friend" };
+  TH_EQUAL(flit::split(text, ' ', 1), expected_split);
+}
+TH_REGISTER(tst_split_maxsplit_one);
+
+void tst_split_maxsplit_many() {
+  std::string text = "hello there my friend";
+  std::vector<std::string> expected_split { "hello", "there", "my", "friend" };
+  TH_EQUAL(flit::split(text, ' ', 100), expected_split);
+  TH_EQUAL(flit::split(text, ' ', 3), expected_split);
+
+  expected_split = { "hello", "there", "my friend" };
+  TH_EQUAL(flit::split(text, ' ', 2), expected_split);
+}
+TH_REGISTER(tst_split_maxsplit_many);

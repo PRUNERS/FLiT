@@ -117,11 +117,21 @@ std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
 inline
-std::vector<std::string> split(const std::string &tosplit, char delimiter) {
+std::vector<std::string> split(
+    const std::string &tosplit, char delimiter,
+    std::size_t maxsplit=std::numeric_limits<std::size_t>::max())
+{
   std::vector<std::string> pieces;
   std::string piece;
   std::istringstream stream(tosplit);
-  while (std::getline(stream, piece, delimiter)) { pieces.emplace_back(piece); }
+  while (pieces.size() < maxsplit && std::getline(stream, piece, delimiter)) {
+    pieces.emplace_back(piece);
+  }
+  if (stream) {
+    std::ostringstream remaining;
+    remaining << stream.rdbuf();
+    pieces.emplace_back(remaining.str());
+  }
   return pieces;
 }
 
