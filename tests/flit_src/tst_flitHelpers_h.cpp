@@ -537,5 +537,4 @@ TH_TEST(tst_rtrim_whitespace_inside) {
            " whitespace\tis\ninside of this\rphrase");
 }
 
-
 } // end of namespace tst_trim

@@ -116,6 +116,7 @@ extern thread_local InfoStream info_stream;
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
+/// Split text by a delimiter
 inline std::vector<std::string> split(
     const std::string &tosplit, char delimiter,
     std::size_t maxsplit=std::numeric_limits<std::size_t>::max())
@@ -134,6 +135,7 @@ inline std::vector<std::string> split(
   return pieces;
 }
 
+/// Trim whitespace off of the end of the text
 inline std::string rtrim(const std::string &text) {
   auto right_iter = std::find_if_not(text.rbegin(), text.rend(),
       [](unsigned char c) { return std::isspace(c); });
@@ -141,12 +143,14 @@ inline std::string rtrim(const std::string &text) {
   return text.substr(0, len);
 }
 
+/// Trim whitespace off of the beginning of the text
 inline std::string ltrim(const std::string &text) {
   auto left_iter = std::find_if_not(text.begin(), text.end(),
       [](unsigned char c) { return std::isspace(c); });
   return std::string(left_iter, text.end());
 }
 
+/// Trim whitespace off of the beginning and end of the text
 inline std::string trim(const std::string &text) {
   // could implement as
   //   return rtrim(ltrim(text))
