@@ -9,6 +9,7 @@
 * [FLiT Configuration File](flit-configuration-file.md)
     * [Available Compiler Flags](available-compiler-flags.md)
 * [Writing Test Cases](writing-test-cases.md)
+    * [FLiT Helpers](flit-helpers.md)
     * [MPI Support](mpi-support.md)
     * [CUDA Support](cuda-support.md)
     * [Run Wrapper and HPC Support](run-wrapper-and-hpc-support.md)
