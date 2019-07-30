@@ -382,8 +382,8 @@ long double runComparison_impl(TestFactory* factory, const TestResult &gt,
       throw std::invalid_argument("baseline comparison type is not None when"
                                   " the resultfile is defined");
     }
-    Variant gtval = Variant::fromString(fsutil::readfile(gt.resultfile()));
-    Variant resval = Variant::fromString(fsutil::readfile(res.resultfile()));
+    Variant gtval = Variant::fromString(flit::readfile(gt.resultfile()));
+    Variant resval = Variant::fromString(flit::readfile(res.resultfile()));
     return test->variant_compare(gtval, resval);
   }
   return test->variant_compare(gt.result(), res.result());

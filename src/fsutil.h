@@ -103,7 +103,6 @@
 #include <cstring>      // for strerror()
 
 namespace flit {
-namespace fsutil {
 
 //= CONSTANTS =//
 
@@ -113,6 +112,8 @@ static const std::string separator = "/";
 //= DECLARATIONS =//
 
 // inline
+inline void ifopen(std::ifstream& in, const std::string &filename);
+inline void ofopen(std::ofstream& out, const std::string &filename);
 template <typename ... Args> inline std::string join(Args ... args);
 inline std::string readfile(const std::string &path);
 inline std::vector<std::string> listdir(const std::string &directory);
@@ -239,6 +240,49 @@ struct StreamBufReplace {
 
 //= DEFINITIONS =//
 
+/** Opens a file, but on failure, throws std::ios::failure
+ *
+ * T must be one of {fstream, ifstream, ofstream}
+ *
+ * The passed in filestream should be an empty-constructed stream
+ */
+template <typename T>
+void _openfile_check(T& filestream, const std::string &filename) {
+  // turn on exceptions on failure
+  filestream.exceptions(std::ios::failbit);
+
+  // opening will throw if the file does not exist or is not readable
+  filestream.open(filename);
+
+  // turn off all exceptions (back to the default behavior)
+  filestream.exceptions(std::ios::goodbit);
+}
+
+/** Opens a file for reading, but on failure, throws std::ios::failure
+ *
+ * The passed in filestream should be an empty-constructed stream
+ *
+ * Note: This was changed to pass in the stream rather than return it because
+ * GCC 4.8 failed to compile - it failed to use the move assignment operator
+ * and move constructor, and instead tried to use the copy constructor.
+ */
+inline void ifopen(std::ifstream& in, const std::string &filename) {
+  _openfile_check<std::ifstream>(in, filename);
+}
+
+/** Opens a file for writing, but on failure, throws std::ios::failure
+ *
+ * The passed in filestream should be an empty-constructed stream
+ *
+ * Note: this was changed to pass in the stream rather than return it because
+ * GCC 4.8 failed to compile - it failed to use the move assignment operator
+ * and move constructor, and instead tried to use the copy constructor.
+ */
+inline void ofopen(std::ofstream& out, const std::string &filename) {
+  _openfile_check<std::ofstream>(out, filename);
+  out.precision(1000);  // lots of digits of precision
+}
+
 inline void _join_impl(std::ostream &out, const std::string &piece) {
   out << piece;
 }
@@ -309,14 +353,14 @@ inline tinydir_file file_status(const std::string &filepath) {
 }
 
 inline PushDir::PushDir(const std::string &directory)
-  : _old_curdir(::flit::fsutil::curdir())
+  : _old_curdir(::flit::curdir())
 {
-  ::flit::fsutil::chdir(directory);
+  ::flit::chdir(directory);
 }
 
 inline PushDir::~PushDir() {
   try {
-    ::flit::fsutil::chdir(_old_curdir);
+    ::flit::chdir(_old_curdir);
   } catch (std::ios_base::failure &ex) {
     std::cerr << "ios_base error: " << ex.what() << std::endl;
   }
@@ -388,7 +432,6 @@ inline StreamBufReplace::~StreamBufReplace() {
   old_stream.rdbuf(old_buffer);
 }
 
-} // end of namespace fsutil
 } // end of namespace flit
 
 #endif // FSUTIL_H

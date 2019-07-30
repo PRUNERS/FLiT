@@ -36,7 +36,7 @@ flit::ProcResult call_main_impl(
 namespace flit {
 
 ProcResult call_with_output(const std::string &command) {
-  fsutil::TempFile tempfile;
+  flit::TempFile tempfile;
 
   // run the command
   std::string cmd = command + " 2>" + tempfile.name;
@@ -56,7 +56,7 @@ ProcResult call_with_output(const std::string &command) {
 
   // wait and grab the return code
   int ret = pclose(output);
-  auto err = fsutil::readfile(tempfile.name);
+  auto err = flit::readfile(tempfile.name);
 
   if (WIFEXITED(ret)) {
     ret = WEXITSTATUS(ret);

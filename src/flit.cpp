@@ -206,7 +206,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   // TODO- be in PATH or in the current directory, or it may already be an
   // TODO- absolute path.
   if (argCount > 0) {
-    g_program_path = fsutil::which(argList[0]);
+    g_program_path = flit::which(argList[0]);
   }
 
   std::vector<std::string> helpOpts          = { "-h", "--help" };

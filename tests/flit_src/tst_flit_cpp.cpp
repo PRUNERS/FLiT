@@ -98,7 +98,7 @@
 
 #include <cstdio>
 
-using flit::fsutil::TempFile;
+using flit::TempFile;
 
 namespace {
 
@@ -466,7 +466,7 @@ void tst_parseArguments_set_progpath() {
   std::vector<const char*> argList = {progpath};
   flit::g_program_path = "";
   flit::parseArguments(argList.size(), argList.data());
-  TH_EQUAL(flit::fsutil::which(progpath), flit::g_program_path);
+  TH_EQUAL(flit::which(progpath), flit::g_program_path);
 }
 TH_REGISTER(tst_parseArguments_set_progpath);
 

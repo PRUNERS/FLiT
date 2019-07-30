@@ -89,6 +89,7 @@
 #include "subprocess.h"
 #include "flitHelpers.h"
 #include "flit.h"
+#include "fsutil.h"
 
 int main(int argCount, char* argList[]) {
   // Fast track means calling a user's main() function
@@ -235,7 +236,7 @@ void tst_register_main_duplicate_func() {
 // Therefore, we do not need to test those functions in isolation
 void tst_call_main() {
   // this is a prerequisite to calling call_main()
-  flit::g_program_path = flit::fsutil::which("./tst_subprocess");
+  flit::g_program_path = flit::which("./tst_subprocess");
 
   auto result = flit::call_main(mymains::mymain_1, "arbitrary_name",
                                 "the remaining args");

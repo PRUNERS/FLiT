@@ -91,6 +91,7 @@
 #include "Variant.h"
 #include "flitHelpers.h"
 #include "timeFunction.h"
+#include "fsutil.h"
 
 #include <fstream>
 #include <functional>

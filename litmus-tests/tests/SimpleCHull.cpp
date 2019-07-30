@@ -360,7 +360,7 @@ protected:
     FLIT_UNUSED(ti);
 
     // write inputs to a temporary file
-    flit::fsutil::TempFile tmpfile;
+    flit::TempFile tmpfile;
     std::vector<float> towrite(ti.begin(), ti.end());
     auto writer = fopen(tmpfile.name.c_str(), "w+");
     fwrite(towrite.data(), sizeof(float), towrite.size(), writer);

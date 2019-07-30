@@ -236,49 +236,6 @@ long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
   return score;
 }
 
-/** Opens a file, but on failure, throws std::ios::failure
- *
- * T must be one of {fstream, ifstream, ofstream}
- *
- * The passed in filestream should be an empty-constructed stream
- */
-template <typename T>
-void _openfile_check(T& filestream, const std::string &filename) {
-  // turn on exceptions on failure
-  filestream.exceptions(std::ios::failbit);
-
-  // opening will throw if the file does not exist or is not readable
-  filestream.open(filename);
-
-  // turn off all exceptions (back to the default behavior)
-  filestream.exceptions(std::ios::goodbit);
-}
-
-/** Opens a file for reading, but on failure, throws std::ios::failure
- *
- * The passed in filestream should be an empty-constructed stream
- *
- * Note: This was changed to pass in the stream rather than return it because
- * GCC 4.8 failed to compile - it failed to use the move assignment operator
- * and move constructor, and instead tried to use the copy constructor.
- */
-inline void ifopen(std::ifstream& in, const std::string &filename) {
-  _openfile_check<std::ifstream>(in, filename);
-}
-
-/** Opens a file for writing, but on failure, throws std::ios::failure
- *
- * The passed in filestream should be an empty-constructed stream
- *
- * Note: this was changed to pass in the stream rather than return it because
- * GCC 4.8 failed to compile - it failed to use the move assignment operator
- * and move constructor, and instead tried to use the copy constructor.
- */
-inline void ofopen(std::ofstream& out, const std::string &filename) {
-  _openfile_check<std::ofstream>(out, filename);
-  out.precision(1000);  // lots of digits of precision
-}
-
 } // end of namespace flit
 
 #endif // FLIT_HELPERS_HPP
