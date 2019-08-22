@@ -119,7 +119,9 @@ matrix:
           packages:
             - *native_deps
 
-before_install: pip3 install --user toml $extra_pip
+before_install:
+  - pip3 install --user setuptools
+  - pip3 install --user toml $extra_pip
 
 script: make -j4 && make -j4 -C tests && make check
 
