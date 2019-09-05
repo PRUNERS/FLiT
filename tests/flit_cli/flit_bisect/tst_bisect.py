@@ -189,8 +189,8 @@ Verify all non-templated functions were identified during the symbol searches
 ...             if x.startswith('    Found differing symbol on line')])))
 line 100 -- file1_func3_PROBLEM() (score 2.0)
 line 103 -- file3_func5_PROBLEM() (score 3.0)
-line 106 -- file4_all() (score 30.0)
 line 108 -- file1_func4_PROBLEM() (score 3.0)
+line 110 -- file4_all() (score 30.0)
 line 90 -- file2_func1_PROBLEM() (score 7.0)
 line 92 -- file1_func2_PROBLEM() (score 5.0)
 line 92 -- file3_func2_PROBLEM() (score 1.0)
@@ -224,7 +224,7 @@ False
 Verify the bad symbols section for file4.cxx
 >>> idx = bisect_out.index('  All differing symbols in tests/file4.cxx:')
 >>> print('\\n'.join(sorted(bisect_out[idx+1:idx+2])))
-    line 106 -- file4_all() (score 30.0)
+    line 110 -- file4_all() (score 30.0)
 >>> bisect_out[idx+2].startswith(' ')
 False
 
@@ -246,7 +246,7 @@ Test the All differing symbols section of the output
 >>> idx = bisect_out.index('All variability inducing symbols:')
 >>> print('\\n'.join(bisect_out[idx+1:])) # doctest:+ELLIPSIS
   tests/BisectTest.cpp:96 ... -- real_problem_test(int, char**) (score 50.0)
-  tests/file4.cxx:106 ... -- file4_all() (score 30.0)
+  tests/file4.cxx:110 ... -- file4_all() (score 30.0)
   tests/file2.cpp:90 ... -- file2_func1_PROBLEM() (score 7.0)
   tests/file1.cpp:92 ... -- file1_func2_PROBLEM() (score 5.0)
   tests/file1.cpp:108 ... -- file1_func4_PROBLEM() (score 3.0)
