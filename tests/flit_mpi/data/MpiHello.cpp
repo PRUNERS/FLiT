@@ -85,10 +85,12 @@
 
 #include <mpi.h>
 
+#include <iostream>
 #include <string>
 #include <sstream>
 
 #include <cstring>
+#include <cstdio>
 
 // this is the real test, run under MPI in separate processes
 int mpi_main(int argCount, char* argList[]) {
@@ -99,27 +101,35 @@ int mpi_main(int argCount, char* argList[]) {
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::cout << std::endl;
-  std::cout << "hello from rank " << rank << " of " << world_size << std::endl;
-  std::cout << "mpi_main(" << argCount << ", {";
+  std::ostringstream buffer;
+
+  printf("\n");
+  printf("hello from rank %d of %d\n", rank, world_size);
+  std::fflush(stdout);
+
+  buffer << "mpi_main(" << argCount << ", {";
   bool first = true;
   for (int i = 0; i < argCount; i++) {
-    if (!first) { std::cout << ", "; }
+    if (!first) { buffer << ", "; }
     first = false;
-    std::cout << argList[i];
+    buffer << argList[i];
   }
-  std::cout << "})\n";
+  buffer << "})\n";
+  printf("%s", buffer.str().c_str());
+  std::fflush(stdout);
 
   // send a message from rank 0 to rank 1
   if (rank == 0) {
     char message[13];
     strcpy(message, "hello world!");
     MPI_Send(message, 13, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
-    std::cout << "Sending '" << message << "' from rank 0\n";
+    printf("Sending '%s' from rank 0\n", message);
+    std::fflush(stdout);
   } else if (rank == 1) {
-    char buffer[13];
-    MPI_Recv(buffer, 13, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    std::cout << "Received '" << buffer << "' from rank 0 to rank 1\n";
+    char message[13];
+    MPI_Recv(message, 13, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    printf("Received '%s' from rank 0 to rank 1\n", message);
+    std::fflush(stdout);
   } else {
     throw std::logic_error("there should only be two ranks");
   }
