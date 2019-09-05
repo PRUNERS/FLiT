@@ -92,9 +92,6 @@
 
 #include <sstream>
 
-// move namespace flit::fsutil into namespace fsutil
-namespace fsutil { using namespace flit::fsutil; }
-
 namespace {
 
 std::ostream& operator<<(std::ostream& out, std::vector<std::string> vec) {
@@ -619,20 +616,20 @@ void tst_TestBase_run_outputFileUsingFilebase() {
   test.to_return = std::vector<double> { 1, 2, 3 };
 
   std::vector<double> ti {};
-  fsutil::TempDir tmpdir;
-  auto filebase = fsutil::join(tmpdir.name(), "my-file-base");
+  flit::TempDir tmpdir;
+  auto filebase = flit::join(tmpdir.name(), "my-file-base");
   bool shouldTime = false;
   auto results = test.run(ti, filebase, shouldTime);
   TH_EQUAL(results.size(), 1);
   TH_EQUAL(results[0].result(), flit::Variant());
 
-  auto dir_contents = fsutil::listdir(tmpdir.name());
+  auto dir_contents = flit::listdir(tmpdir.name());
   std::string filename = "my-file-base_This-is-my-ID_d.dat";
   TH_VERIFY(std::any_of(dir_contents.begin(), dir_contents.end(),
             [&filename] (std::string fname) {
               return fname == filename;
             }));
-  auto contents = fsutil::readfile(fsutil::join(tmpdir.name(), filename));
+  auto contents = flit::readfile(flit::join(tmpdir.name(), filename));
   auto read_results = flit::Variant::fromString(contents);
   TH_EQUAL(flit::Variant(test.to_return), read_results);
 }
@@ -648,16 +645,16 @@ void tst_TestBase_run_outputVariantsToFile() {
     test.to_return = to_return;
 
     std::vector<double> ti {};
-    fsutil::TempDir tmpdir;
-    auto filebase = fsutil::join(tmpdir.name(), "my-file-base");
+    flit::TempDir tmpdir;
+    auto filebase = flit::join(tmpdir.name(), "my-file-base");
     bool shouldTime = false;
     auto results = test.run(ti, filebase, shouldTime);
     TH_EQUAL(results.size(), 1);
     TH_EQUAL(results[0].result(), flit::Variant());
 
-    auto dir_contents = fsutil::listdir(tmpdir.name());
+    auto dir_contents = flit::listdir(tmpdir.name());
     std::string filename = "my-file-base_This-is-my-ID_d.dat";
-    auto contents = fsutil::readfile(fsutil::join(tmpdir.name(), filename));
+    auto contents = flit::readfile(flit::join(tmpdir.name(), filename));
     auto read_results = flit::Variant::fromString(contents);
     TH_EQUAL(flit::Variant(test.to_return), read_results);
   };

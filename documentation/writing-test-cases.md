@@ -4,7 +4,7 @@
 |
 [Table of Contents](README.md)
 |
-[Next](mpi-support.md)
+[Next](flit-helpers.md)
 
 When you initialize a test directory using `flit init`, a test file called
 `Empty.cpp` will be placed in the `tests` directory.  This test is as the name
@@ -518,4 +518,4 @@ For more examples, look in `FLiT/tests/flit_mpi/data`.
 |
 [Table of Contents](README.md)
 |
-[Next](mpi-support.md)
+[Next](flit-helpers.md)

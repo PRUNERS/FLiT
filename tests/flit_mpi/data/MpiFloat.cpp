@@ -202,7 +202,7 @@ protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
     FLIT_UNUSED(ti);
     auto main_func = get_mpi_main<T>();
-    flit::fsutil::TempDir tempdir;      // create a temp dir
+    flit::TempDir tempdir;      // create a temp dir
     flit::ProcResult result;
 
     // change to a different directory when calling main
@@ -211,15 +211,15 @@ protected:
     // This trick is nice because it now makes this test reentrant since each
     // invocation will executed from a separate directory.
     {
-      flit::fsutil::PushDir pushd(tempdir.name());  // go to it
+      flit::PushDir pushd(tempdir.name());  // go to it
       auto result = flit::call_mpi_main(main_func, "mpirun -n 2", "mympi",
                                         "remaining arguments");
     }
 
-    auto logcontents_0 = flit::fsutil::readfile(
-        flit::fsutil::join(tempdir.name(), "out-0.log"));
-    auto logcontents_1 = flit::fsutil::readfile(
-        flit::fsutil::join(tempdir.name(), "out-1.log"));
+    auto logcontents_0 = flit::readfile(
+        flit::join(tempdir.name(), "out-0.log"));
+    auto logcontents_1 = flit::readfile(
+        flit::join(tempdir.name(), "out-1.log"));
 
     std::vector<std::string> vec_result;
     vec_result.emplace_back(std::to_string(result.ret));

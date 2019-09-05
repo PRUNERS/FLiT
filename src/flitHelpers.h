@@ -116,13 +116,52 @@ extern thread_local InfoStream info_stream;
 std::ostream& operator<<(std::ostream&, const unsigned __int128);
 unsigned __int128 stouint128(const std::string &str);
 
-inline
-std::vector<std::string> split(const std::string &tosplit, char delimiter) {
+/// Split text by a delimiter
+inline std::vector<std::string> split(
+    const std::string &tosplit, char delimiter,
+    std::size_t maxsplit=std::numeric_limits<std::size_t>::max())
+{
   std::vector<std::string> pieces;
   std::string piece;
   std::istringstream stream(tosplit);
-  while (std::getline(stream, piece, delimiter)) { pieces.emplace_back(piece); }
+  while (pieces.size() < maxsplit && std::getline(stream, piece, delimiter)) {
+    pieces.emplace_back(piece);
+  }
+  if (stream) {
+    std::ostringstream remaining;
+    remaining << stream.rdbuf();
+    pieces.emplace_back(remaining.str());
+  }
   return pieces;
+}
+
+/// Trim whitespace off of the end of the text
+inline std::string rtrim(const std::string &text) {
+  auto right_iter = std::find_if_not(text.rbegin(), text.rend(),
+      [](unsigned char c) { return std::isspace(c); });
+  auto len = std::distance(right_iter, text.rend());
+  return text.substr(0, len);
+}
+
+/// Trim whitespace off of the beginning of the text
+inline std::string ltrim(const std::string &text) {
+  auto left_iter = std::find_if_not(text.begin(), text.end(),
+      [](unsigned char c) { return std::isspace(c); });
+  return std::string(left_iter, text.end());
+}
+
+/// Trim whitespace off of the beginning and end of the text
+inline std::string trim(const std::string &text) {
+  // could implement as
+  //   return rtrim(ltrim(text))
+  // but that creates more string copies than necessary
+  auto left_iter = std::find_if_not(text.begin(), text.end(),
+      [](unsigned char c) { return std::isspace(c); });
+  auto right_iter = std::find_if_not(text.rbegin(), text.rend(),
+      [](unsigned char c) { return std::isspace(c); });
+  auto left = std::distance(text.begin(), left_iter);
+  auto right = std::distance(right_iter, text.rend());
+  return text.substr(left, right - left);
 }
 
 template <typename F, typename I>
@@ -195,49 +234,6 @@ long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
     score += v2[i] * v2[i];
   }
   return score;
-}
-
-/** Opens a file, but on failure, throws std::ios::failure
- *
- * T must be one of {fstream, ifstream, ofstream}
- *
- * The passed in filestream should be an empty-constructed stream
- */
-template <typename T>
-void _openfile_check(T& filestream, const std::string &filename) {
-  // turn on exceptions on failure
-  filestream.exceptions(std::ios::failbit);
-
-  // opening will throw if the file does not exist or is not readable
-  filestream.open(filename);
-
-  // turn off all exceptions (back to the default behavior)
-  filestream.exceptions(std::ios::goodbit);
-}
-
-/** Opens a file for reading, but on failure, throws std::ios::failure
- *
- * The passed in filestream should be an empty-constructed stream
- *
- * Note: This was changed to pass in the stream rather than return it because
- * GCC 4.8 failed to compile - it failed to use the move assignment operator
- * and move constructor, and instead tried to use the copy constructor.
- */
-inline void ifopen(std::ifstream& in, const std::string &filename) {
-  _openfile_check<std::ifstream>(in, filename);
-}
-
-/** Opens a file for writing, but on failure, throws std::ios::failure
- *
- * The passed in filestream should be an empty-constructed stream
- *
- * Note: this was changed to pass in the stream rather than return it because
- * GCC 4.8 failed to compile - it failed to use the move assignment operator
- * and move constructor, and instead tried to use the copy constructor.
- */
-inline void ofopen(std::ofstream& out, const std::string &filename) {
-  _openfile_check<std::ofstream>(out, filename);
-  out.precision(1000);  // lots of digits of precision
 }
 
 } // end of namespace flit

@@ -108,7 +108,6 @@
 #include <memory>
 
 namespace flit {
-namespace fsutil {
 
 std::string readfile(FILE* file) {
   fseek(file, 0, SEEK_END);
@@ -138,7 +137,7 @@ void rec_rmdir(const std::string &directory) {
     }
   }
   // now remove the directory
-  ::flit::fsutil::rmdir(directory);
+  ::flit::rmdir(directory);
 }
 
 void mkdir(const std::string &directory, int mode) {
@@ -329,5 +328,4 @@ FdReplace::~FdReplace() {
   dup2(old_fd_copy, old_fd);
 }
 
-} // end of namespace fsutil
 } // end of namespace flit

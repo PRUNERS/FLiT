@@ -1,6 +1,6 @@
 # MPI Support
 
-[Prev](writing-test-cases.md)
+[Prev](flit-helpers.md)
 |
 [Table of Contents](README.md)
 |
@@ -118,7 +118,7 @@ MPI_Send(...);
 ```
 
 
-[Prev](writing-test-cases.md)
+[Prev](flit-helpers.md)
 |
 [Table of Contents](README.md)
 |
