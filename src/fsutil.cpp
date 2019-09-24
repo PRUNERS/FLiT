@@ -254,7 +254,10 @@ TempFile::TempFile(const std::string &parent) {
   std::string ftemplate = join(parent, "flit-tempfile-XXXXXX");
   std::unique_ptr<char> fname_buf(new char[ftemplate.size() + 1]);
   strcpy(fname_buf.get(), ftemplate.data());
-  mkstemp(fname_buf.get());
+  auto status = mkstemp(fname_buf.get());
+  if (status == -1) {
+    throw std::ios_base::failure("Could not create file with mkstemp()");
+  }
   name = fname_buf.get();
   out.exceptions(std::ios::failbit);
   out.open(name);
@@ -264,7 +267,10 @@ TempDir::TempDir(const std::string &parent) {
   std::string dtemplate = join(parent, "flit-tempfile-XXXXXX");
   std::unique_ptr<char> dname_buf(new char[dtemplate.size() + 1]);
   strcpy(dname_buf.get(), dtemplate.data());
-  mkdtemp(dname_buf.get());
+  auto status = mkdtemp(dname_buf.get());
+  if (status == nullptr) {
+    throw std::ios_base::failure("Could not create directory with mkdtemp()");
+  }
   _name = dname_buf.get();
 }
 
