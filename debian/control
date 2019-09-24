@@ -1,0 +1,31 @@
+Source: flit
+Section: devel
+Priority: optional
+Maintainer: Michael Bentley <mikebentley15@gmail.com>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.6
+Homepage: https://pruners.github.io/flit
+Vcs-Git: git://github.com/PRUNERS/flit.git
+Vcs-Browser: https://github.com/PRUNERS/flit.git
+
+Package: flit
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ bash, 
+ binutils (>= 2.26),
+ coreutils,
+ hostname,
+ python3,
+ python3-toml
+Recommends:
+ libopenmpi-dev,
+ mpich,
+ openmpi-bin,
+ python3-pyelftools
+Description: A compiler reproducibility testing and debugging framework
+ FLiT is a C++ compiler reproducibility testing framework that allows the user
+ to also debug reproducibility problems after compiling with different
+ compilers or optimizations.
+ .
+ The testing framework of FLiT is written in C++11, but the command-line tool
+ is written in Python3.
