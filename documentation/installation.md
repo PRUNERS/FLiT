@@ -206,6 +206,17 @@ If you want to specify an install prefix, you do that by specifying the
 make install PREFIX=~/my-installs/
 ```
 
+Additionally, there is a `DESTDIR` variable for specifying a path where the
+installation will consider to be the root of the filesystem.  The given `PREFIX`
+will be relative to the `DESTDIR` (if given).  See the
+[GNU coding standard](https://www.gnu.org/prep/standards/html_node/DESTDIR.html)
+for more information about `DESTDIR`.
+
+Note, installations in `DESTDIR` are typically not guaranteed to work as-is
+until they are copied to the given `PREFIX`, however FLiT guarantees that it
+will work in both situations.  You may copy the files in `PREFIX` anywhere and
+it will work, granted you maintain the same directory heirarchy.
+
 If you do not want to install somewhere and want to use the flit command-line
 tool from the cloned git repository, simply make a symbolic link to the
 `flit.py` script.  Here I presume that `$HOME/bin` is in your `PATH` variable
@@ -224,17 +235,17 @@ There should be nothing to setup since `sqlite3` should already be present.
 ## Uninstallation
 
 You can also uninstall as easily as you installed.  If you used a custom
-`PREFIX` value, then that custom `PREFIX` value should also be used.  For
-example if you installed with
+`PREFIX` value and/or `DESTDIR` value, then simply provide those values again.
+For example if you installed with
 
 ```bash
-make install PREFIX=~/my-installs/
+make install DESTDIR=~/my-installs PREFIX=/usr
 ```
 
 then you would uninstall with
 
 ```bash
-make uninstall PREFIX=~/my-installs/
+make uninstall DESTDIR=~/my-installs PREFIX=/usr
 ```
 
 [Prev](release-notes.md)
