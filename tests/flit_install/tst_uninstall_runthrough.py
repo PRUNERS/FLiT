@@ -90,16 +90,26 @@ Let's now make a temporary directory, install there, and then uninstall.
 >>> import os
 >>> import subprocess as subp
 >>> with th.tempdir() as temp_dir:
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
-...                          'install', 'PREFIX=' + temp_dir],
+...     destdir = os.path.join(temp_dir, 'install')
+...     prefix = os.path.join(temp_dir, 'usr')
+...     effective_prefix = os.path.join(destdir, prefix[1:])
+...     _ = subp.check_call(['make',
+...                          '-C', os.path.join(th.config.lib_dir, '..'),
+...                          'install',
+...                          'DESTDIR=' + destdir,
+...                          'PREFIX=' + prefix],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     dirs1 = os.listdir(temp_dir)
+...     dirs1 = os.listdir(effective_prefix)
 ...     dirs2 = [os.path.join(x, y) for x in dirs1
-...                                 for y in os.listdir(os.path.join(temp_dir, x))]
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
-...                          'uninstall', 'PREFIX=' + temp_dir],
+...                                 for y in os.listdir(
+...                                     os.path.join(effective_prefix, x))]
+...     _ = subp.check_call(['make',
+...                          '-C', os.path.join(th.config.lib_dir, '..'),
+...                          'uninstall',
+...                          'DESTDIR=' + destdir,
+...                          'PREFIX=' + prefix],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     tempdir_exists = os.path.exists(temp_dir)
+...     tempdir_exists = os.path.exists(effective_prefix)
 >>> sorted(dirs1)
 ['bin', 'include', 'lib', 'share']
 >>> sorted(dirs2)
