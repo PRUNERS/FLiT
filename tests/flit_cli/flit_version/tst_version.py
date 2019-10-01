@@ -88,8 +88,9 @@ The tests are below using doctest
 Let's now make a temporary directory and test that flit init populates the
 correct files
 
->>> import subprocess as subp
 >>> import os
+>>> import shutil
+>>> import subprocess as subp
 
 >>> actual = subp.check_output([os.path.join(th.config.script_dir, 'flit.py'),
 ...                             '--version'])
@@ -114,14 +115,27 @@ True
 
 
 Check that an installed flit will also be able to handle the call to --version
+both from the install at DESTDIR/PREFIX, and at PREFIX
 
 >>> with th.tempdir() as tmpdir:
-...     _ = subp.check_output(['make', 'install', 'PREFIX=' + tmpdir, '-C',
-...             os.path.dirname(th.config.lib_dir)])
-...     actual = subp.check_output([os.path.join(tmpdir, 'bin', 'flit'), '-v'])
+...     destdir = os.path.join(tmpdir, 'install')
+...     prefix = os.path.join(tmpdir, 'usr')
+...     effective_prefix = os.path.join(destdir, prefix[1:])
+...     _ = subp.check_output(['make', 'install',
+...                            'DESTDIR=' + destdir,
+...                            'PREFIX=' + prefix,
+...                            '-C', os.path.dirname(th.config.lib_dir)])
+...     actual = subp.check_output([
+...         os.path.join(effective_prefix, 'bin', 'flit'), '-v'])
+...     _ = shutil.copytree(effective_prefix, prefix, symlinks=True)
+...     actual2 = subp.check_output([
+...         os.path.join(prefix, 'bin', 'flit'), '-v'])
 >>> actual = actual.decode('utf-8').strip()
+>>> actual2 = actual2.decode('utf-8').strip()
 >>> expected = 'flit version ' + th.config.version
 >>> expected == actual
+True
+>>> expected == actual2
 True
 '''
 

@@ -90,13 +90,21 @@ testing that the following commands complete without error.
 >>> import glob
 >>> import os
 >>> import subprocess as subp
+>>> import sys
+>>> import shutil
+>>> from importlib.machinery import SourceFileLoader
 >>> with th.tempdir() as temp_dir:
+...     destdir = os.path.join(temp_dir, 'install')
+...     prefix = os.path.join(temp_dir, 'usr')
+...     effective_prefix = os.path.join(destdir, prefix[1:])
 ...     _ = subp.check_call(['make',
 ...                          '-C', os.path.join(th.config.lib_dir, '..'),
-...                          'install', 'PREFIX=' + temp_dir],
+...                          'install',
+...                          'DESTDIR=' + destdir,
+...                          'PREFIX=' + prefix],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     flit = os.path.join(temp_dir, 'bin', 'flit')
-...     sandbox_dir = os.path.join(temp_dir, 'sandbox')
+...     flit = os.path.join(effective_prefix, 'bin', 'flit')
+...     sandbox_dir = os.path.join(effective_prefix, 'sandbox')
 ...     _ = subp.check_call([flit, 'init', '-C', sandbox_dir],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 ...     _ = subp.check_call(['make', '-C', sandbox_dir, 'dirs'],
@@ -106,6 +114,35 @@ testing that the following commands complete without error.
 ...     os.chdir(sandbox_dir)
 ...     _ = subp.check_call([flit, 'import'] + glob.glob('results/*.csv'),
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
+...     _ = shutil.copytree(effective_prefix, prefix, symlinks=True)
+...     loader = SourceFileLoader(
+...         'flitconfig',
+...         os.path.join(prefix, 'share', 'flit', 'scripts', 'flitconfig.py'))
+...     flitconfig = loader.load_module()
+
+Make sure flitconfig has the correct paths
+
+>>> flitconfig.script_dir == os.path.join(prefix, 'share', 'flit', 'scripts')
+True
+
+>>> flitconfig.doc_dir == os.path.join(prefix, 'share', 'flit', 'doc')
+True
+
+>>> flitconfig.lib_dir == os.path.join(prefix, 'lib')
+True
+
+>>> flitconfig.include_dir == os.path.join(prefix, 'include', 'flit')
+True
+
+>>> flitconfig.config_dir == os.path.join(prefix, 'share', 'flit', 'config')
+True
+
+>>> flitconfig.data_dir == os.path.join(prefix, 'share', 'flit', 'data')
+True
+
+>>> flitconfig.litmus_test_dir == os.path.join(prefix, 'share', 'flit',
+...                                            'litmus-tests')
+True
 '''
 
 # Test setup before the docstring is run.
