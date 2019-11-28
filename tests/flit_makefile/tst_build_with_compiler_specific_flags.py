@@ -81,19 +81,43 @@
 # -- LICENSE END --
 
 '''
-Test that only the provided optimization levels and switches are used
+Tests FLiT's use of the 'fixed_compile_flags' and 'fixed_link_flags' from the
+compiler section of the flit-config.toml file
 
 >>> from io import StringIO
->>> import shutil
+>>> import glob
 >>> import os
+>>> import shutil
+>>> import subprocess as subp
 
->>> from tst_common_funcs import (
-...     deref_makelist, get_default_compiler, runconfig)
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
 
->>> testconf = 'data/compilerspecificflags.toml'
->>> with open(testconf, 'r') as fin:
-...     init_out, update_out, makevars = runconfig(fin.read())
+>>> with th.tempdir() as temp_dir:
+...     with StringIO() as ostream:
+...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
+...         init_out = ostream.getvalue().splitlines()
+...     os.remove(os.path.join(temp_dir, 'flit-config.toml'))
+...     with open(os.path.join(temp_dir, 'flit-config.toml'), 'w') as conf:
+...         _ = conf.write('[dev_build]\\n')
+...         _ = conf.write("compiler_name = 'fake-clang'\\n")
+...         _ = conf.write('[ground_truth]\\n')
+...         _ = conf.write("compiler_name = 'fake-clang'\\n")
+...         _ = conf.write('[[compiler]]\\n')
+...         _ = conf.write("binary = './fake_clang34.py'\\n")
+...         _ = conf.write("name = 'fake-clang'\\n")
+...         _ = conf.write("type = 'clang'\\n")
+...         _ = conf.write("fixed_compile_flags = '-Wfixed-flag'\\n")
+...         _ = conf.write("fixed_link_flags = '-Wfix-link -Whello'\\n")
+...     _ = shutil.copy('fake_clang34.py', temp_dir)
+...     _ = subp.check_output(['make', '--always-make', 'Makefile',
+...                            '-C', temp_dir])  
+...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir,
+...                                   'VERBOSE=1'])
+...     make_out = make_out.decode('utf8').splitlines()
 
+Verify the output of flit init
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
 Creating .../flit-config.toml
 Creating .../custom.mk
@@ -101,32 +125,21 @@ Creating .../main.cpp
 Creating .../tests/Empty.cpp
 Creating .../Makefile
 
->>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
-Updating .../Makefile
+>>> sum([1 for x in make_out if '-Wfixed-flag' in x])
+3
 
->>> makevars['GCC_CXXFLAGS']
-['-first-gxx']
+>>> sum([1 for x in make_out if '-Wfix-link -Whello' in x])
+1
 
->>> makevars['CLANG_CXXFLAGS'] # doctest:+ELLIPSIS
-['-first-clang', '-second-clang', '--gcc-toolchain=...']
-
->>> makevars['INTEL_CXXFLAGS']
-[]
-
->>> makevars['GCC_LDFLAGS']
-['-first-gxx-ld', '-second-gxx-ld']
-
->>> makevars['CLANG_LDFLAGS']
-[]
-
->>> makevars['INTEL_LDFLAGS']
-['-first-intel-ld']
+Make sure gcc toolchain is not used since gcc is not there
+>>> any(['--gcc-toolchain' in x for x in make_out])
+False
 '''
 
 # Test setup before the docstring is run.
 import sys
 before_path = sys.path[:]
-sys.path.append('../..')
+sys.path.append('..')
 import test_harness as th
 sys.path = before_path
 
@@ -134,3 +147,4 @@ if __name__ == '__main__':
     from doctest import testmod
     failures, tests = testmod()
     sys.exit(failures)
+

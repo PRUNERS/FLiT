@@ -307,11 +307,11 @@ def main(arguments, prog=sys.argv[0]):
                 [flag_name(x) for x in compiler['switches_list']])
             for compiler in projconf['compiler']]),
         'compiler_fixed_compile_flags': gen_assignments({
-            'FIXED_CXXFLAGS_' + compiler['type'].upper():
+            compiler['type'].upper() + '_CXXFLAGS':
                 compiler['fixed_compile_flags']
             for compiler in projconf['compiler']}),
         'compiler_fixed_link_flags': gen_assignments({
-            'FIXED_LDFLAGS_' + compiler['type'].upper():
+            compiler['type'].upper() + '_LDFLAGS':
                 compiler['fixed_link_flags']
             for compiler in projconf['compiler']}),
         }
