@@ -96,6 +96,8 @@ GCC_TYPE        := gcc
 
 # keep only the compilers that are not None and are in the path
 COMPILERS       := {compilers}
+{compiler_fixed_compile_flags}
+{compiler_fixed_link_flags}
 
 FLIT_INC_DIR    := {flit_include_dir}
 FLIT_LIB_DIR    := {flit_lib_dir}

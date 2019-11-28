@@ -163,6 +163,9 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+# compiler-specific flags always used
+fixed_compile_flags = ''
+fixed_link_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -199,6 +202,9 @@ switches_list = [
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+# compiler-specific flags always used
+fixed_compile_flags = ''
+fixed_link_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -237,6 +243,9 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+# compiler-specific flags always used
+fixed_compile_flags = ''
+fixed_link_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
