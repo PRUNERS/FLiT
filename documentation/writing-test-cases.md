@@ -1,6 +1,6 @@
 # Writing Test Cases
 
-[Prev](available-compiler-flags.md)
+[Prev](standard-c++-library-implementations.md)
 |
 [Table of Contents](README.md)
 |
@@ -514,7 +514,7 @@ these values and possibly files created or written from `mpiapp_main()`.
 For more examples, look in `FLiT/tests/flit_mpi/data`.
 
 
-[Prev](available-compiler-flags.md)
+[Prev](standard-c++-library-implementations.md)
 |
 [Table of Contents](README.md)
 |
