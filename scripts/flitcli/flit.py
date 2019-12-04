@@ -98,6 +98,8 @@ import importlib
 import os
 import sys
 
+import flitconfig as conf
+
 def import_helper_modules(directory):
     'Imports the modules found in the given directory.'
     if directory not in sys.path:
@@ -120,7 +122,7 @@ def import_helper_modules(directory):
 
     return subcom_map
 
-def generate_help_documentation(subcom_map):
+def generate_help_documentation(subcom_map, prog=sys.argv[0], description=None):
     '''
     Generates and returns both the formatted help for the general flit
     executable, but also for the help subcommand.  They are returned as a
@@ -128,15 +130,15 @@ def generate_help_documentation(subcom_map):
 
     >>> help_str, help_subcom_str = generate_help_documentation(dict())
     '''
-    parser = argparse.ArgumentParser(
-        description='''
-            The flit command-line tool allows for users to write
-            portability test cases.  One can test primarily for
-            compiler effects on reproducibility of floating-point
-            algorithms.  That at least is the main use case for this
-            tool, although you may come up with some other uses.
-            ''',
-        )
+    if description is None:
+        description = '''
+            The flit command-line tool allows for users to write portability
+            test cases.  One can test primarily for compiler effects on
+            reproducibility of floating-point algorithms.  That at least is the
+            main use case for this tool, although you may come up with some
+            other uses.
+            '''
+    parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('-v', '--version', action='store_true',
                         help='Print version and exit')
     subparsers = parser.add_subparsers(metavar='subcommand', dest='subcommand')
@@ -160,7 +162,8 @@ def generate_help_documentation(subcom_map):
 
     return (parser.format_help(), help_subparser.format_help())
 
-def main(arguments, outstream=None, errstream=None):
+def main(arguments, prog=sys.argv[0], module_dir=conf.script_dir,
+         description=None, outstream=None, errstream=None):
     '''
     Main logic here.
 
@@ -169,7 +172,7 @@ def main(arguments, outstream=None, errstream=None):
     would go to the console and put it into a StringStream or maybe a file.
     '''
     if outstream is None and errstream is None:
-        return _main_impl(arguments)
+        return _main_impl(arguments, prog, module_dir)
     oldout = sys.stdout
     olderr = sys.stderr
     try:
@@ -177,20 +180,17 @@ def main(arguments, outstream=None, errstream=None):
             sys.stdout = outstream
         if errstream is not None:
             sys.stderr = errstream
-        return _main_impl(arguments)
+        return _main_impl(arguments, prog, module_dir)
     finally:
         sys.stdout = oldout
         sys.stderr = olderr
 
-def _main_impl(arguments):
+def _main_impl(arguments, prog, module_dir, description=None):
     'Implementation of main'
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    sys.path.insert(0, script_dir)
-    import flitconfig as conf
+    subcom_map = import_helper_modules(module_dir)
 
-    subcom_map = import_helper_modules(script_dir)
-
-    help_str, help_subcommand_str = generate_help_documentation(subcom_map)
+    help_str, help_subcommand_str = generate_help_documentation(
+        subcom_map, prog=prog, description=description)
     if len(arguments) == 0 or arguments[0] in ('-h', '--help'):
         print(help_str)
         return 0
