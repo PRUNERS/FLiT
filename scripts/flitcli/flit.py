@@ -230,7 +230,7 @@ def _main_impl(arguments, prog, module_dir, description=None):
 
     # it is one of the other subcommands.  Just forward the request on
     return subcom_map[subcommand].main(
-        arguments, prog='{0} {1}'.format(sys.argv[0], subcommand))
+        arguments, prog='{0} {1}'.format(prog, subcommand))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
