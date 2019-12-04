@@ -254,7 +254,7 @@ def main(arguments, prog=sys.argv[0]):
             'Compiler name {0} not found'.format(ground_truth['compiler_name'])
 
     base_compilers = {x.upper(): None for x in util.SUPPORTED_COMPILER_TYPES}
-    base_compilers.update({compiler['type'].upper(): compiler['binary']
+    base_compilers.update({flag_name(compiler['name']): compiler['binary']
                            for compiler in projconf['compiler']})
 
     test_run_args = ''
@@ -286,7 +286,7 @@ def main(arguments, prog=sys.argv[0]):
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'compiler_defs': gen_assignments({
             key: val for key, val in base_compilers.items()}),
-        'compilers': ' '.join([compiler['type'].upper()
+        'compilers': ' '.join([flag_name(compiler['name'])
                                for compiler in projconf['compiler']]),
         'opcodes_definitions': gen_assignments({
             flag_name(x): x
@@ -298,20 +298,20 @@ def main(arguments, prog=sys.argv[0]):
             for x in compiler['switches_list']}),
         'compiler_opcodes': '\n\n'.join([
             gen_multi_assignment(
-                'OPCODES_' + compiler['type'].upper(),
+                'OPCODES_' + flag_name(compiler['name']),
                 [flag_name(x) for x in compiler['optimization_levels']])
             for compiler in projconf['compiler']]),
         'compiler_switches': '\n\n'.join([
             gen_multi_assignment(
-                'SWITCHES_' + compiler['type'].upper(),
+                'SWITCHES_' + flag_name(compiler['name']),
                 [flag_name(x) for x in compiler['switches_list']])
             for compiler in projconf['compiler']]),
         'compiler_fixed_compile_flags': gen_assignments({
-            compiler['type'].upper() + '_CXXFLAGS':
+            flag_name(compiler['name']) + '_CXXFLAGS':
                 compiler['fixed_compile_flags']
             for compiler in projconf['compiler']}),
         'compiler_fixed_link_flags': gen_assignments({
-            compiler['type'].upper() + '_LDFLAGS':
+            flag_name(compiler['name']) + '_LDFLAGS':
                 compiler['fixed_link_flags']
             for compiler in projconf['compiler']}),
         }
