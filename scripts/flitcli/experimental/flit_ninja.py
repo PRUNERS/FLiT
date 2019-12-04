@@ -324,6 +324,18 @@ class NinjaWriter:
         n.build('build.ninja', 'configure_ninja', implicit=self.ninja_gen_deps)
         n.newline()
 
+        n.comment('Target to clean up')
+        n.rule('CLEAN',
+               command=['ninja', '-t', 'clean', '&&', 'rm', '-rf', '$toclean'],
+               description='CLEANING UP')
+        n.newline()
+
+        n.build('clean', 'CLEAN', variables={'toclean': ['obj']})
+        n.build('distclean', 'CLEAN',
+                variables={'toclean': [
+                    'obj', 'results', 'bin', 'devrun', 'gtrun',
+                    'ground-truth.csv', 'ground-truth.csv*.dat']})
+
         #for compiler in self.compilers:
         #    name = variablize(compiler['name'])
         #    n.variable(name, compiler['binary'])
