@@ -208,11 +208,11 @@ class NinjaWriter:
     def load_makefile(self, makefile):
         self.ninja_gen_deps.append(makefile)
         makevars = util.extract_make_vars(makefile)
-        self.sources.extend(sorted(makevars['SOURCE']))
-        self.cxxflags.extend(makevars['CXXFLAGS'])
-        self.ldflags.extend(makevars['LDFLAGS'])
-        self.ldflags.extend(makevars['LDLIBS'])
-        self.run_wrapper = makevars['RUN_WRAPPER']
+        if 'SOURCE' in makevars: self.sources.extend(sorted(makevars['SOURCE']))
+        if 'CXXFLAGS' in makevars: self.cxxflags.extend(makevars['CXXFLAGS'])
+        if 'LDFLAGS' in makevars: self.ldflags.extend(makevars['LDFLAGS'])
+        if 'LDLIBS' in makevars: self.ldflags.extend(makevars['LDLIBS'])
+        if 'RUN_WRAPPER' in makevars: self.run_wrapper = makevars['RUN_WRAPPER']
 
     def _create_compilation(self, compiler, optl, switches):
         '''
@@ -550,10 +550,6 @@ class NinjaWriter:
         n.newline()
         n.build('run', 'phony', [x + comparison_suffix for x in results_files])
 
-        # TODO: add ground-truth.csv
-        # TODO: add run
-
-
 def main(arguments, prog=sys.argv[0]):
     args = parse_args(arguments, prog=prog)
     arguments = [x for x in arguments if x not in ('-q', '--quiet')]
@@ -567,7 +563,8 @@ def main(arguments, prog=sys.argv[0]):
     with open(BUILD_FILENAME, 'w') as build_file:
         writer = NinjaWriter(build_file, prog, arguments)
         writer.load_project_config('flit-config.toml')
-        writer.load_makefile('custom.mk')
+        if os.path.isfile('custom.mk'):
+            writer.load_makefile('custom.mk')
         writer.write()
 
     return 0
