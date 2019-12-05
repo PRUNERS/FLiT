@@ -133,10 +133,10 @@ def variablize(name):
     AssertionError: Error: cannot handle flag only made of dashes
 
     >>> variablize('-funsafe-math-optimizations')
-    'FUNSAFE_MATH_OPTIMIZATIONS'
+    '_FUNSAFE_MATH_OPTIMIZATIONS'
 
     >>> variablize('-Ofast -march=32bit')
-    'OFAST__MARCH_32BIT'
+    '_OFAST__MARCH_32BIT'
 
     >>> variablize('-3')
     Traceback (most recent call last):
@@ -144,12 +144,12 @@ def variablize(name):
     AssertionError: Error: cannot handle flag that starts with a number
 
     >>> variablize('-compiler-name=clang++')
-    'COMPILER_NAME_CLANGpp'
+    '_COMPILER_NAME_CLANGxx'
     '''
     if name == '':
         return 'NO_FLAGS'
     name = re.sub('[^0-9A-Za-z]', '_',
-                  name.upper().strip('-').replace('+', 'p'))
+                  name.upper().replace('+', 'x'))
     assert re.match('^[0-9]', name) is None, \
         'Error: cannot handle name that starts with a number'
     assert len(name) > 0, 'Error: cannot handle name only made of dashes'
@@ -336,8 +336,8 @@ class NinjaWriter:
                 '&&',
                 'echo', '"  gt ......... Compile the gtrun executable"',
                 '&&',
-                #'echo', '"  runbuild ... Build all executables needed for the run target"',
-                #'&&',
+                'echo', '"  runbuild ... Build all executables needed for the run target"',
+                '&&',
                 #'echo', '"  run ........ Run all combinations of compilation, results in results/"',
                 #'&&',
                 'echo', '"  clean ...... Clean intermediate files"',
@@ -471,6 +471,17 @@ class NinjaWriter:
             self._write_compilation(self.dev_compilation)
             n.build('dev', 'phony', 'devrun')
             n.newline()
+
+        runbuild_targets = ['gt']
+        for name, compiler in self.compilers.items():
+            for optl in compiler['optimization_levels']:
+                for switches in compiler['switches_list']:
+                    compilation = self._create_compilation(
+                        compiler, optl, switches)
+                    runbuild_targets.append(compilation['target'])
+                    self._write_compilation(compilation)
+                    n.newline()
+        n.build('runbuild', 'phony', runbuild_targets)
 
         # TODO: add ground-truth.csv
         # TODO: add runbuild and run
