@@ -199,7 +199,7 @@ class NinjaWriter:
             '-Wl,-rpath=' + os.path.abspath(conf.lib_dir),
             '-lflit',
             ]
-        self.compilers = []
+        self.compilers = {}
         self.gt_compilation = None
         self._written_compile_rules = set()
         self._written_link_rules = set()
@@ -212,7 +212,42 @@ class NinjaWriter:
         self.ldflags.extend(makevars['LDFLAGS'])
         self.ldflags.extend(makevars['LDLIBS'])
 
+    def _create_compilation(self, compiler, optl, switches):
+        '''
+        Create compilation dictionary for the given compilation
+
+        A compilation has:
+
+        - id
+        - compiler_name
+        - binary
+        - optl
+        - switches
+        - cxxflags
+        - ldflags
+        - target
+        '''
+
+        v_compiler_name = variablize(compiler['name'])
+        v_optl = variablize(optl)
+        v_switches = variablize(switches)
+        my_id = v_compiler_name + v_optl + v_switches
+
+        compilation = {
+            'id': my_id,
+            'compiler_name': compiler['name'],
+            'binary': compiler['binary'],
+            'optl': optl,
+            'switches': switches,
+            'cxxflags': compiler['fixed_compile_flags'],
+            'ldflags': compiler['fixed_link_flags'],
+            'target': os.path.join('bin', my_id),
+            }
+
+        return compilation
+
     def load_project_config(self, tomlfile):
+        'Load configuration from flit-config.toml'
         self.ninja_gen_deps.append(tomlfile)
         projconf = util.load_projconf()
 
@@ -222,8 +257,8 @@ class NinjaWriter:
             self.ldflags.extend(mpi_ldflags)
 
         # different compilers link differently for no position independence
-        self.compilers = [dict(x) for x in projconf['compiler']]
-        for compiler in self.compilers:
+        self.compilers = {x['name']: dict(x) for x in projconf['compiler']}
+        for compiler in self.compilers.values():
             if compiler['type'] == 'clang':
                 compiler['fixed_link_flags'] += ' -nopie'
             if compiler['type'] == 'gcc':
@@ -231,31 +266,19 @@ class NinjaWriter:
                 if version.split('.')[0] not in ('4', '5'):
                     compiler['fixed_link_flags'] += ' -no-pie'
 
-        # compilation has:
-        # - id
-        # - compiler_name
-        # - binary
-        # - optl
-        # - switches
-        # - cxxflags
-        # - target
-        # - ldflags
-        self.gt_compilation = dict(projconf['ground_truth'])
+        self.gt_compilation = self._create_compilation(
+            self.compilers[projconf['ground_truth']['compiler_name']],
+            projconf['ground_truth']['optimization_level'],
+            projconf['ground_truth']['switches'])
         self.gt_compilation['id'] = 'gt'
         self.gt_compilation['target'] = 'gtrun'
-        self.gt_compilation['optl'] = self.gt_compilation['optimization_level']
 
-        matching_gt_compiler = [
-            x for x in self.compilers
-            if x['name'] == self.gt_compilation['compiler_name']
-            ]
-        assert len(matching_gt_compiler) == 1
-        matching_gt_compiler = matching_gt_compiler[0]
-
-        self.gt_compilation['binary'] = matching_gt_compiler['binary']
-        self.gt_compilation['cxxflags'] = \
-            matching_gt_compiler['fixed_compile_flags']
-        self.gt_compilation['ldflags'] = matching_gt_compiler['fixed_link_flags']
+        self.dev_compilation = self._create_compilation(
+            self.compilers[projconf['dev_build']['compiler_name']],
+            projconf['dev_build']['optimization_level'],
+            projconf['dev_build']['switches'])
+        self.dev_compilation['id'] = 'dev'
+        self.dev_compilation['target'] = 'devrun'
 
     def _cxx_command(self, outdir, cxx, optl, switches, cxxflags, target):
         '''
@@ -307,21 +330,21 @@ class NinjaWriter:
                 'echo', '&&',
                 'echo', '"The following targets are available."', '&&',
                 'echo', '&&',
-                'echo', '"  help.........Show this help and exit (default target)"',
+                'echo', '"  help ....... Show this help and exit (default target)"',
                 '&&',
-                #'echo', '"  dev..........Only run the devel compilation to test things out"',
+                'echo', '"  dev ........ Only run the devel compilation to test things out"',
+                '&&',
+                'echo', '"  gt ......... Compile the gtrun executable"',
+                '&&',
+                #'echo', '"  runbuild ... Build all executables needed for the run target"',
                 #'&&',
-                'echo', '"  gt...........Compile the gtrun executable"',
-                '&&',
-                #'echo', '"  runbuild.....Build all executables needed for the run target"',
+                #'echo', '"  run ........ Run all combinations of compilation, results in results/"',
                 #'&&',
-                #'echo', '"  run..........Run all combinations of compilation, results in results/"',
-                #'&&',
-                'echo', '"  clean........Clean intermediate files"',
+                'echo', '"  clean ...... Clean intermediate files"',
                 '&&',
-                'echo', '"  veryclean....Runs clean + removes targets and results"',
+                'echo', '"  veryclean .. Runs clean + removes targets and results"',
                 '&&',
-                'echo', '"  distclean....Same as veryclean"',
+                'echo', '"  distclean .. Same as veryclean"',
                 '&&',
                 'echo',
                 ],
@@ -362,7 +385,7 @@ class NinjaWriter:
         '''
         n = self.writer
 
-        name = variablize(compilation['id'])
+        name = compilation['id']
         compile_rule_name = name + '_cxx'
         link_rule_name = variablize(compilation['compiler_name']) + '_link'
         obj_dir = os.path.join('obj', name)
@@ -376,7 +399,7 @@ class NinjaWriter:
                        optl=compilation['optl'],
                        switches=compilation['switches'],
                        cxxflags=compilation['cxxflags'],
-                       target=compilation['target']),
+                       target=os.path.basename(compilation['target'])),
                    description='CXX $out',
                    depfile='$out.d',
                    deps='gcc')
@@ -442,11 +465,15 @@ class NinjaWriter:
         if self.gt_compilation is not None:
             self._write_compilation(self.gt_compilation)
             n.build('gt', 'phony', 'gtrun')
+            n.newline()
+
+        if self.dev_compilation is not None:
+            self._write_compilation(self.dev_compilation)
+            n.build('dev', 'phony', 'devrun')
+            n.newline()
 
         # TODO: add ground-truth.csv
-        # TODO: add dev and devrun
         # TODO: add runbuild and run
-        # TODO: add rule to update build.ninja
 
 
 def main(arguments, prog=sys.argv[0]):
