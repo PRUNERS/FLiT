@@ -200,7 +200,9 @@ class NinjaWriter:
             '-lflit',
             ]
         self.compilers = []
-        self.gt_compiler = None
+        self.gt_compilation = None
+        self._written_compile_rules = set()
+        self._written_link_rules = set()
 
     def load_makefile(self, makefile):
         self.ninja_gen_deps.append(makefile)
@@ -229,27 +231,31 @@ class NinjaWriter:
                 if version.split('.')[0] not in ('4', '5'):
                     compiler['fixed_link_flags'] += ' -no-pie'
 
-        self.gt_compiler = dict(projconf['ground_truth'])
-        self.gt_compiler['optl'] = self.gt_compiler['optimization_level']
+        # compilation has:
+        # - id
+        # - compiler_name
+        # - binary
+        # - optl
+        # - switches
+        # - cxxflags
+        # - target
+        # - ldflags
+        self.gt_compilation = dict(projconf['ground_truth'])
+        self.gt_compilation['id'] = 'gt'
+        self.gt_compilation['target'] = 'gtrun'
+        self.gt_compilation['optl'] = self.gt_compilation['optimization_level']
 
         matching_gt_compiler = [
             x for x in self.compilers
-            if x['name'] == self.gt_compiler['compiler_name']
+            if x['name'] == self.gt_compilation['compiler_name']
             ]
         assert len(matching_gt_compiler) == 1
         matching_gt_compiler = matching_gt_compiler[0]
 
-        self.gt_compiler['binary'] = matching_gt_compiler['binary']
-        self.gt_compiler['cxxflags'] = \
+        self.gt_compilation['binary'] = matching_gt_compiler['binary']
+        self.gt_compilation['cxxflags'] = \
             matching_gt_compiler['fixed_compile_flags']
-        self.gt_compiler['ldflags'] = matching_gt_compiler['fixed_link_flags']
-
-        # TODO: self.gt_compiler, with:
-        # TODO-   - 'binary'
-        # TODO-   - 'optl'
-        # TODO-   - 'switches'
-        # TODO-   - 'cxxflags' (containing compiler's cxxflags)
-        # TODO-   - 'ldflags'  (containing compiler's ldflags)
+        self.gt_compilation['ldflags'] = matching_gt_compiler['fixed_link_flags']
 
     def _cxx_command(self, outdir, cxx, optl, switches, cxxflags, target):
         '''
@@ -291,7 +297,110 @@ class NinjaWriter:
         command.extend(as_list(ldflags))
         command.append('$ldflags')
         return command
-            
+
+    def _write_help(self):
+        'Writes the help target to the ninja build file'
+        self.writer.comment('Print help to the user')
+        self.writer.rule(
+            'HELP',
+            command=[
+                'echo', '&&',
+                'echo', '"The following targets are available."', '&&',
+                'echo', '&&',
+                'echo', '"  help.........Show this help and exit (default target)"',
+                '&&',
+                #'echo', '"  dev..........Only run the devel compilation to test things out"',
+                #'&&',
+                'echo', '"  gt...........Compile the gtrun executable"',
+                '&&',
+                #'echo', '"  runbuild.....Build all executables needed for the run target"',
+                #'&&',
+                #'echo', '"  run..........Run all combinations of compilation, results in results/"',
+                #'&&',
+                'echo', '"  clean........Clean intermediate files"',
+                '&&',
+                'echo', '"  veryclean....Runs clean + removes targets and results"',
+                '&&',
+                'echo', '"  distclean....Same as veryclean"',
+                '&&',
+                'echo',
+                ],
+            description='DISPLAY help')
+        self.writer.build('help', 'HELP')
+        self.writer.newline()
+
+    def _write_clean(self):
+        'Writes the clean targets to the ninja build file'
+        self.writer.comment('Target to clean up')
+        self.writer.rule('CLEAN',
+               command=['ninja', '-t', 'clean', '&&', 'rm', '-rf', '$toclean'],
+               description='CLEANING UP')
+        self.writer.newline()
+
+        self.writer.build('clean', 'CLEAN', variables={'toclean': ['obj']})
+        self.writer.build('veryclean', 'CLEAN',
+                variables={'toclean': [
+                    'obj', 'results', 'bin', 'devrun', 'gtrun',
+                    'ground-truth.csv', 'ground-truth.csv*.dat']})
+        self.writer.build('distclean', 'phony', 'veryclean')
+        self.writer.newline()
+
+    def _write_compilation(self, compilation):
+        '''
+        Writes the compilation to the ninja build file
+
+        The compilation is a dictionary with the following keys:
+
+        - id: unique identifier for this compilation
+        - compiler_name: name of the compiler used
+        - binary: name or path of the compiler executable
+        - optl: optimization level
+        - switches: switches under test
+        - cxxflags: other compiler flags (including compiler-specific)
+        - target: name of destination executable
+        - ldflags: link flags (including compiler-specific)
+        '''
+        n = self.writer
+
+        name = variablize(compilation['id'])
+        compile_rule_name = name + '_cxx'
+        link_rule_name = variablize(compilation['compiler_name']) + '_link'
+        obj_dir = os.path.join('obj', name)
+
+        if compile_rule_name not in self._written_compile_rules:
+            self._written_compile_rules.add(compile_rule_name)
+            n.rule(compile_rule_name,
+                   command=self._cxx_command(
+                       outdir=obj_dir,
+                       cxx=compilation['binary'],
+                       optl=compilation['optl'],
+                       switches=compilation['switches'],
+                       cxxflags=compilation['cxxflags'],
+                       target=compilation['target']),
+                   description='CXX $out',
+                   depfile='$out.d',
+                   deps='gcc')
+            n.newline()
+
+        if link_rule_name not in self._written_link_rules:
+            self._written_link_rules.add(link_rule_name)
+            n.rule(link_rule_name,
+                   command=self._link_command(
+                       cxx=compilation['binary'],
+                       ldflags=compilation['ldflags']),
+                   description='LINK $out')
+            n.newline()
+
+        n.build(compilation['target'], link_rule_name,
+                inputs=[os.path.join(obj_dir, os.path.basename(x) + '.o')
+                        for x in self.sources])
+        n.newline()
+
+        for source in self.sources:
+            n.build(os.path.join(obj_dir, os.path.basename(source) + '.o'),
+                    compile_rule_name, source)
+
+
     def write(self):
         'creates the ninja build file'
         n = self.writer
@@ -324,89 +433,15 @@ class NinjaWriter:
         n.build('build.ninja', 'configure_ninja', implicit=self.ninja_gen_deps)
         n.newline()
 
-        n.comment('Print help to the user')
-        n.rule(
-            'HELP',
-            command=[
-                'echo', '&&',
-                'echo', '"The following targets are available."', '&&',
-                'echo', '&&',
-                'echo', '"  help.........Show this help and exit (default target)"',
-                '&&',
-                #'echo', '"  dev..........Only run the devel compilation to test things out"',
-                #'&&',
-                'echo', '"  gt...........Compile the gtrun executable"',
-                '&&',
-                #'echo', '"  runbuild.....Build all executables needed for the run target"',
-                #'&&',
-                #'echo', '"  run..........Run all combinations of compilation, results in results/"',
-                #'&&',
-                'echo', '"  clean........Clean intermediate files"',
-                '&&',
-                'echo', '"  veryclean....Runs clean + removes targets and results"',
-                '&&',
-                'echo', '"  distclean....Same as veryclean"',
-                '&&',
-                'echo',
-                ],
-            description='DISPLAY help')
-        n.build('help', 'HELP')
-        n.newline()
-
+        self._write_help()
         n.default('help')
         n.newline()
 
-        n.comment('Target to clean up')
-        n.rule('CLEAN',
-               command=['ninja', '-t', 'clean', '&&', 'rm', '-rf', '$toclean'],
-               description='CLEANING UP')
-        n.newline()
+        self._write_clean()
 
-        n.build('clean', 'CLEAN', variables={'toclean': ['obj']})
-        n.build('veryclean', 'CLEAN',
-                variables={'toclean': [
-                    'obj', 'results', 'bin', 'devrun', 'gtrun',
-                    'ground-truth.csv', 'ground-truth.csv*.dat']})
-        n.build('distclean', 'phony', 'veryclean')
-        n.newline()
-
-        #for compiler in self.compilers:
-        #    name = variablize(compiler['name'])
-        #    n.variable(name, compiler['binary'])
-        #    n.variable(name + '_cxxflags', compiler['fixed_compile_flags'])
-        #    n.variable(name + '_ldflags', compiler['fixed_link_flags'])
-        #    n.newline()
-
-        if self.gt_compiler is not None:
-            n.rule('gt_cxx',
-                   command=self._cxx_command(
-                       outdir='obj/gt',
-                       cxx=self.gt_compiler['binary'],
-                       optl=self.gt_compiler['optl'],
-                       switches=self.gt_compiler['switches'],
-                       cxxflags=self.gt_compiler['cxxflags'],
-                       target='gtrun'),
-                   description='CXX $out',
-                   depfile='$out.d',
-                   deps='gcc')
-            n.newline()
-
-            n.rule('gt_link',
-                   command=self._link_command(
-                       cxx=self.gt_compiler['binary'],
-                       ldflags=self.gt_compiler['ldflags']),
-                   description='LINK $out')
-            n.newline()
-
+        if self.gt_compilation is not None:
+            self._write_compilation(self.gt_compilation)
             n.build('gt', 'phony', 'gtrun')
-            n.build('gtrun', 'gt_link',
-                    inputs=['obj/gt/' + os.path.basename(x) + '.o'
-                            for x in self.sources])
-            n.newline()
-
-            for source in self.sources:
-                n.build('obj/gt/' + os.path.basename(source) + '.o',
-                        'gt_cxx', source)
 
         # TODO: add ground-truth.csv
         # TODO: add dev and devrun
