@@ -324,6 +324,38 @@ class NinjaWriter:
         n.build('build.ninja', 'configure_ninja', implicit=self.ninja_gen_deps)
         n.newline()
 
+        n.comment('Print help to the user')
+        n.rule(
+            'HELP',
+            command=[
+                'echo', '&&',
+                'echo', '"The following targets are available."', '&&',
+                'echo', '&&',
+                'echo', '"  help.........Show this help and exit (default target)"',
+                '&&',
+                #'echo', '"  dev..........Only run the devel compilation to test things out"',
+                #'&&',
+                'echo', '"  gt...........Compile the gtrun executable"',
+                '&&',
+                #'echo', '"  runbuild.....Build all executables needed for the run target"',
+                #'&&',
+                #'echo', '"  run..........Run all combinations of compilation, results in results/"',
+                #'&&',
+                'echo', '"  clean........Clean intermediate files"',
+                '&&',
+                'echo', '"  veryclean....Runs clean + removes targets and results"',
+                '&&',
+                'echo', '"  distclean....Same as veryclean"',
+                '&&',
+                'echo',
+                ],
+            description='DISPLAY help')
+        n.build('help', 'HELP')
+        n.newline()
+
+        n.default('help')
+        n.newline()
+
         n.comment('Target to clean up')
         n.rule('CLEAN',
                command=['ninja', '-t', 'clean', '&&', 'rm', '-rf', '$toclean'],
@@ -331,10 +363,12 @@ class NinjaWriter:
         n.newline()
 
         n.build('clean', 'CLEAN', variables={'toclean': ['obj']})
-        n.build('distclean', 'CLEAN',
+        n.build('veryclean', 'CLEAN',
                 variables={'toclean': [
                     'obj', 'results', 'bin', 'devrun', 'gtrun',
                     'ground-truth.csv', 'ground-truth.csv*.dat']})
+        n.build('distclean', 'phony', 'veryclean')
+        n.newline()
 
         #for compiler in self.compilers:
         #    name = variablize(compiler['name'])
