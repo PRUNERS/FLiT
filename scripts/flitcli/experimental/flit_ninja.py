@@ -201,8 +201,9 @@ class NinjaWriter:
             ]
         self.compilers = {}
         self.gt_compilation = None
-        self._written_compile_rules = set()
-        self._written_link_rules = set()
+        self.run_wrapper = ''
+        self.timing_flags = ''
+        self._written_rules = set()
 
     def load_makefile(self, makefile):
         self.ninja_gen_deps.append(makefile)
@@ -211,6 +212,7 @@ class NinjaWriter:
         self.cxxflags.extend(makevars['CXXFLAGS'])
         self.ldflags.extend(makevars['LDFLAGS'])
         self.ldflags.extend(makevars['LDLIBS'])
+        self.run_wrapper = makevars['RUN_WRAPPER']
 
     def _create_compilation(self, compiler, optl, switches):
         '''
@@ -226,6 +228,7 @@ class NinjaWriter:
         - cxxflags
         - ldflags
         - target
+        - resultsfile
         '''
 
         v_compiler_name = variablize(compiler['name'])
@@ -242,6 +245,7 @@ class NinjaWriter:
             'cxxflags': compiler['fixed_compile_flags'],
             'ldflags': compiler['fixed_link_flags'],
             'target': os.path.join('bin', my_id),
+            'resultsfile': os.path.join('results', my_id + '-out'),
             }
 
         return compilation
@@ -250,6 +254,8 @@ class NinjaWriter:
         'Load configuration from flit-config.toml'
         self.ninja_gen_deps.append(tomlfile)
         projconf = util.load_projconf()
+
+        self.hostname = projconf['host']['name']
 
         if projconf['run']['enable_mpi']:
             mpi_cxxflags, mpi_ldflags = get_mpi_flags()
@@ -272,6 +278,7 @@ class NinjaWriter:
             projconf['ground_truth']['switches'])
         self.gt_compilation['id'] = 'gt'
         self.gt_compilation['target'] = 'gtrun'
+        self.gt_compilation['resultsfile'] = 'ground-truth.csv'
 
         self.dev_compilation = self._create_compilation(
             self.compilers[projconf['dev_build']['compiler_name']],
@@ -279,6 +286,15 @@ class NinjaWriter:
             projconf['dev_build']['switches'])
         self.dev_compilation['id'] = 'dev'
         self.dev_compilation['target'] = 'devrun'
+        self.dev_compilation['resultsfile'] = 'devrun.csv'
+
+        if not projconf['run']['timing']:
+            self.timing_flags = '--no-timing'
+        else:
+            self.timing_flags = '--timing-repeats {} --timing-loops {}'.format(
+                projconf['run']['timing_repeats'],
+                projconf['run']['timing_loops'])
+
 
     def _cxx_command(self, outdir, cxx, optl, switches, cxxflags, target):
         '''
@@ -330,21 +346,21 @@ class NinjaWriter:
                 'echo', '&&',
                 'echo', '"The following targets are available."', '&&',
                 'echo', '&&',
-                'echo', '"  help ....... Show this help and exit (default target)"',
+                'echo', '" - help ....... Show this help and exit (default target)"',
                 '&&',
-                'echo', '"  dev ........ Only run the devel compilation to test things out"',
+                'echo', '" - dev ........ Only run the devel compilation to test things out"',
                 '&&',
-                'echo', '"  gt ......... Compile the gtrun executable"',
+                'echo', '" - gt ......... Compile the gtrun executable"',
                 '&&',
-                'echo', '"  runbuild ... Build all executables needed for the run target"',
+                'echo', '" - runbuild ... Build all executables needed for the run target"',
                 '&&',
-                #'echo', '"  run ........ Run all combinations of compilation, results in results/"',
-                #'&&',
-                'echo', '"  clean ...... Clean intermediate files"',
+                'echo', '" - run ........ Run all combinations of compilation, results in results/"',
                 '&&',
-                'echo', '"  veryclean .. Runs clean + removes targets and results"',
+                'echo', '" - clean ...... Clean intermediate files"',
                 '&&',
-                'echo', '"  distclean .. Same as veryclean"',
+                'echo', '" - veryclean .. Runs clean + removes targets and results"',
+                '&&',
+                'echo', '" - distclean .. Same as veryclean"',
                 '&&',
                 'echo',
                 ],
@@ -368,6 +384,15 @@ class NinjaWriter:
         self.writer.build('distclean', 'phony', 'veryclean')
         self.writer.newline()
 
+    def _try_rule(self, name, *args, **kwargs):
+        '''
+        Write rule to Ninja file only if _try_rule() was not called for this
+        rule already
+        '''
+        if name not in self._written_rules:
+            self._written_rules.add(name)
+            self.writer.rule(name, *args, **kwargs)
+
     def _write_compilation(self, compilation):
         '''
         Writes the compilation to the ninja build file
@@ -380,8 +405,9 @@ class NinjaWriter:
         - optl: optimization level
         - switches: switches under test
         - cxxflags: other compiler flags (including compiler-specific)
-        - target: name of destination executable
+        - target: file path of destination executable
         - ldflags: link flags (including compiler-specific)
+        - resultsfile: file path to store results of running
         '''
         n = self.writer
 
@@ -390,29 +416,37 @@ class NinjaWriter:
         link_rule_name = variablize(compilation['compiler_name']) + '_link'
         obj_dir = os.path.join('obj', name)
 
-        if compile_rule_name not in self._written_compile_rules:
-            self._written_compile_rules.add(compile_rule_name)
-            n.rule(compile_rule_name,
-                   command=self._cxx_command(
-                       outdir=obj_dir,
-                       cxx=compilation['binary'],
-                       optl=compilation['optl'],
-                       switches=compilation['switches'],
-                       cxxflags=compilation['cxxflags'],
-                       target=os.path.basename(compilation['target'])),
-                   description='CXX $out',
-                   depfile='$out.d',
-                   deps='gcc')
-            n.newline()
+        # TODO: implement a pool for run_tests since it is timing-sensative??
+        self._try_rule('run_tests',
+                       command=[
+                           'mkdir -p results &&',
+                           self.run_wrapper,
+                           os.path.join('.', '$in'),
+                           '$timing_flags',
+                           '-o $out',
+                           ],
+                       description='TEST OUTPUT $out')
+        n.newline()
 
-        if link_rule_name not in self._written_link_rules:
-            self._written_link_rules.add(link_rule_name)
-            n.rule(link_rule_name,
-                   command=self._link_command(
-                       cxx=compilation['binary'],
-                       ldflags=compilation['ldflags']),
-                   description='LINK $out')
-            n.newline()
+        self._try_rule(compile_rule_name,
+                       command=self._cxx_command(
+                           outdir=obj_dir,
+                           cxx=compilation['binary'],
+                           optl=compilation['optl'],
+                           switches=compilation['switches'],
+                           cxxflags=compilation['cxxflags'],
+                           target=os.path.basename(compilation['target'])),
+                       description='CXX $out',
+                       depfile='$out.d',
+                       deps='gcc')
+        n.newline()
+
+        self._try_rule(link_rule_name,
+                       command=self._link_command(
+                           cxx=compilation['binary'],
+                           ldflags=compilation['ldflags']),
+                       description='LINK $out')
+        n.newline()
 
         n.build(compilation['target'], link_rule_name,
                 inputs=[os.path.join(obj_dir, os.path.basename(x) + '.o')
@@ -422,6 +456,9 @@ class NinjaWriter:
         for source in self.sources:
             n.build(os.path.join(obj_dir, os.path.basename(source) + '.o'),
                     compile_rule_name, source)
+        n.newline()
+
+        n.build(compilation['resultsfile'], 'run_tests', compilation['target'])
 
 
     def write(self):
@@ -446,6 +483,10 @@ class NinjaWriter:
         n.variable('ldflags', self.ldflags)
         n.newline()
 
+        n.comment('Timing flags for running the tests')
+        n.variable('timing_flags', self.timing_flags)
+        n.newline()
+
         n.comment('Be able to reconfigure myself if needed')
         n.rule('configure_ninja',
                command=[self.prog, '$configure_args -q'],
@@ -462,6 +503,20 @@ class NinjaWriter:
 
         self._write_clean()
 
+        comparison_suffix = '-comparison.csv'
+        n.rule('compare',
+               command=[
+                   self.run_wrapper,
+                   os.path.join('.', self.gt_compilation['target']),
+                   '--compare-mode',
+                   '--compare-gt', self.gt_compilation['resultsfile'],
+                   '--suffix "{}"'.format(comparison_suffix),
+                   '$in',
+                   '-o /dev/null',
+                   ],
+               description='COMPARE TO $out')
+        n.newline()
+
         if self.gt_compilation is not None:
             self._write_compilation(self.gt_compilation)
             n.build('gt', 'phony', 'gtrun')
@@ -473,18 +528,30 @@ class NinjaWriter:
             n.newline()
 
         runbuild_targets = ['gt']
+        results_files = []
         for name, compiler in self.compilers.items():
             for optl in compiler['optimization_levels']:
                 for switches in compiler['switches_list']:
                     compilation = self._create_compilation(
                         compiler, optl, switches)
                     runbuild_targets.append(compilation['target'])
+                    results_files.append(compilation['resultsfile'])
                     self._write_compilation(compilation)
                     n.newline()
         n.build('runbuild', 'phony', runbuild_targets)
+        n.newline()
+
+        for results_file in results_files:
+            n.build(results_file + comparison_suffix, 'compare', results_file,
+                    implicit=[
+                        self.gt_compilation['resultsfile'],
+                        self.gt_compilation['target'],
+                        ])
+        n.newline()
+        n.build('run', 'phony', [x + comparison_suffix for x in results_files])
 
         # TODO: add ground-truth.csv
-        # TODO: add runbuild and run
+        # TODO: add run
 
 
 def main(arguments, prog=sys.argv[0]):
