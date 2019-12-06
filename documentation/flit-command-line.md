@@ -27,6 +27,7 @@ Possible subcommands:
 * [flit make](#flit-make): Run flit tests locally and add results to the database
 * [flit import](#flit-import): Imports test results into an SQLite3 database
 * [flit bisect](#flit-bisect): Assign variability blame to files and functions
+* [flit experimental](#flit-experimental): Access to experimental features
 
 ## flit help
 
@@ -198,6 +199,18 @@ the sqlite database with `flit-config.toml`.  The same is true for a single
 bisect invocation if the given compiler is found within `flit-config.toml`.
 
 Call `flit bisect --help` for more documentation.
+
+
+## flit expeirmental
+
+There may or may not be any experimental features currently available.  These
+features are available by the `flit experimental` command.  Please call `flit
+experimental` to see the documentation of what experimental features are
+available.
+
+You may also read the documentation on
+[experimental features](experimental-features.md).
+
 
 [Prev](litmus-tests.md)
 |
