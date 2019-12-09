@@ -107,8 +107,8 @@ Updating .../Makefile
 >>> makevars['GCC_CXXFLAGS']
 ['-first-gxx']
 
->>> makevars['CLANG_CXXFLAGS'] # doctest:+ELLIPSIS
-['-first-clang', '-second-clang', '--gcc-toolchain=...']
+>>> makevars['CLANG_CXXFLAGS']
+['-first-clang', '-second-clang']
 
 >>> makevars['INTEL_CXXFLAGS']
 []
