@@ -289,13 +289,6 @@ HOSTNAME        := {hostname}
 RESULTS_DIR     := results
 ALL_DIRS        += $(RESULTS_DIR)
 
-# on systems with non-standard gcc installations (such as module), clang may
-# be unable to determine the correct gcc toolchain
-ifeq ($(findstring GCC,$(COMPILERS)),GCC)
-GCC_TOOLCHAIN   := $(dir $(shell which $(GCC) 2>/dev/null))/..
-CLANG_CXXFLAGS  += --gcc-toolchain=$(GCC_TOOLCHAIN)
-endif
-
 ifeq ($(DEV_CXX_TYPE),$(GCC_TYPE))
   DEV_CXXFLAGS  += $(GCC_CXXFLAGS)
   DEV_LDFLAGS   += $(GCC_LDFLAGS)
