@@ -4,7 +4,7 @@
 |
 [Table of Contents](README.md)
 |
-[Next](writing-test-cases.md)
+[Next](standard-c++-library-implementations.md)
 
 Convenient TOML lists:
 
@@ -156,4 +156,4 @@ switches_list = [
 |
 [Table of Contents](README.md)
 |
-[Next](writing-test-cases.md)
+[Next](standard-c++-library-implementations.md)

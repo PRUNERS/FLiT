@@ -8,6 +8,7 @@
 * [FLiT Command-Line](flit-command-line.md)
 * [FLiT Configuration File](flit-configuration-file.md)
     * [Available Compiler Flags](available-compiler-flags.md)
+    * [Standard C++ Library Implementations](standard-c++-library-implementations.md)
 * [Writing Test Cases](writing-test-cases.md)
     * [FLiT Helpers](flit-helpers.md)
     * [MPI Support](mpi-support.md)

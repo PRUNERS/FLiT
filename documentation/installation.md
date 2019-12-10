@@ -11,7 +11,7 @@ Instruction Contents:
 * [Prerequisites](#prerequisites)
   * [Compilers](#compilers)
   * [Clang Only](#clang-only)
-  * [Non-Standard GCC Installs](#non-standard-gcc-installs)
+  * [Non-Standard Installs](#non-standard-installs)
   * [Optional Dependencies](#optional-dependencies)
 * [FLiT Setup](#flit-setup)
 * [Database Setup](#database-setup)
@@ -121,15 +121,16 @@ This setup is largely untested, so if you have trouble, please submit an
 [issue](https://github.com/PRUNERS/FLiT/issues).
 
 
-### Non-Standard GCC Installs
+### Non-Standard Installs
 
-Warning: the FLiT shared library should be compiled with the same version of
-GCC that will be used by the FLiT tests.  If you do not adhere to this, you may
-get linker errors because of using a different implementation of the C++
-standard library (i.e. libstdc++.so).  FLiT uses C++11, so the compiler used
-should be able to compile C++11 code.
+Warning: the FLiT shared library should be compiled with the same standard library
+that will be used by the FLiT tests.  By default, FLiT is compiled using GCC,
+unless the user specifies a different compiler using the `CXX` variable.  This
+will cause the flit shared library to be linked against `libstdc++`, which is
+GCC's standard C++ library. If you do not compile your tests with the same
+standard library, you may get linker errors.
 
-If the GCC compiler you want to use is not in the standard installation
+If you want to use a GCC compiler that is not in the standard installation
 location, you can still use it.  As an example, suppose I do not want to use
 the GCC installed on the system, but instead I want to use the one I compiled
 myself and installed into `$HOME/installs/gcc-5.5.0`.  The way I would compile

@@ -65,6 +65,7 @@ Contents:
 * [FLiT Command-Line](documentation/flit-command-line.md)
 * [FLiT Configuration File](documentation/flit-configuration-file.md)
     * [Available Compiler Flags](documentation/available-compiler-flags.md)
+    * [Standard C++ Library Implementations](documentation/standard-c++-library-implementations.md)
 * [Writing Test Cases](documentation/writing-test-cases.md)
     * [MPI Support](documentation/mpi-support.md)
     * [CUDA Support](documentation/cuda-support.md)

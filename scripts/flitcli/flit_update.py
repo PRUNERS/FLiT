@@ -135,10 +135,19 @@ def flag_name(flag):
 
     >>> flag_name('-Ofast -march=32bit')
     'OFAST__MARCH_32BIT'
+
+    >>> flag_name('-3')
+    Traceback (most recent call last):
+      ...
+    AssertionError: Error: cannot handle flag that starts with a number
+
+    >>> flag_name('-compiler-name=clang++')
+    'COMPILER_NAME_CLANGpp'
     '''
     if flag == '':
         return 'NO_FLAGS'
-    name = re.sub('[^0-9A-Za-z]', '_', flag.upper().strip('-'))
+    name = re.sub('[^0-9A-Za-z]', '_',
+                  flag.upper().strip('-').replace('+', 'p'))
     assert re.match('^[0-9]', name) is None, \
         'Error: cannot handle flag that starts with a number'
     assert len(name) > 0, 'Error: cannot handle flag only made of dashes'
@@ -297,6 +306,14 @@ def main(arguments, prog=sys.argv[0]):
                 'SWITCHES_' + compiler['type'].upper(),
                 [flag_name(x) for x in compiler['switches_list']])
             for compiler in projconf['compiler']]),
+        'compiler_fixed_compile_flags': gen_assignments({
+            compiler['type'].upper() + '_CXXFLAGS':
+                compiler['fixed_compile_flags']
+            for compiler in projconf['compiler']}),
+        'compiler_fixed_link_flags': gen_assignments({
+            compiler['type'].upper() + '_LDFLAGS':
+                compiler['fixed_link_flags']
+            for compiler in projconf['compiler']}),
         }
 
     util.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),

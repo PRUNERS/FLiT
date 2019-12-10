@@ -151,6 +151,8 @@ executable.
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -191,6 +193,16 @@ Here we specify the first compiler.
 - `type`: The type of compiler.  The supported types are `gcc`, `clang` and
   `intel`.  If you need an additional type supported, please submit an
   [issue](https://github.com/PRUNERS/FLiT/issues).
+- `fixed_compile_flags`: Compile flags to use specifically with this compiler.
+  These flags will be used in all compilations with this compiler.  Here, we
+  didn't specify any, but we could.  For example, to use LLVM's libc++ library
+  instead of GCC's libstdc++, you could use the value
+  `'-nostdinc++ -I<libcxx-install-prefix>/include/c++/v1'`.
+- `fixed_link_flags`: Link flags to use specifically with this compiler.  These
+  flags will be used in all compilations with this compiler.  Here, we didn't
+  specify any, but we could.  For example, to use LLVM's libc++ library instead
+  of GCC's libstdc++, you could use the value
+  `'-nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc'`.
 - `optimization_levels`: List of optimization levels to search over.  You may
   remove from or add to this list.  If you omit this list, the default list
   will be used (which is the same as the one shown here).  The defaults are
@@ -213,6 +225,8 @@ which includes the one from above named `g++` and the following two:
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -244,6 +258,8 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -321,6 +337,8 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -351,6 +369,8 @@ switches_list = [
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -382,6 +402,8 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
