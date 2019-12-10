@@ -5,11 +5,16 @@ FLITLIB     := $(FLITLIBDIR)/libflit.so
 
 CFLAGS      := -O0 -g
 CFLAGS      += -std=c++11
+CFLAGS      += -fprofile-arcs
+CFLAGS      += -ftest-coverage
+CFLAGS      += -fPIC
 LDFLAGS     := -L$(FLITLIBDIR) -lflit
 LDFLAGS     += -Wl,-rpath=$(FLITLIBDIR)
 SRC         := $(wildcard *.cpp)
 DEPS        := $(SRC:%.cpp=%.d)
 TARGETS     := $(SRC:%.cpp=%)
+GCOV_FILES  := $(SRC:%.cpp=%.gcda)
+GCOV_FILES  += $(SRC:%.cpp=%.gcno)
 RUN_TARGETS := $(TARGETS:%=run_%)
 HARNESS     := ../test_harness.h
 CFLAGS      += $(addprefix -I,$(dir $(HARNESS)))
@@ -38,6 +43,7 @@ help:
 clean:
 	rm -f $(DEPS)
 	rm -f $(TARGETS)
+	rm -f $(GCOV_FILES)
 
 run_% : %
 	@$(call color_out_noline,BROWN,  running)

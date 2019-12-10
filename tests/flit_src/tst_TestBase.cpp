@@ -87,6 +87,7 @@
 #define time_function wrap_time_function
 #define time_function_autoloop wrap_time_function_autoloop
 #include "TestBase.h"
+#include "TestBase.cpp"
 #undef time_function
 #undef time_function_autoloop
 

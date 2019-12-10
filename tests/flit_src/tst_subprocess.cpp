@@ -87,6 +87,7 @@
 #undef main
 
 #include "subprocess.h"
+#include "subprocess.cpp"
 #include "flitHelpers.h"
 #include "flit.h"
 #include "fsutil.h"

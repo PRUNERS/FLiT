@@ -84,6 +84,7 @@
 #include "test_harness.h"
 
 #include "FlitCsv.h"
+#include "FlitCsv.cpp"
 
 namespace {
 
