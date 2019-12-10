@@ -84,11 +84,18 @@
 #include "test_harness.h"
 #include "fsutil.h"
 #include "subprocess.h"
+#include "fsutil.cpp"
 
 #include <algorithm>
 #include <memory>
 
 namespace {
+
+struct PopDir {
+  std::string originaldir;
+  PopDir() : originaldir(flit::curdir()) {}
+  ~PopDir() { flit::chdir(originaldir); }
+} popper;
 
 bool string_startswith(const std::string main, const std::string needle) {
   if (main.size() < needle.size()) { return false; }
@@ -422,6 +429,12 @@ void tst_mkdir() {
 }
 TH_REGISTER(tst_mkdir);
 
+void tst_mkdir_parent_does_not_exist() {
+  TH_THROWS(flit::mkdir(flit::join("doesnt-exist", "newdir")),
+            std::ios_base::failure);
+}
+TH_REGISTER(tst_mkdir_parent_does_not_exist);
+
 void tst_rmdir_empty() {
   flit::TempDir tempdir;
   flit::mkdir(flit::join(tempdir.name(), "dir1"));
@@ -466,17 +479,24 @@ void tst_curdir() {
 }
 TH_REGISTER(tst_curdir);
 
+void tst_curdir_doesnt_exist() {
+  PopDir popper; // go back to current directory at the end
+  {
+    flit::TempDir tempdir;
+    flit::chdir(tempdir.name());
+  }
+  TH_THROWS(flit::curdir(), std::ios_base::failure);
+}
+TH_REGISTER(tst_curdir_doesnt_exist);
+
 void tst_chdir_exists() {
   flit::TempDir tempdir;
   auto originaldir = flit::curdir();
-  try {
+  {
+    PopDir popper; // go back to current directory at the end of scope
     flit::chdir(tempdir.name());
     TH_EQUAL(tempdir.name(), flit::curdir());
-  } catch (...) {
-    flit::chdir(originaldir);
-    throw;
   }
-  flit::chdir(originaldir);
   TH_EQUAL(originaldir, flit::curdir());
 }
 TH_REGISTER(tst_chdir_exists);
@@ -623,6 +643,55 @@ void tst_which_givenpath_tofind() {
 }
 TH_REGISTER(tst_which_givenpath_tofind);
 
+void tst_realpath_already_absolute() {
+  flit::TempDir temp;
+  TH_EQUAL(flit::realpath(temp.name()), temp.name());
+}
+TH_REGISTER(tst_realpath_already_absolute);
+
+void tst_realpath_does_not_exist() {
+  std::string nonexistent;
+  {
+    flit::TempDir temp;
+    nonexistent = flit::join(temp.name(), "does-not-exist.txt");
+  }
+  TH_THROWS(flit::realpath(nonexistent), std::ios_base::failure);
+}
+TH_REGISTER(tst_realpath_does_not_exist);
+
+void tst_realpath_vs_curdir() {
+  TH_EQUAL(flit::realpath("."), flit::curdir());
+}
+TH_REGISTER(tst_realpath_vs_curdir);
+
+void tst_realpath_from_relative_path() {
+  flit::TempDir parent;
+  std::string child = "child-dir";
+  std::string child_abs = flit::join(parent.name(), child);
+  flit::mkdir(child_abs);
+  {
+    flit::PushDir pusher(parent.name());
+    TH_EQUAL(flit::realpath("."), parent.name());
+    TH_EQUAL(flit::realpath(child), child_abs);
+  }
+}
+TH_REGISTER(tst_realpath_from_relative_path);
+
+void tst_realpath_absolute_with_relative_movements() {
+  flit::TempDir parent;
+  std::string child_1 = "child-dir-1";
+  std::string child_2 = "child-dir-2";
+  auto child_1_abs = flit::join(parent.name(), child_1);
+  auto child_2_abs = flit::join(parent.name(), child_2);
+  flit::mkdir(child_1_abs);
+  flit::mkdir(child_2_abs);
+  TH_EQUAL(flit::realpath(flit::join(child_1_abs, "..", child_1, ".")),
+           child_1_abs);
+  TH_EQUAL(flit::realpath(flit::join(child_1_abs, "..", child_1, "..", ".", child_2)),
+           child_2_abs);
+}
+TH_REGISTER(tst_realpath_absolute_with_relative_movements);
+
 } // end of namespace tst_functions
 
 namespace tst_PushDir {
@@ -714,6 +783,11 @@ void tst_TempFile() {
 }
 TH_REGISTER(tst_TempFile);
 
+void tst_TempFile_failure() {
+  TH_THROWS(flit::TempFile("/parent/does/not/exist"), std::ios_base::failure);
+}
+TH_REGISTER(tst_TempFile_failure);
+
 } // end of namespace tst_TempFile
 
 namespace tst_TempDir {
@@ -741,6 +815,11 @@ void tst_TempDir() {
   TH_THROWS(flit::readfile(filepath), std::ios_base::failure);
 }
 TH_REGISTER(tst_TempDir);
+
+void tst_TempDir_parent_does_not_exist() {
+  TH_THROWS(flit::TempDir("/parent/does/not/exist"), std::ios_base::failure);
+}
+TH_REGISTER(tst_TempDir_parent_does_not_exist);
 
 } // end of namespace tst_TempDir
 
@@ -818,6 +897,17 @@ void tst_FileCloser() {
   // FILE* pointer in any way after fclose().
 }
 TH_REGISTER(tst_FileCloser);
+
+void tst_FileCloser_null_file() {
+  TH_THROWS(flit::FileCloser(nullptr), std::ios_base::failure);
+}
+TH_REGISTER(tst_FileCloser_null_file);
+
+// can cause segfaults
+//void tst_FileCloser_bad_file() {
+//  TH_THROWS(flit::FileCloser(reinterpret_cast<FILE*>(12345)), std::ios_base::failure);
+//}
+//TH_REGISTER(tst_FileCloser_bad_file);
 
 } // end of namespace tst_FileCloser
 
