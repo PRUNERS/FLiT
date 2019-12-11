@@ -538,3 +538,64 @@ TH_TEST(tst_rtrim_whitespace_inside) {
 }
 
 } // end of namespace tst_trim
+
+namespace tst_strip {
+
+TH_TEST(tst_rstrip_empty) {
+  TH_EQUAL(flit::rstrip("", "/"), "");
+  TH_EQUAL(flit::rstrip("", ""), "");
+  TH_EQUAL(flit::rstrip("...", ""), "...");
+}
+
+TH_TEST(tst_rstrip_nothing_to_strip) {
+  TH_EQUAL(flit::rstrip("hello", " "), "hello");
+}
+
+TH_TEST(tst_rstrip_bothsides) {
+  TH_EQUAL(flit::rstrip("--hello-there--", "-"), "--hello-there");
+}
+
+TH_TEST(tst_rstrip_multichar) {
+  TH_EQUAL(flit::rstrip("/*/*/* /* hi there /* /*/*/*", "/*"),
+           "/*/*/* /* hi there /* ");
+}
+
+TH_TEST(tst_lstrip_empty) {
+  TH_EQUAL(flit::lstrip("", "/"), "");
+  TH_EQUAL(flit::lstrip("", ""), "");
+  TH_EQUAL(flit::lstrip("...", ""), "...");
+}
+
+TH_TEST(tst_lstrip_nothing_to_strip) {
+  TH_EQUAL(flit::lstrip("hello", " "), "hello");
+}
+
+TH_TEST(tst_lstrip_bothsides) {
+  TH_EQUAL(flit::lstrip("--hello-there--", "-"), "hello-there--");
+}
+
+TH_TEST(tst_lstrip_multichar) {
+  TH_EQUAL(flit::lstrip("/*/*/* /* hi there /* /*/*/*", "/*"),
+           " /* hi there /* /*/*/*");
+}
+
+TH_TEST(tst_strip_empty) {
+  TH_EQUAL(flit::strip("", "/"), "");
+  TH_EQUAL(flit::strip("", ""), "");
+  TH_EQUAL(flit::strip("...", ""), "...");
+}
+
+TH_TEST(tst_strip_nothing_to_strip) {
+  TH_EQUAL(flit::strip("hello", " "), "hello");
+}
+
+TH_TEST(tst_strip_bothsides) {
+  TH_EQUAL(flit::strip("--hello-there--", "-"), "hello-there");
+}
+
+TH_TEST(tst_strip_multichar) {
+  TH_EQUAL(flit::strip("/*/*/* /* hi there /* /*/*/*", "/*"),
+           " /* hi there /* ");
+}
+
+} // end of namespace tst_strip

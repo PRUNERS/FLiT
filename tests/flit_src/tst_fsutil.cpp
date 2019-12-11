@@ -692,6 +692,38 @@ void tst_realpath_absolute_with_relative_movements() {
 }
 TH_REGISTER(tst_realpath_absolute_with_relative_movements);
 
+void tst_basename() {
+  TH_EQUAL(flit::basename("//usr/lib"), "lib");
+  TH_EQUAL(flit::basename("/usr//lib"), "lib");
+  TH_EQUAL(flit::basename("/usr/lib"), "lib");
+  TH_EQUAL(flit::basename("/usr///"), "usr");
+  TH_EQUAL(flit::basename("/usr//"), "usr");
+  TH_EQUAL(flit::basename("/usr/"), "usr");
+  TH_EQUAL(flit::basename("usr"), "usr");
+  TH_EQUAL(flit::basename("///"), "/");
+  TH_EQUAL(flit::basename("/"), "/");
+  TH_EQUAL(flit::basename("."), ".");
+  TH_EQUAL(flit::basename(".."), "..");
+  TH_EQUAL(flit::basename(""), "");
+}
+TH_REGISTER(tst_basename);
+
+void tst_dirname() {
+  TH_EQUAL(flit::dirname("//usr/lib"), "/usr");
+  TH_EQUAL(flit::dirname("/usr//lib"), "/usr");
+  TH_EQUAL(flit::dirname("/usr/lib"), "/usr");
+  TH_EQUAL(flit::dirname("/usr///"), "/");
+  TH_EQUAL(flit::dirname("/usr//"), "/");
+  TH_EQUAL(flit::dirname("/usr/"), "/");
+  TH_EQUAL(flit::dirname("usr"), ".");
+  TH_EQUAL(flit::dirname("///"), "/");
+  TH_EQUAL(flit::dirname("/"), "/");
+  TH_EQUAL(flit::dirname("."), ".");
+  TH_EQUAL(flit::dirname(".."), ".");
+  TH_EQUAL(flit::dirname(""), ".");
+}
+TH_REGISTER(tst_dirname);
+
 } // end of namespace tst_functions
 
 namespace tst_PushDir {

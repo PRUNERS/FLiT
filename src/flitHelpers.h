@@ -164,6 +164,44 @@ inline std::string trim(const std::string &text) {
   return text.substr(left, right - left);
 }
 
+inline std::string lstrip(const std::string &text,
+                          const std::string &to_remove)
+{
+  if (to_remove.size() == 0) { return text; }
+  auto left = text.begin();
+  while (static_cast<size_t>(std::distance(left, text.end()))
+           >= to_remove.size())
+  {
+    if (!std::equal(to_remove.begin(), to_remove.end(), left)) {
+      break;
+    }
+    std::advance(left, to_remove.size());
+  }
+  return std::string(left, text.end());
+}
+
+inline std::string rstrip(const std::string &text,
+                          const std::string &to_remove)
+{
+  if (to_remove.size() == 0) { return text; }
+  auto right = text.rbegin();
+  while (static_cast<size_t>(std::distance(right, text.rend()))
+           >= to_remove.size())
+  {
+    if (!std::equal(to_remove.rbegin(), to_remove.rend(), right)) {
+      break;
+    }
+    std::advance(right, to_remove.size());
+  }
+  return text.substr(0, std::distance(right, text.rend()));
+}
+
+inline std::string strip(const std::string &text,
+                         const std::string &to_remove)
+{
+  return lstrip(rstrip(text, to_remove), to_remove);
+}
+
 template <typename F, typename I>
 F as_float_impl(I val) {
   static_assert(sizeof(F) == sizeof(I), "cannot convert types of different sizes");
