@@ -802,6 +802,12 @@ TH_TEST(tst_TempDir_parent_does_not_exist) {
   TH_THROWS(flit::TempDir("/parent/does/not/exist"), std::ios_base::failure);
 }
 
+TH_TEST(tst_TempDir_directory_already_deleted) {
+  flit::TempDir temp;
+  flit::rec_rmdir(temp.name());
+  // testing that the TempDir destructor does not throw or crash
+}
+
 } // end of namespace tst_TempDir
 
 namespace tst_TinyDir {
@@ -905,7 +911,7 @@ TH_TEST(tst_FdReplace) {
   TH_EQUAL("hello world", flit::readfile(t2.file));
 }
 
-void tst_FdReplace_nullptr() {
+TH_TEST(tst_FdReplace_nullptr) {
   flit::FileCloser t1(tmpfile());
   flit::FileCloser t2(tmpfile());
   TH_THROWS(flit::FdReplace(nullptr, nullptr), std::ios_base::failure);
