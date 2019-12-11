@@ -106,16 +106,15 @@ std::ostream& operator<<(std::ostream& out, std::vector<std::string> vec) {
   return out;
 }
 
-void tst_vector_stream_operator() {
+TH_TEST(tst_vector_stream_operator) {
   std::ostringstream out;
   out << std::vector<std::string> {"a", "b", "cde"};
   TH_EQUAL("[\"a\", \"b\", \"cde\"]", out.str());
 }
-TH_REGISTER(tst_vector_stream_operator);
 
 } // end of unnamed namespace
 
-void tst_Variant_emptyConstructor() {
+TH_TEST(tst_Variant_emptyConstructor) {
   flit::Variant v;
   TH_EQUAL(v.type(), flit::Variant::Type::None);
   TH_THROWS(v.longDouble(), std::runtime_error);
@@ -125,9 +124,8 @@ void tst_Variant_emptyConstructor() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_emptyConstructor);
 
-void tst_Variant_longDoubleConstructor() {
+TH_TEST(tst_Variant_longDoubleConstructor) {
   long double value = 5.4L;
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::LongDouble);
@@ -138,9 +136,8 @@ void tst_Variant_longDoubleConstructor() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_longDoubleConstructor);
 
-void tst_Variant_stringConstructor_reference() {
+TH_TEST(tst_Variant_stringConstructor_reference) {
   std::string value("hello there");
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::String);
@@ -151,9 +148,8 @@ void tst_Variant_stringConstructor_reference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_stringConstructor_reference);
 
-void tst_Variant_stringConstructor_rvalueReference() {
+TH_TEST(tst_Variant_stringConstructor_rvalueReference) {
   std::string value("hello there");
   std::string copy(value);
   flit::Variant v(std::move(copy));
@@ -165,9 +161,8 @@ void tst_Variant_stringConstructor_rvalueReference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_stringConstructor_rvalueReference);
 
-void tst_Variant_stringConstructor_cstring() {
+TH_TEST(tst_Variant_stringConstructor_cstring) {
   std::string value("hello there");
   flit::Variant v(value.c_str());
   TH_EQUAL(v.type(), flit::Variant::Type::String);
@@ -178,9 +173,8 @@ void tst_Variant_stringConstructor_cstring() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_stringConstructor_cstring);
 
-void tst_Variant_vectorStringConstructor_reference() {
+TH_TEST(tst_Variant_vectorStringConstructor_reference) {
   std::vector<std::string> value { "a", "b", "cde", "fgh" };
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::VectorString);
@@ -191,9 +185,8 @@ void tst_Variant_vectorStringConstructor_reference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_vectorStringConstructor_reference);
 
-void tst_Variant_vectorStringConstructor_rvalueReference() {
+TH_TEST(tst_Variant_vectorStringConstructor_rvalueReference) {
   std::vector<std::string> value { "a", "b", "cde", "fgh" };
   std::vector<std::string> copy(value);
   flit::Variant v(std::move(copy));
@@ -205,9 +198,8 @@ void tst_Variant_vectorStringConstructor_rvalueReference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_vectorStringConstructor_rvalueReference);
 
-void tst_Variant_vectorFloatConstructor_reference() {
+TH_TEST(tst_Variant_vectorFloatConstructor_reference) {
   std::vector<float> value { 3.2f, 1.4f, 5.4f };
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::VectorFloat);
@@ -218,9 +210,8 @@ void tst_Variant_vectorFloatConstructor_reference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_vectorFloatConstructor_reference);
 
-void tst_Variant_vectorFloatConstructor_rvalueReference() {
+TH_TEST(tst_Variant_vectorFloatConstructor_rvalueReference) {
   std::vector<float> value { 3.2f, 1.4f, 5.4f };
   std::vector<float> copy(value);
   flit::Variant v(std::move(copy));
@@ -232,9 +223,8 @@ void tst_Variant_vectorFloatConstructor_rvalueReference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_vectorFloatConstructor_rvalueReference);
 
-void tst_Variant_vectorDoubleConstructor_reference() {
+TH_TEST(tst_Variant_vectorDoubleConstructor_reference) {
   std::vector<double> value { 3.14159, 14.883, .54321, 737373. };
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::VectorDouble);
@@ -245,9 +235,8 @@ void tst_Variant_vectorDoubleConstructor_reference() {
   TH_EQUAL(v.vectorDouble(), value);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_vectorDoubleConstructor_reference);
 
-void tst_Variant_vectorDoubleConstructor_rvalueReference() {
+TH_TEST(tst_Variant_vectorDoubleConstructor_rvalueReference) {
   std::vector<double> value { 3.14159, 14.883, .54321, 737373. };
   std::vector<double> copy(value);
   flit::Variant v(std::move(copy));
@@ -259,9 +248,8 @@ void tst_Variant_vectorDoubleConstructor_rvalueReference() {
   TH_EQUAL(v.vectorDouble(), value);
   TH_THROWS(v.vectorLongDouble(), std::runtime_error);
 }
-TH_REGISTER(tst_Variant_vectorDoubleConstructor_rvalueReference);
 
-void tst_Variant_vectorLongDoubleConstructor_reference() {
+TH_TEST(tst_Variant_vectorLongDoubleConstructor_reference) {
   std::vector<long double> value { 3.14159L, 14.883L, .54321L, 737373.L };
   flit::Variant v(value);
   TH_EQUAL(v.type(), flit::Variant::Type::VectorLongDouble);
@@ -272,9 +260,8 @@ void tst_Variant_vectorLongDoubleConstructor_reference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_EQUAL(v.vectorLongDouble(), value);
 }
-TH_REGISTER(tst_Variant_vectorLongDoubleConstructor_reference);
 
-void tst_Variant_vectorLongDoubleConstructor_rvalueReference() {
+TH_TEST(tst_Variant_vectorLongDoubleConstructor_rvalueReference) {
   std::vector<long double> value { 3.14159L, 14.883L, .54321L, 737373.L };
   std::vector<long double> copy(value);
   flit::Variant v(std::move(copy));
@@ -286,9 +273,8 @@ void tst_Variant_vectorLongDoubleConstructor_rvalueReference() {
   TH_THROWS(v.vectorDouble(), std::runtime_error);
   TH_EQUAL(v.vectorLongDouble(), value);
 }
-TH_REGISTER(tst_Variant_vectorLongDoubleConstructor_rvalueReference);
 
-void tst_Variant_copyConstructor() {
+TH_TEST(tst_Variant_copyConstructor) {
   flit::Variant v1;
   flit::Variant v2(3.14159);
   flit::Variant v3("hello there");
@@ -313,9 +299,8 @@ void tst_Variant_copyConstructor() {
   TH_EQUAL(v6, c6);
   TH_EQUAL(v7, c7);
 }
-TH_REGISTER(tst_Variant_copyConstructor);
 
-void tst_Variant_moveConstructor() {
+TH_TEST(tst_Variant_moveConstructor) {
   flit::Variant v1;
   flit::Variant v2(3.14159);
   flit::Variant v3("hello there");
@@ -358,9 +343,8 @@ void tst_Variant_moveConstructor() {
   TH_EQUAL(c6.type(), flit::Variant::Type::None);
   TH_EQUAL(c7.type(), flit::Variant::Type::None);
 }
-TH_REGISTER(tst_Variant_moveConstructor);
 
-void tst_Variant_val() {
+TH_TEST(tst_Variant_val) {
   long double val2 = 3.14159L;
   std::string val3 = "hello there";
   std::vector<std::string> val4 { "a", "b", "cde", "fgh" };
@@ -434,9 +418,8 @@ void tst_Variant_val() {
   TH_EQUAL(v6.val<decltype(val6)>(), val6);
   TH_EQUAL(v7.val<decltype(val7)>(), val7);
 }
-TH_REGISTER(tst_Variant_val);
 
-void tst_Variant_assignmentOperator_reference() {
+TH_TEST(tst_Variant_assignmentOperator_reference) {
   flit::Variant v1;
   flit::Variant v2(3.14159);
   flit::Variant v3("hello there");
@@ -500,9 +483,8 @@ void tst_Variant_assignmentOperator_reference() {
   TH_EQUAL(v6, c2);
   TH_EQUAL(v7, c1);
 }
-TH_REGISTER(tst_Variant_assignmentOperator_reference);
 
-void tst_Variant_assignmentOperator_rvalueReference() {
+TH_TEST(tst_Variant_assignmentOperator_rvalueReference) {
   flit::Variant v1;
   flit::Variant v2(3.14159);
   flit::Variant v3("hello there");
@@ -605,9 +587,8 @@ void tst_Variant_assignmentOperator_rvalueReference() {
   TH_EQUAL(v6, m2);
   TH_EQUAL(v7, m1);
 }
-TH_REGISTER(tst_Variant_assignmentOperator_rvalueReference);
 
-void tst_Variant_equals() {
+TH_TEST(tst_Variant_equals) {
   flit::Variant v1;
   flit::Variant v2(3.14159);
   flit::Variant v3("hello there");
@@ -655,9 +636,8 @@ void tst_Variant_equals() {
   TH_VERIFY(v2.equals(c6));
   TH_VERIFY(v1.equals(c7));
 }
-TH_REGISTER(tst_Variant_equals);
 
-void tst_Variant_toString() {
+TH_TEST(tst_Variant_toString) {
   flit::Variant v1;
   flit::Variant v2(3.14159);
   flit::Variant v3("hello there");
@@ -681,9 +661,8 @@ void tst_Variant_toString() {
   TH_EQUAL(v7.toString(), "Variant(vectorLongDouble{4452346, 6, 699999999999999"
                           "9999734234570895909323317109733560680448})");
 }
-TH_REGISTER(tst_Variant_toString);
 
-void tst_Variant_toString_challenging() {
+TH_TEST(tst_Variant_toString_challenging) {
   using V = flit::Variant;
   using S = std::string;
   V v1("hi there)\"\" \";))");
@@ -694,9 +673,8 @@ void tst_Variant_toString_challenging() {
   TH_EQUAL(s1, v1.toString());
   TH_EQUAL(s2, v2.toString());
 }
-TH_REGISTER(tst_Variant_toString_challenging);
 
-void tst_Variant_fromString() {
+TH_TEST(tst_Variant_fromString) {
   std::string s1  = "Variant(None)";
   std::string s2  = "Variant(3.1415899999999998826183400524314492940902709960"
                     "9375)";
@@ -784,9 +762,8 @@ void tst_Variant_fromString() {
   TH_THROWS(flit::Variant::fromString("Variant(vectorMyType{})"),
             std::invalid_argument);
 }
-TH_REGISTER(tst_Variant_fromString);
 
-void tst_Variant_fromString_challenging() {
+TH_TEST(tst_Variant_fromString_challenging) {
   using V = flit::Variant;
   using S = std::string;
   S s1 = "Variant(string(len=16, val=\"hi there)\"\" \";))\"))";
@@ -797,9 +774,8 @@ void tst_Variant_fromString_challenging() {
   TH_EQUAL(expected1, V::fromString(s1));
   TH_EQUAL(expected2, V::fromString(s2));
 }
-TH_REGISTER(tst_Variant_fromString_challenging);
 
-void tst_Variant_streamOutputOperator() {
+TH_TEST(tst_Variant_streamOutputOperator) {
   flit::Variant v1;
   flit::Variant v2(3.14159L);
   flit::Variant v3("hello there");
@@ -829,7 +805,6 @@ void tst_Variant_streamOutputOperator() {
   TH_EQUAL(toString(v7), "Variant(vectorLongDouble{4452346, 6, 6999999999999999"
                          "999734234570895909323317109733560680448})");
 }
-TH_REGISTER(tst_Variant_streamOutputOperator);
 
 // already tested by constructor tests:
 // - type()

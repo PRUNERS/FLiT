@@ -101,7 +101,7 @@ int main(int argCount, char* argList[]) {
   return th_main(argCount, argList);
 }
 
-void tst_subprocess() {
+TH_TEST(tst_subprocess) {
   using flit::operator<<;
 
   auto retval = flit::call_with_output("echo this output is expected");
@@ -136,7 +136,6 @@ void tst_subprocess() {
   // This is not robust as different versions output different messages
   //TH_EQUAL("sh: /no/such/command: No such file or directory\n", retval.err);
 }
-TH_REGISTER(tst_subprocess);
 
 namespace mymains {
 
@@ -183,7 +182,7 @@ int unregistered_main (int argCount, char* argList[]) {
 
 }
 
-void tst_register_main_func() {
+TH_TEST(tst_register_main_func) {
   // just test that the previously registered ones are there
   TH_EQUAL(flit::find_main_func("mymain_1"), mymains::mymain_1);
   TH_EQUAL(flit::find_main_func("mymain_2"), mymains::mymain_2);
@@ -210,12 +209,11 @@ void tst_register_main_func() {
   // test with a null pointer
   TH_THROWS(flit::register_main_func("unique", nullptr), std::invalid_argument);
 }
-TH_REGISTER(tst_register_main_func);
 
 int othermain_1(int, char**) { return 0; }
 int othermain_2(int, char**) { return 0; }
 
-void tst_register_main_duplicate_func() {
+TH_TEST(tst_register_main_duplicate_func) {
   // register the main functions
   flit::register_main_func("othermain_1", othermain_1);
   flit::register_main_func("othermain_2", othermain_2);
@@ -235,7 +233,7 @@ void tst_register_main_duplicate_func() {
 
 // This test sufficiently exercises isFastTrack() and callFastTrack()
 // Therefore, we do not need to test those functions in isolation
-void tst_call_main() {
+TH_TEST(tst_call_main) {
   // this is a prerequisite to calling call_main()
   flit::g_program_path = flit::which("./tst_subprocess");
 
@@ -266,4 +264,3 @@ void tst_call_main() {
                             "arguments"),
             std::logic_error);
 }
-TH_REGISTER(tst_call_main);

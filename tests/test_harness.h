@@ -107,18 +107,17 @@
  *
  * These macros can be called from the top-level or from helper functions
  *
- * A test is simply a void function taking no arguments.  It is registered with
+ * A test is simply a void function taking no arguments.  It is created with
  * the macro
  *
- * TH_REGISTER(test_name)
+ * TH_TEST(test_name)
  *
  * Here is an example:
  *
  *   #include "test_harness.h"
- *   void test_add() {
+ *   TH_TEST(test_add) {
  *     TH_EQUAL(1 + 2, 3);
  *   }
- *   TH_REGISTER(test_add)
  *
  * That is all that is required to implement and add a test.  Tests will
  * execute in alphabetical order.
