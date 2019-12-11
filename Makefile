@@ -115,7 +115,7 @@ install: $(TARGET)
 	mkdir -m 0755 -p $(INST_BINDIR)
 	mkdir -m 0755 -p $(INST_LIBDIR)
 	mkdir -m 0755 -p $(INST_INCLUDEDIR)
-	mkdir -m 0755 -p $(INST_SHAREDIR)/scripts
+	mkdir -m 0755 -p $(INST_SHAREDIR)/scripts/experimental
 	mkdir -m 0755 -p $(INST_SHAREDIR)/doc
 	mkdir -m 0755 -p $(INST_SHAREDIR)/data/tests
 	mkdir -m 0755 -p $(INST_SHAREDIR)/data/db
@@ -128,6 +128,8 @@ install: $(TARGET)
 	install -m 0644 $(HEADERS) $(INST_INCLUDEDIR)
 	install -m 0755 $(SCRIPT_DIR)/flit.py $(INST_SHAREDIR)/scripts/
 	install -m 0755 $(SCRIPT_DIR)/flit_*.py $(INST_SHAREDIR)/scripts/
+	install -m 0755 $(SCRIPT_DIR)/experimental/flit_*.py $(INST_SHAREDIR)/scripts/experimental/
+	install -m 0644 $(SCRIPT_DIR)/experimental/ninja_syntax.py $(INST_SHAREDIR)/scripts/experimental/
 	install -m 0644 $(SCRIPT_DIR)/flitutil.py $(INST_SHAREDIR)/scripts/
 	install -m 0644 $(SCRIPT_DIR)/flitelf.py $(INST_SHAREDIR)/scripts/
 	install -m 0644 $(SCRIPT_DIR)/README.md $(INST_SHAREDIR)/scripts/
