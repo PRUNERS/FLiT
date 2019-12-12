@@ -250,11 +250,46 @@ std::string which(const std::string &command, const std::string &path) {
   throw std::ios_base::failure("Could not find " + command + " in path");
 }
 
+std::string dirname(const std::string &path) {
+  if (path == "") { return "."; }
+  if (path.size() >= separator.size() &&
+      std::equal(separator.begin(), separator.end(), path.begin()))
+  {
+    auto modified = flit::dirname(strip(path, separator));
+    if (modified == ".") { return separator; }
+    return separator + modified;
+  }
+
+  auto stripped = rstrip(path, separator);
+  auto last_sep = std::find_end(stripped.begin(), stripped.end(),
+                                separator.begin(), separator.end());
+  if (last_sep == stripped.end()) {
+    return ".";
+  }
+  return rstrip(std::string(stripped.begin(), last_sep), separator);
+}
+
+std::string basename(const std::string &path) {
+  if (path == "") { return ""; }
+  auto stripped = strip(path, separator);
+  if (stripped == "") { return separator; } // if the path was only separators
+  auto last_sep = std::find_end(stripped.begin(), stripped.end(),
+                                separator.begin(), separator.end());
+  if (last_sep == stripped.end()) {
+    return stripped;
+  }
+  std::advance(last_sep, separator.size());
+  return std::string(last_sep, stripped.end());
+}
+
 TempFile::TempFile(const std::string &parent) {
   std::string ftemplate = join(parent, "flit-tempfile-XXXXXX");
   std::unique_ptr<char> fname_buf(new char[ftemplate.size() + 1]);
   strcpy(fname_buf.get(), ftemplate.data());
-  mkstemp(fname_buf.get());
+  auto status = mkstemp(fname_buf.get());
+  if (status == -1) {
+    throw std::ios_base::failure("Could not create file with mkstemp()");
+  }
   name = fname_buf.get();
   out.exceptions(std::ios::failbit);
   out.open(name);
@@ -264,7 +299,10 @@ TempDir::TempDir(const std::string &parent) {
   std::string dtemplate = join(parent, "flit-tempfile-XXXXXX");
   std::unique_ptr<char> dname_buf(new char[dtemplate.size() + 1]);
   strcpy(dname_buf.get(), dtemplate.data());
-  mkdtemp(dname_buf.get());
+  auto status = mkdtemp(dname_buf.get());
+  if (status == nullptr) {
+    throw std::ios_base::failure("Could not create directory with mkdtemp()");
+  }
   _name = dname_buf.get();
 }
 

@@ -118,7 +118,7 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T> &v) {
 }
 } // end of unnamed namespace
 
-void tst_isIn() {
+TH_TEST(tst_isIn) {
   // an empty vector
   TH_VERIFY(!isIn(std::vector<std::string>{}, ""));
 
@@ -133,9 +133,8 @@ void tst_isIn() {
   TH_VERIFY(isIn(arr, 3));
   TH_VERIFY(!isIn(arr, 6));
 }
-TH_REGISTER(tst_isIn);
 
-void tst_default_macro_values() {
+TH_TEST(tst_default_macro_values) {
   TH_EQUAL(FLIT_HOST, "HOST");
   TH_EQUAL(FLIT_COMPILER, "COMPILER");
   TH_EQUAL(FLIT_OPTL, "OPTL");
@@ -143,9 +142,8 @@ void tst_default_macro_values() {
   TH_EQUAL(FLIT_NULL, "NULL");
   TH_EQUAL(FLIT_FILENAME, "FILENAME");
 }
-TH_REGISTER(tst_default_macro_values);
 
-void tst_FlitOptions_toString() {
+TH_TEST(tst_FlitOptions_toString) {
   flit::FlitOptions opt;
   opt.help = true;
   opt.info = false;
@@ -192,14 +190,13 @@ void tst_FlitOptions_toString() {
   out << opt;
   TH_EQUAL(opt.toString(), out.str());
 }
-TH_REGISTER(tst_FlitOptions_toString);
 
 class A {}; class B {};
 namespace std {
   template<> struct hash<A> { size_t operator()(const A&) { return 1234; } };
   template<> struct hash<B> { size_t operator()(const B&) { return 4321; } };
 }
-void tst_pair_hash() {
+TH_TEST(tst_pair_hash) {
   std::pair<A, B> p;
   size_t expected = 0x345678;
   expected = (1000003 * expected) ^ 1234;
@@ -207,7 +204,6 @@ void tst_pair_hash() {
   size_t actual = flit::pair_hash<A, B>()(p);
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_pair_hash);
 
 namespace tst_parseArguments {
 
@@ -219,24 +215,22 @@ bool operator!=(const flit::FlitOptions& a, const flit::FlitOptions& b) {
   return ! (a == b);
 }
 
-void tst_parseArguments_empty() {
+TH_TEST(tst_parseArguments_empty) {
   std::vector<const char*> argList = {progpath};
   flit::FlitOptions expected;
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_parseArguments_empty);
 
-void tst_parseArguments_one_flag() {
+TH_TEST(tst_parseArguments_one_flag) {
   std::vector<const char*> argList = {progpath, "-h"};
   flit::FlitOptions expected;
   expected.help = true;
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_parseArguments_one_flag);
 
-void tst_parseArguments_short_flags() {
+TH_TEST(tst_parseArguments_short_flags) {
   std::vector<const char*> argList = {progpath,
     "-h", "-v", "-t", "-L", "-c", // bool flags
     "-l", "323",
@@ -263,9 +257,8 @@ void tst_parseArguments_short_flags() {
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_parseArguments_short_flags);
 
-void tst_parseArguments_long_flags() {
+TH_TEST(tst_parseArguments_long_flags) {
   std::vector<const char*> argList = {progpath,
     "--help", "--verbose", "--list-tests", "--compare-mode", "--timing",
     "--timing-loops", "323",
@@ -292,9 +285,8 @@ void tst_parseArguments_long_flags() {
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_parseArguments_long_flags);
 
-void tst_parseArguments_compare_test_names() {
+TH_TEST(tst_parseArguments_compare_test_names) {
   // tests that the parseArguments does not read the files - keep it simple
   TempFile tmpf;
   tmpf.out << "name,precision,score_hex,resultfile,nanosec\n"
@@ -312,23 +304,20 @@ void tst_parseArguments_compare_test_names() {
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_parseArguments_compare_test_names);
 
-void tst_parseArguments_unrecognized_flag() {
+TH_TEST(tst_parseArguments_unrecognized_flag) {
   std::vector<const char*> argList = {progpath, "-T"};
   TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
             flit::ParseException);
 }
-TH_REGISTER(tst_parseArguments_unrecognized_flag);
 
-void tst_parseArguments_unknown_precision() {
+TH_TEST(tst_parseArguments_unknown_precision) {
   std::vector<const char*> argList = {progpath, "--precision", "half"};
   TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
             flit::ParseException);
 }
-TH_REGISTER(tst_parseArguments_unknown_precision);
 
-void tst_parseArguments_valid_precisions() {
+TH_TEST(tst_parseArguments_valid_precisions) {
   std::vector<const char*> argList = {progpath,
     "--precision", "all",
     "--precision", "float",
@@ -342,9 +331,8 @@ void tst_parseArguments_valid_precisions() {
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_parseArguments_valid_precisions);
 
-void tst_parseArguments_requires_argument() {
+TH_TEST(tst_parseArguments_requires_argument) {
   std::vector<const char*> argList;
   argList = {progpath, "--precision"};
   TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
@@ -373,9 +361,8 @@ void tst_parseArguments_requires_argument() {
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_parseArguments_requires_argument);
 
-void tst_parseArguments_expects_integers() {
+TH_TEST(tst_parseArguments_expects_integers) {
   std::vector<const char*> argList;
   argList = {progpath, "--timing-loops", "123abc"};
   flit::FlitOptions expected;
@@ -391,12 +378,11 @@ void tst_parseArguments_expects_integers() {
   TH_THROWS(flit::parseArguments(argList.size(), argList.data()),
             flit::ParseException);
 }
-TH_REGISTER(tst_parseArguments_expects_integers);
 
 struct TestContainerDeleter {
   ~TestContainerDeleter() { flit::getTests().clear(); }
 };
-void tst_parseArguments_specify_tests() {
+TH_TEST(tst_parseArguments_specify_tests) {
   // Setup to empty the getTests() map when the test ends
   // even if an exception is thrown
   TestContainerDeleter deleter;
@@ -416,9 +402,8 @@ void tst_parseArguments_specify_tests() {
   auto actual = flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_parseArguments_specify_tests);
 
-void tst_parseArguments_all_tests_expand() {
+TH_TEST(tst_parseArguments_all_tests_expand) {
   // Setup to empty the getTests() map when the test ends
   // even if an exception is thrown
   TestContainerDeleter deleter;
@@ -443,9 +428,8 @@ void tst_parseArguments_all_tests_expand() {
   TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test2"));
   TH_EQUAL(1, std::count(actual.tests.begin(), actual.tests.end(), "test3"));
 }
-TH_REGISTER(tst_parseArguments_all_tests_expand);
 
-void tst_parseArguments_specify_test_more_than_once() {
+TH_TEST(tst_parseArguments_specify_test_more_than_once) {
   // Setup to empty the getTests() map when the test ends
   // even if an exception is thrown
   TestContainerDeleter deleter;
@@ -460,19 +444,17 @@ void tst_parseArguments_specify_test_more_than_once() {
   decltype(actual.tests) expected_tests {"test2", "test3", "test2"};
   TH_EQUAL(actual.tests, expected_tests);
 }
-TH_REGISTER(tst_parseArguments_specify_test_more_than_once);
 
-void tst_parseArguments_set_progpath() {
+TH_TEST(tst_parseArguments_set_progpath) {
   std::vector<const char*> argList = {progpath};
   flit::g_program_path = "";
   flit::parseArguments(argList.size(), argList.data());
   TH_EQUAL(flit::which(progpath), flit::g_program_path);
 }
-TH_REGISTER(tst_parseArguments_set_progpath);
 
 } // end of namespace tst_parseArguments
 
-void tst_usage() {
+TH_TEST(tst_usage) {
   const auto usage = flit::usage("progName");
   auto usage_contains = [&usage](const std::string &x) {
     return std::string::npos != usage.find(x);
@@ -501,7 +483,6 @@ void tst_usage() {
   TH_VERIFY(usage_contains("'long double'"));
   TH_VERIFY(usage_contains("'all'"));
 }
-TH_REGISTER(tst_usage);
 
 namespace flit {
   // Note: if you do not put this in the flit namespace, then I cannot do a
@@ -518,7 +499,7 @@ namespace flit {
       a.resultfile() == b.resultfile();
   }
 }
-void tst_parseResults() {
+TH_TEST(tst_parseResults) {
   std::istringstream in(
       "name,precision,score_hex,resultfile,nanosec\n"
       "Mike,double,0x00000000000000000000,output.txt,149293\n"
@@ -534,9 +515,8 @@ void tst_parseResults() {
 
   TH_EQUAL(results, expected);
 }
-TH_REGISTER(tst_parseResults);
 
-void tst_parseResults_invalid_format() {
+TH_TEST(tst_parseResults_invalid_format) {
   // header does not contain the correct columns
   std::istringstream in;
   in.str("hello,there\n"
@@ -567,9 +547,8 @@ void tst_parseResults_invalid_format() {
   expected.emplace_back("Mike", "double", flit::Variant(0.0), 323, "");
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_parseResults_invalid_format);
 
-void tst_parseMetadata() {
+TH_TEST(tst_parseMetadata) {
   // This just parses the first row of data.  If there is no row, then an empty
   // map is returned.  Only the following columns are used in retrieving
   // metadata
@@ -608,24 +587,21 @@ void tst_parseMetadata() {
   metadata = flit::parseMetadata(in);
   TH_EQUAL(metadata, expected);
 }
-TH_REGISTER(tst_parseMetadata);
 
-void tst_removeIdxFromName() {
+TH_TEST(tst_removeIdxFromName) {
   TH_EQUAL(flit::removeIdxFromName("hello there"), "hello there");
   TH_EQUAL(flit::removeIdxFromName("hello there_idx0"), "hello there");
   TH_THROWS(flit::removeIdxFromName("hello there_idxa"), std::invalid_argument);
 }
-TH_REGISTER(tst_removeIdxFromName);
 
-void tst_calculateMissingComparisons_empty() {
+TH_TEST(tst_calculateMissingComparisons_empty) {
   flit::FlitOptions options;
   std::vector<std::string> expected;
   auto actual = calculateMissingComparisons(options);
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_calculateMissingComparisons_empty);
 
-void tst_calculateMissingComparisons_noGtFile() {
+TH_TEST(tst_calculateMissingComparisons_noGtFile) {
   flit::FlitOptions options;
   options.compareMode = true;
   TempFile tmpf;
@@ -639,9 +615,8 @@ void tst_calculateMissingComparisons_noGtFile() {
   auto actual = calculateMissingComparisons(options);
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_calculateMissingComparisons_noGtFile);
 
-void tst_calculateMissingComparisons_withGtFile() {
+TH_TEST(tst_calculateMissingComparisons_withGtFile) {
   TempFile compf1;
   compf1.out << "name,precision,score_hex,resultfile,nanosec\n"
              << "test1,d,0x0,NULL,0\n"
@@ -668,4 +643,3 @@ void tst_calculateMissingComparisons_withGtFile() {
   auto actual = calculateMissingComparisons(options);
   TH_EQUAL(expected, actual);
 }
-TH_REGISTER(tst_calculateMissingComparisons_withGtFile);

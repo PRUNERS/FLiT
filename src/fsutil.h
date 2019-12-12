@@ -133,6 +133,8 @@ void chdir(const std::string &directory);
 std::string which(const std::string &command);
 std::string which(const std::string &command, const std::string &path);
 std::string realpath(const std::string &relative);
+std::string dirname(const std::string &path);
+std::string basename(const std::string &path);
 
 /** constructor changes current dir, destructor undoes it */
 class PushDir {

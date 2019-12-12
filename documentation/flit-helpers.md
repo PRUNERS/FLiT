@@ -312,6 +312,28 @@ auto absolute = flit::realpath(os.path.join(".", "output", "..", "output",
 This will resolve as expected.
 
 
+### `flit::dirname()`
+
+Returns the parent directory path of the given path.
+
+```c++
+auto parent = flit::dirname("a/b/c");
+```
+
+The above will return `"a/b"` as the parent.
+
+
+### `flit::basename()`
+
+Returns the last component of a path, which may be a file or a directory.
+
+```c++
+auto filename = flit::basename("dir/subdir/file.txt");
+```
+
+The above will result in `"file.txt"`.
+
+
 ### Class `TempDir`
 
 An RAII-style class that creates a temporary directory.  When the class goes
@@ -575,6 +597,24 @@ modified.  This is to prevent unintended consequences in code.
 - `flit::rtrim()`: trims whitespace from the right-hand side of a string
 - `flit::ltrim()`: trims whitespace from the left-hand side of a string
 - `flit::trim()`: trims whitespace from both the left and right
+
+
+### `flit::rstrip()`, `flit::lstrip()`, and `flit::strip()` (in `src/flitHelpers.h`)
+
+These three are similar to the `flit::trim()` functions.  These, however, can
+strip off any amount of an arbitrary string from the right, left, or both
+sides, respectively.
+
+- `flit::rstrip()`: strip any amount of a given string from the right and return
+- `flit::lstrip()`: strip any amount of a given string from the left and return
+- `flit::strip()`: strip from both sides
+
+```c++
+auto stripped = flit::rstrip("-*--*- hello -*--*-", "-*-");
+```
+
+This will result in `"-*--*- hello "`, since only the right side was stripped.
+
 
 ### `flit::l2norm()` (in `src/flitHelpers.h`)
 

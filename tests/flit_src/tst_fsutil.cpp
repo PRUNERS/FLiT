@@ -84,11 +84,18 @@
 #include "test_harness.h"
 #include "fsutil.h"
 #include "subprocess.h"
+#include "fsutil.cpp"
 
 #include <algorithm>
 #include <memory>
 
 namespace {
+
+struct PopDir {
+  std::string originaldir;
+  PopDir() : originaldir(flit::curdir()) {}
+  ~PopDir() { flit::chdir(originaldir); }
+} popper;
 
 bool string_startswith(const std::string main, const std::string needle) {
   if (main.size() < needle.size()) { return false; }
@@ -141,7 +148,7 @@ void verify_listdir(const std::string &dir,
   TH_EQUAL(expected, listing);
 }
 
-void tst_string_startswith() {
+TH_TEST(tst_string_startswith) {
   TH_VERIFY(!string_startswith("michae", "michael"));
   TH_VERIFY( string_startswith("michael", "michael"));
   TH_VERIFY( string_startswith("", ""));
@@ -150,9 +157,8 @@ void tst_string_startswith() {
   TH_VERIFY( string_startswith("michael bentley", "michael"));
   TH_VERIFY(!string_startswith("michael bentley", "bentley"));
 }
-TH_REGISTER(tst_string_startswith);
 
-void tst_string_endswith() {
+TH_TEST(tst_string_endswith) {
   TH_VERIFY(!string_endswith("michae", "michael"));
   TH_VERIFY( string_endswith("michael", "michael"));
   TH_VERIFY( string_endswith("", ""));
@@ -161,9 +167,8 @@ void tst_string_endswith() {
   TH_VERIFY( string_endswith("michael bentley", "bentley"));
   TH_VERIFY(!string_endswith("michael bentley", "michael"));
 }
-TH_REGISTER(tst_string_endswith);
 
-void tst_splitlines() {
+TH_TEST(tst_splitlines) {
   using v = std::vector<std::string>;
 
   v expected = v{};
@@ -178,9 +183,8 @@ void tst_splitlines() {
   expected = v{"", "", "", "x"};
   TH_EQUAL(expected, splitlines("\n\n\nx"));
 }
-TH_REGISTER(tst_splitlines);
 
-void tst_verify_listdir_exists() {
+TH_TEST(tst_verify_listdir_exists) {
   flit::TempDir tempdir;
 
   // check that this fails
@@ -194,14 +198,12 @@ void tst_verify_listdir_exists() {
   flit::touch(flit::join(tempdir.name(), "apple of my eye"));
   verify_listdir(tempdir.name(), {"hello", "apple of my eye"});
 }
-TH_REGISTER(tst_verify_listdir_exists);
 
-void tst_verify_listdir_doesnt_exist() {
+TH_TEST(tst_verify_listdir_doesnt_exist) {
   TH_THROWS(verify_listdir("/does/not/exist", {}), std::ios_base::failure);
 }
-TH_REGISTER(tst_verify_listdir_doesnt_exist);
 
-void tst_ltrim() {
+TH_TEST(tst_ltrim) {
   TH_EQUAL("",        ltrim(""));
   TH_EQUAL("",        ltrim("  \t\n"));
   TH_EQUAL("abc  \n", ltrim("abc  \n"));
@@ -209,9 +211,8 @@ void tst_ltrim() {
   TH_EQUAL("abc  \n", ltrim("\t\n   \nabc  \n"));
   TH_EQUAL("a b c\n", ltrim("\na b c\n"));
 }
-TH_REGISTER(tst_ltrim);
 
-void tst_rtrim() {
+TH_TEST(tst_rtrim) {
   TH_EQUAL("",             rtrim(""));
   TH_EQUAL("",             rtrim("  \t\n"));
   TH_EQUAL("abc",          rtrim("abc  \n"));
@@ -219,9 +220,8 @@ void tst_rtrim() {
   TH_EQUAL("\t\n   \nabc", rtrim("\t\n   \nabc  \n"));
   TH_EQUAL("\na b c",      rtrim("\na b c\n"));
 }
-TH_REGISTER(tst_rtrim);
 
-void tst_trim() {
+TH_TEST(tst_trim) {
   TH_EQUAL("",      trim(""));
   TH_EQUAL("",      trim("  \t\n"));
   TH_EQUAL("abc",   trim("abc  \n"));
@@ -229,13 +229,12 @@ void tst_trim() {
   TH_EQUAL("abc",   trim("\t\n   \nabc  \n"));
   TH_EQUAL("a b c", trim("\na b c\n"));
 }
-TH_REGISTER(tst_trim);
 
 } // end of unnamed namespace
 
 namespace tst_functions {
 
-void tst_join() {
+TH_TEST(tst_join) {
   TH_EQUAL("path/to/my/object/file with spaces.txt",
            flit::join("path/to/my/object/file with spaces.txt"));
   TH_EQUAL("path/to/my/object/file with spaces.txt",
@@ -247,32 +246,28 @@ void tst_join() {
   TH_EQUAL("path/to/my/object/file with spaces.txt",
            flit::join("path", "to", "my", "object", "file with spaces.txt"));
 }
-TH_REGISTER(tst_join);
 
-void tst_readfile_filename() {
+TH_TEST(tst_readfile_filename) {
   flit::TempFile f;
   std::string content = "My string value";
   f.out << content;
   f.out.flush();
   TH_EQUAL(content, flit::readfile(f.name));
 }
-TH_REGISTER(tst_readfile_filename);
 
-void tst_readfile_filename_doesnt_exist() {
+TH_TEST(tst_readfile_filename_doesnt_exist) {
   TH_THROWS(flit::readfile("/does/not/exist.txt"), std::ios_base::failure);
 }
-TH_REGISTER(tst_readfile_filename_doesnt_exist);
 
-void tst_readfile_filepointer() {
+TH_TEST(tst_readfile_filepointer) {
   flit::FileCloser temporary_file(tmpfile());
   std::string content = "My string value";
   fprintf(temporary_file.file, "%s", content.c_str());
   fflush(temporary_file.file);
   TH_EQUAL(content, flit::readfile(temporary_file.file));
 }
-TH_REGISTER(tst_readfile_filepointer);
 
-void tst_listdir() {
+TH_TEST(tst_listdir) {
   flit::TempDir dir;
   auto listing = flit::listdir(dir.name());
   TH_EQUAL(std::vector<std::string> {}, listing);
@@ -292,9 +287,8 @@ void tst_listdir() {
 
   TH_EQUAL(expected_listing, listing);
 }
-TH_REGISTER(tst_listdir);
 
-void tst_printdir_exists() {
+TH_TEST(tst_printdir_exists) {
   // a lambda function to verify the string output of printdir()
   auto verify_printdir = [] (
       const std::string &directory,
@@ -345,14 +339,12 @@ void tst_printdir_exists() {
                   {"./", "../", "myfile1.tex", "myfile2.tex"});
   verify_printdir(flit::join(tempdir.name(), "dir2"), {"./", "../"});
 }
-TH_REGISTER(tst_printdir_exists);
 
-void tst_printdir_doesnt_exist() {
+TH_TEST(tst_printdir_doesnt_exist) {
   TH_THROWS(flit::printdir("/dir/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_printdir_doesnt_exist);
 
-void tst_rec_rmdir_exists() {
+TH_TEST(tst_rec_rmdir_exists) {
   using flit::TempDir;
   using flit::mkdir;
   using flit::touch;
@@ -400,38 +392,38 @@ void tst_rec_rmdir_exists() {
   rec_rmdir(join(tempdir.name(), "dir1"));
   verify_listdir(tempdir.name(), {"superfile1.txt", "superfile2.txt"});
 }
-TH_REGISTER(tst_rec_rmdir_exists);
 
-void tst_rec_rmdir_doesnt_exist() {
+TH_TEST(tst_rec_rmdir_doesnt_exist) {
   TH_THROWS(flit::rec_rmdir("/dir/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_rec_rmdir_doesnt_exist);
 
-void tst_rec_rmdir_on_file() {
+TH_TEST(tst_rec_rmdir_on_file) {
   flit::TempFile tmpfile;
   TH_THROWS(flit::rec_rmdir(tmpfile.name), std::ios_base::failure);
 }
-TH_REGISTER(tst_rec_rmdir_on_file);
 
-void tst_mkdir() {
+TH_TEST(tst_mkdir) {
   flit::TempDir tempdir;
   verify_listdir(tempdir.name(), {});
   flit::mkdir(flit::join(tempdir.name(), "dir1"));
   verify_listdir(tempdir.name(), {"dir1"});
   verify_listdir(flit::join(tempdir.name(), "dir1"), {});
 }
-TH_REGISTER(tst_mkdir);
 
-void tst_rmdir_empty() {
+TH_TEST(tst_mkdir_parent_does_not_exist) {
+  TH_THROWS(flit::mkdir(flit::join("doesnt-exist", "newdir")),
+            std::ios_base::failure);
+}
+
+TH_TEST(tst_rmdir_empty) {
   flit::TempDir tempdir;
   flit::mkdir(flit::join(tempdir.name(), "dir1"));
   verify_listdir(tempdir.name(), {"dir1"});
   flit::rmdir(flit::join(tempdir.name(), "dir1"));
   verify_listdir(tempdir.name(), {});
 }
-TH_REGISTER(tst_rmdir_empty);
 
-void tst_rmdir_full() {
+TH_TEST(tst_rmdir_full) {
   flit::TempDir tempdir;
   flit::mkdir(flit::join(tempdir.name(), "dir1"));
   flit::touch(flit::join(tempdir.name(), "dir1", "file.txt"));
@@ -442,14 +434,12 @@ void tst_rmdir_full() {
   verify_listdir(tempdir.name(), {"dir1"});
   verify_listdir(flit::join(tempdir.name(), "dir1"), {"file.txt"});
 }
-TH_REGISTER(tst_rmdir_full);
 
-void tst_rmdir_doesnt_exist() {
+TH_TEST(tst_rmdir_doesnt_exist) {
   TH_THROWS(flit::rmdir("/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_rmdir_doesnt_exist);
 
-void tst_curdir() {
+TH_TEST(tst_curdir) {
   flit::TempDir tempdir1;
   flit::TempDir tempdir2;
   auto originaldir = flit::curdir();
@@ -464,40 +454,41 @@ void tst_curdir() {
   }
   TH_EQUAL(originaldir, flit::curdir());
 }
-TH_REGISTER(tst_curdir);
 
-void tst_chdir_exists() {
+TH_TEST(tst_curdir_doesnt_exist) {
+  PopDir popper; // go back to current directory at the end
+  {
+    flit::TempDir tempdir;
+    flit::chdir(tempdir.name());
+  }
+  TH_THROWS(flit::curdir(), std::ios_base::failure);
+}
+
+TH_TEST(tst_chdir_exists) {
   flit::TempDir tempdir;
   auto originaldir = flit::curdir();
-  try {
+  {
+    PopDir popper; // go back to current directory at the end of scope
     flit::chdir(tempdir.name());
     TH_EQUAL(tempdir.name(), flit::curdir());
-  } catch (...) {
-    flit::chdir(originaldir);
-    throw;
   }
-  flit::chdir(originaldir);
   TH_EQUAL(originaldir, flit::curdir());
 }
-TH_REGISTER(tst_chdir_exists);
 
-void tst_chdir_doesnt_exist() {
+TH_TEST(tst_chdir_doesnt_exist) {
   TH_THROWS(flit::chdir("/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_chdir_doesnt_exist);
 
-void tst_chdir_on_file() {
+TH_TEST(tst_chdir_on_file) {
   flit::TempFile tempfile;
   TH_THROWS(flit::chdir(tempfile.name), std::ios_base::failure);
 }
-TH_REGISTER(tst_chdir_on_file);
 
-void tst_which_defaultpath_empty() {
+TH_TEST(tst_which_defaultpath_empty) {
   TH_THROWS(flit::which(""), std::ios_base::failure);
 }
-TH_REGISTER(tst_which_defaultpath_empty);
 
-void tst_which_defaultpath_absolute() {
+TH_TEST(tst_which_defaultpath_absolute) {
   flit::TempDir tempdir;
   TH_THROWS(flit::which(flit::join(tempdir.name(), "does/not/exist")),
             std::ios_base::failure);
@@ -508,9 +499,8 @@ void tst_which_defaultpath_absolute() {
   // directory fails even if it exists
   TH_THROWS(flit::which(tempdir.name()), std::ios_base::failure);
 }
-TH_REGISTER(tst_which_defaultpath_absolute);
 
-void tst_which_defaultpath_relative() {
+TH_TEST(tst_which_defaultpath_relative) {
   flit::TempDir tempdir;
   flit::PushDir pusher(tempdir.name());
 
@@ -529,9 +519,8 @@ void tst_which_defaultpath_relative() {
   // directory fails even if it exists
   TH_THROWS(flit::which("./does"), std::ios_base::failure);
 }
-TH_REGISTER(tst_which_defaultpath_relative);
 
-void tst_which_defaultpath_tofind() {
+TH_TEST(tst_which_defaultpath_tofind) {
   flit::TempDir tempdir;
   flit::PushDir pusher(tempdir.name());
 
@@ -540,17 +529,15 @@ void tst_which_defaultpath_tofind() {
   auto bash_path = trim(flit::call_with_output("which bash").out);
   TH_EQUAL(bash_path, flit::which("bash"));
 }
-TH_REGISTER(tst_which_defaultpath_tofind);
 
-void tst_which_givenpath_empty() {
+TH_TEST(tst_which_givenpath_empty) {
   flit::TempDir path_piece1, path_piece2;
   auto path = path_piece1.name() + ":" + path_piece2.name();
 
   TH_THROWS(flit::which("", path), std::ios_base::failure);
 }
-TH_REGISTER(tst_which_givenpath_empty);
 
-void tst_which_givenpath_absolute() {
+TH_TEST(tst_which_givenpath_absolute) {
   flit::TempDir path_piece1, path_piece2;
   auto path = path_piece1.name() + ":" + path_piece2.name();
 
@@ -564,9 +551,8 @@ void tst_which_givenpath_absolute() {
   // directory fails even if it exists
   TH_THROWS(flit::which(tempdir.name(), path), std::ios_base::failure);
 }
-TH_REGISTER(tst_which_givenpath_absolute);
 
-void tst_which_givenpath_relative() {
+TH_TEST(tst_which_givenpath_relative) {
   flit::TempDir path_piece1, path_piece2;
   auto path = path_piece1.name() + ":" + path_piece2.name();
 
@@ -588,9 +574,8 @@ void tst_which_givenpath_relative() {
   // directory fails even if it exists
   TH_THROWS(flit::which("./does", path), std::ios_base::failure);
 }
-TH_REGISTER(tst_which_givenpath_relative);
 
-void tst_which_givenpath_tofind() {
+TH_TEST(tst_which_givenpath_tofind) {
   flit::TempDir path_piece1, path_piece2;
   auto path = path_piece1.name() + ":" + path_piece2.name();
 
@@ -621,27 +606,98 @@ void tst_which_givenpath_tofind() {
   flit::mkdir(flit::join(path_piece1.name(), file2_name));
   TH_EQUAL(file2, flit::which(file2_name, path));
 }
-TH_REGISTER(tst_which_givenpath_tofind);
+
+TH_TEST(tst_realpath_already_absolute) {
+  flit::TempDir temp;
+  TH_EQUAL(flit::realpath(temp.name()), temp.name());
+}
+
+TH_TEST(tst_realpath_does_not_exist) {
+  std::string nonexistent;
+  {
+    flit::TempDir temp;
+    nonexistent = flit::join(temp.name(), "does-not-exist.txt");
+  }
+  TH_THROWS(flit::realpath(nonexistent), std::ios_base::failure);
+}
+
+TH_TEST(tst_realpath_vs_curdir) {
+  TH_EQUAL(flit::realpath("."), flit::curdir());
+}
+
+TH_TEST(tst_realpath_from_relative_path) {
+  flit::TempDir parent;
+  std::string child = "child-dir";
+  std::string child_abs = flit::join(parent.name(), child);
+  flit::mkdir(child_abs);
+  {
+    flit::PushDir pusher(parent.name());
+    TH_EQUAL(flit::realpath("."), parent.name());
+    TH_EQUAL(flit::realpath(child), child_abs);
+  }
+}
+
+TH_TEST(tst_realpath_absolute_with_relative_movements) {
+  flit::TempDir parent;
+  std::string child_1 = "child-dir-1";
+  std::string child_2 = "child-dir-2";
+  auto child_1_abs = flit::join(parent.name(), child_1);
+  auto child_2_abs = flit::join(parent.name(), child_2);
+  flit::mkdir(child_1_abs);
+  flit::mkdir(child_2_abs);
+  TH_EQUAL(flit::realpath(flit::join(child_1_abs, "..", child_1, ".")),
+           child_1_abs);
+  TH_EQUAL(flit::realpath(flit::join(child_1_abs, "..", child_1, "..", ".", child_2)),
+           child_2_abs);
+}
+
+TH_TEST(tst_basename) {
+  TH_EQUAL(flit::basename("//usr/lib"), "lib");
+  TH_EQUAL(flit::basename("/usr//lib"), "lib");
+  TH_EQUAL(flit::basename("/usr/lib"), "lib");
+  TH_EQUAL(flit::basename("/usr///"), "usr");
+  TH_EQUAL(flit::basename("/usr//"), "usr");
+  TH_EQUAL(flit::basename("/usr/"), "usr");
+  TH_EQUAL(flit::basename("usr"), "usr");
+  TH_EQUAL(flit::basename("///"), "/");
+  TH_EQUAL(flit::basename("/"), "/");
+  TH_EQUAL(flit::basename("."), ".");
+  TH_EQUAL(flit::basename(".."), "..");
+  TH_EQUAL(flit::basename(""), "");
+}
+
+TH_TEST(tst_dirname) {
+  TH_EQUAL(flit::dirname("//usr/lib"), "/usr");
+  TH_EQUAL(flit::dirname("/usr//lib"), "/usr");
+  TH_EQUAL(flit::dirname("/usr/lib"), "/usr");
+  TH_EQUAL(flit::dirname("/usr///"), "/");
+  TH_EQUAL(flit::dirname("/usr//"), "/");
+  TH_EQUAL(flit::dirname("/usr/"), "/");
+  TH_EQUAL(flit::dirname("usr"), ".");
+  TH_EQUAL(flit::dirname("///"), "/");
+  TH_EQUAL(flit::dirname("/"), "/");
+  TH_EQUAL(flit::dirname("."), ".");
+  TH_EQUAL(flit::dirname(".."), ".");
+  TH_EQUAL(flit::dirname(""), ".");
+}
 
 } // end of namespace tst_functions
 
 namespace tst_PushDir {
 
-void tst_PushDir_constructor_existing_dir() {
+TH_TEST(tst_PushDir_constructor_existing_dir) {
   flit::TempDir temp;
   std::string curdir = flit::curdir();
   flit::PushDir pd(temp.name());
   TH_EQUAL(curdir, pd.previous_dir());
   TH_EQUAL(temp.name(), flit::curdir());
 }
-TH_REGISTER(tst_PushDir_constructor_existing_dir);
 
-void tst_PushDir_constructor_missing_dir() {
+TH_TEST(tst_PushDir_constructor_missing_dir) {
   TH_THROWS(flit::PushDir pd("/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_PushDir_constructor_missing_dir);
 
-void tst_PushDir_destructor_existing_dir() {
+TH_TEST(tst_PushDir_destructor_existing_dir) {
   flit::TempDir temp1;
   flit::TempDir temp2;
   auto curdir = flit::curdir();
@@ -657,9 +713,8 @@ void tst_PushDir_destructor_existing_dir() {
   }
   TH_EQUAL(curdir, flit::curdir());
 }
-TH_REGISTER(tst_PushDir_destructor_existing_dir);
 
-void tst_PushDir_destructor_missing_dir() {
+TH_TEST(tst_PushDir_destructor_missing_dir) {
   auto curdir = flit::curdir();
   std::ostringstream captured;
   // capture stderr and assert on its output
@@ -693,13 +748,12 @@ void tst_PushDir_destructor_missing_dir() {
   // make sure there is at most one newline and it is at the end
   TH_VERIFY(captured.str().find('\n') == captured.str().size() - 1);
 }
-TH_REGISTER(tst_PushDir_destructor_missing_dir);
 
 } // end of namespace tst_PushDir
 
 namespace tst_TempFile {
 
-void tst_TempFile() {
+TH_TEST(tst_TempFile) {
   std::string filename;
   std::string contents = "hello, my name is Michael\n...\nBentley, that is.";
   {
@@ -712,13 +766,16 @@ void tst_TempFile() {
   // make sure the file has been deleted.
   TH_THROWS(flit::readfile(filename), std::ios_base::failure);
 }
-TH_REGISTER(tst_TempFile);
+
+TH_TEST(tst_TempFile_failure) {
+  TH_THROWS(flit::TempFile("/parent/does/not/exist"), std::ios_base::failure);
+}
 
 } // end of namespace tst_TempFile
 
 namespace tst_TempDir {
 
-void tst_TempDir() {
+TH_TEST(tst_TempDir) {
   std::string tmpdir_name;
   std::string filename = "myfile.txt";
   std::string filepath;
@@ -740,18 +797,26 @@ void tst_TempDir() {
   // check that the file no longer exists
   TH_THROWS(flit::readfile(filepath), std::ios_base::failure);
 }
-TH_REGISTER(tst_TempDir);
+
+TH_TEST(tst_TempDir_parent_does_not_exist) {
+  TH_THROWS(flit::TempDir("/parent/does/not/exist"), std::ios_base::failure);
+}
+
+TH_TEST(tst_TempDir_directory_already_deleted) {
+  flit::TempDir temp;
+  flit::rec_rmdir(temp.name());
+  // testing that the TempDir destructor does not throw or crash
+}
 
 } // end of namespace tst_TempDir
 
 namespace tst_TinyDir {
 
-void tst_TinyDir_constructor_doesnt_exist() {
+TH_TEST(tst_TinyDir_constructor_doesnt_exist) {
   TH_THROWS(flit::TinyDir("/dir/does/not/exist"), std::ios_base::failure);
 }
-TH_REGISTER(tst_TinyDir_constructor_doesnt_exist);
 
-void tst_TinyDir_iterate() {
+TH_TEST(tst_TinyDir_iterate) {
   flit::TempDir tempdir;
   flit::touch(flit::join(tempdir.name(), "file1.txt"));
   flit::touch(flit::join(tempdir.name(), "file2.txt"));
@@ -774,9 +839,8 @@ void tst_TinyDir_iterate() {
   std::sort(expected_listing.begin(), expected_listing.end());
   TH_EQUAL(expected_listing, listing);
 }
-TH_REGISTER(tst_TinyDir_iterate);
 
-void tst_TinyDir_iterator() {
+TH_TEST(tst_TinyDir_iterator) {
   flit::TempDir tempdir;
   flit::touch(flit::join(tempdir.name(), "file1.txt"));
   flit::touch(flit::join(tempdir.name(), "file2.txt"));
@@ -797,13 +861,12 @@ void tst_TinyDir_iterator() {
   std::sort(expected_listing.begin(), expected_listing.end());
   TH_EQUAL(expected_listing, listing);
 }
-TH_REGISTER(tst_TinyDir_iterator);
 
 } // end of namespace tst_TinyDir
 
 namespace tst_FileCloser {
 
-void tst_FileCloser() {
+TH_TEST(tst_FileCloser) {
   flit::TempDir temp_dir;
   std::string content = "hello world!";
   std::string fname = flit::join(temp_dir.name(), "tmp.txt");
@@ -817,13 +880,21 @@ void tst_FileCloser() {
   // without stubbing.  This is because it is undefined behavior if you use the
   // FILE* pointer in any way after fclose().
 }
-TH_REGISTER(tst_FileCloser);
+
+TH_TEST(tst_FileCloser_null_file) {
+  TH_THROWS(flit::FileCloser(nullptr), std::ios_base::failure);
+}
+
+// can cause segfaults
+//TH_TEST(tst_FileCloser_bad_file) {
+//  TH_THROWS(flit::FileCloser(reinterpret_cast<FILE*>(12345)), std::ios_base::failure);
+//}
 
 } // end of namespace tst_FileCloser
 
 namespace tst_FdReplace {
 
-void tst_FdReplace() {
+TH_TEST(tst_FdReplace) {
   flit::FileCloser t1(tmpfile());
   flit::FileCloser t2(tmpfile());
   fprintf(t1.file, "hi there");
@@ -839,9 +910,8 @@ void tst_FdReplace() {
   TH_EQUAL("hi there", flit::readfile(t1.file));
   TH_EQUAL("hello world", flit::readfile(t2.file));
 }
-TH_REGISTER(tst_FdReplace);
 
-void tst_FdReplace_nullptr() {
+TH_TEST(tst_FdReplace_nullptr) {
   flit::FileCloser t1(tmpfile());
   flit::FileCloser t2(tmpfile());
   TH_THROWS(flit::FdReplace(nullptr, nullptr), std::ios_base::failure);
@@ -853,7 +923,7 @@ void tst_FdReplace_nullptr() {
 
 namespace tst_StreamBufReplace {
 
-void tst_StreamBufReplace() {
+TH_TEST(tst_StreamBufReplace) {
   std::stringstream s1;
   std::stringstream s2;
   s1 << "hi there";
@@ -869,6 +939,5 @@ void tst_StreamBufReplace() {
   TH_EQUAL(s1.str(), "hi there");
   TH_EQUAL(s2.str(), "hello world");
 }
-TH_REGISTER(tst_StreamBufReplace);
 
 } // end of namespace tst_StreamBufReplace

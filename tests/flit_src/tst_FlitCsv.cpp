@@ -84,6 +84,7 @@
 #include "test_harness.h"
 
 #include "FlitCsv.h"
+#include "FlitCsv.cpp"
 
 namespace {
 
@@ -118,15 +119,14 @@ std::ostream& operator<<(std::ostream& out, flit::CsvRow& row) {
 } // end of unnamed namespace
 
 namespace tst_CsvRow {
-void tst_CsvRow_header() {
+TH_TEST(tst_CsvRow_header) {
   flit::CsvRow row {"1", "2", "3", "4"};
   TH_EQUAL(row.header(), nullptr);
   row.setHeader(&row);
   TH_EQUAL(row.header(), &row);
 }
-TH_REGISTER(tst_CsvRow_header);
 
-void tst_CsvRow_operator_brackets_string() {
+TH_TEST(tst_CsvRow_operator_brackets_string) {
   flit::CsvRow row {"1", "2", "3", "4"};
   flit::CsvRow header {"a", "b", "c", "d"};
   row.setHeader(&header);
@@ -144,9 +144,8 @@ void tst_CsvRow_operator_brackets_string() {
   row.setHeader(nullptr);
   TH_THROWS(row["a"], std::logic_error);
 }
-TH_REGISTER(tst_CsvRow_operator_brackets_string);
 
-void tst_CsvRow_operator_brackets_int() {
+TH_TEST(tst_CsvRow_operator_brackets_int) {
   flit::CsvRow row {"1", "2", "3", "4"};
   flit::CsvRow header {"a", "b", "c", "d"};
   row.setHeader(&header);
@@ -166,11 +165,10 @@ void tst_CsvRow_operator_brackets_int() {
   TH_EQUAL(row.at(2), "3");
   TH_THROWS(row.at(4), std::out_of_range);
 }
-TH_REGISTER(tst_CsvRow_operator_brackets_int);
 } // end of namespace tst_CsvRow
 
 namespace tst_CsvReader {
-void tst_CsvReader_oneRowAtATime() {
+TH_TEST(tst_CsvReader_oneRowAtATime) {
   std::istringstream in(
       "first,second,third,fourth\n"   // header row
       "a, b,c,\n"
@@ -217,9 +215,8 @@ void tst_CsvReader_oneRowAtATime() {
   TH_EQUAL(row, expected_row);
   TH_VERIFY(!reader);
 }
-TH_REGISTER(tst_CsvReader_oneRowAtATime);
 
-void tst_CsvReader_createRowVector() {
+TH_TEST(tst_CsvReader_createRowVector) {
   std::istringstream in(
       "first,second,third,fourth\n"   // header row
       "a, b,c,\n"
@@ -251,7 +248,7 @@ void tst_CsvReader_createRowVector() {
 namespace tst_CsvWriter {
 
 /// Tests that the CsvWriter will end the file in a newline (if writing rows)
-void tst_CsvWriter_write_row_addsNewline() {
+TH_TEST(tst_CsvWriter_write_row_addsNewline) {
   std::istringstream in(
       "first,second,third,fourth\n"   // header row
       "a, b,c,"
@@ -268,10 +265,9 @@ void tst_CsvWriter_write_row_addsNewline() {
   TH_EQUAL(out.str().back(), '\n');
   TH_EQUAL(in.str() + '\n', out.str());
 }
-TH_REGISTER(tst_CsvWriter_write_row_addsNewline);
 
 /// Tests that CsvWriter can write out the exact same csv read in
-void tst_CsvWriter_write_row_exactly() {
+TH_TEST(tst_CsvWriter_write_row_exactly) {
   std::istringstream in(
       "first,second,third,fourth\n"   // header row
       "a, b,c,\n"
@@ -291,7 +287,6 @@ void tst_CsvWriter_write_row_exactly() {
 
   TH_EQUAL(in.str(), out.str());
 }
-TH_REGISTER(tst_CsvWriter_write_row_exactly);
 
 } // end of namespace tst_CsvWriter
 

@@ -87,6 +87,7 @@
 #define time_function wrap_time_function
 #define time_function_autoloop wrap_time_function_autoloop
 #include "TestBase.h"
+#include "TestBase.cpp"
 #undef time_function
 #undef time_function_autoloop
 
@@ -145,7 +146,7 @@ int_fast64_t wrap_time_function_autoloop(
 
 namespace TestResultTests {
 
-void tst_TestResult_constructor() {
+TH_TEST(tst_TestResult_constructor) {
   std::string name = "hello";
   std::string precision = "double";
   flit::Variant result("string result");
@@ -162,9 +163,8 @@ void tst_TestResult_constructor() {
   TH_EQUAL(r.is_comparison_null(), true);
   TH_EQUAL(r.resultfile(), resultfile);
 }
-TH_REGISTER(tst_TestResult_constructor);
 
-void tst_TestResult_setters() {
+TH_TEST(tst_TestResult_setters) {
   std::string name = "hello";
   std::string precision = "double";
   flit::Variant result("string result");
@@ -181,9 +181,8 @@ void tst_TestResult_setters() {
   r.set_resultfile(resultfile2);
   TH_EQUAL(r.resultfile(), resultfile2);
 }
-TH_REGISTER(tst_TestResult_setters);
 
-void tst_TestResult_stream() {
+TH_TEST(tst_TestResult_stream) {
   using flit::operator<<;
   std::ostringstream out;
 
@@ -204,7 +203,6 @@ void tst_TestResult_stream() {
 
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_TestResult_stream);
 
 } // end of namespace TestResultTests
 
@@ -269,14 +267,13 @@ public:
   std::vector<F> defaultInputs { 3, 4 };
 };
 
-void tst_TestBase_constructor() {
+TH_TEST(tst_TestBase_constructor) {
   std::string id("This is my ID");
   MocTest<float> test(id);
   TH_EQUAL(test.id, id);
 }
-TH_REGISTER(tst_TestBase_constructor);
 
-void tst_TestBase_variant_compare() {
+TH_TEST(tst_TestBase_variant_compare) {
   std::string id("This is my ID");
   MocTest<float> t1(id);
   MocTest<float> t2(id);
@@ -311,7 +308,6 @@ void tst_TestBase_variant_compare() {
   TH_EQUAL(t5.variant_compare(gts[4], gts[4]), 3.0L);
   TH_EQUAL(t6.variant_compare(gts[5], gts[5]), 3.0L);
 }
-TH_REGISTER(tst_TestBase_variant_compare);
 
 template <typename F>
 struct RunSetup {
@@ -330,7 +326,7 @@ RunSetup<F> run_setup() {
   return setup;
 }
 
-void tst_TestBase_run_noInputs() {
+TH_TEST(tst_TestBase_run_noInputs) {
   auto setup = run_setup<float>();
   auto &test = setup.test;
   test.to_return = 3;
@@ -343,9 +339,8 @@ void tst_TestBase_run_noInputs() {
   TH_EQUAL(test.inputs.size(), 0); // verify run_impl was not called
   TH_EQUAL(results.size(), 0);
 }
-TH_REGISTER(tst_TestBase_run_noInputs);
 
-void tst_TestBase_run_oneInput() {
+TH_TEST(tst_TestBase_run_oneInput) {
   auto setup = run_setup<float>();
   auto &test = setup.test;
   test.to_return = 3;
@@ -369,9 +364,8 @@ void tst_TestBase_run_oneInput() {
   TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called once
   TH_EQUAL(test.inputs[0], expected_input);
 }
-TH_REGISTER(tst_TestBase_run_oneInput);
 
-void tst_TestBase_run_twoInputs() {
+TH_TEST(tst_TestBase_run_twoInputs) {
   auto setup = run_setup<double>();
   auto &test = setup.test;
   test.to_return = 3.14L;
@@ -414,9 +408,8 @@ void tst_TestBase_run_twoInputs() {
   TH_EQUAL(results[1].resultfile(), "");
   test.inputs.clear();
 }
-TH_REGISTER(tst_TestBase_run_twoInputs);
 
-void tst_TestBase_run_manyInputs() {
+TH_TEST(tst_TestBase_run_manyInputs) {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = 5e10L;
@@ -468,9 +461,8 @@ void tst_TestBase_run_manyInputs() {
   TH_EQUAL(results[10].name(), test.id + "_idx10");
   test.inputs.clear();
 }
-TH_REGISTER(tst_TestBase_run_manyInputs);
 
-void tst_TestBase_run_idxWithOneInput() {
+TH_TEST(tst_TestBase_run_idxWithOneInput) {
   auto setup = run_setup<float>();
   auto &test = setup.test;
   test.to_return = 3;
@@ -494,9 +486,8 @@ void tst_TestBase_run_idxWithOneInput() {
   TH_EQUAL(test.inputs.size(), 1); // verify run_impl was called once
   TH_EQUAL(test.inputs[0], expected_input);
 }
-TH_REGISTER(tst_TestBase_run_idxWithOneInput);
 
-void tst_TestBase_run_idxWithManyInputs() {
+TH_TEST(tst_TestBase_run_idxWithManyInputs) {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = 5e10L;
@@ -518,9 +509,8 @@ void tst_TestBase_run_idxWithManyInputs() {
   TH_EQUAL(results[ 0].name(), test.id + "_idx6");
   test.inputs.clear();
 }
-TH_REGISTER(tst_TestBase_run_idxWithManyInputs);
 
-void tst_TestBase_run_disabledTests() {
+TH_TEST(tst_TestBase_run_disabledTests) {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = flit::Variant(); // None type
@@ -535,9 +525,8 @@ void tst_TestBase_run_disabledTests() {
   TH_EQUAL(results.size(), 0);
   test.inputs.clear();
 }
-TH_REGISTER(tst_TestBase_run_disabledTests);
 
-void tst_TestBase_run_shouldNotTime() {
+TH_TEST(tst_TestBase_run_shouldNotTime) {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = 5e10L;
@@ -555,9 +544,8 @@ void tst_TestBase_run_shouldNotTime() {
   TH_EQUAL(time_function_invocations, 0);
   TH_EQUAL(time_function_autoloop_invocations, 0);
 }
-TH_REGISTER(tst_TestBase_run_shouldNotTime);
 
-void tst_TestBase_run_autoLooping() {
+TH_TEST(tst_TestBase_run_autoLooping) {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = 5e10L;
@@ -579,9 +567,8 @@ void tst_TestBase_run_autoLooping() {
   TH_EQUAL(time_function_autoloop_invocations, 1);
   TH_EQUAL(last_repeats, expected_repeats);
 }
-TH_REGISTER(tst_TestBase_run_autoLooping);
 
-void tst_TestBase_run_specifiedLoops() {
+TH_TEST(tst_TestBase_run_specifiedLoops) {
   auto setup = run_setup<long double>();
   auto &test = setup.test;
   test.to_return = 5e10L;
@@ -606,9 +593,8 @@ void tst_TestBase_run_specifiedLoops() {
   TH_EQUAL(last_loops, expected_loops);
   TH_EQUAL(last_repeats, expected_repeats);
 }
-TH_REGISTER(tst_TestBase_run_specifiedLoops);
 
-void tst_TestBase_run_outputFileUsingFilebase() {
+TH_TEST(tst_TestBase_run_outputFileUsingFilebase) {
   // test the output file using the filebase
   auto setup = run_setup<double>();
   auto &test = setup.test;
@@ -633,9 +619,8 @@ void tst_TestBase_run_outputFileUsingFilebase() {
   auto read_results = flit::Variant::fromString(contents);
   TH_EQUAL(flit::Variant(test.to_return), read_results);
 }
-TH_REGISTER(tst_TestBase_run_outputFileUsingFilebase);
 
-void tst_TestBase_run_outputVariantsToFile() {
+TH_TEST(tst_TestBase_run_outputVariantsToFile) {
   // test each variant type that they each go to file except long double
   auto setup = run_setup<double>();
   auto &test = setup.test;
@@ -666,7 +651,6 @@ void tst_TestBase_run_outputVariantsToFile() {
   test_variant_type(std::vector<double> {});
   test_variant_type(std::vector<long double> { 3.14159 });
 }
-TH_REGISTER(tst_TestBase_run_outputVariantsToFile);
 
 } // end of namespace TestBase
 
@@ -686,7 +670,7 @@ protected:
   }
 };
 
-void tst_TestFactory_get() {
+TH_TEST(tst_TestFactory_get) {
   // calling get<float>() creates them
   NullTestFactory factory1;
   TH_EQUAL(0, factory1.create_count);
@@ -753,13 +737,12 @@ void tst_TestFactory_get() {
   TH_NOT_EQUAL(nullptr,
                dynamic_cast<flit::NullTest<float>*>(null_float.get()));
 }
-TH_REGISTER(tst_TestFactory_get);
 
 } // end of namespace TestFactory
 
 namespace Functions {
 
-void tst_registerTest() {
+TH_TEST(tst_registerTest) {
   TestFactory::NullTestFactory factory;
 
   // Test the registration works
@@ -786,7 +769,6 @@ void tst_registerTest() {
   TH_THROWS(flit::registerTest("another_factory", nullptr),
             std::invalid_argument);
 }
-TH_REGISTER(tst_registerTest);
 
 } // end of namespace Functions
 

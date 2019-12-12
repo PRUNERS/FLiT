@@ -123,7 +123,7 @@ std::ostream& operator<<(std::ostream& out, const std::vector<T> &vec) {
 
 namespace tst_as_float {
 
-void tst_as_float_32bit() {
+TH_TEST(tst_as_float_32bit) {
   uint32_t val = 1067316150;
   float expected = 1.234;
   TH_EQUAL(flit::as_float(val), expected);
@@ -136,9 +136,8 @@ void tst_as_float_32bit() {
   expected = 1.7292e-42;
   TH_EQUAL(flit::as_float(val), expected);
 }
-TH_REGISTER(tst_as_float_32bit);
 
-void tst_as_float_64bit() {
+TH_TEST(tst_as_float_64bit) {
   uint64_t val = 1067316150;
   double expected = 5.27324243e-315;
   TH_EQUAL(flit::as_float(val), expected);
@@ -155,9 +154,8 @@ void tst_as_float_64bit() {
   expected = 6.097e-321;
   TH_EQUAL(flit::as_float(val), expected);
 }
-TH_REGISTER(tst_as_float_64bit);
 
-void tst_as_float_80bit() {
+TH_TEST(tst_as_float_80bit) {
   auto val = combine_to_128(0x0000, 0x0000000000000000);
   long double expected = 0.0L;
   TH_EQUAL(flit::as_float(val), expected);
@@ -198,13 +196,12 @@ void tst_as_float_80bit() {
   expected = 3.586714e-1573L;
   TH_EQUAL(flit::as_float(val), expected);
 }
-TH_REGISTER(tst_as_float_80bit);
 
 } // end of namespace tst_as_float
 
 namespace tst_as_int {
 
-void tst_as_int_32bit() {
+TH_TEST(tst_as_int_32bit) {
   uint32_t expected = 1067316150;
   float val= 1.234;
   TH_EQUAL(flit::as_int(val), expected);
@@ -217,9 +214,8 @@ void tst_as_int_32bit() {
   val = 1.7292e-42;
   TH_EQUAL(flit::as_int(val), expected);
 }
-TH_REGISTER(tst_as_int_32bit);
 
-void tst_as_int_64bit() {
+TH_TEST(tst_as_int_64bit) {
   uint64_t expected = 1067316150;
   double val = 5.27324243e-315;
   TH_EQUAL(flit::as_int(val), expected);
@@ -236,9 +232,8 @@ void tst_as_int_64bit() {
   val = 6.097e-321;
   TH_EQUAL(flit::as_int(val), expected);
 }
-TH_REGISTER(tst_as_int_64bit);
 
-void tst_as_int_128bit() {
+TH_TEST(tst_as_int_128bit) {
   auto expected = combine_to_128(0x0000, 0x0000000000000000);
   long double val = 0.0L;
   TH_EQUAL(flit::as_int(val), expected);
@@ -279,11 +274,10 @@ void tst_as_int_128bit() {
   val = 3.586714e-1573L;
   TH_EQUAL(flit::as_int(val), expected);
 }
-TH_REGISTER(tst_as_int_128bit);
 
 } // end of namespace tst_as_int
 
-void tst_l2norm() {
+TH_TEST(tst_l2norm) {
   std::vector<float> empty;
   std::vector<float> one_elem { 1.0L };
   std::vector<float> two_elems { 3.5L, 1.0L };
@@ -298,31 +292,27 @@ void tst_l2norm() {
   TH_EQUAL(flit::l2norm(one_elem , two_elems),  7.25L);
   TH_EQUAL(flit::l2norm(two_elems, two_elems),  0.0L );
 }
-TH_REGISTER(tst_l2norm);
 
 namespace tst_split {
 
-void tst_split_empty() {
+TH_TEST(tst_split_empty) {
   TH_EQUAL(flit::split("", '\n'), std::vector<std::string>{});
 }
-TH_REGISTER(tst_split_empty);
 
-void tst_split_nonempty() {
+TH_TEST(tst_split_nonempty) {
   std::string text("hello");
   auto actual = flit::split(text, ' ');
   std::vector<std::string> expected {text};
   TH_EQUAL(actual, expected);
 }
-TH_REGISTER(tst_split_nonempty);
 
-void tst_split_one_split() {
+TH_TEST(tst_split_one_split) {
   std::string text = "hello there";
   std::vector<std::string> expected_split = { "hello", "there" };
   TH_EQUAL(flit::split(text, ' '), expected_split);
 }
-TH_REGISTER(tst_split_one_split);
 
-void tst_split_many_splits() {
+TH_TEST(tst_split_many_splits) {
   std::string text = "hello there my friend";
   std::vector<std::string> expected_split {"hello", "there", "my", "friend"};
   TH_EQUAL(flit::split(text, ' '), expected_split);
@@ -335,23 +325,20 @@ void tst_split_many_splits() {
   };
   TH_EQUAL(flit::split(text, 'e'), expected_split);
 }
-TH_REGISTER(tst_split_many_splits);
 
-void tst_split_maxsplit_zero() {
+TH_TEST(tst_split_maxsplit_zero) {
   std::string text = "hello there my friend";
   std::vector<std::string> expected_split { "hello there my friend" };
   TH_EQUAL(flit::split(text, ' ', 0), expected_split);
 }
-TH_REGISTER(tst_split_maxsplit_zero);
 
-void tst_split_maxsplit_one() {
+TH_TEST(tst_split_maxsplit_one) {
   std::string text = "hello there my friend";
   std::vector<std::string> expected_split { "hello", "there my friend" };
   TH_EQUAL(flit::split(text, ' ', 1), expected_split);
 }
-TH_REGISTER(tst_split_maxsplit_one);
 
-void tst_split_maxsplit_many() {
+TH_TEST(tst_split_maxsplit_many) {
   std::string text = "hello there my friend";
   std::vector<std::string> expected_split { "hello", "there", "my", "friend" };
   TH_EQUAL(flit::split(text, ' ', 100), expected_split);
@@ -360,7 +347,6 @@ void tst_split_maxsplit_many() {
   expected_split = { "hello", "there", "my friend" };
   TH_EQUAL(flit::split(text, ' ', 2), expected_split);
 }
-TH_REGISTER(tst_split_maxsplit_many);
 
 } // end of namespace tst_split
 
@@ -538,3 +524,64 @@ TH_TEST(tst_rtrim_whitespace_inside) {
 }
 
 } // end of namespace tst_trim
+
+namespace tst_strip {
+
+TH_TEST(tst_rstrip_empty) {
+  TH_EQUAL(flit::rstrip("", "/"), "");
+  TH_EQUAL(flit::rstrip("", ""), "");
+  TH_EQUAL(flit::rstrip("...", ""), "...");
+}
+
+TH_TEST(tst_rstrip_nothing_to_strip) {
+  TH_EQUAL(flit::rstrip("hello", " "), "hello");
+}
+
+TH_TEST(tst_rstrip_bothsides) {
+  TH_EQUAL(flit::rstrip("--hello-there--", "-"), "--hello-there");
+}
+
+TH_TEST(tst_rstrip_multichar) {
+  TH_EQUAL(flit::rstrip("/*/*/* /* hi there /* /*/*/*", "/*"),
+           "/*/*/* /* hi there /* ");
+}
+
+TH_TEST(tst_lstrip_empty) {
+  TH_EQUAL(flit::lstrip("", "/"), "");
+  TH_EQUAL(flit::lstrip("", ""), "");
+  TH_EQUAL(flit::lstrip("...", ""), "...");
+}
+
+TH_TEST(tst_lstrip_nothing_to_strip) {
+  TH_EQUAL(flit::lstrip("hello", " "), "hello");
+}
+
+TH_TEST(tst_lstrip_bothsides) {
+  TH_EQUAL(flit::lstrip("--hello-there--", "-"), "hello-there--");
+}
+
+TH_TEST(tst_lstrip_multichar) {
+  TH_EQUAL(flit::lstrip("/*/*/* /* hi there /* /*/*/*", "/*"),
+           " /* hi there /* /*/*/*");
+}
+
+TH_TEST(tst_strip_empty) {
+  TH_EQUAL(flit::strip("", "/"), "");
+  TH_EQUAL(flit::strip("", ""), "");
+  TH_EQUAL(flit::strip("...", ""), "...");
+}
+
+TH_TEST(tst_strip_nothing_to_strip) {
+  TH_EQUAL(flit::strip("hello", " "), "hello");
+}
+
+TH_TEST(tst_strip_bothsides) {
+  TH_EQUAL(flit::strip("--hello-there--", "-"), "hello-there");
+}
+
+TH_TEST(tst_strip_multichar) {
+  TH_EQUAL(flit::strip("/*/*/* /* hi there /* /*/*/*", "/*"),
+           " /* hi there /* ");
+}
+
+} // end of namespace tst_strip
