@@ -131,6 +131,7 @@ compilation under test and for the link step (to use the baseline compilation)
 ...         os.path.join('data', 'flit-config-compilerspecificflags.toml'),
 ...         os.path.join(temp_dir, 'flit-config.toml'))
 ...     _ = shutil.copy(os.path.join('data', 'fake_gcc4.py'), temp_dir)
+...     _ = shutil.copy(os.path.join('data', 'fake_gcc9.py'), temp_dir)
 ...     _ = shutil.copy(os.path.join('data', 'fake_clang34.py'), temp_dir)
 ...     _ = shutil.copy(os.path.join('data', 'fake_intel19.py'), temp_dir)
 ...     with StringIO() as ostream:
@@ -140,39 +141,50 @@ compilation under test and for the link step (to use the baseline compilation)
 ...             raise BisectTestError('Could not update Makefile\\n' +
 ...                                   ostream.getvalue())
 ...
-...     bisect_makevars_gcc = bisect_compile('./fake_gcc4.py', temp_dir)
+...     bisect_makevars_gcc4 = bisect_compile('./fake_gcc4.py', temp_dir)
+...     bisect_makevars_gcc9 = bisect_compile('./fake_gcc9.py', temp_dir)
 ...     bisect_makevars_clang = bisect_compile('./fake_clang34.py', temp_dir)
 ...     bisect_makevars_intel = bisect_compile('./fake_intel19.py', temp_dir)
 
->>> bisect_makevars_gcc['GT_SWITCHES']
+Note: fake_gcc9.py is not in the flit-config.toml, and therefore should not
+  have fixed flags pulled from it.
+>>> bisect_makevars_gcc4['GT_SWITCHES']
 ['-W-baseline-flag1']
->>> sorted(bisect_makevars_gcc['GT_CXXFLAGS'])
+>>> sorted(bisect_makevars_gcc4['GT_CXXFLAGS'])
 ['-W-gcc-flag1', '-W-gcc-flag2', '-g']
 >>> sorted(bisect_makevars_clang['GT_CXXFLAGS'])
 ['-W-gcc-flag1', '-W-gcc-flag2', '-g']
 >>> sorted(bisect_makevars_intel['GT_CXXFLAGS'])
 ['-W-gcc-flag1', '-W-gcc-flag2', '-g']
+>>> sorted(bisect_makevars_gcc9['GT_CXXFLAGS'])
+['-W-gcc-flag1', '-W-gcc-flag2', '-g']
 
->>> sorted(bisect_makevars_gcc['GT_LDFLAGS'])
+>>> sorted(bisect_makevars_gcc4['GT_LDFLAGS'])
 ['-l-gcc-link1', '-l-gcc-link2']
 >>> sorted(bisect_makevars_clang['GT_LDFLAGS'])
 ['-l-gcc-link1', '-l-gcc-link2']
 >>> sorted(bisect_makevars_intel['GT_LDFLAGS'])
 ['-l-gcc-link1', '-l-gcc-link2']
+>>> sorted(bisect_makevars_gcc9['GT_LDFLAGS'])
+['-l-gcc-link1', '-l-gcc-link2']
 
->>> sorted(bisect_makevars_gcc['TROUBLE_CXXFLAGS'])
+>>> sorted(bisect_makevars_gcc4['TROUBLE_CXXFLAGS'])
 ['-W-gcc-flag1', '-W-gcc-flag2']
 >>> sorted(bisect_makevars_clang['TROUBLE_CXXFLAGS'])
 ['-W-clang-flag1', '-W-clang-flag2']
 >>> sorted(bisect_makevars_intel['TROUBLE_CXXFLAGS'])
 ['-W-intel-flag1', '-W-intel-flag2']
+>>> sorted(bisect_makevars_gcc9['TROUBLE_CXXFLAGS'])
+[]
 
->>> sorted(bisect_makevars_gcc['TROUBLE_LDFLAGS'])
+>>> sorted(bisect_makevars_gcc4['TROUBLE_LDFLAGS'])
 ['-l-gcc-link1', '-l-gcc-link2']
 >>> sorted(bisect_makevars_clang['TROUBLE_LDFLAGS'])
 ['-l-clang-link1', '-l-clang-link2', '-nopie']
 >>> sorted(bisect_makevars_intel['TROUBLE_LDFLAGS'])
 ['-l-intel-link1', '-l-intel-link2', '-no-pie']
+>>> sorted(bisect_makevars_gcc9['TROUBLE_LDFLAGS'])
+[]
 '''
 
 # Test setup before the docstring is run.
