@@ -82,6 +82,7 @@
 # -- LICENSE END --
 'Pretend to be gcc 4.8.4, specifically checking for unsupported flags'
 
+import os
 import sys
 
 def print_version():
@@ -153,6 +154,8 @@ def main(arguments):
         idx = arguments.index('-o' if '-o' in arguments else '--output')
         outfile = arguments[idx + 1]
         open(outfile, 'a').close()  # create an empty file if it does not exist
+        if '-c' not in arguments:
+            os.chmod(outfile, 0o755)
 
     return 0
 
