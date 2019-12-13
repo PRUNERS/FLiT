@@ -124,6 +124,7 @@ def main(arguments):
         '-MMD',
         '-MP',
         '-MF',
+        '-MT',
         '--gcc-toolchain',
         '-c'
         ]

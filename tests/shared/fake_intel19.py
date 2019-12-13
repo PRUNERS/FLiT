@@ -80,15 +80,18 @@
 #    purposes.
 #
 # -- LICENSE END --
-'Pretend to be gcc 4.8.4, specifically checking for unsupported flags'
+'Pretend to be clang 3.4, specifically checking for unsupported flags'
 
 import sys
 
+VERSION = '19.0.4.227'
+
 def print_version():
     'Print fake version information'
-    print('Ubuntu g++ (GCC) 4.8.4')
-    print('Copyright (C) 2018 Free Software Foundation, Inc.')
-    print('This is a fake GCC compiler that does not actually do anything')
+    nodot_version = VERSION.replace('.', '')
+    print('icpc_orig (ICC) {} 20190416'.format(VERSION))
+    print('Copyright (C) 1985-2019 Intel Corporation.  All rights reserved.')
+    print()
 
 def main(arguments):
     'Main logic here'
@@ -98,27 +101,38 @@ def main(arguments):
         '-std',
         '-g',
         '-o',
-        '-fassociative-math',
-        '-mavx',
-        '-fexcess-precision',
-        '-ffinite-math-only',
-        '-mavx2',
-        '-fcx-fortran-rules',
-        '-ffp-contract',
-        '-ffloat-store',
-        '-fcx-limited-range',
-        '-fmerge-all-constants',
-        '-fno-trapping-math',
-        '-freciprocal-math',
-        '-frounding-math',
-        '-fsignaling-nans',
-        '-mfpmath',
-        '-funsafe-math-optimizations',
+        '-no-pie',
         '-MMD',
         '-MP',
         '-MF',
         '-MT',
-        '-c'
+        '-gcc-name',
+        '-gxx-name',
+        '-c',
+        # recognized optimization flags
+        '--use_fast_math',
+        '-fcx-limited-range',
+        '-ffloat-store',
+        '-fma',
+        '-fmerge-all-constants',
+        '-fp-model',
+        '-fp-port',
+        '-frounding-math',
+        '-fsingle-precision-constant',
+        '-ftz',
+        '-march',
+        '-mavx',
+        '-mavx2',
+        '-mfma',
+        '-mfpmath',
+        '-mp1',
+        '-mtune',
+        '-no-fma',
+        '-no-ftz',
+        '-no-prec-div',
+        '-prec-div',
+        '-ffinite-math-only',
+        '-fno-trapping-math',
         ]
 
     recognized_beginnings = [
@@ -135,9 +149,8 @@ def main(arguments):
         return 0
 
     if '-dumpversion' in arguments:
-        print('4.8.4')
+        print(VERSION)
         return 0
-
 
     for arg in arguments:
         canonical = arg.split('=', maxsplit=1)[0]
