@@ -119,7 +119,7 @@ in our `flit-config.toml` file under the intel compiler entry:
 ```toml
 [[compiler]]
 ...
-fixed_compiler_flags = '--gxx-name=/opt/compilers/gcc-9.1.0/bin/g++'
+fixed_compile_flags = '--gxx-name=/opt/compilers/gcc-9.1.0/bin/g++'
 ...
 ```
 
