@@ -85,6 +85,7 @@
 import argparse
 import os
 import re
+import subprocess as subp
 import sys
 
 import flitconfig as conf
@@ -223,24 +224,27 @@ def gen_multi_assignment(name, values):
     return '\n'.join(
         [beginning] + ['{} += {}'.format(justified, x) for x in values])
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    args = parse_args(arguments, prog=prog)
+def _get_gcc_compiler_version(binary):
+    'Return the version of the given gcc executable'
+    return util.check_output([binary, '-dumpversion'])
 
-    try:
-        projconf = util.load_projconf(args.directory)
-    except FileNotFoundError:
-        return 1
-    except AssertionError as ex:
-        print('Error: ' + ex.args[0], file=sys.stderr)
-        return 1
+def _additional_ldflags(compiler):
+    'Returns a list of LD flags needed for this particular compiler'
+    if compiler['type'] == 'clang':
+        return '-nopie'
+    if compiler['type'] == 'intel':
+        return '-no-pie'
+    if compiler['type'] == 'gcc':
+        version = _get_gcc_compiler_version(compiler['binary'])
+        major_version = version.split('.')[0]
+        if int(major_version) >= 6:
+            return '-no-pie'
+        return ''
+    raise NotImplementedError('Unsupported compiler type requested')
 
-    makefile = os.path.join(args.directory, 'Makefile')
-    if os.path.exists(makefile):
-        print('Updating {0}'.format(makefile))
-    else:
-        print('Creating {0}'.format(makefile))
-
+def create_makefile(args, makefile='Makefile'):
+    'Create the makefile assuming flit-config.toml is in the current directory'
+    projconf = util.load_projconf()
     dev_build = projconf['dev_build']
     matching_dev_compilers = [x for x in projconf['compiler']
                               if x['name'] == dev_build['compiler_name']]
@@ -312,12 +316,32 @@ def main(arguments, prog=sys.argv[0]):
             for compiler in projconf['compiler']}),
         'compiler_fixed_link_flags': gen_assignments({
             compiler['type'].upper() + '_LDFLAGS':
-                compiler['fixed_link_flags']
+                compiler['fixed_link_flags'] + ' '
+                + _additional_ldflags(compiler)
             for compiler in projconf['compiler']}),
         }
 
     util.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                          makefile, replacements, overwrite=True)
+
+def main(arguments, prog=sys.argv[0]):
+    'Main logic here'
+    args = parse_args(arguments, prog=prog)
+
+    makefile = os.path.join(args.directory, 'Makefile')
+    if os.path.exists(makefile):
+        print('Updating {0}'.format(makefile))
+    else:
+        print('Creating {0}'.format(makefile))
+
+    with util.pushd(args.directory):
+        try:
+            create_makefile(args)
+        except FileNotFoundError:
+            return 1
+        except AssertionError as ex:
+            print('Error: ' + ex.args[0], file=sys.stderr)
+            return 1
 
     return 0
 
