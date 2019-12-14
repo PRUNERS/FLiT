@@ -91,11 +91,11 @@ from socket import gethostname
 
 try:
     import flitutil as util
-    import flitconfig as conf
 except ModuleNotFoundError:
     sys.path.append('..')
     import flitutil as util
-    import flitconfig as conf
+import flitconfig as conf
+import flit_update
 
 brief_description = 'Generate Ninja build file for FLiT makefile system'
 
@@ -170,51 +170,6 @@ def variablize(name):
         'Error: cannot handle name that starts with a number'
     assert len(name) > 0, 'Error: cannot handle name only made of dashes'
     return name
-
-def get_mpi_flags(*args, **kwargs):
-    '''
-    Returns both cxxflags and ldflags for mpi compilation
-
-    @param args, kwargs: extra arguments passed to subprocess.Popen()
-    @return (cxxflags, ldflags)
-      cxxflags (list(str)) list of flags for the c++ compiler for MPI
-      ldflags (list(str)) list of flags for the linker for MPI
-
-    Setup a fake mpic++ executable
-    >>> import tempfile
-    >>> import shutil
-    >>> tempdir = tempfile.mkdtemp()
-    >>> with open(os.path.join(tempdir, 'mpic++'), 'w') as fout:
-    ...     _ = fout.write('#!{}\\n'.format(shutil.which('python3')))
-    ...     _ = fout.write('import sys\\n')
-    ...     _ = fout.write('if "compile" in sys.argv[1]: print("compile arguments")\\n')
-    ...     _ = fout.write('if "link" in sys.argv[1]: print("link arguments")\\n')
-    >>> os.chmod(os.path.join(tempdir, 'mpic++'), mode=0o755)
-
-    Test that compile and link flags are returned
-    >>> cxxflags, ldflags = get_mpi_flags(env={'PATH': tempdir})
-    >>> cxxflags
-    ['compile', 'arguments']
-    >>> ldflags
-    ['link', 'arguments']
-
-    Cleanup
-    >>> shutil.rmtree(tempdir)
-    '''
-    try:
-        mpi_cxxflags = check_output(['mpic++', '--showme:compile'], *args, **kwargs)
-        mpi_ldflags = check_output(['mpic++', '--showme:link'], *args, **kwargs)
-    except subp.CalledProcessError:
-        mpi_cxxflags = check_output(['mpic++', '-compile_info'], *args, **kwargs)
-        mpi_ldflags = check_output(['mpic++', '-link_info'], *args, **kwargs)
-        mpi_cxxflags = ' '.join(mpi_cxxflags.split()[2:])
-        mpi_ldflags = ' '.join(mpi_ldflags.split()[2:])
-
-    return mpi_cxxflags.split(), mpi_ldflags.split()
-
-def get_gcc_compiler_version(binary):
-    'Return the version of the given gcc executable'
-    return check_output([binary, '-dumpversion'])
 
 def _create_compilation(compiler, optl, switches):
     '''
@@ -417,7 +372,7 @@ class NinjaWriter:
         self.hostname = projconf['host']['name']
 
         if projconf['run']['enable_mpi']:
-            mpi_cxxflags, mpi_ldflags = get_mpi_flags()
+            mpi_cxxflags, mpi_ldflags = flit_update.get_mpi_flags()
             self.cxxflags.extend(mpi_cxxflags)
             self.ldflags.extend(mpi_ldflags)
 
@@ -427,7 +382,7 @@ class NinjaWriter:
             if compiler['type'] == 'clang':
                 compiler['fixed_link_flags'] += ' -nopie'
             if compiler['type'] == 'gcc':
-                version = get_gcc_compiler_version(compiler['binary'])
+                version = flit_update.get_gcc_compiler_version(compiler['binary'])
                 if version.split('.')[0] not in ('4', '5'):
                     compiler['fixed_link_flags'] += ' -no-pie'
 
@@ -453,7 +408,6 @@ class NinjaWriter:
             self.timing_flags = '--timing-repeats {} --timing-loops {}'.format(
                 projconf['run']['timing_repeats'],
                 projconf['run']['timing_loops'])
-
 
     def _cxx_command(self, outdir, cxx, optl, switches, cxxflags, target):
         '''

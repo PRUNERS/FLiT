@@ -224,9 +224,50 @@ def gen_multi_assignment(name, values):
     return '\n'.join(
         [beginning] + ['{} += {}'.format(justified, x) for x in values])
 
-def _get_gcc_compiler_version(binary):
+def get_gcc_compiler_version(binary):
     'Return the version of the given gcc executable'
     return util.check_output([binary, '-dumpversion'])
+
+def get_mpi_flags(*args, **kwargs):
+    '''
+    Returns both cxxflags and ldflags for mpi compilation
+
+    @param args, kwargs: extra arguments passed to subprocess.Popen()
+    @return (cxxflags, ldflags)
+      cxxflags (list(str)) list of flags for the c++ compiler for MPI
+      ldflags (list(str)) list of flags for the linker for MPI
+
+    Setup a fake mpic++ executable
+    >>> import tempfile
+    >>> import shutil
+    >>> tempdir = tempfile.mkdtemp()
+    >>> with open(os.path.join(tempdir, 'mpic++'), 'w') as fout:
+    ...     _ = fout.write('#!{}\\n'.format(shutil.which('python3')))
+    ...     _ = fout.write('import sys\\n')
+    ...     _ = fout.write('if "compile" in sys.argv[1]: print("compile arguments")\\n')
+    ...     _ = fout.write('if "link" in sys.argv[1]: print("link arguments")\\n')
+    >>> os.chmod(os.path.join(tempdir, 'mpic++'), mode=0o755)
+
+    Test that compile and link flags are returned
+    >>> cxxflags, ldflags = get_mpi_flags(env={'PATH': tempdir})
+    >>> cxxflags
+    ['compile', 'arguments']
+    >>> ldflags
+    ['link', 'arguments']
+
+    Cleanup
+    >>> shutil.rmtree(tempdir)
+    '''
+    try:
+        mpi_cxxflags = util.check_output(['mpic++', '--showme:compile'], *args, **kwargs)
+        mpi_ldflags = util.check_output(['mpic++', '--showme:link'], *args, **kwargs)
+    except subp.CalledProcessError:
+        mpi_cxxflags = util.check_output(['mpic++', '-compile_info'], *args, **kwargs)
+        mpi_ldflags = util.check_output(['mpic++', '-link_info'], *args, **kwargs)
+        mpi_cxxflags = ' '.join(mpi_cxxflags.split()[2:])
+        mpi_ldflags = ' '.join(mpi_ldflags.split()[2:])
+
+    return mpi_cxxflags.split(), mpi_ldflags.split()
 
 def _additional_ldflags(compiler):
     'Returns a list of LD flags needed for this particular compiler'
@@ -235,7 +276,7 @@ def _additional_ldflags(compiler):
     if compiler['type'] == 'intel':
         return '-no-pie'
     if compiler['type'] == 'gcc':
-        version = _get_gcc_compiler_version(compiler['binary'])
+        version = get_gcc_compiler_version(compiler['binary'])
         major_version = version.split('.')[0]
         if int(major_version) >= 6:
             return '-no-pie'
@@ -245,17 +286,11 @@ def _additional_ldflags(compiler):
 def create_makefile(args, makefile='Makefile'):
     'Create the makefile assuming flit-config.toml is in the current directory'
     projconf = util.load_projconf()
+    compilers = {c['name']: c for c in projconf['compiler']}
     dev_build = projconf['dev_build']
-    matching_dev_compilers = [x for x in projconf['compiler']
-                              if x['name'] == dev_build['compiler_name']]
-    assert len(matching_dev_compilers) > 0, \
-            'Compiler name {0} not found'.format(dev_build['compiler_name'])
-
-    ground_truth = projconf['ground_truth']
-    matching_gt_compilers = [x for x in projconf['compiler']
-                             if x['name'] == ground_truth['compiler_name']]
-    assert len(matching_gt_compilers) > 0, \
-            'Compiler name {0} not found'.format(ground_truth['compiler_name'])
+    gt_build = projconf['ground_truth']
+    dev_compiler = compilers[dev_build['compiler_name']]
+    gt_compiler = compilers[gt_build['compiler_name']]
 
     base_compilers = {x.upper(): None for x in util.SUPPORTED_COMPILER_TYPES}
     base_compilers.update({compiler['type'].upper(): compiler['binary']
@@ -270,17 +305,26 @@ def create_makefile(args, makefile='Makefile'):
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
 
+    mpi_cxxflags = []
+    mpi_ldflags = []
+    if projconf['run']['enable_mpi']:
+        mpi_cxxflags, mpi_ldflags = get_mpi_flags()
+
     replacements = {
         'uname': os.uname().sysname,
         'hostname': os.uname().nodename,
-        'dev_compiler': matching_dev_compilers[0]['binary'],
-        'dev_type': matching_dev_compilers[0]['type'],
+        'dev_compiler': dev_compiler['binary'],
+        'dev_type': dev_compiler['type'],
         'dev_optl': dev_build['optimization_level'],
         'dev_switches': dev_build['switches'],
-        'ground_truth_compiler': matching_gt_compilers[0]['binary'],
-        'ground_truth_type': matching_gt_compilers[0]['type'],
-        'ground_truth_optl': ground_truth['optimization_level'],
-        'ground_truth_switches': ground_truth['switches'],
+        'dev_cxxflags': '$(' + dev_compiler['type'].upper() + '_CXXFLAGS)',
+        'dev_ldflags': '$(' + dev_compiler['type'].upper() + '_LDFLAGS)',
+        'ground_truth_compiler': gt_compiler['binary'],
+        'ground_truth_type': gt_compiler['type'],
+        'ground_truth_optl': gt_build['optimization_level'],
+        'ground_truth_switches': gt_build['switches'],
+        'gt_cxxflags': '$(' + gt_compiler['type'].upper() + '_CXXFLAGS)',
+        'gt_ldflags': '$(' + gt_compiler['type'].upper() + '_LDFLAGS)',
         'flit_include_dir': conf.include_dir,
         'flit_lib_dir': conf.lib_dir,
         'flit_data_dir': conf.data_dir,
@@ -288,6 +332,8 @@ def create_makefile(args, makefile='Makefile'):
         'flit_version': conf.version,
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
+        'mpi_cxxflags': ' '.join(mpi_cxxflags),
+        'mpi_ldflags': ' '.join(mpi_ldflags),
         'compiler_defs': gen_assignments({
             key: val for key, val in base_compilers.items()}),
         'compilers': ' '.join([compiler['type'].upper()
@@ -337,10 +383,13 @@ def main(arguments, prog=sys.argv[0]):
     with util.pushd(args.directory):
         try:
             create_makefile(args)
-        except FileNotFoundError:
+        except FileNotFoundError as ex:
+            print('Error {}:'.format(ex.errno), ex.strerror,
+                  '"{}"'.format(ex.filename),
+                  file=sys.stderr)
             return 1
         except AssertionError as ex:
-            print('Error: ' + ex.args[0], file=sys.stderr)
+            print('Error:', ex.args[0], file=sys.stderr)
             return 1
 
     return 0
