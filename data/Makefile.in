@@ -138,7 +138,7 @@ DEV_OBJ_DIR     := $(OBJ_DIR)/dev
 GT_OBJ_DIR      := $(OBJ_DIR)/gt
 RESULTS_DIR     := results
 RUNBUILD_DIR    := bin
-ALL_DIRS        := $(OBJ_DIR)
+ALL_DIRS         = $(OBJ_DIR)
 ALL_DIRS        += $(DEV_OBJ_DIR)
 ALL_DIRS        += $(GT_OBJ_DIR)
 ALL_DIRS        += $(RESULTS_DIR)
@@ -300,8 +300,9 @@ Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 # @param 6: link flags
 # @param 7: directory for object files
 define REC_COMPILE_RULE
+ifneq ($$(R_TARGET),$1)
 $1: Makefile custom.mk
-	$(REC_MAKE) R_TYPE=compile \
+	$$(REC_MAKE) R_TYPE=compile \
 	  R_TARGET="$1" \
 	  R_COMPILER="$2" \
 	  R_OPTL="$3" \
@@ -309,6 +310,7 @@ $1: Makefile custom.mk
 	  R_CXXFLAGS="$5" \
 	  R_LDFLAGS="$6" \
 	  R_OBJ_DIR="$7"
+endif
 endef
 
 # @param 1: directory to create
@@ -323,7 +325,6 @@ MKDIR = \
 #   need access to know how to compile the $(GT_TARGET) for the runbuild.
 #
 
-ifneq ($(R_TARGET),$(RUNBUILD_DIR/$(GT_TARGET)-fpic))
 $(eval $(call REC_COMPILE_RULE,\
   $(RUNBUILD_DIR)/$(GT_TARGET)-fpic,\
   $(GT_CXX),\
@@ -332,9 +333,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_CXXFLAGS) -fPIC,\
   $(GT_LDFLAGS),\
   $(GT_OBJ_DIR)-fpic))
-endif
 
-ifneq ($(R_TARGET),$(DEV_TARGET))
 $(eval $(call REC_COMPILE_RULE,\
   $(DEV_TARGET),\
   $(DEV_CXX),\
@@ -343,9 +342,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $(DEV_CXXFLAGS),\
   $(DEV_LDFLAGS),\
   $(DEV_OBJ_DIR)))
-endif
 
-ifneq ($(R_TARGET),$(GT_TARGET))
 $(eval $(call REC_COMPILE_RULE,\
   $(GT_TARGET),\
   $(GT_CXX),\
@@ -354,7 +351,6 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_CXXFLAGS),\
   $(GT_LDFLAGS),\
   $(GT_OBJ_DIR)))
-endif
 
 $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
