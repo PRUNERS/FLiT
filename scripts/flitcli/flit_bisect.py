@@ -101,6 +101,7 @@ import subprocess as subp
 import sys
 
 import flitconfig as conf
+import flit_update
 import flitutil as util
 try:
     import flitelf as elf
@@ -113,6 +114,58 @@ brief_description = 'Bisect compilation to identify problematic source code'
 def hash_compilation(compiler, optl, switches):
     'Takes a compilation and returns a 10 digit hash string.'
     return hashlib.sha1((compiler + optl + switches).encode()).hexdigest()[:10]
+
+def try_get_compiler_flags(compiler_binary, projconf):
+    '''
+    Try to get the compiler flags for the given binary for both compiling and
+    linking.  This it tries to do from the project configuration (loaded from
+    flit-config.toml).  If we are unable to find a matching compiler based on
+    the binary given, then return two empty strings.
+
+    @param compiler_binary: binary_name (to find in PATH) or path to compiler
+        binary
+    @param projconf: A dictionary loaded from flit-config.toml for the project.
+        Specifically, the list of compilers will be used, i.e., the list found
+        in projconf['compiler'], using fields 'binary', 'fixed_compile_flags',
+        and 'fixed_link_flags'.
+    @return two strings representing the 'fixed_compile_flags' and the
+        'fixed_link_flags' of the matching compiler from the given projconf.
+        If no matching compiler is found, then return two empty strings.
+
+    >>> try_get_compiler_flags('', {})
+    ('', '')
+
+    >>> try_get_compiler_flags('emptyname', {})
+    ('', '')
+
+    >>> try_get_compiler_flags(
+    ...     'nonmatching',
+    ...     {'compiler': [{'binary': 'mycompiler', 'fixed_compile_flags': 'FF',
+    ...                    'fixed_link_flags': 'LL'}]})
+    ('', '')
+
+    >>> try_get_compiler_flags(
+    ...     'mycompiler',
+    ...     {'compiler': [{'binary': 'mycompiler', 'fixed_compile_flags': 'FF',
+    ...                    'fixed_link_flags': 'LL'}]})
+    ('FF', 'LL')
+    '''
+    compiler_map = {}
+    if 'compiler' in projconf:
+        compiler_map = {x['binary']: x for x in projconf['compiler']}
+        which_map = {shutil.which(k): v for k, v in compiler_map.items()
+                     if shutil.which(k)}
+    else:
+        return '', ''
+
+    which_binary = shutil.which(compiler_binary)
+    if compiler_binary in compiler_map:
+        compiler = compiler_map[compiler_binary]
+    elif which_binary in which_map:
+        compiler = which_map[which_binary]
+    else:
+        return '', ''
+    return compiler['fixed_compile_flags'], compiler['fixed_link_flags']
 
 def try_resolve_compiler_type(compiler_name, projconf):
     '''
@@ -243,8 +296,6 @@ def create_bisect_makefile(directory, replacements, gt_src,
         baseline and differing symbols for each file.
 
     Within replacements, there are some optional fields:
-    - cpp_flags: (list) (optional) List of c++ compiler flags to give to
-          each compiler when compiling object files from source files.
     - link_flags: (list) (optional) List of linker flags to give to the
           ground-truth compiler when performing linking.
 
@@ -253,23 +304,29 @@ def create_bisect_makefile(directory, replacements, gt_src,
     if split_symbol_map is None:
         split_symbol_map = {} # default to an empty dictionary
     repl_copy = dict(replacements)
+    projconf = util.load_projconf(os.path.join(directory, '..'))
+    cxxflags, ldflags = try_get_compiler_flags(repl_copy['trouble_cxx'], projconf)
+    try:
+        ldflags += ' {}'.format(flit_update._additional_ldflags(
+            {'type': repl_copy['trouble_type'],
+             'binary': repl_copy['trouble_cxx']}))
+    except NotImplementedError:
+        pass # skip over unsupported compiler types
+    repl_copy['trouble_cxxflags'] = cxxflags
+    repl_copy['trouble_ldflags'] = ldflags
     repl_copy['TROUBLE_SRC'] = '\n'.join(['TROUBLE_SRC      += {0}'.format(x)
                                           for x in trouble_src])
     repl_copy['BISECT_GT_SRC'] = '\n'.join(['BISECT_GT_SRC    += {0}'.format(x)
                                             for x in gt_src])
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
-    if 'cpp_flags' in repl_copy:
-        repl_copy['EXTRA_CXXFLAGS'] = '\n'.join([
-            'CXXFLAGS         += {0}'.format(x)
-            for x in repl_copy['cpp_flags']])
-        del repl_copy['cpp_flags']
     if 'link_flags' in repl_copy:
         repl_copy['EXTRA_LDFLAGS'] = '\n'.join([
             'LDFLAGS          += {0}'.format(x)
             for x in repl_copy['link_flags']])
         del repl_copy['link_flags']
 
+    
 
     # Find the next unique file name available in directory
     num = 0
@@ -1583,7 +1640,6 @@ def compile_trouble(directory, compiler, optl, switches, compiler_type,
         'trouble_type': compiler_type,
         'trouble_id': trouble_hash,
         'link_flags': [],
-        'cpp_flags': [],
         'build_gt_local': 'false',
         }
     makefile = create_bisect_makefile(trouble_path, replacements, [])
@@ -1672,7 +1728,6 @@ def run_bisect(arguments, prog=sys.argv[0]):
         'trouble_type': args.compiler_type,
         'trouble_id': trouble_hash,
         'link_flags': [],
-        'cpp_flags': [],
         'build_gt_local': 'false',
         }
 
