@@ -244,6 +244,23 @@ GT_CXXFLAGS     += $(GT_CFLAGS)
 # TODO: Remove in FLiT version 3.0
 SOURCE          := $(sort $(SOURCE))
 
+# @param 1: directory to create
+MKDIR = \
+  @$(call color_out,BROWN,  mkdir $@); \
+  mkdir -p $@
+
+# For OS X support, we copy the libflit.so to a subdirectory
+ifeq ($(UNAME_S),Darwin)
+LIBFLIT := lib/libflit.so
+$(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
+	@$(call color_out,CYAN,  $< -> $@)
+	cp $< $@
+lib:
+	$(MKDIR) $@
+else
+LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
+endif # end of ifeq ($(UNAME_S),Darwin)
+
 # individual flags
 
 ## optls
@@ -312,11 +329,6 @@ $1: Makefile custom.mk
 	  R_OBJ_DIR="$7"
 endif
 endef
-
-# @param 1: directory to create
-MKDIR = \
-  @$(call color_out,BROWN,  mkdir $@); \
-  mkdir -p $@
 
 #
 # Here I define three targets: gt, dev, and gt-fpic
@@ -464,17 +476,6 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
 endef
 
-ifeq ($(UNAME_S),Darwin)
-LIBFLIT := lib/libflit.so
-$(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
-	@$(call color_out,CYAN,  $< -> $@)
-	cp $< $@
-lib:
-	$(MKDIR) $@
-else
-LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
-endif # end of ifeq ($(UNAME_S),Darwin)
-
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
 R_DEP   := $(R_OBJ:%.o=%.d)
 
@@ -484,7 +485,7 @@ recursion-target: $(R_TARGET)
 
 $(R_TARGET): $(R_OBJ) $(LIBFLIT)
 	@$(call color_out,BLUE,  Creating $(R_TARGET))
-	@mkdir -p $(dir $@)
+	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
 
@@ -494,11 +495,11 @@ $(R_OBJ_DIR):
 $(foreach s,$(SOURCE), \
   $(eval $(call COMPILE_RULE,\
     $s,\
-	$(R_OBJ_DIR)/$(notdir $s).o,\
-	$(R_COMPILER),\
-	$(R_OPTL),\
-	$(R_SWITCHES),\
-	$(R_TARGET),\
-	$(R_CXXFLAGS))))
+    $(R_OBJ_DIR)/$(notdir $s).o,\
+    $(R_COMPILER),\
+    $(R_OPTL),\
+    $(R_SWITCHES),\
+    $(R_TARGET),\
+    $(R_CXXFLAGS))))
 
 endif # end of R_TYPE chain
