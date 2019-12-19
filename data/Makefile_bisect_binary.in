@@ -331,12 +331,12 @@ $(foreach s,$(BISECT_GT_SRC),\
 #   desired object file, then copy it instead of compiling one
 define COMPILE_OR_COPY_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
-	if [ -f "$3/$(notdir $2)" ]; then \
-	  $(call color_out,CYAN,  $3/$(notdir $2) -> $2); \
-	  ln -s "$3/$(notdir $2)" $2; \
+	if [ -f "$(strip $8)/$(notdir $2)" ]; then \
+	  $(call color_out,CYAN,  $8/$(notdir $2) -> $2); \
+	  ln -s $(shell realpath --relative-to $(dir $2) $(strip $8)/$(notdir $2)) $2; \
 	else \
 	  $(call color_out,CYAN,  $1 -> $2); \
-	  $3 $4 $5 $7 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
+	  $3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	    -DFLIT_HOST='"$(HOSTNAME)"' \
 	    -DFLIT_COMPILER='"$(strip $3)"' \
 	    -DFLIT_OPTL='"$(strip $4)"' \

@@ -468,7 +468,7 @@ else ifeq ($(R_TYPE),compile)
 define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
-	$3 $4 $5 $7 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
+	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
 	  -DFLIT_OPTL='"$(strip $4)"' \
