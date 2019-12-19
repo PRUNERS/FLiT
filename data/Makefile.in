@@ -368,6 +368,8 @@ $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
+$(ALL_DIRS):
+	$(MKDIR) $@
 
 #
 # Enter the recursion types
@@ -390,8 +392,6 @@ ALL_DIRS += lib
 endif
 
 recursion-target: $(ALL_DIRS)
-$(ALL_DIRS):
-	$(MKDIR) $@
 
 
 
