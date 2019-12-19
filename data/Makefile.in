@@ -318,6 +318,7 @@ Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 # @param 7: directory for object files
 define REC_COMPILE_RULE
 ifneq ($$(R_TARGET),$1)
+.PHONY: $1
 $1: Makefile custom.mk
 	+$$(REC_MAKE) R_TYPE=compile \
 	  R_TARGET="$1" \

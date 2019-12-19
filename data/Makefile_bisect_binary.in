@@ -167,6 +167,7 @@ endif
 #   desired object file, then copy it instead of compiling one
 define REC_COMPILE_OR_COPY_RULE
 ifneq ($$(R_TARGET),$1)
+.PHONY: $1
 $1: Makefile custom.mk $$(MAKEFILE)
 	+$$(REC_MAKE) R_TYPE=compile-or-copy \
 	  R_TARGET="$1" \
@@ -256,6 +257,7 @@ $(MORE_DIRS):
 
 # rule guarded because the bisect-compile section redefines $(BISECT_TARGET)
 ifndef R_TYPE
+.PHONY: $(BISECT_TARGET)
 $(BISECT_TARGET):
 	+$(REC_MAKE) R_TYPE=bisect-compile
 endif
