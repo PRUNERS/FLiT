@@ -191,7 +191,6 @@ trouble-fpic: $(TROUBLE_TARGET)-fpic
 bisect: $(BISECT_TARGET) $(GT_TARGET)
 bisect: $(BISECT_RESULT) $(BISECT_OUT)
 
-# TODO: redo clean targets
 .PHONY: bisect-smallclean bisect-clean bisect-distclean
 clean: bisect-clean
 distclean: bisect-distclean
@@ -206,12 +205,11 @@ bisect-smallclean:
 	$(RMDIR) $(SPLIT_DIR)
 
 bisect-clean: bisect-smallclean
-	$(RM) $(TROUBLE_TARGET_OBJ)
-	$(RM) $(TROUBLE_TARGET_DEPS)
 	$(RM) $(GT_LIB_TARGET)
 	$(RM) $(GT_LIB_OUT)
 	$(RM) $(addsuffix *.dat,$(GT_LIB_OUT))
 	$(RMDIR) $(FPIC_DIR)
+	$(RMDIR) $(BISECT_OBJ_DIR)
 
 bisect-distclean: bisect-clean
 	$(RM) bisect.log
@@ -231,7 +229,6 @@ $(eval $(call REC_COMPILE_RULE,\
   $(TROUBLE_LDFLAGS),\
   $(BISECT_OBJ_DIR)))
 
-# TODO: finish
 $(eval $(call REC_COMPILE_RULE,\
   $(TROUBLE_TARGET)-fpic,\
   $(TROUBLE_CXX),\
@@ -387,7 +384,6 @@ $(TROUBLE_TARGET): $(LIBFLIT)
 # $(BISECT_DIR)/gtrun-lib that will be the ground truth for this bisect
 # execution.
 
-# TODO: BUILD_GT_LOCAL, I'm not sure it works as expected
 ifeq ($(BUILD_GT_LOCAL),true)
 
 
