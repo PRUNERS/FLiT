@@ -356,7 +356,7 @@ BISECT_DEP       := $(BISECT_OBJ:%.o=%.d)
 
 recursion-target: $(BISECT_TARGET)
 
-$(LOCAL_OBJ_DIR)/trouble:
+$(LOCAL_OBJ_DIR)/trouble $(FPIC_DIR)/gt $(FPIC_DIR)/trouble $(SPLIT_DIR):
 	$(MKDIR) $@
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
@@ -422,7 +422,7 @@ $(foreach s,$(SPLIT_SRC),\
 $(foreach s,$(SPLIT_SRC),\
   $(eval $(call COMPILE_OR_COPY_RULE,\
     $s,\
-    $(FPIC_DIR)/trouble/,$(notdir $s).o,\
+    $(FPIC_DIR)/trouble/$(notdir $s).o,\
     $(TROUBLE_CXX),\
     $(TROUBLE_OPTL),\
     $(TROUBLE_SWITCHES),\
@@ -437,8 +437,8 @@ $(foreach s,$(SPLIT_SRC),\
 define WEAKENED_COPY_RULE
 $2: $1 $3 $$(MAKEFILE) | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $1 -> $2)
-	if [ -s "$3" ]; then \
-	  objcopy --weaken-symbols="$3" $1 $2; \
+	if [ -s "$(strip $3)" ]; then \
+	  objcopy --weaken-symbols="$(strip $3)" $1 $2; \
 	else \
 	  cp $1 $2; \
 	fi
@@ -448,14 +448,14 @@ endef
 $(foreach s,$(SPLIT_SRC),\
   $(eval $(call WEAKENED_COPY_RULE,\
     $(FPIC_DIR)/gt/$(notdir $s).o,\
-    $(SPlIT_DIR)/$(notdir $s)_gt_split_$(NUMBER).o,\
+    $(SPLIT_DIR)/$(notdir $s)_gt_split_$(NUMBER).o,\
     $(SYMBOLS_DIR)/$(notdir $s)_trouble_symbols_$(NUMBER).txt)))
 
 # weakened trouble object files
 $(foreach s,$(SPLIT_SRC),\
   $(eval $(call WEAKENED_COPY_RULE,\
     $(FPIC_DIR)/trouble/$(notdir $s).o,\
-    $(SPlIT_DIR)/$(notdir $s)_trouble_split_$(NUMBER).o,\
+    $(SPLIT_DIR)/$(notdir $s)_trouble_split_$(NUMBER).o,\
     $(SYMBOLS_DIR)/$(notdir $s)_gt_symbols_$(NUMBER).txt)))
 
 endif
