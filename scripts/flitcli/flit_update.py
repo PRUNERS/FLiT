@@ -289,8 +289,11 @@ def create_makefile(args, makefile='Makefile'):
     compilers = {c['name']: c for c in projconf['compiler']}
     dev_build = projconf['dev_build']
     gt_build = projconf['ground_truth']
-    dev_compiler = compilers[dev_build['compiler_name']]
-    gt_compiler = compilers[gt_build['compiler_name']]
+    try:
+        dev_compiler = compilers[dev_build['compiler_name']]
+        gt_compiler = compilers[gt_build['compiler_name']]
+    except KeyError as ex:
+        raise KeyError('Compiler name ' + ex.args[0] + ' not found')
 
     base_compilers = {x.upper(): None for x in util.SUPPORTED_COMPILER_TYPES}
     base_compilers.update({compiler['type'].upper(): compiler['binary']
@@ -388,7 +391,7 @@ def main(arguments, prog=sys.argv[0]):
                   '"{}"'.format(ex.filename),
                   file=sys.stderr)
             return 1
-        except AssertionError as ex:
+        except (KeyError, AssertionError) as ex:
             print('Error:', ex.args[0], file=sys.stderr)
             return 1
 
