@@ -256,7 +256,7 @@ $(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
 	@$(call color_out,CYAN,  $< -> $@)
 	cp $< $@
 lib:
-	$(MKDIR) $@
+	+$(MKDIR) $@
 else
 LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
 endif # end of ifeq ($(UNAME_S),Darwin)
@@ -276,18 +276,18 @@ endif # end of ifeq ($(UNAME_S),Darwin)
 {compiler_switches}
 
 .PHONY: recursion-target
-REC_MAKE   = +$(MAKE) recursion-target --no-print-directory
+REC_MAKE   = $(MAKE) recursion-target --no-print-directory
 
 .PHONY: dev dirs gt gt-fpic runbuild run clean veryclean distclean
 dev: $(DEV_TARGET)
 dirs:
-	$(REC_MAKE) R_TYPE=dirs
+	+$(REC_MAKE) R_TYPE=dirs
 gt: $(GT_TARGET)
 gt-fpic: $(RUNBUILD_DIR)/$(GT_TARGET)-fpic
 runbuild:
-	$(REC_MAKE) R_TYPE=runbuild
+	+$(REC_MAKE) R_TYPE=runbuild
 run: runbuild
-	$(REC_MAKE) R_TYPE=run
+	+$(REC_MAKE) R_TYPE=run
 
 clean:
 	rm -rf $(OBJ_DIR)
@@ -319,7 +319,7 @@ Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 define REC_COMPILE_RULE
 ifneq ($$(R_TARGET),$1)
 $1: Makefile custom.mk
-	$$(REC_MAKE) R_TYPE=compile \
+	+$$(REC_MAKE) R_TYPE=compile \
 	  R_TARGET="$1" \
 	  R_COMPILER="$2" \
 	  R_OPTL="$3" \
@@ -368,9 +368,6 @@ $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
 
-$(ALL_DIRS):
-	$(MKDIR) $@
-
 #
 # Enter the recursion types
 #
@@ -393,6 +390,8 @@ endif
 
 recursion-target: $(ALL_DIRS)
 
+$(ALL_DIRS):
+	+$(MKDIR) $@
 
 
 ###########################
@@ -447,7 +446,7 @@ $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 	$(RUNWRAP) ./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
 
 $(RESULTS_DIR):
-	$(MKDIR) $@
+	+$(MKDIR) $@
 
 
 
@@ -490,7 +489,7 @@ $(R_TARGET): $(R_OBJ) $(LIBFLIT)
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
 
 $(R_OBJ_DIR):
-	$(MKDIR) $@
+	+$(MKDIR) $@
 
 $(foreach s,$(SOURCE), \
   $(eval $(call COMPILE_RULE,\

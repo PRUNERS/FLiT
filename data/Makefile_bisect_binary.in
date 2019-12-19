@@ -116,12 +116,14 @@ SPLIT_DIR        := $(LOCAL_OBJ_DIR)/split
 SYMBOLS_DIR      := $(LOCAL_OBJ_DIR)/symbols
 
 BISECT_OBJ_DIR   := $(OBJ_DIR)/bisect/$(TROUBLE_ID)
-ALL_DIRS         += $(BISECT_DIR)
-ALL_DIRS         += $(LOCAL_OBJ_DIR)
-ALL_DIRS         += $(FPIC_DIR)
-ALL_DIRS         += $(SPLIT_DIR)
-ALL_DIRS         += $(SYMBOLS_DIR)
-ALL_DIRS         += $(BISECT_OBJ_DIR)
+MORE_DIRS        += $(BISECT_DIR)
+MORE_DIRS        += $(LOCAL_OBJ_DIR)/trouble
+MORE_DIRS        += $(LOCAL_OBJ_DIR)/gt
+MORE_DIRS        += $(FPIC_DIR)/trouble
+MORE_DIRS        += $(FPIC_DIR)/gt
+MORE_DIRS        += $(SPLIT_DIR)
+MORE_DIRS        += $(SYMBOLS_DIR)
+MORE_DIRS        += $(BISECT_OBJ_DIR)
 BISECT_TARGET    := $(BISECT_DIR)/runbisect-$(NUMBER)
 TROUBLE_TARGET   := $(BISECT_DIR)/runtrouble-$(NUMBER)
 
@@ -166,7 +168,7 @@ endif
 define REC_COMPILE_OR_COPY_RULE
 ifneq ($$(R_TARGET),$1)
 $1: Makefile custom.mk $$(MAKEFILE)
-	$$(REC_MAKE) R_TYPE=compile-or-copy \
+	+$$(REC_MAKE) R_TYPE=compile-or-copy \
 	  R_TARGET="$1" \
 	  R_COMPILER="$2" \
 	  R_OPTL="$3" \
@@ -249,13 +251,13 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_LDFLAGS),\
   $(GT_OBJ_DIR)))
 
-$(BISECT_DIR):
-	$(MKDIR) $@
+$(MORE_DIRS):
+	+$(MKDIR) $@
 
 # rule guarded because the bisect-compile section redefines $(BISECT_TARGET)
 ifndef R_TYPE
 $(BISECT_TARGET):
-	$(REC_MAKE) R_TYPE=bisect-compile
+	+$(REC_MAKE) R_TYPE=bisect-compile
 endif
 
 $(GT_LIB_OUT): $(GT_LIB_TARGET) | $(BISECT_DIR)
@@ -282,57 +284,11 @@ $(TROUBLE_TARGET_RESULT): $(TROUBLE_TARGET_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_
 	$(RUNWRAP) ./$(GT_TARGET_TO_USE) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
 	  --suffix "-comparison.csv" $< -o /dev/null
 
-################################################################################
-## BEFORE RECURSION STUFF ######################################################
-################################################################################
-
-
-########################
-# *** R_TYPE=split *** #
-########################
-
-ifeq ($(R_TYPE),split)
-
-
-
-##################################
-# *** R_TYPE=compile-or-copy *** #
-##################################
-
-else ifeq ($(R_TYPE),compile-or-copy)
-
-R_OBJ    := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
-R_DEP    := $(R_OBJ:%.o=%.d)
-
--include $(R_DEP)
-
-recursion-target: $(R_TARGET)
-
-$(R_TARGET): $(R_OBJ) $(LIBFLIT)
-	@$(calll color_out,BLUE,  Creating $(R_TARGET))
-	@+mkdir -p $(dir $@)
-	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
-	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
-
-$(R_OBJ_DIR):
-	$(MKDIR) $@
-
-$(foreach s,$(SOURCE),\
-  $(eval $(call COMPILE_OR_COPY_RULE,\
-    $s,\
-    $(R_OBJ_DIR)/$(notdir $s).o,\
-    $(R_COMPILER),\
-    $(R_OPTL),\
-    $(R_SWITCHES),\
-    $(R_TARGET),\
-    $(R_CXXFLAGS),\
-    $(R_COPY_DIR))))
-
 #################################
 # *** R_TYPE=bisect-compile *** #
 #################################
 
-else ifeq ($(R_TYPE),bisect-compile)
+ifeq ($(R_TYPE),bisect-compile)
 
 BISECT_GT_OBJ    := $(addprefix \
     $(GT_OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%=%.o)))
@@ -352,12 +308,10 @@ BISECT_OBJ       += $(TROUBLE_OBJ)
 BISECT_OBJ       += $(SPLIT_OBJ)
 BISECT_DEP       := $(BISECT_OBJ:%.o=%.d)
 
+
 -include $(BISECT_DEP)
 
 recursion-target: $(BISECT_TARGET)
-
-$(LOCAL_OBJ_DIR)/trouble $(FPIC_DIR)/gt $(FPIC_DIR)/trouble $(SPLIT_DIR):
-	$(MKDIR) $@
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	@$(call color_out,BLUE,  Creating $@)
