@@ -304,12 +304,14 @@ def create_bisect_makefile(directory, replacements, gt_src,
     if split_symbol_map is None:
         split_symbol_map = {} # default to an empty dictionary
     repl_copy = dict(replacements)
-    projconf = util.load_projconf(os.path.join(directory, '..'))
+    projdir = os.path.join(directory, '..')
+    projconf = util.load_projconf(projdir)
     cxxflags, ldflags = try_get_compiler_flags(repl_copy['trouble_cxx'], projconf)
     try:
-        ldflags += ' {}'.format(flit_update._additional_ldflags(
-            {'type': repl_copy['trouble_type'],
-             'binary': repl_copy['trouble_cxx']}))
+        with util.pushd(projdir):
+            ldflags += ' {}'.format(flit_update._additional_ldflags(
+                {'type': repl_copy['trouble_type'],
+                 'binary': repl_copy['trouble_cxx']}))
     except NotImplementedError:
         pass # skip over unsupported compiler types
     repl_copy['trouble_cxxflags'] = cxxflags
