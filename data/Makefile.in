@@ -147,16 +147,13 @@ CXXFLAGS        += -std=c++11
 CXXFLAGS        += -I.
 CXXFLAGS        += -I$(FLIT_INC_DIR)
 
+GT_CXXFLAGS     += -g
 DEV_CXXFLAGS    += -g
 DEV_CXXFLAGS    += -Wall
 DEV_CXXFLAGS    += -Wextra
 DEV_CXXFLAGS    += -Wuninitialized
 DEV_CXXFLAGS    += -Wno-shift-count-overflow
 
-# This flag specifies NOT to link as a position-independent executable
-# Note: this flag does not exist in GCC 4 or GCC 5 so it will fail to compile
-#       we need extra logic to check for this and conditionally add this flag
-#LDFLAGS     += -no-pie
 LDLIBS          += -lm
 LDLIBS          += -lstdc++
 LDLIBS          += -lflit
@@ -346,13 +343,13 @@ endif
 # @param 2: object file
 # @param 3: compiler
 # @param 4: optimization level
-# @param 5: switches
+# @param 5: switches under consideration
 # @param 6: target filename
 # @param 7: extra compiler flags
 define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
-	$3 $4 $5 -c $7 $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
+	$3 $4 $5 $7 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
 	  -DFLIT_OPTL='"$(strip $4)"' \
@@ -397,17 +394,6 @@ R_DEP           := $(R_OBJ:%.o=%.d)
 .PHONY: rec
 rec: $(R_TARGET)
 
-# clang's flag is -nopie
-# else if the current compiler is not GCC 4 or 5, then enable -no-pie
-# GCC 4 and 5 do not need -no-pie since that is the default
-ifeq ($($(R_CUR_COMPILER)_TYPE),$(CLANG_TYPE))
-  LDFLAGS       += -nopie
-else ifeq ($($(R_CUR_COMPILER)_TYPE),$(GCC_TYPE))
-  ifeq ($(call IS_VER_4_OR_5,$($(R_CUR_COMPILER))),0)
-    LDFLAGS       += -no-pie
-  endif
-endif
-
 $(R_TARGET): $(R_OBJ) | $(RUNBUILD_DIR)
 	@$(call color_out,CYAN,  Creating $(R_TARGET))
 	$($(R_CUR_COMPILER)) $($(R_CUR_OPTL)) $($(R_CUR_SWITCHES)) \
@@ -427,26 +413,6 @@ $(foreach s,$(SOURCE), \
 
 # Otherwise, we're not in a recursion.
 else # ifndef R_IS_RECURSED
-
-# clang's flag is -nopie
-# else if the current compiler is not GCC 4 or 5, then enable -no-pie
-# GCC 4 and 5 do not need -no-pie since that is the default
-ifeq ($(DEV_CXX_TYPE),$(CLANG_TYPE))
-  DEV_LDFLAGS   += -nopie
-else ifeq ($(DEV_CXX_TYPE),$(GCC_TYPE))
-  ifeq ($(call IS_VER_4_OR_5,$(DEV_CXX)),0)
-    DEV_LDFLAGS   += -no-pie
-  endif
-endif
-
-# same for the gt compiler
-ifeq ($(GT_CXX_TYPE),$(CLANG_TYPE))
-  GT_LDFLAGS    += -nopie
-else ifeq ($(GT_CXX_TYPE),$(GCC_TYPE))
-  ifeq ($(call IS_VER_4_OR_5,$(GT_CXX)),0)
-    GT_LDFLAGS    += -no-pie
-  endif
-endif
 
 #
 # Define the recursion rules
@@ -597,7 +563,7 @@ $(foreach s,$(SOURCE),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\
     $(GT_TARGET),\
-    $(GT_CXXFLAGS) -g)))
+    $(GT_CXXFLAGS))))
 
 $(foreach s,$(SOURCE),\
   $(eval $(call COMPILE_RULE,\
@@ -607,7 +573,7 @@ $(foreach s,$(SOURCE),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\
     $(GT_TARGET),\
-    $(GT_CXXFLAGS) -fPIC -g)))
+    $(GT_CXXFLAGS) -fPIC)))
 
 endif # end of ifdef R_IS_RECURSED
 

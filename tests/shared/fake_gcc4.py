@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -- LICENSE BEGIN --
 #
 # Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
@@ -79,71 +80,84 @@
 #    purposes.
 #
 # -- LICENSE END --
+'Pretend to be gcc 4.8.4, specifically checking for unsupported flags'
 
-'''
-Tests only providing gcc and no other compiler.  Tests that
-- the binary is taken from the configuration file
-- the other two compilers are not present (i.e. clang and intel)
-
->>> from io import StringIO
->>> import os
->>> import shutil
-
->>> from tst_common_funcs import (
-...     deref_makelist, get_default_compiler, runconfig)
-
->>> testconf = 'data/onlyprovidedcompilers.toml'
->>> with open(testconf, 'r') as fin:
-...     init_out, update_out, makevars = runconfig(
-...         fin.read(), copyfiles=['data/fake_gcc9.py'])
-
-Get default values for each compiler from the default configuration
-
->>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
-Creating .../flit-config.toml
-Creating .../custom.mk
-Creating .../main.cpp
-Creating .../tests/Empty.cpp
-Creating .../Makefile
-
->>> print('\\n'.join(update_out)) # doctest:+ELLIPSIS
-Updating .../Makefile
-
-Check that the compiler binaries are the default values
->>> makevars['GCC']
-['./fake_gcc9.py']
-
->>> makevars['CLANG']
-['None']
-
->>> makevars['INTEL']
-['None']
-
->>> makevars['COMPILERS']
-['GCC']
-
->>> 'OPCODES_GCC' in makevars
-True
->>> 'SWITCHES_GCC' in makevars
-True
->>> 'OPCODES_CLANG' in makevars
-False
->>> 'SWITCHES_CLANG' in makevars
-False
->>> 'OPCODES_INTEL' in makevars
-False
->>> 'SWITCHES_INTEL' in makevars
-False
-'''
-
-# Test setup before the docstring is run.
+import os
 import sys
-before_path = sys.path[:]
-sys.path.append('../..')
-import test_harness as th
-sys.path = before_path
+
+def print_version():
+    'Print fake version information'
+    print('Ubuntu g++ (GCC) 4.8.4')
+    print('Copyright (C) 2018 Free Software Foundation, Inc.')
+    print('This is a fake GCC compiler that does not actually do anything')
+
+def main(arguments):
+    'Main logic here'
+
+    recognized_arguments = [
+        '-fno-pie',
+        '-std',
+        '-g',
+        '-o',
+        '-fassociative-math',
+        '-mavx',
+        '-fexcess-precision',
+        '-ffinite-math-only',
+        '-mavx2',
+        '-fcx-fortran-rules',
+        '-ffp-contract',
+        '-ffloat-store',
+        '-fcx-limited-range',
+        '-fmerge-all-constants',
+        '-fno-trapping-math',
+        '-freciprocal-math',
+        '-frounding-math',
+        '-fsignaling-nans',
+        '-mfpmath',
+        '-funsafe-math-optimizations',
+        '-MMD',
+        '-MP',
+        '-MF',
+        '-MT',
+        '-c'
+        ]
+
+    recognized_beginnings = [
+        '-W',
+        '-D',
+        '-I',
+        '-l',
+        '-L',
+        '-O',
+        ]
+
+    if '--version' in arguments:
+        print_version()
+        return 0
+
+    if '-dumpversion' in arguments:
+        print('4.8.4')
+        return 0
+
+
+    for arg in arguments:
+        canonical = arg.split('=', maxsplit=1)[0]
+        if canonical.startswith('-'):
+            recognized = canonical in recognized_arguments or \
+                any(canonical.startswith(x) for x in recognized_beginnings)
+            if not recognized:
+                print('Error: unrecognized argument "{0}"'.format(arg),
+                      file=sys.stderr)
+                return 1
+
+    if '-o' in arguments or '--output' in arguments:
+        idx = arguments.index('-o' if '-o' in arguments else '--output')
+        outfile = arguments[idx + 1]
+        open(outfile, 'a').close()  # create an empty file if it does not exist
+        if '-c' not in arguments:
+            os.chmod(outfile, 0o755)
+
+    return 0
 
 if __name__ == '__main__':
-    from doctest import testmod
-    failures, tests = testmod()
-    sys.exit(failures)
+    sys.exit(main(sys.argv[1:]))

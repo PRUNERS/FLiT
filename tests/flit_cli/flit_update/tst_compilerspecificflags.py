@@ -92,7 +92,13 @@ Test that only the provided optimization levels and switches are used
 
 >>> testconf = 'data/compilerspecificflags.toml'
 >>> with open(testconf, 'r') as fin:
-...     init_out, update_out, makevars = runconfig(fin.read())
+...     init_out, update_out, makevars = runconfig(
+...         fin.read(),
+...         copyfiles=[
+...             'data/fake_gcc9.py',
+...             'data/fake_clang34.py',
+...             'data/fake_intel19.py',
+...             ])
 
 >>> print('\\n'.join(init_out)) # doctest:+ELLIPSIS
 Creating .../flit-config.toml
@@ -114,13 +120,13 @@ Updating .../Makefile
 []
 
 >>> makevars['GCC_LDFLAGS']
-['-first-gxx-ld', '-second-gxx-ld']
+['-first-gxx-ld', '-second-gxx-ld', '-no-pie']
 
 >>> makevars['CLANG_LDFLAGS']
-[]
+['-nopie']
 
 >>> makevars['INTEL_LDFLAGS']
-['-first-intel-ld']
+['-first-intel-ld', '-no-pie']
 '''
 
 # Test setup before the docstring is run.

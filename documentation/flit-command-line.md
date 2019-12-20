@@ -178,10 +178,15 @@ flit init --directory litmus-test-run --litmus-tests
 cd litmus-test-run
 flit bisect \
   --precision double \
-  --compiler-type gcc \
-  "gcc -O3 -funsafe-math-optimizations" \
+  "g++ -O3 -funsafe-math-optimizations" \
   subnormal
 ```
+
+Note: if the compiler given (e.g., `g++`) is found in the `compiler` section of
+`flit-config.toml`, then the `fixed_compile_flags` specified there will be used
+when compiling object files from this compilation under test.  However, the
+`fixed_link_flags` will not be used since the link step is performed by default
+with the baseline compilation's compiler.
 
 And here is an example of giving a full SQLite3 database
 
