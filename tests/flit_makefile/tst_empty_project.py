@@ -129,7 +129,9 @@ True
 True
 >>> '-DFLIT_FILENAME=\\'"devrun"\\'' in actual
 True
->>> '-o devrun obj/dev/main.cpp.o obj/dev/Empty.cpp.o' in actual
+>>> '-o devrun' in actual
+True
+>>> 'obj/dev/main.cpp.o obj/dev/Empty.cpp.o' in actual
 True
 >>> '-L{libdir}'.format(libdir=th.config.lib_dir) in actual
 True
@@ -160,7 +162,9 @@ True
 True
 >>> '-DFLIT_FILENAME=\\'"gtrun"\\'' in actual
 True
->>> '-o gtrun obj/gt/main.cpp.o obj/gt/Empty.cpp.o' in actual
+>>> '-o gtrun' in actual
+True
+>>> 'obj/gt/main.cpp.o obj/gt/Empty.cpp.o' in actual
 True
 >>> '-L{libdir}'.format(libdir=th.config.lib_dir) in actual
 True

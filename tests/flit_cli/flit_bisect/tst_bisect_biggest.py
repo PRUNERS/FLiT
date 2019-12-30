@@ -149,9 +149,16 @@ tst_bisect.py.
 ...     assert verbose == False
 ...     # Get the files being tested out of the makepath, and the BISECT_RESULT
 ...     # variable, and generate the expected results.
-...     sources = util.extract_make_var('TROUBLE_SRC', makepath, directory)
-...     symbol_files = util.extract_make_var('TROUBLE_SYMBOLS', makepath,
-...                                          directory)
+...     makevars = util.extract_make_vars(makepath, directory)
+...     sources = makevars['TROUBLE_SRC']
+...     split_sources = makevars['SPLIT_SRC']
+...     symbols_dir = makevars['SYMBOLS_DIR'][0]
+...     number = makevars['NUMBER'][0]
+...     symbol_files = [
+...         os.path.join(symbols_dir,
+...                      '{}_trouble_symbols_{}.txt'.format(os.path.basename(x),
+...                                                         number))
+...         for x in split_sources]
 ...     symbols = []
 ...     if symbol_files:
 ...         with open(os.path.join(directory, symbol_files[0]), 'r') as fin:

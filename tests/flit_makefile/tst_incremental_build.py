@@ -130,8 +130,8 @@ Creating ...
 
 >>> def touched_files(outstring):
 ...     'Returns list of touched files in sorted order'
-...     return sorted([x[6:] for x in outstring.splitlines()
-...                    if x.startswith('touch ')])
+...     return sorted({x[6:] for x in outstring.splitlines()
+...                    if x.startswith('touch ')})
 
 Make sure all of the correct files were created with our build commands
 
