@@ -106,6 +106,8 @@ namespace {
   std::mutex infoStreamMutex;
 } // end of unnamed namespace
 
+namespace flit {
+
 InfoStream::InfoStream()
   : std::ostream()
   , _threadbuf()
@@ -135,3 +137,4 @@ void InfoStream::flushout() {
   _threadbuf.str("");
 }
 
+} // end of namespace flit
