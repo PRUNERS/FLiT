@@ -658,10 +658,14 @@ def tempdir(*args, **kwargs):
 
 def check_output(*args, **kwargs):
     '''
-    Wrapper around subprocess.check_output() that returns a str object
+    Wrapper around subprocess.check_output() that returns a str object and
+    suppresses standard error
 
     >>> check_output(['echo', 'hello there'])
     'hello there\\n'
+
+    Output to standard error will be suppressed
+    >>> check_output(['python', '-c', 'import sys; print("hi", file=sys.stderr)'])
     '''
-    output = subp.check_output(*args, **kwargs)
+    output = subp.check_output(stderr=subp.DEVNULL, *args, **kwargs)
     return output.decode(encoding='utf-8')

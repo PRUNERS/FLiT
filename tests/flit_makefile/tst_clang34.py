@@ -129,7 +129,7 @@ Check the output of Make
 >>> any(['-no-pie' in x for x in make_out])
 False
 >>> len([1 for x in make_out if '-nopie' in x])
-1
+2
 
 Make sure gcc toolchain is not used since gcc is not there
 >>> any(['--gcc-toolchain' in x for x in make_out])

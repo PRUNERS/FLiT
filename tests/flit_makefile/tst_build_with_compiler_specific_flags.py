@@ -126,10 +126,10 @@ Creating .../tests/Empty.cpp
 Creating .../Makefile
 
 >>> sum([1 for x in make_out if '-Wfixed-flag' in x])
-3
+4
 
 >>> sum([1 for x in make_out if '-Wfix-link -Whello' in x])
-1
+2
 
 Make sure gcc toolchain is not used since gcc is not there
 >>> any(['--gcc-toolchain' in x for x in make_out])
