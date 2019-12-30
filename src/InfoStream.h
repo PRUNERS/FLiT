@@ -87,6 +87,8 @@
 #include <sstream>
 #include <iostream>
 
+namespace flit {
+
 class InfoStream : public std::ostream {
 public:
   InfoStream();
@@ -100,5 +102,6 @@ private:
   std::ostringstream _threadbuf;
 };
 
-#endif // INFO_STREAM_H
+} //end of namespace flit
 
+#endif // INFO_STREAM_H
