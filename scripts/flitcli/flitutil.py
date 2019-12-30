@@ -112,7 +112,6 @@ def get_default_toml_string():
             {
                 'flit_path': os.path.join(conf.script_dir, 'flit.py'),
                 'config_dir': conf.config_dir,
-                'hostname': socket.gethostname(),
                 'flit_version': conf.version,
             })
     return _default_toml_string

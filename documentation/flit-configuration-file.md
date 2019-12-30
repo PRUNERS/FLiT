@@ -22,7 +22,6 @@ used._
 
 ```toml
 [host]
-name = 'my.hostname.com'
 flit_path = '/usr/bin/flit'
 config_dir = '/usr/share/flit/config'
 ```
@@ -30,7 +29,6 @@ config_dir = '/usr/share/flit/config'
 When you initialize your project with `flit init`, these fields will be
 populated with values corresponding to the values on your machine:
 
-- `name`: hostname of the current machine
 - `flit_path`: will be initialized to the path of the `flit.py` script or its
   symbolic link
 - `config_dir`: directory containing default configuration values.  Either the
@@ -309,7 +307,6 @@ default) configuration file:
 
 ```toml
 [host]
-name = 'my.hostname.com'
 flit_path = '/usr/bin/flit'
 config_dir = '/usr/share/flit/config'
 

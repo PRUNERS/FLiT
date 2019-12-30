@@ -383,7 +383,7 @@ ifeq ($(R_TYPE),dirs)
 ALL_DIRS += $(foreach c,$(COMPILERS),\
               $(foreach s,$(SWITCHES_$(strip $c)),\
                 $(foreach o,$(OPCODES_$(strip $c)),\
-                  $(OBJ_DIR)/$c_$(HOSTNAME)_$s_$o)))
+                  $(OBJ_DIR)/$c_$s_$o)))
 
 ifeq ($(UNAME_S),Darwin)
 ALL_DIRS += lib
@@ -405,15 +405,15 @@ else ifeq ($(R_TYPE),runbuild)
 # @param 2: switches variable name
 # @param 3: optl variable name
 define RUNBUILD_REC_RULE
-recursion-target: $(RUNBUILD_DIR)/$1_$(HOSTNAME)_$2_$3
+recursion-target: $(RUNBUILD_DIR)/$1_$2_$3
 $(eval $(call REC_COMPILE_RULE,\
-  $(RUNBUILD_DIR)/$1_$(HOSTNAME)_$2_$3,\
+  $(RUNBUILD_DIR)/$1_$2_$3,\
   $($1),\
   $($3),\
   $($2),\
   $($1_CXXFLAGS),\
   $($1_LDFLAGS),\
-  $(OBJ_DIR)/$1_$(HOSTNAME)_$2_$3))
+  $(OBJ_DIR)/$1_$2_$3))
 endef
 
 $(foreach c,$(COMPILERS),\
@@ -434,7 +434,7 @@ else ifeq ($(R_TYPE),run)
 ALL_RESULTS := $(foreach c,$(COMPILERS),\
                  $(foreach s,$(SWITCHES_$(strip $c)),\
                    $(foreach o,$(OPCODES_$(strip $c)),\
-                     $(RESULTS_DIR)/$c_$(HOSTNAME)_$s_$o-out-comparison.csv)))
+                     $(RESULTS_DIR)/$c_$s_$o-out-comparison.csv)))
 
 recursion-target: $(ALL_RESULTS)
 

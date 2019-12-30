@@ -369,8 +369,6 @@ class NinjaWriter:
         self.ninja_gen_deps.append(tomlfile)
         projconf = util.load_projconf()
 
-        self.hostname = projconf['host']['name']
-
         if projconf['run']['enable_mpi']:
             mpi_cxxflags, mpi_ldflags = flit_update.get_mpi_flags()
             self.cxxflags.extend(mpi_cxxflags)

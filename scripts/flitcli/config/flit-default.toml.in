@@ -85,9 +85,6 @@
 # General information
 [host]
 
-# if you omit name, the system hostname will be used
-name = '{hostname}'
-
 # if you omit flit_path, the current flit executable will be used
 flit_path = '{flit_path}'
 
