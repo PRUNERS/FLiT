@@ -101,6 +101,7 @@ COMPILERS       := {compilers}
 {compiler_fixed_link_flags}
 
 FLIT_INC_DIR    := {flit_include_dir}
+FLIT_SRC        := $(FLIT_INC_DIR)/all_flit_src.cpp
 FLIT_LIB_DIR    := {flit_lib_dir}
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
@@ -250,16 +251,16 @@ MKDIR = \
   mkdir -p $@
 
 # For OS X support, we copy the libflit.so to a subdirectory
-ifeq ($(UNAME_S),Darwin)
-LIBFLIT := lib/libflit.so
-$(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
-	@$(call color_out,CYAN,  $< -> $@)
-	cp $< $@
-lib:
-	+$(MKDIR) $@
-else
-LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
-endif # end of ifeq ($(UNAME_S),Darwin)
+#ifeq ($(UNAME_S),Darwin)
+#LIBFLIT := lib/libflit.so
+#$(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
+#	@$(call color_out,CYAN,  $< -> $@)
+#	cp $< $@
+#lib:
+#	+$(MKDIR) $@
+#else
+#LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
+#endif # end of ifeq ($(UNAME_S),Darwin)
 
 # individual flags
 
@@ -477,13 +478,14 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
+R_OBJ   += $(addprefix $(R_OBJ_DIR)/,$(notdir $(FLIT_SRC:%=%.o)))
 R_DEP   := $(R_OBJ:%.o=%.d)
 
 -include $(R_DEP)
 
 recursion-target: $(R_TARGET)
 
-$(R_TARGET): $(R_OBJ) $(LIBFLIT)
+$(R_TARGET): $(R_OBJ)
 	@$(call color_out,BLUE,  Creating $(R_TARGET))
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
@@ -492,7 +494,7 @@ $(R_TARGET): $(R_OBJ) $(LIBFLIT)
 $(R_OBJ_DIR):
 	+$(MKDIR) $@
 
-$(foreach s,$(SOURCE), \
+$(foreach s,$(SOURCE) $(FLIT_SRC), \
   $(eval $(call COMPILE_RULE,\
     $s,\
     $(R_OBJ_DIR)/$(notdir $s).o,\
