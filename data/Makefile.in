@@ -101,8 +101,7 @@ COMPILERS       := {compilers}
 {compiler_fixed_link_flags}
 
 FLIT_INC_DIR    := {flit_include_dir}
-FLIT_SRC        := $(FLIT_INC_DIR)/all_flit_src.cpp
-FLIT_LIB_DIR    := {flit_lib_dir}
+FLIT_SRC        := $(FLIT_INC_DIR)/flit/ALL.cpp
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
@@ -160,13 +159,6 @@ DEV_CXXFLAGS    += -Wno-shift-count-overflow
 
 LDLIBS          += -lm
 LDLIBS          += -lstdc++
-LDLIBS          += -lflit
-ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
-  LDFLAGS       += -Llib
-else
-  LDFLAGS       += -L$(FLIT_LIB_DIR)
-  LDFLAGS       += -Wl,-rpath=$(realpath $(FLIT_LIB_DIR))
-endif
 
 # Be silent by default
 ifndef VERBOSE
@@ -249,18 +241,6 @@ SOURCE          := $(sort $(SOURCE))
 MKDIR = \
   @$(call color_out,BROWN,  mkdir $@); \
   mkdir -p $@
-
-# For OS X support, we copy the libflit.so to a subdirectory
-#ifeq ($(UNAME_S),Darwin)
-#LIBFLIT := lib/libflit.so
-#$(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
-#	@$(call color_out,CYAN,  $< -> $@)
-#	cp $< $@
-#lib:
-#	+$(MKDIR) $@
-#else
-#LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
-#endif # end of ifeq ($(UNAME_S),Darwin)
 
 # individual flags
 
@@ -385,10 +365,6 @@ ALL_DIRS += $(foreach c,$(COMPILERS),\
               $(foreach s,$(SWITCHES_$(strip $c)),\
                 $(foreach o,$(OPCODES_$(strip $c)),\
                   $(OBJ_DIR)/$c_$s_$o)))
-
-ifeq ($(UNAME_S),Darwin)
-ALL_DIRS += lib
-endif
 
 recursion-target: $(ALL_DIRS)
 
