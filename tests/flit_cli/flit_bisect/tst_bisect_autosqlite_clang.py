@@ -173,7 +173,7 @@ Let's make sure that the fake clang is not called with --gcc-toolchain
 >>> fakeclang_lines = [line for line in makeout1
 ...                    if line.startswith('./fake_clang34.py')]
 >>> len(fakeclang_lines)
-8
+9
 >>> any('--gcc-toolchain' in line for line in fakeclang_lines)
 False
 
@@ -181,7 +181,7 @@ Let's make sure that gcc is not called with --gcc-toolchain
 >>> gcc_lines = [line for line in makeout2
 ...              if line.startswith('g++ ')]
 >>> len(gcc_lines)
-8
+9
 >>> any('--gcc-toolchain' in line for line in gcc_lines)
 False
 

@@ -83,9 +83,8 @@
 
 #include "test_harness.h"
 
-#include "flitHelpers.h"
-
-#include "TestBase.h"   // for operator<<(flit::TestResult ...)
+#include <flit/flitHelpers.h>
+#include <flit/TestBase.h>   // for operator<<(flit::TestResult ...)
 
 #include <algorithm>
 #include <array>

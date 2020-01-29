@@ -107,6 +107,7 @@ Delete MAKEFLAGS so that silent mode does not propogate
 ...     _ = shutil.copy(os.path.join('data', 'MpiFloat.cpp'),
 ...                     os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copy(os.path.join('data', 'flit-config.toml'), temp_dir)
+...     os.remove(os.path.join(temp_dir, 'tests', 'Empty.cpp'))
 ...     retval = th.flit.main(['update', '-C', temp_dir])
 ...     if retval != 0:
 ...         raise TestError('Main #2 returned with {}, failed to update'

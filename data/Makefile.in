@@ -101,7 +101,8 @@ COMPILERS       := {compilers}
 {compiler_fixed_link_flags}
 
 FLIT_INC_DIR    := {flit_include_dir}
-FLIT_SRC        := $(FLIT_INC_DIR)/flit/ALL.cpp
+FLIT_SRC_DIR    := {flit_src_dir}
+FLIT_SRC        := $(FLIT_SRC_DIR)/ALL.cpp
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 

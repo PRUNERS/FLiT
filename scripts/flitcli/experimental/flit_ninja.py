@@ -286,9 +286,6 @@ class NinjaWriter:
         self.ldflags = [
             '-lm',
             '-lstdc++',
-            '-L' + conf.lib_dir,
-            '-Wl,-rpath=' + os.path.abspath(conf.lib_dir),
-            '-lflit',
             ]
         self.compilers = {}
         self.gt_compilation = None
@@ -339,7 +336,6 @@ class NinjaWriter:
         ...     _ = makefile_out.write('CXXFLAGS  = -std=c++11 -Werror\\n')
         ...     _ = makefile_out.write('LDFLAGS  += -L/usr/local/lib64 -L/opt/gcc\\n')
         ...     _ = makefile_out.write('LDLIBS    = -lm\\n')
-        ...     _ = makefile_out.write('LDLIBS   += -lflit\\n')
         ...     _ = makefile_out.write('RUN_WRAPPER := /usr/bin/echo -ne \\n')
         ...     makefile_out.flush()
         ...     w.load_makefile(makefile_out.name)
@@ -349,7 +345,7 @@ class NinjaWriter:
         >>> w.cxxflags == cxxflags_orig + ['-std=c++11', '-Werror']
         True
         >>> w.ldflags == ldflags_orig + [
-        ...     '-L/usr/local/lib64', '-L/opt/gcc', '-lm', '-lflit']
+        ...     '-L/usr/local/lib64', '-L/opt/gcc', '-lm']
         True
         >>> w.run_wrapper
         '/usr/bin/echo -ne'

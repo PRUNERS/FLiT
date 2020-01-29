@@ -82,9 +82,10 @@
  */
 
 #include "test_harness.h"
-#include "fsutil.h"
-#include "subprocess.h"
-#include "fsutil.cpp"
+
+#include <flit/fsutil.h>
+#include <flit/subprocess.h>
+#include <flit/fsutil.cpp>
 
 #include <algorithm>
 #include <memory>

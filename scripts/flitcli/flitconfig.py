@@ -93,7 +93,7 @@ __all__ = [
     'version',
     'script_dir',
     'doc_dir',
-    'lib_dir',
+    'src_dir',
     'include_dir',
     'config_dir',
     'data_dir',
@@ -107,7 +107,7 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 doc_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'documentation'))
 
 # compiled libflit.so
-lib_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'lib'))
+src_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src', 'flit'))
 
 # flit C++ include files, primarily flit.h
 include_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src'))

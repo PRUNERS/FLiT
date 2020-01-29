@@ -126,7 +126,7 @@ Creating .../tests/Empty.cpp
 Creating .../Makefile
 
 >>> sum([1 for x in make_out if '-Wfixed-flag' in x])
-4
+5
 
 >>> sum([1 for x in make_out if '-Wfix-link -Whello' in x])
 2

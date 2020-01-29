@@ -83,8 +83,8 @@
 
 #include "test_harness.h"
 
-#include "Variant.h"
-#include "Variant.cpp"
+#include <flit/Variant.h>
+#include <flit/Variant.cpp>
 
 #include <sstream>
 #include <string>

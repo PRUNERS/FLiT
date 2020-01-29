@@ -86,11 +86,11 @@
 #include "test_harness.h"
 #undef main
 
-#include "subprocess.h"
-#include "subprocess.cpp"
-#include "flitHelpers.h"
-#include "flit.h"
-#include "fsutil.h"
+#include <flit/subprocess.h>
+#include <flit/subprocess.cpp>
+#include <flit/flitHelpers.h>
+#include <flit/flit.h>
+#include <flit/fsutil.h>
 
 int main(int argCount, char* argList[]) {
   // Fast track means calling a user's main() function

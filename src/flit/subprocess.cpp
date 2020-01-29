@@ -10,8 +10,15 @@
 
 namespace {
 
-std::map<std::string, flit::MainFunc*> main_name_map;
-std::map<flit::MainFunc*, std::string> main_func_map;
+std::map<std::string, flit::MainFunc*>& main_name_map() {
+  static std::map<std::string, flit::MainFunc*> mymap;
+  return mymap;
+}
+
+std::map<flit::MainFunc*, std::string>& main_func_map() {
+  static std::map<flit::MainFunc*, std::string> mymap;
+  return mymap;
+}
 
 flit::ProcResult call_main_impl(
     flit::MainFunc *func, std::string run_wrap, std::string progname,
@@ -77,30 +84,30 @@ void register_main_func(const std::string &main_name, MainFunc* main_func) {
   if (main_func == nullptr) {
     throw std::invalid_argument("Main func is null");
   }
-  auto tmp_func = main_name_map.find(main_name);
-  if (tmp_func != main_name_map.end() && tmp_func->second != main_func) {
+  auto tmp_func = main_name_map().find(main_name);
+  if (tmp_func != main_name_map().end() && tmp_func->second != main_func) {
     throw std::logic_error("Main name already registered "
                            "to a different function: " + main_name);
   }
-  auto tmp_name = main_func_map.find(main_func);
-  if (tmp_name != main_func_map.end() && tmp_name->second != main_name) {
+  auto tmp_name = main_func_map().find(main_func);
+  if (tmp_name != main_func_map().end() && tmp_name->second != main_name) {
     throw std::logic_error("Main func already registered "
                            "with a different name: " + main_name
                            + " != " + tmp_name->second);
   }
-  main_name_map[main_name] = main_func;
-  main_func_map[main_func] = main_name;
+  main_name_map()[main_name] = main_func;
+  main_func_map()[main_func] = main_name;
 }
 
 MainFunc* find_main_func(const std::string &main_name) {
-  return main_name_map.at(main_name);
+  return main_name_map().at(main_name);
 }
 
 std::string find_main_name(MainFunc *main_func) {
   if (main_func == nullptr) {
     throw std::invalid_argument("Main func is null");
   }
-  return main_func_map.at(main_func);
+  return main_func_map().at(main_func);
 }
 
 ProcResult call_main(MainFunc *func, std::string progname,
