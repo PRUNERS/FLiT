@@ -130,7 +130,7 @@ std::string find_main_name(MainFunc *main_func);
  *   #include "main.cc"
  *   #undef main
  *
- *   #include "flit.h"
+ *   #include <flit/flit.h>
  *
  *   #include <iostream>
  *

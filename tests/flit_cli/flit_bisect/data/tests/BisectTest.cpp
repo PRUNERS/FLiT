@@ -87,7 +87,7 @@
 #include "file4.h"
 #include "A.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <string>
 

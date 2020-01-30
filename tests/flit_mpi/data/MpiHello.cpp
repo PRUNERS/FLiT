@@ -81,7 +81,7 @@
  * -- LICENSE END --
  */
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <mpi.h>
 

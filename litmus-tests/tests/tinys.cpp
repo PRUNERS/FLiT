@@ -83,7 +83,7 @@
 #include "Vector.h"
 #include "RandHelper.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <string>
 #include <sstream>

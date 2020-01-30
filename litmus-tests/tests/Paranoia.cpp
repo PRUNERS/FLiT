@@ -241,7 +241,7 @@ lines
 
 */
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <chrono>
 #include <exception>

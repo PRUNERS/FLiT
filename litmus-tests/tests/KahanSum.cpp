@@ -82,7 +82,7 @@
 #include "Kahan.h"
 #include "Shewchuk.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <iomanip>
 #include <iostream>

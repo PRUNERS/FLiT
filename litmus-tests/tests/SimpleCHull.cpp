@@ -82,7 +82,7 @@
 
 #include "simple_convex_hull.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <cmath>
 #include <cstdio>

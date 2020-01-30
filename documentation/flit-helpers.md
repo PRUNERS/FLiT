@@ -488,7 +488,7 @@ to illustrate how to use the functions declared in `src/subprocess.h` to run a
 `main()` function.
 
 ```c++
-#include <flit.h>
+#include <flit/flit.h>
 
 #define main my_main
 #include "main.cc"

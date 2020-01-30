@@ -79,7 +79,7 @@
  *    purposes.
  *
  * -- LICENSE END -- */
-#include <flit.h>
+#include <flit/flit.h>
 
 template <typename T>
 class ReciprocalMath : public flit::TestBase<T> {

@@ -131,7 +131,7 @@ install:
 	@echo "# flit documentation"                                                >> $(INST_FLIT_CONFIG)
 	@echo "doc_dir = os.path.join(_prefix, 'share', 'flit', 'doc')"             >> $(INST_FLIT_CONFIG)
 	@echo                                                                       >> $(INST_FLIT_CONFIG)
-	@echo "# flit C++ include files, primarily flit.h"                          >> $(INST_FLIT_CONFIG)
+	@echo "# flit C++ include files, primarily flit/flit.h"                     >> $(INST_FLIT_CONFIG)
 	@echo "include_dir = os.path.join(_prefix, 'include', 'flit')"              >> $(INST_FLIT_CONFIG)
 	@echo                                                                       >> $(INST_FLIT_CONFIG)
 	@echo "# flit C++ source files"                                             >> $(INST_FLIT_CONFIG)

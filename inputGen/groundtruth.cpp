@@ -83,7 +83,7 @@
 
 #include "groundtruth.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 // Only store these locally because we want multiple compiled copies
 namespace {

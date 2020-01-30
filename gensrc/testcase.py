@@ -93,7 +93,7 @@ import os
 #   tiList[idx].vals
 # - func_body: test body
 template_string = '''
-#include "flit.h"
+#include <flit/flit.h>
 
 template <typename T>
 class {name} : public flit::TestBase<T> {{

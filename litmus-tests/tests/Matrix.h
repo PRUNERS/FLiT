@@ -85,7 +85,7 @@
 
 #include "Vector.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <initializer_list>   // for std::initializer_list
 #include <iostream>           // for std::cout

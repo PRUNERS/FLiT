@@ -83,7 +83,7 @@
 
 #include "helper.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <iostream>
 #include <iomanip>

@@ -83,7 +83,7 @@
 
 #include "file2.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <string>
 

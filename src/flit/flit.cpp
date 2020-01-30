@@ -94,7 +94,7 @@
 
 #include <cstring>
 
-#include "flit.h"
+#include <flit/flit.h>
 
 #include "flitHelpers.h"
 #include "TestBase.h"

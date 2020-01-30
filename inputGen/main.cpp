@@ -84,7 +84,7 @@
 #include "helper.h"
 #include "groundtruth.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <fstream>
 #include <iostream>

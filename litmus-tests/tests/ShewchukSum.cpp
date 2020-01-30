@@ -81,7 +81,7 @@
  * -- LICENSE END -- */
 #include "Shewchuk.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <iomanip>
 #include <string>

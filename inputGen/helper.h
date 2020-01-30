@@ -84,7 +84,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <type_traits>
 #include <random>

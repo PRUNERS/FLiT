@@ -109,7 +109,7 @@ doc_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'documentation')
 # compiled libflit.so
 src_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src', 'flit'))
 
-# flit C++ include files, primarily flit.h
+# flit C++ include files, primarily flit/flit.h
 include_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src'))
 
 # default configuration for flit init
