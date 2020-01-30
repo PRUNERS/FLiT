@@ -301,7 +301,7 @@ SPLIT_OBJ        += $(addprefix \
     $(SPLIT_DIR)/,$(notdir \
       $(SPLIT_SRC:%=%_trouble_split_$(NUMBER).o)))
 BISECT_OBJ       := $(BISECT_GT_OBJ)
-BISECT_OBJ       += $(GT_OBJ_DIR)/ALL.cpp.o
+BISECT_OBJ       += $(GT_OBJ_DIR)/ALL-FLIT.cpp.o
 BISECT_OBJ       += $(TROUBLE_OBJ)
 BISECT_OBJ       += $(SPLIT_OBJ)
 BISECT_DEP       := $(BISECT_OBJ:%.o=%.d)

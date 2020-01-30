@@ -296,7 +296,7 @@ True
  'share/flit/scripts/flitelf.py',
  'share/flit/scripts/flitutil.py',
  'share/flit/src',
- 'share/flit/src/ALL.cpp',
+ 'share/flit/src/ALL-FLIT.cpp',
  'share/flit/src/FlitCsv.cpp',
  'share/flit/src/InfoStream.cpp',
  'share/flit/src/TestBase.cpp',

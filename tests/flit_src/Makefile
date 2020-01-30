@@ -1,6 +1,6 @@
 CC          := g++
 FLITDIR     := ../..
-FLIT_SRC    := $(FLITDIR)/src/flit/ALL.cpp
+FLIT_SRC    := $(FLITDIR)/src/flit/ALL-FLIT.cpp
 
 CFLAGS      := -O0 -g
 CFLAGS      += -std=c++11
