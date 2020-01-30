@@ -132,7 +132,7 @@ True
 >>> flitconfig.src_dir == os.path.join(prefix, 'share', 'flit', 'src')
 True
 
->>> flitconfig.include_dir == os.path.join(prefix, 'include', 'flit')
+>>> flitconfig.include_dir == os.path.join(prefix, 'include')
 True
 
 >>> flitconfig.config_dir == os.path.join(prefix, 'share', 'flit', 'config')
