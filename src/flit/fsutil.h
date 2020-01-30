@@ -90,7 +90,7 @@
 #ifndef FSUTIL_H
 #define FSUTIL_H
 
-#include "tinydir.h"    // for tinydir_file and tinydir_dir
+#include <flit/tinydir.h> // for tinydir_file and tinydir_dir
 
 #include <string>       // for std::string
 #include <vector>       // for std::vector

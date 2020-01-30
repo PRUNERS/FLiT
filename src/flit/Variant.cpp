@@ -81,7 +81,7 @@
  * -- LICENSE END --
  */
 
-#include "Variant.h"
+#include <flit/Variant.h>
 
 #include <memory>   // for std::unique_ptr()
 #include <sstream>

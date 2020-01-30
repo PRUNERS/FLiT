@@ -86,7 +86,7 @@
 #include "Matrix.h"
 #include "RandHelper.h"
 
-#include <flitHelpers.h>
+#include <flit/flitHelpers.h>
 
 #include <algorithm>        // for std::generate
 #include <cmath>            // for std::sqrt

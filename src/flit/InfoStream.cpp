@@ -81,7 +81,7 @@
  * -- LICENSE END --
  */
 
-#include "InfoStream.h"
+#include <flit/InfoStream.h>
 
 #include <mutex>
 

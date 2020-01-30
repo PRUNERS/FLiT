@@ -178,7 +178,7 @@ would join path elements properly.
 Note, you can pass in as many arguments to this function as you want.
 
 ```c++
-auto full_path = flit::join("/home", "user", "git", "FLiT", "src", "fsutil.h");
+auto full_path = flit::join("/home", "user", "git", "FLiT", "src", "flit", "fsutil.h");
 ```
 
 

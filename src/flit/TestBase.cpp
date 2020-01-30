@@ -83,7 +83,7 @@
 
 //this is the base instantiation for tests
 
-#include "TestBase.h"
+#include <flit/TestBase.h>
 
 #include <stack>
 

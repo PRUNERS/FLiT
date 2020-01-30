@@ -88,10 +88,10 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "Variant.h"
-#include "flitHelpers.h"
-#include "timeFunction.h"
-#include "fsutil.h"
+#include <flit/Variant.h>
+#include <flit/flitHelpers.h>
+#include <flit/timeFunction.h>
+#include <flit/fsutil.h>
 
 #include <fstream>
 #include <functional>

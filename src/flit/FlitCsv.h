@@ -84,7 +84,7 @@
 #ifndef FLIT_CSV_H
 #define FLIT_CSV_H
 
-#include "flitHelpers.h"
+#include <flit/flitHelpers.h>
 
 #include <istream>
 #include <string>

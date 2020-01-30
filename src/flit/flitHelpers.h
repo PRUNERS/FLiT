@@ -88,7 +88,7 @@
 #ifndef FLIT_HELPERS_HPP
 #define FLIT_HELPERS_HPP
 
-#include "InfoStream.h"
+#include <flit/InfoStream.h>
 
 #include <algorithm>
 #include <fstream>

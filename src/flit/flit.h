@@ -87,11 +87,11 @@
 #ifndef FLIT_H
 #define FLIT_H 0
 
-#include "FlitCsv.h"
-#include "TestBase.h"
-#include "flitHelpers.h"
-#include "fsutil.h"
-#include "subprocess.h"
+#include <flit/FlitCsv.h>
+#include <flit/TestBase.h>
+#include <flit/flitHelpers.h>
+#include <flit/fsutil.h>
+#include <flit/subprocess.h>
 
 #include <algorithm>
 #include <chrono>

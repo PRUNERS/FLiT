@@ -81,7 +81,7 @@
  * -- LICENSE END --
  */
 
-#include "timeFunction.h"
+#include <flit/timeFunction.h>
 
 #include <algorithm>
 #include <chrono>
