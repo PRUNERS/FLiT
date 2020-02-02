@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -81,70 +81,41 @@
  * -- LICENSE END --
  */
 
-// this contains the helper classes for the tests.
-// they utilize the watch data for sensitive points
-// of computation.
+#ifndef FUNCTION_TIMER_H
+#define FUNCTION_TIMER_H
 
-#include "flitHelpers.h"
-
-#include <iostream>
-#include <mutex>
-#include <map>
-#include <string>
+#include <functional>
 
 namespace flit {
 
-std::string g_program_path;
+using TimingFunction = std::function<void(void)>;
 
-thread_local InfoStream info_stream;
+/** Returns average timing in nanoseconds of the function func
+ *
+ * The time returned is the best value of all repeated tries.  The time
+ * returned is the total looping time divided by the number of loops (so the
+ * average runtime over looping).  It is a good idea to loop for fast functions
+ * because that amertizes the cost of the looping.
+ *
+ * @param func - a simple no-effect function to time.  Is executed repeatedly
+ * @param loops - how many times to execute func()
+ * @param repeats - how often to repeat looping to get the best result
+ *
+ * @return nanoseconds average runtime of func
+ */
+int_fast64_t time_function(
+    const TimingFunction &func, size_t loops = 1, size_t repeats = 3);
 
-std::ostream& operator<<(std::ostream& os, const unsigned __int128 i){
-  std::ostringstream ost;
-  uint64_t hi = i >> 64;
-  uint64_t lo = (uint64_t)i;
-  auto bflags = os.flags();
-  os.flags(std::ios::hex & ~std::ios::showbase);
-  ost.flags(std::ios::hex & ~std::ios::showbase);
-  ost << lo;
-  os << "0x" << hi;
-  for(uint32_t x = 0; x < 16 - ost.str().length(); ++x){
-    os << "0";
-  }
-  os << ost.str();
-  os.flags( bflags );
-  return os;
-}
-
-unsigned __int128 stouint128(const std::string &str) {
-  uint64_t hi, lo;
-  // TODO: make this more efficient (maybe).
-  std::string copy;
-  if (str[0] == '0' && str[1] == 'x') {
-    copy = std::string(str.begin() + 2, str.end());
-  } else {
-    copy = str;
-  }
-
-  // Convert each section of 8-bytes (16 characters)
-  if (copy.size() > 32) {
-    throw std::invalid_argument("Too many digits to convert with stouint128");
-  }
-  if (copy.size() <= 16) {
-    hi = 0;
-    lo = std::stoull(copy, nullptr, 16);
-  } else {
-    auto mid = copy.end() - 16;
-    hi = std::stoull(std::string(copy.begin(), mid), nullptr, 16);
-    lo = std::stoull(std::string(mid, copy.end()), nullptr, 16);
-  }
-
-  // Combine the two 64-bit values.
-  unsigned __int128 val;
-  val = hi;
-  val = val << 64;
-  val += lo;
-  return val;
-}
+/** Returns average timing in nanoseconds of the function func
+ *
+ * This is very similar to time_function, but instead of specifying the number
+ * of loops, this function determines it automatically.  This is done so that
+ * the looping over func() is at least 0.2 seconds in total duration with a
+ * maximum looping of one million.
+ */
+int_fast64_t time_function_autoloop(const TimingFunction &func,
+                                    size_t repeats = 3);
 
 } // end of namespace flit
 
+#endif // FUNCTION_TIMER_H

@@ -136,7 +136,7 @@ of code.
 As an example, let us take the example of code that takes the dot product, but with different sizes of vectors.
 
 ```c++
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <limits>
 #include <random>
@@ -210,7 +210,7 @@ you would be in luck.  FLiT provides a means and a pattern to wrap around your
 // this allows flit to use this in call_main() and call_mpi_main()
 FLIT_REGISTER_MAIN(myapp_main);
 
-#include "flit.h"
+#include <flit/flit.h>
 
 template <typename T>
 class MyAppTest : public flit::TestBase<T> {
@@ -279,7 +279,7 @@ This is how to wrap around a `main()` function using FLiT.
 Once you do these three steps, you are allowed to then use `flit::call_main()`.
 
 ```c++
-#include "flit.h"
+#include <flit/flit.h>
 
 template <typename T>
 class MyAppTest : public flit::TestBase<T> {
@@ -386,7 +386,7 @@ test called `MpiAppTest`.  The test may look something like the following:
 // this allows flit to use this in call_main() and call_mpi_main()
 FLIT_REGISTER_MAIN(mpiapp_main);
 
-#include "flit.h"
+#include <flit/flit.h>
 
 template <typename T>
 class MpiAppTest : public flit::TestBase<T> {
@@ -460,7 +460,7 @@ main-like function and will have to call `MPI_Init()` and `MPI_Finalize()`
 accorddingly.
 
 ```c++
-#include "flit.h"
+#include <flit/flit.h>
 
 template <typename T>
 class MpiAppTest : public flit::TestBase<T> {

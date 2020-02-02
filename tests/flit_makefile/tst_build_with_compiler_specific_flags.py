@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -126,7 +126,7 @@ Creating .../tests/Empty.cpp
 Creating .../Makefile
 
 >>> sum([1 for x in make_out if '-Wfixed-flag' in x])
-4
+5
 
 >>> sum([1 for x in make_out if '-Wfix-link -Whello' in x])
 2

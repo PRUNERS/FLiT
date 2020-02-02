@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -81,29 +81,16 @@
  * -- LICENSE END --
  */
 
-//this is the base instantiation for tests
+// This file includes all of the source files within FLiT to be compiled in one go
+//
+// For now, this is an experiment to see how it affects compile-time
 
-#include "TestBase.h"
-
-#include <stack>
-
-namespace flit {
-
-std::ostream& operator<<(std::ostream& os, const TestResult& res) {
-  std::string comparison =
-    (res.is_comparison_null() ? std::to_string(res.comparison()) : "NULL");
-
-  os << res.name() << ":" << res.precision() << ","
-     << res.result() << ","
-     << comparison << ","
-     << res.nanosecs();
-
-  return os;
-}
-
-std::map<std::string, TestFactory*>& getTests() {
-  static std::map<std::string, TestFactory*> tests;
-  return tests;
-}
-
-} // end of namespace flit
+#include "flit.cpp"
+#include "FlitCsv.cpp"
+#include "flitHelpers.cpp"
+#include "fsutil.cpp"
+#include "InfoStream.cpp"
+#include "subprocess.cpp"
+#include "TestBase.cpp"
+#include "timeFunction.cpp"
+#include "Variant.cpp"

@@ -1,33 +1,13 @@
 PREFIX         ?= /usr
 DESTDIR        ?=
 
-#CXX            ?= clang++
-CXX            ?= g++
 RM             ?= rm -f
 RMDIR          ?= rm -rf
-TARGET         ?= $(LIBDIR)/libflit.so
-LIBDIR         := lib
-SRCDIR         := src
+MKDIR          ?= mkdir -m 0755 -p
 
-CXXFLAGS       += -Wuninitialized -g
-CXXFLAGS       += -fPIC
-CXXFLAGS       += -std=c++11
-CXXFLAGS       += -Wno-shift-count-overflow
-CXXFLAGS       += -Wall
-CXXFLAGS       += -Wextra
-CXXFLAGS       += -Werror
-CXXFLAGS       += -I.
-
-LDFLAGS        += -shared
-LDLIBS         += -lm
-
-DEPFLAGS       += -MD -MF $(SRCDIR)/$*.d
-
-SOURCE         := $(wildcard $(SRCDIR)/*.cpp)
-HEADERS        += $(wildcard $(SRCDIR)/*.h)
-
-OBJ            := $(SOURCE:.cpp=.o)
-DEPS           := $(SOURCE:.cpp=.d)
+SOURCE         := $(wildcard src/flit/*.cpp)
+HEADERS        := src/flit.h
+FLIT_HEADERS   += $(wildcard src/flit/*.h)
 
 # Install variables
 
@@ -43,11 +23,9 @@ INST_BINDIR        := $(EFFECTIVE_PREFIX)/bin
 INST_LIBDIR        := $(EFFECTIVE_PREFIX)/lib
 INST_INCLUDEDIR    := $(EFFECTIVE_PREFIX)/include/flit
 INST_SHAREDIR      := $(EFFECTIVE_PREFIX)/share/flit
+INST_SRCDIR        := $(EFFECTIVE_PREFIX)/share/flit/src
 INST_LICENSEDIR    := $(EFFECTIVE_PREFIX)/share/licenses/flit
 INST_FLIT_CONFIG   := $(EFFECTIVE_PREFIX)/share/flit/scripts/flitconfig.py
-
-CAT            := $(if $(filter $(OS),Windows_NT),type,cat)
-VERSION        := $(shell $(CAT) $(CONFIG_DIR)/version.txt)
 
 -include tests/color_out.mk
 
@@ -56,76 +34,53 @@ ifndef VERBOSE
 .SILENT:
 endif
 
-.PHONY : all
-all: $(TARGET)
-
 .PHONY: help
 help:
+	@echo
 	@echo "FLiT is an automation and analysis tool for reproducibility of"
 	@echo "floating-point algorithms with respect to compilers, architectures,"
 	@echo "and compiler flags."
 	@echo
 	@echo "The following targets are available:"
 	@echo
-	@echo "  all         Compiles the target $(TARGET)"
-	@echo "  help        Shows this help message and exits"
+	@echo "  help        Shows this help message and exits (default)"
 	@echo "  install     Installs FLiT.  You may override the PREFIX variable"
 	@echo "              to install to a different directory.  The default"
 	@echo "              PREFIX value is /usr."
 	@echo '                exe: "make install PREFIX=$$HOME/installs/usr"'
-	@echo "  check       Run tests for FLiT framework (requires $(TARGET))"
-	@echo "  clean       Clean the intermediate build artifacts from building"
-	@echo "              $(TARGET)"
-	@echo "  distclean   Run clean and then also remove $(TARGET)"
-	@echo "  veryclean   An alias for distclean"
+	@echo "  uninstall   Delete a FLiT installation.  You must use the same"
+	@echo "              PREFIX value used during installation."
+	@echo "  check       Run tests for FLiT framework"
+	@echo "  clean       Clean up after the tests"
 	@echo
 
-$(TARGET): $(OBJ)
-	@$(call color_out_noline,CYAN,  mkdir)
-	@echo " lib"
-	mkdir -p lib
-	@$(call color_out,BLUE,Building $(TARGET))
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-$(SRCDIR)/%.o: $(SRCDIR)/%.cpp Makefile
-	@$(call color_out,CYAN,  $< -> $@)
-	$(CXX) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
-
-.PRECIOUS: src/%.d
--include $(SOURCE:%.cpp=%.d)
-
-check: $(TARGET)
+.PHONY: check
+check:
 	$(MAKE) check --directory tests
 
 .PHONY: clean
 clean:
-	$(RM) $(OBJ)
-	$(RM) $(DEPS)
 	$(MAKE) clean --directory tests
 
-.PHONY: veryclean distclean
-veryclean: distclean
-distclean: clean
-	$(RM) $(TARGET)
-	$(RMDIR) $(LIBDIR)
-
 .PHONY: install
-install: $(TARGET)
-	@$(call color_out,BLUE,Installing...)
-	mkdir -m 0755 -p $(INST_BINDIR)
-	mkdir -m 0755 -p $(INST_LIBDIR)
-	mkdir -m 0755 -p $(INST_INCLUDEDIR)
-	mkdir -m 0755 -p $(INST_SHAREDIR)/scripts/experimental
-	mkdir -m 0755 -p $(INST_SHAREDIR)/doc
-	mkdir -m 0755 -p $(INST_SHAREDIR)/data/tests
-	mkdir -m 0755 -p $(INST_SHAREDIR)/data/db
-	mkdir -m 0755 -p $(INST_SHAREDIR)/config
-	mkdir -m 0755 -p $(INST_SHAREDIR)/litmus-tests
-	mkdir -m 0755 -p $(INST_SHAREDIR)/benchmarks
-	mkdir -m 0755 -p $(INST_LICENSEDIR)
+install:
+	@$(call color_out,BLUE,Installing: DESTDIR=$(DESTDIR) PREFIX=$(PREFIX))
+	$(MKDIR) $(INST_BINDIR)
+	$(MKDIR) $(INST_INCLUDEDIR)
+	$(MKDIR) $(INST_SHAREDIR)/scripts/experimental
+	$(MKDIR) $(INST_SHAREDIR)/doc
+	$(MKDIR) $(INST_SHAREDIR)/data/tests
+	$(MKDIR) $(INST_SHAREDIR)/data/db
+	$(MKDIR) $(INST_SHAREDIR)/config
+	$(MKDIR) $(INST_SHAREDIR)/litmus-tests
+	$(MKDIR) $(INST_SHAREDIR)/benchmarks
+	$(MKDIR) $(INST_SRCDIR)
+	$(MKDIR) $(INST_LICENSEDIR)
+	@$(call color_out,CYAN,  Creating command-line symbolic link $(INST_BINDIR)/flit)
 	ln -sf ../share/flit/scripts/flit.py $(INST_BINDIR)/flit
-	install -m 0755 $(TARGET) $(INST_LIBDIR)/$(notdir $(TARGET))
-	install -m 0644 $(HEADERS) $(INST_INCLUDEDIR)
+	install -m 0644 $(HEADERS) $(EFFECTIVE_PREFIX)/include
+	install -m 0644 $(FLIT_HEADERS) $(INST_INCLUDEDIR)
+	install -m 0644 $(SOURCE) $(INST_SRCDIR)
 	install -m 0755 $(SCRIPT_DIR)/flit.py $(INST_SHAREDIR)/scripts/
 	install -m 0755 $(SCRIPT_DIR)/flit_*.py $(INST_SHAREDIR)/scripts/
 	install -m 0755 $(SCRIPT_DIR)/experimental/flit_*.py $(INST_SHAREDIR)/scripts/experimental/
@@ -159,7 +114,7 @@ install: $(TARGET)
 	@echo "    'version',"                                                      >> $(INST_FLIT_CONFIG)
 	@echo "    'script_dir',"                                                   >> $(INST_FLIT_CONFIG)
 	@echo "    'doc_dir',"                                                      >> $(INST_FLIT_CONFIG)
-	@echo "    'lib_dir',"                                                      >> $(INST_FLIT_CONFIG)
+	@echo "    'src_dir',"                                                      >> $(INST_FLIT_CONFIG)
 	@echo "    'include_dir',"                                                  >> $(INST_FLIT_CONFIG)
 	@echo "    'config_dir',"                                                   >> $(INST_FLIT_CONFIG)
 	@echo "    'data_dir',"                                                     >> $(INST_FLIT_CONFIG)
@@ -176,11 +131,11 @@ install: $(TARGET)
 	@echo "# flit documentation"                                                >> $(INST_FLIT_CONFIG)
 	@echo "doc_dir = os.path.join(_prefix, 'share', 'flit', 'doc')"             >> $(INST_FLIT_CONFIG)
 	@echo                                                                       >> $(INST_FLIT_CONFIG)
-	@echo "# compiled libflit.so"                                               >> $(INST_FLIT_CONFIG)
-	@echo "lib_dir = os.path.join(_prefix, 'lib')"                              >> $(INST_FLIT_CONFIG)
+	@echo "# flit C++ include files, primarily flit/flit.h"                     >> $(INST_FLIT_CONFIG)
+	@echo "include_dir = os.path.join(_prefix, 'include')"                      >> $(INST_FLIT_CONFIG)
 	@echo                                                                       >> $(INST_FLIT_CONFIG)
-	@echo "# flit C++ include files, primarily flit.h"                          >> $(INST_FLIT_CONFIG)
-	@echo "include_dir = os.path.join(_prefix, 'include', 'flit')"              >> $(INST_FLIT_CONFIG)
+	@echo "# flit C++ source files"                                             >> $(INST_FLIT_CONFIG)
+	@echo "src_dir = os.path.join(_prefix, 'share', 'flit', 'src')"             >> $(INST_FLIT_CONFIG)
 	@echo                                                                       >> $(INST_FLIT_CONFIG)
 	@echo "# default configuration for flit init"                               >> $(INST_FLIT_CONFIG)
 	@echo "config_dir = os.path.join(_prefix, 'share', 'flit', 'config')"       >> $(INST_FLIT_CONFIG)
@@ -199,15 +154,16 @@ install: $(TARGET)
 
 .PHONY: uninstall
 uninstall:
-	@$(call color_out,BLUE,Uninstalling...)
+	@$(call color_out_noline,BLUE,Uninstalling... )
 	$(RMDIR) $(INST_INCLUDEDIR)
+	$(RMDIR) $(INST_SRCDIR)
 	$(RMDIR) $(INST_SHAREDIR)
 	$(RMDIR) $(INST_LICENSEDIR)
 	$(RM) $(INST_BINDIR)/flit
-	$(RM) $(INST_LIBDIR)/$(notdir $(TARGET))
-	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/include
-	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share/licenses
-	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share
-	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/bin
-	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/lib
-	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)
+	$(RM) $(EFFECTIVE_PREFIX)/include/flit.h
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/include 2>/dev/null
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share/licenses 2>/dev/null
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share 2>/dev/null
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/bin 2>/dev/null
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX) 2>/dev/null
+	@$(call color_out,GREEN,Done)

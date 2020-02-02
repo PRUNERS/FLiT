@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -83,9 +83,8 @@
 
 #include "test_harness.h"
 
-#include "flitHelpers.h"
-
-#include "TestBase.h"   // for operator<<(flit::TestResult ...)
+#include <flit/flitHelpers.h>
+#include <flit/TestBase.h>   // for operator<<(flit::TestResult ...)
 
 #include <algorithm>
 #include <array>

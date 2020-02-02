@@ -206,7 +206,7 @@ bisect invocation if the given compiler is found within `flit-config.toml`.
 Call `flit bisect --help` for more documentation.
 
 
-## flit expeirmental
+## flit experimental
 
 There may or may not be any experimental features currently available.  These
 features are available by the `flit experimental` command.  Please call `flit

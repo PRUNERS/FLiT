@@ -81,82 +81,60 @@
  * -- LICENSE END --
  */
 
-#include "polybench_utils.h"
+#include <flit/InfoStream.h>
 
-#include <flit/flit.h>
+#include <mutex>
 
-#include <string>
+namespace {
+  class NullBuffer : public std::streambuf {
+  public:
+    int overflow(int c) override { return c; }
+  };
 
-template <typename T, int TSTEPS, int N>
-class Heat_3dBase : public flit::TestBase<T> {
-public:
-  Heat_3dBase(std::string id) : flit::TestBase<T>(std::move(id)) {}
+  class InfoStreamBackend : public std::ostream {
+  public:
+    InfoStreamBackend() : std::ostream(), _null() { hide(); }
+    ~InfoStreamBackend() { hide(); }
+    void show() { rdbuf(std::cout.rdbuf()); }
+    void hide() { rdbuf(&_null); }
 
-  virtual size_t getInputsPerRun() override { return 2*N*N*N; }
-  virtual std::vector<T> getDefaultInput() override {
-    return random_vector<T>(this->getInputsPerRun());
+  private:
+    NullBuffer _null;
+  };
+
+  static InfoStreamBackend infoStreamBackendSingleton;
+  std::mutex infoStreamMutex;
+} // end of unnamed namespace
+
+namespace flit {
+
+InfoStream::InfoStream()
+  : std::ostream()
+  , _threadbuf()
+{
+  rdbuf(_threadbuf.rdbuf());
+}
+
+InfoStream::~InfoStream() {
+  flushout();
+}
+
+void InfoStream::show() {
+  std::lock_guard<std::mutex> locker(infoStreamMutex);
+  infoStreamBackendSingleton.show();
+}
+
+void InfoStream::hide() {
+  std::lock_guard<std::mutex> locker(infoStreamMutex);
+  infoStreamBackendSingleton.show();
+}
+
+void InfoStream::flushout() {
+  {
+    std::lock_guard<std::mutex> locker(infoStreamMutex);
+    infoStreamBackendSingleton << _threadbuf.str();
   }
+  _threadbuf.str("");
+}
 
-  virtual long double compare(const std::string &ground_truth,
-                              const std::string &test_results) const override {
-    return vector_string_compare<T>(ground_truth, test_results);
-  }
-
-protected:
-  virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    auto split = split_vector(ti, {N*N*N, N*N*N});
-    auto &A = split[0];
-    auto &B = split[1];
-
-    int t, i, j, k;
-
-    for (t = 1; t <= TSTEPS; t++) {
-      for (i = 1; i < N-1; i++) {
-        for (j = 1; j < N-1; j++) {
-          for (k = 1; k < N-1; k++) {
-            B[i*N*N + j*N +k] =
-                T(0.125) * (A[(i+1)*N*N + j*N +k] - T(2.0) * A[i*N*N + j*N +k] +
-                            A[(i-1)*N*N + j*N +k])
-                +
-                T(0.125) * (A[i*N*N + (j+1)*N +k] - T(2.0) * A[i*N*N + j*N +k] +
-                            A[i*N*N + (j-1)*N*N + k])
-                +
-                T(0.125) * (A[i*N*N + j*N +k+1] - T(2.0) * A[i*N*N + j*N +k] +
-                            A[i*N*N + j*N +k-1])
-                +
-                A[i*N*N + j*N +k];
-          }
-        }
-      }
-      for (i = 1; i < N-1; i++) {
-        for (j = 1; j < N-1; j++) {
-          for (k = 1; k < N-1; k++) {
-            A[i*N*N + j*N +k] =
-                T(0.125) * (B[(i+1)*N*N + j*N +k] - T(2.0) * B[i*N*N + j*N +k] +
-                            B[(i-1)*N*N + j*N +k])
-                +
-                T(0.125) * (B[i*N*N + (j+1)*N*N + k] -
-                            T(2.0) * B[i*N*N + j*N +k] +
-                            B[i*N*N + (j-1)*N*N + k])
-                +
-                T(0.125) * (B[i*N*N + j*N + k+1] - T(2.0) * B[i*N*N + j*N + k] +
-                            B[i*N*N + j*N + k-1])
-                +
-                B[i*N*N + j*N +k];
-          }
-        }
-      }
-    }
-
-    return pickles({A, B});
-  }
-
-protected:
-  using flit::TestBase<T>::id;
-};
-
-POLY_REGISTER_DIM2(Heat_3d, 4, 4)
-POLY_REGISTER_DIM2(Heat_3d, 5, 5)
-POLY_REGISTER_DIM2(Heat_3d, 6, 6)
-POLY_REGISTER_DIM2(Heat_3d, 7, 7)
-POLY_REGISTER_DIM2(Heat_3d, 8, 8)
+} // end of namespace flit

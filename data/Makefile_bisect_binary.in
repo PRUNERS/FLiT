@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -301,6 +301,7 @@ SPLIT_OBJ        += $(addprefix \
     $(SPLIT_DIR)/,$(notdir \
       $(SPLIT_SRC:%=%_trouble_split_$(NUMBER).o)))
 BISECT_OBJ       := $(BISECT_GT_OBJ)
+BISECT_OBJ       += $(GT_OBJ_DIR)/ALL-FLIT.cpp.o
 BISECT_OBJ       += $(TROUBLE_OBJ)
 BISECT_OBJ       += $(SPLIT_OBJ)
 BISECT_DEP       := $(BISECT_OBJ:%.o=%.d)
@@ -333,7 +334,7 @@ define COMPILE_OR_COPY_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	if [ -f "$(strip $8)/$(notdir $2)" ]; then \
 	  $(call color_out,CYAN,  $8/$(notdir $2) -> $2); \
-	  ln -s $(shell realpath --relative-to $(dir $2) $(strip $8)/$(notdir $2)) $2; \
+	  ln -s $$(shell realpath --relative-to $(dir $2) $(strip $8)/$(notdir $2)) $2; \
 	else \
 	  $(call color_out,CYAN,  $1 -> $2); \
 	  $3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
@@ -358,7 +359,7 @@ $(foreach s,$(TROUBLE_SRC),\
     $(BISECT_OBJ_DIR))))
 
 # compile GT fPIC object files
-$(foreach s,$(SPLIT_SRC),\
+$(foreach s,$(SPLIT_SRC) $(FLIT_SRC),\
   $(eval $(call COMPILE_OR_COPY_RULE,\
     $s,\
     $(FPIC_DIR)/gt/$(notdir $s).o,\
@@ -409,4 +410,4 @@ $(foreach s,$(SPLIT_SRC),\
     $(SPLIT_DIR)/$(notdir $s)_trouble_split_$(NUMBER).o,\
     $(SYMBOLS_DIR)/$(notdir $s)_gt_symbols_$(NUMBER).txt)))
 
-endif
+endif # of ifeq ($(R_TYPE),bisect-compile)

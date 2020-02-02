@@ -178,7 +178,7 @@ would join path elements properly.
 Note, you can pass in as many arguments to this function as you want.
 
 ```c++
-auto full_path = flit::join("/home", "user", "git", "FLiT", "src", "fsutil.h");
+auto full_path = flit::join("/home", "user", "git", "FLiT", "src", "flit", "fsutil.h");
 ```
 
 
@@ -488,7 +488,7 @@ to illustrate how to use the functions declared in `src/subprocess.h` to run a
 `main()` function.
 
 ```c++
-#include <flit.h>
+#include <flit/flit.h>
 
 #define main my_main
 #include "main.cc"

@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -84,6 +84,11 @@
 // This is the main implementation, handling cmd line params and
 // running the tests!
 
+#include <flit/flit.h>
+
+#include <flit/flitHelpers.h>
+#include <flit/TestBase.h>
+
 #include <algorithm>
 #include <chrono>
 #include <iostream>
@@ -93,11 +98,6 @@
 #include <typeinfo>
 
 #include <cstring>
-
-#include "flit.h"
-
-#include "flitHelpers.h"
-#include "TestBase.h"
 
 namespace {
 
