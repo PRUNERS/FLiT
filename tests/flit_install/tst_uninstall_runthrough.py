@@ -113,7 +113,7 @@ Let's now make a temporary directory, install there, and then uninstall.
 >>> sorted(dirs1)
 ['bin', 'include', 'share']
 >>> sorted(dirs2)
-['bin/flit', 'include/flit', 'include/flit.h', 'share/flit', 'share/licenses']
+['bin/flit', 'include/flit', 'include/flit.h', 'share/bash-completion', 'share/flit', 'share/licenses']
 >>> tempdir_exists
 False
 

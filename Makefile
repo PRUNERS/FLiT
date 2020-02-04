@@ -175,7 +175,8 @@ uninstall:
 	$(RM) $(EFFECTIVE_PREFIX)/include/flit.h
 	$(RM) $(INST_BASH_COMPLETE_DIR)/flit
 	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/include 2>/dev/null
-	-rmdir --ignore-fail-on-non-empty $(INST_BASH_COMPLETE_DIR) 2>/dev/null
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share/bash-completion/completions 2>/dev/null
+	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share/bash-completion 2>/dev/null
 	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share/licenses 2>/dev/null
 	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/share 2>/dev/null
 	-rmdir --ignore-fail-on-non-empty $(EFFECTIVE_PREFIX)/bin 2>/dev/null
