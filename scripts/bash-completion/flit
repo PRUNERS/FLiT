@@ -1,0 +1,278 @@
+#
+# bash completion for the flit command
+#
+
+_flit__sqlite_files()
+{
+  # match files ending in one of
+  #     .db, .sdb, .sqlite, .db3, .s3db, .sqlite3, .sl3
+  # * First call _filedir to populate everything into ${COMPREPLY[]}
+  # * Then filter out by file ending
+  _filedir
+  mapfile -t COMPREPLY < <( for entry in "${COMPREPLY[@]}"; do
+      if [ -f "${entry}" ]; then
+        echo "${entry}" | egrep ".*\.(db|sdb|sqlite|db3|s3db|sqlite3|sl3)$";
+      else
+        echo "${entry}";
+      fi
+    done
+  )
+  return 0
+}
+
+_flit_help()
+{
+  local cur available_subcommands
+  available_subcommands="bisect init make update import"
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "${available_subcommands}" -- ${cur}) )
+}
+
+_flit_bisect()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -C --directory
+    -p --precision
+    -a --auto-sqlite-run
+    --parallel
+    -v --verbose
+    -j --jobs
+    -d --delete
+    -k --biggest
+    --compile-only
+    --precompile-fpic
+    --skip-verification
+    -t --compiler-type"
+
+  case "${prev}" in
+
+    -C|--directory)
+      _filedir -d
+      return
+      ;;
+
+    -p|--precision)
+      # Because one of the options has a space, we use the
+      #   "mapfile -t COMPREPLY"
+      # approach instead
+      #COMPREPLY=( $(compgen -W "float double \"long double\"" -- ${cur}) )
+      mapfile -t COMPREPLY < <( compgen -W "float double 'long\\ double'" -- "${cur}")
+      return 0
+      ;;
+
+    -a|--auto-sqlite-run)
+      _flit__sqlite_files
+      return 0
+      ;;
+
+    --parallel|-j|--jobs|-k|--biggest)
+      # these take integers.  What options can we give?
+      return 0
+      ;;
+
+    -t|--compiler-type)
+      COMPREPLY=( $(compgen -W "clang gcc intel misc auto" -- "${cur}") )
+      return 0
+      ;;
+
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+
+  # TODO: help construct the compilation string
+  # TODO: If there has already been one positional argument, then give a list
+  #       of test names
+
+  return 0
+}
+
+_flit_init()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -C --directory
+    --overwrite
+    -L --litmus-tests"
+
+  case "${prev}" in
+    -C|--directory)
+      _filedir -d
+      return 0
+      ;;
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  return 0
+}
+
+_flit_make()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -j --jobs
+    --exec-jobs
+    -q --quiet
+    --make-args
+    -l --label"
+
+  case "${prev}" in
+
+    -j|--jobs|--exec-jobs|--make-args|-l|--label)
+      # do no completion -- numbers, make arguments, and label
+      return 0
+      ;;
+
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  return 0
+}
+
+_flit_update()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -C --directory"
+
+  case "${prev}" in
+
+    -C|--directory)
+      _filedir -d
+      return 0
+      ;;
+
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  return 0
+}
+
+_flit_import()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -a --append
+    -l --label
+    -r --run
+    -D --dbfile"
+
+  case "${prev}" in
+
+    -a|--append|-l|--label|-r|--run)
+      # no completion -- numbers and labels
+      return 0
+      ;;
+
+    -D|--dbfile)
+      _flit__sqlite_files
+      return 0
+      ;;
+
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  _filedir # as positional arguments, we can specify files
+
+  return 0
+}
+
+_flit_experimental_help()
+{
+  local cur available_subcommands
+  available_subcommands="ninja"
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=( $(compgen -W "${available_subcommands}" -- ${cur}) )
+}
+
+_flit_experimental_ninja()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -C --directory
+    -q --quiet"
+
+  case "${prev}" in
+
+    -C|--directory)
+      _filedir -d
+      return 0
+      ;;
+
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  return 0
+}
+
+_flit_experimental()
+{
+  local cur prev subcommand available_subcommands
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  subcommand="${COMP_WORDS[2]}"
+  available_subcommands="--help --version help ninja"
+
+  # subcommand completion
+  if [ ${COMP_CWORD} -eq 2 ]; then
+    COMPREPLY=( $(compgen -W "${available_subcommands}" -- "${cur}") )
+    return 0
+  fi
+
+  # subcommand subcompletion
+  case "${subcommand}" in
+    help)  _flit_experimental_help  ;;
+    ninja) _flit_experimental_ninja ;;
+  esac
+
+  return 0
+}
+
+_flit()
+{
+  local cur prev subcommand available_subcommands
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  subcommand="${COMP_WORDS[1]}"
+  available_subcommands="--help --version
+    experimental help bisect init make update import"
+
+  # subcommand completion
+  if [ ${COMP_CWORD} -le 1 ]; then
+    COMPREPLY=( $(compgen -W "${available_subcommands}" -- "${cur}") )
+    return 0
+  fi
+
+  # subcommand subcompletion
+  case "${subcommand}" in
+    help)         _flit_help         ;;
+    bisect)       _flit_bisect       ;;
+    init)         _flit_init         ;;
+    make)         _flit_make         ;;
+    update)       _flit_update       ;;
+    import)       _flit_import       ;;
+    experimental) _flit_experimental ;;
+  esac
+
+  return 0
+}
+complete -o bashdefault -F _flit flit 2>/dev/null || \
+  complete -F _flit flit

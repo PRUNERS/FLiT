@@ -11,21 +11,23 @@ FLIT_HEADERS   += $(wildcard src/flit/*.h)
 
 # Install variables
 
-SCRIPT_DIR     := scripts/flitcli
-DATA_DIR       := data
-CONFIG_DIR     := $(SCRIPT_DIR)/config
-DOC_DIR        := documentation
-LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.cpp)
-LITMUS_TESTS   += $(wildcard litmus-tests/tests/*.h)
+SCRIPT_DIR        := scripts/flitcli
+BASH_COMPLETE_DIR := scripts/bash-completion
+DATA_DIR          := data
+CONFIG_DIR        := $(SCRIPT_DIR)/config
+DOC_DIR           := documentation
+LITMUS_TESTS      += $(wildcard litmus-tests/tests/*.cpp)
+LITMUS_TESTS      += $(wildcard litmus-tests/tests/*.h)
 
-EFFECTIVE_PREFIX   := $(DESTDIR)$(PREFIX)
-INST_BINDIR        := $(EFFECTIVE_PREFIX)/bin
-INST_LIBDIR        := $(EFFECTIVE_PREFIX)/lib
-INST_INCLUDEDIR    := $(EFFECTIVE_PREFIX)/include/flit
-INST_SHAREDIR      := $(EFFECTIVE_PREFIX)/share/flit
-INST_SRCDIR        := $(EFFECTIVE_PREFIX)/share/flit/src
-INST_LICENSEDIR    := $(EFFECTIVE_PREFIX)/share/licenses/flit
-INST_FLIT_CONFIG   := $(EFFECTIVE_PREFIX)/share/flit/scripts/flitconfig.py
+EFFECTIVE_PREFIX       := $(DESTDIR)$(PREFIX)
+INST_BINDIR            := $(EFFECTIVE_PREFIX)/bin
+INST_LIBDIR            := $(EFFECTIVE_PREFIX)/lib
+INST_INCLUDEDIR        := $(EFFECTIVE_PREFIX)/include/flit
+INST_SHAREDIR          := $(EFFECTIVE_PREFIX)/share/flit
+INST_SRCDIR            := $(EFFECTIVE_PREFIX)/share/flit/src
+INST_LICENSEDIR        := $(EFFECTIVE_PREFIX)/share/licenses/flit
+INST_FLIT_CONFIG       := $(EFFECTIVE_PREFIX)/share/flit/scripts/flitconfig.py
+INST_BASH_COMPLETE_DIR := $(EFFECTIVE_PREFIX)/share/bash-completion/completions
 
 -include tests/color_out.mk
 
@@ -67,6 +69,7 @@ install:
 	@$(call color_out,BLUE,Installing: DESTDIR=$(DESTDIR) PREFIX=$(PREFIX))
 	$(MKDIR) $(INST_BINDIR)
 	$(MKDIR) $(INST_INCLUDEDIR)
+	$(MKDIR) $(INST_BASH_COMPLETE_DIR)
 	$(MKDIR) $(INST_SHAREDIR)/scripts/experimental
 	$(MKDIR) $(INST_SHAREDIR)/doc
 	$(MKDIR) $(INST_SHAREDIR)/data/tests
@@ -88,6 +91,7 @@ install:
 	install -m 0644 $(SCRIPT_DIR)/flitutil.py $(INST_SHAREDIR)/scripts/
 	install -m 0644 $(SCRIPT_DIR)/flitelf.py $(INST_SHAREDIR)/scripts/
 	install -m 0644 $(SCRIPT_DIR)/README.md $(INST_SHAREDIR)/scripts/
+	install -m 0644 $(BASH_COMPLETE_DIR)/* $(INST_BASH_COMPLETE_DIR)/
 	install -m 0644 $(DOC_DIR)/*.md $(INST_SHAREDIR)/doc/
 	install -m 0644 $(DATA_DIR)/Makefile.in $(INST_SHAREDIR)/data/
 	install -m 0644 $(DATA_DIR)/Makefile_bisect_binary.in $(INST_SHAREDIR)/data/
