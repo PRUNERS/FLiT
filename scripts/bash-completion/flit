@@ -252,7 +252,9 @@ _flit()
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   subcommand="${COMP_WORDS[1]}"
-  available_subcommands="--help --version
+  available_subcommands="
+    -h --help
+    -v --version
     experimental help bisect init make update import"
 
   # subcommand completion
