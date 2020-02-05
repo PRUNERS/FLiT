@@ -118,5 +118,20 @@ class TestFlitBaseCompletion(unittest.TestCase):
         self.assertEqualCompletion('m', ['make'])
         self.assertEqualCompletion('up', ['update'])
 
+def main():
+    'Calls unittest.main(), only printing if the tests failed'
+    from io import StringIO
+    captured = StringIO()
+    old_stderr = sys.stderr
+    try:
+        sys.stderr = captured
+        result = unittest.main(exit=False)
+    finally:
+        sys.stderr = old_stderr
+    if not result.result.wasSuccessful():
+        print(captured.getvalue())
+        return 1
+    return 0
+
 if __name__ == '__main__':
-    unittest.main()
+    sys.exit(main())
