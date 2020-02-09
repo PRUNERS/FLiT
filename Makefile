@@ -7,7 +7,7 @@ MKDIR          ?= mkdir -m 0755 -p
 
 SOURCE         := $(wildcard src/flit/*.cpp)
 HEADERS        := src/flit.h
-FLIT_HEADERS   += $(wildcard src/flit/*.h)
+FLIT_HEADERS   := $(wildcard src/flit/*.h)
 
 # Install variables
 
