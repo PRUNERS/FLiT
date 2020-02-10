@@ -2,7 +2,7 @@ RUNNER      := python3
 SRC         := $(wildcard tst_*.py)
 RUN_TARGETS := $(SRC:%.py=run_%)
 
-include ../color_out.mk
+include ../../color_out.mk
 
 ifndef VERBOSE
 .SILENT:

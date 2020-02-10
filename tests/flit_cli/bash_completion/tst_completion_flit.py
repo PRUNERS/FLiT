@@ -6,7 +6,7 @@ import sys
 import unittest
 
 before_path = sys.path[:]
-sys.path.append('..')
+sys.path.append('../..')
 import test_harness as th
 sys.path = before_path
 
