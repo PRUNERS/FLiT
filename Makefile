@@ -58,11 +58,11 @@ help:
 
 .PHONY: check
 check:
-	$(MAKE) check --directory tests
+	$(MAKE) --no-print-directory check --directory tests
 
 .PHONY: clean
 clean:
-	$(MAKE) clean --directory tests
+	$(MAKE) --no-print-directory clean --directory tests
 
 .PHONY: install
 install:
