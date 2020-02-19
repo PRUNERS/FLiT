@@ -96,7 +96,7 @@ import os
 
 _harness_dir = os.path.dirname(os.path.realpath(__file__))
 _flit_dir = os.path.dirname(_harness_dir)
-_script_dir = os.path.join(_flit_dir, 'scripts/flitcli')
+_script_dir = os.path.join(_flit_dir, 'scripts', 'flitcli')
 
 del os
 

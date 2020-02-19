@@ -89,15 +89,14 @@ import flitconfig as conf
 
 brief_description = 'Runs analysis on a previous flit run'
 
-def main(arguments, prog=sys.argv[0]):
-    parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                Runs analysis on a previous flit run.  The analysis will be of
-                the current flit repository and will create a directory called
-                analysis inside of the flit directory.
-                ''',
-            )
+def populate_parser(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description = '''
+        Runs analysis on a previous flit run.  The analysis will be of the
+        current flit repository and will create a directory called analysis
+        inside of the flit directory.
+        '''
     parser.add_argument('-C', '--directory', default='.',
                         help='Directory containing flit-config.toml')
     parser.add_argument('-l', '--list', action='store_true',
@@ -106,7 +105,11 @@ def main(arguments, prog=sys.argv[0]):
                         help='''
                             Analyze the given run(s).  Defaults to the latest
                             run.
-                            ''',)
+                            ''')
+    return parser
+
+def main(arguments, prog=sys.argv[0]):
+    parser = populate_parser()
     args = parser.parse_args(arguments)
 
     # Subcommand logic here

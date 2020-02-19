@@ -102,31 +102,29 @@ brief_description = 'Generate Ninja build file for FLiT makefile system'
 
 BUILD_FILENAME = 'build.ninja'
 
-def parse_args(arguments, prog=sys.argv[0]):
+def populate_parser(parser=None):
     '''
     Parse command-line arguments
 
-    >>> parse_args([])
+    >>> populate_parser().parse_args([])
     Namespace(directory='.', quiet=False)
 
-    >>> parse_args(['-C', 'my/dir', '-q'])
+    >>> populate_parser().parse_args(['-C', 'my/dir', '-q'])
     Namespace(directory='my/dir', quiet=True)
 
-    >>> parse_args(['--directory', 'another/dir', '--quiet'])
+    >>> populate_parser().parse_args(['--directory', 'another/dir', '--quiet'])
     Namespace(directory='another/dir', quiet=True)
     '''
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
-            Generates a Ninja build file instead of a GNU Makefile for
-            performing the FLiT build in a FLiT test directory.
-            ''',
-        )
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description = '''
+        Generates a Ninja build file instead of a GNU Makefile for
+        performing the FLiT build in a FLiT test directory.
+        '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to genreate build.ninja')
     parser.add_argument('-q', '--quiet', action='store_true')
-    args = parser.parse_args(arguments)
-    return args
+    return parser
 
 def check_output(*args, **kwargs):
     '''
@@ -311,7 +309,7 @@ class NinjaWriter:
 
         >>> cxxflags_orig = list(w.cxxflags)
         >>> ldflags_orig = list(w.ldflags)
-        
+
         >>> with NamedTemporaryFile() as makefile_out:
         ...     w.load_makefile(makefile_out.name)
 
@@ -666,9 +664,10 @@ class NinjaWriter:
         n.newline()
         n.build('run', 'phony', [x + comparison_suffix for x in results_files])
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments):
     'Main logic here'
-    args = parse_args(arguments, prog=prog)
+    parser = populate_parser()
+    args = parser.parse_args(arguments)
     arguments = [x for x in arguments if x not in ('-q', '--quiet')]
 
     if not args.quiet:

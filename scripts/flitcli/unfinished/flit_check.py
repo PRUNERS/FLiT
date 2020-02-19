@@ -87,26 +87,29 @@ import sys
 
 brief_description = 'Verifies the correctness of a config file'
 
-def main(arguments, prog=sys.argv[0]):
-    parser = argparse.ArgumentParser(
-            prog=prog,
-            description='''
-                This command only verifies the correctness of the
-                configurations you have for your flit tests.  As part of this
-                verification, this command checks to see if the remote
-                connections are capable of being done, such as the connection
-                to the machines to run the software, the connection to the
-                database machine, and the connection to the database machine
-                from the run machine.  You may need to provide a few SSH
-                passwords to do this check.
-                ''',
-            )
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = ArgumentParser()
+    parser.description='''
+        This command only verifies the correctness of the configurations you
+        have for your flit tests.  As part of this verification, this command
+        checks to see if the remote connections are capable of being done, such
+        as the connection to the machines to run the software, the connection
+        to the database machine, and the connection to the database machine
+        from the run machine.  You may need to provide a few SSH passwords to
+        do this check.
+        '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory containing flit-config.toml')
     parser.add_argument('-c', '--config-only', action='store_true',
                         help='''
                             Only check the config file instead of also the SSH
                             connections and maybe other things.''')
+    return parser
+
+def main(arguments):
+    parser = populate_parser()
     args = parser.parse_args(arguments)
 
     # Subcommand logic here

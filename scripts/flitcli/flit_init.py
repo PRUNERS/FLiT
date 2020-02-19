@@ -93,24 +93,28 @@ import flit_update
 
 brief_description = 'Initializes a flit test directory for use'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description='''
             Initializes a flit test directory for use.  It will initialize
             the directory by copying the default configuration file into
             the given directory.  If a configuration file already exists,
             this command does nothing.  The config file is called
             flit-config.toml.
-            ''',
-        )
+            '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
     parser.add_argument('--overwrite', action='store_true',
                         help='Overwrite init files if they are already there')
     parser.add_argument('-L', '--litmus-tests', action='store_true',
                         help='Copy over litmus tests too')
+    return parser
+
+def main(arguments):
+    'Main logic here'
+    parser = populate_parser()
     args = parser.parse_args(arguments)
 
     os.makedirs(args.directory, exist_ok=True)

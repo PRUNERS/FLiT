@@ -112,7 +112,7 @@ Delete MAKEFLAGS so that silent mode does not propogate
 ...         _ = conf.write("fixed_link_flags = '-Wfix-link -Whello'\\n")
 ...     _ = shutil.copy('fake_clang34.py', temp_dir)
 ...     _ = subp.check_output(['make', '--always-make', 'Makefile',
-...                            '-C', temp_dir])  
+...                            '-C', temp_dir])
 ...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir,
 ...                                   'VERBOSE=1'])
 ...     make_out = make_out.decode('utf8').splitlines()
