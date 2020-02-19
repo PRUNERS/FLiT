@@ -11,6 +11,12 @@ def is_position_action(action):
 def is_subparser_action(action):
     return isinstance(action, argparse._SubParsersAction)
 
+_p = argparse.ArgumentParser()
+_action_map = _p._registries['action']
+_name_map = {v: k for k, v in _action_map.items()}
+del _p
+del _action_map
+
 class ActionInspector:
     '''
     All Actions have:
@@ -33,21 +39,10 @@ class ActionInspector:
     - parser_class
     '''
 
-    NAME_MAP = {
-        argparse._StoreAction : 'store',
-        argparse._StoreConstAction : 'store_const',
-        argparse._StoreTrueAction : 'store_true',
-        argparse._StoreFalseAction : 'store_false',
-        argparse._AppendAction : 'append',
-        argparse._AppendConstAction : 'append_const',
-        argparse._CountAction : 'count',
-        argparse._HelpAction : 'help',
-        argparse._VersionAction : 'version',
-        argparse._SubParsersAction : 'parsers',
-        argparse._ExtendAction : 'extend',
-        }
+    NAME_MAP = _name_map
 
     def __init__(self, action):
+
         if action.__class__ in self.NAME_MAP:
             self.action_type = self.NAME_MAP[action.__class__]
         else:
@@ -95,9 +90,9 @@ class ParserInspector:
                        self.subparser_actions
 
         self.option_strings = sum(
-            [a.option_strings for a in self.option_actions], start=[])
+            [a.option_strings for a in self.option_actions], [])
         self.subparser_choices = sum(
-            [list(a.choices) for a in self.subparser_actions], start=[])
+            [list(a.choices) for a in self.subparser_actions], [])
 
 class ArgParseTestBase(unittest.TestCase, metaclass=abc.ABCMeta):
 

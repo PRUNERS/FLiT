@@ -165,8 +165,7 @@ def populate_parser(parser=None, subcommands=None, recursive=False):
         subparsers = parser.add_subparsers(
             title='Subcommands',
             dest='subcommand',
-            metavar='subcommand',
-            required=True)
+            metavar='subcommand')
         for subcommand in subcommands:
             subparser = subparsers.add_parser(
                 subcommand.name, help=subcommand.brief_description,
@@ -212,8 +211,7 @@ def create_help_subcommand(subcommands):
         subparsers = parser.add_subparsers(
             title='Subcommands',
             dest='help_subcommand',
-            metavar='subcommand',
-            required=False)
+            metavar='subcommand')
         for subcommand in subcommand_map.values():
             subparsers.add_parser(subcommand.name,
                                   help=subcommand.brief_description)
