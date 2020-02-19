@@ -201,6 +201,7 @@ def create_help_subcommand(subcommands):
     help_description = 'display help for a specific subcommand'
 
     def help_populate_parser(parser=None):
+        'populate_parser() for the help subcommand'
         if parser is None:
             parser = argparse.ArgumentParser()
         parser.description = help_description
@@ -209,12 +210,13 @@ def create_help_subcommand(subcommands):
             dest='help_subcommand',
             metavar='subcommand',
             required=False)
-        for subcommand in subcommands:
+        for subcommand in subcommand_map.values():
             subparsers.add_parser(subcommand.name,
                                   help=subcommand.brief_description)
         return parser
 
     def help_main(arguments):
+        'main() for the help subcommand'
         parser = help_populate_parser(argparse.ArgumentParser())
         args = parser.parse_args(arguments)
         if args.help_subcommand:

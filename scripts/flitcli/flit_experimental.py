@@ -108,6 +108,7 @@ def populate_parser(parser=None, subcommands=None):
 def main(arguments):
     'Main logic here'
     subcommands = flit.load_subcommands(experimental_dir)
+    subcommands.append(flit.create_help_subcommand(subcommands))
     parser = populate_parser(subcommands=subcommands)
     return flit._main_impl(
         arguments,

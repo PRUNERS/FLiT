@@ -23,7 +23,7 @@ _flit__sqlite_files()
 _flit_help()
 {
   local cur available_subcommands
-  available_subcommands="bisect init make update import"
+  available_subcommands="-h --help bisect experimental init make update import"
   cur="${COMP_WORDS[COMP_CWORD]}"
   COMPREPLY=( $(compgen -W "${available_subcommands}" -- ${cur}) )
 }
@@ -229,7 +229,7 @@ _flit_experimental()
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   subcommand="${COMP_WORDS[2]}"
-  available_subcommands="--help --version help ninja"
+  available_subcommands="-h --help -v --version help ninja"
 
   # subcommand completion
   if [ ${COMP_CWORD} -eq 2 ]; then
