@@ -93,6 +93,7 @@ This module provides the following things:
 from contextlib import contextmanager
 
 import os
+import sys
 
 _harness_dir = os.path.dirname(os.path.realpath(__file__))
 _flit_dir = os.path.dirname(_harness_dir)
@@ -175,6 +176,22 @@ def touch(filename):
     '''
     from pathlib import Path
     Path(filename).touch()
+
+def unittest_main():
+    'Calls unittest.main(), only printing if the tests failed'
+    from io import StringIO
+    import unittest
+    captured = StringIO()
+    old_stderr = sys.stderr
+    try:
+        sys.stderr = captured
+        result = unittest.main(exit=False)
+    finally:
+        sys.stderr = old_stderr
+    if not result.result.wasSuccessful():
+        print(captured.getvalue())
+        return 1
+    return 0
 
 flit = _path_import(_script_dir, 'flit')
 config = _path_import(_script_dir, 'flitconfig')
