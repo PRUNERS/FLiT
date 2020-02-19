@@ -112,9 +112,10 @@ def populate_parser(parser=None):
                         help='Copy over litmus tests too')
     return parser
 
-def main(arguments):
+def main(arguments, prog=None):
     'Main logic here'
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     os.makedirs(args.directory, exist_ok=True)

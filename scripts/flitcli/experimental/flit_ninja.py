@@ -664,9 +664,10 @@ class NinjaWriter:
         n.newline()
         n.build('run', 'phony', [x + comparison_suffix for x in results_files])
 
-def main(arguments):
+def main(arguments, prog=None):
     'Main logic here'
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
     arguments = [x for x in arguments if x not in ('-q', '--quiet')]
 

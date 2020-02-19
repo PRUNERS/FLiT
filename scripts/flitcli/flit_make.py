@@ -131,9 +131,10 @@ def populate_parser(parser=None):
                             ''')
     return parser
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     'Main logic here'
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     check_call_kwargs = dict()

@@ -24,7 +24,7 @@ class TestArgparse_Flit(arginspect.ArgParseTestBase):
     def get_parser(self):
         subcommands = th.flit.load_subcommands(th.config.script_dir)
         subcommands.append(th.flit.create_help_subcommand(subcommands))
-        return th.flit.populate_parser(subcommands=subcommands)
+        return th.flit.populate_parser(subcommands=subcommands, recursive=True)
 
     def test_empty_available_options(self):
         self.assertEmptyAvailableOptions(self.get_parser())

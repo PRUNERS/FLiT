@@ -138,14 +138,16 @@ def load_subcommands(directory):
 
     return subcommands
 
-def populate_parser(parser=None, subcommands=None):
+def populate_parser(parser=None, subcommands=None, recursive=False):
     '''
     Populate and return the ArgumentParser.  If not given, a new one is made.
     All arguments are optional.
 
-    @param subcommands (list(Subcommand)): list of subcommands (default=None)
     @param parser (argparse.ArgumentParser): parser to populate or None to
         generate a new one. (default=None)
+    @param subcommands (list(Subcommand)): list of subcommands (default=None)
+    @param recursive (bool): True means to add subcommand parsing beyond
+        the top-level
     '''
     if parser is None:
         parser = argparse.ArgumentParser()
@@ -167,12 +169,14 @@ def populate_parser(parser=None, subcommands=None):
             required=True)
         for subcommand in subcommands:
             subparser = subparsers.add_parser(
-                subcommand.name, help=subcommand.brief_description)
-            subcommand.populate_parser(subparser)
+                subcommand.name, help=subcommand.brief_description,
+                add_help=recursive)
+            if recursive:
+                subcommand.populate_parser(subparser)
     return parser
 
 def main(arguments, module_dir=conf.script_dir, outstream=None,
-         errstream=None):
+         errstream=None, prog=None):
     '''
     Main logic here.
 
@@ -181,7 +185,7 @@ def main(arguments, module_dir=conf.script_dir, outstream=None,
     would go to the console and put it into a StringStream or maybe a file.
     '''
     if outstream is None and errstream is None:
-        return _main_impl(arguments, module_dir)
+        return _main_impl(arguments, module_dir, prog=prog)
     oldout = sys.stdout
     olderr = sys.stderr
     try:
@@ -189,7 +193,7 @@ def main(arguments, module_dir=conf.script_dir, outstream=None,
             sys.stdout = outstream
         if errstream is not None:
             sys.stderr = errstream
-        return _main_impl(arguments, module_dir)
+        return _main_impl(arguments, module_dir, prog=prog)
     finally:
         sys.stdout = oldout
         sys.stderr = olderr
@@ -215,31 +219,34 @@ def create_help_subcommand(subcommands):
                                   help=subcommand.brief_description)
         return parser
 
-    def help_main(arguments):
+    help_parser = help_populate_parser()
+
+    def help_main(arguments, prog=sys.argv[0]):
         'main() for the help subcommand'
-        parser = help_populate_parser(argparse.ArgumentParser())
-        args = parser.parse_args(arguments)
+        help_parser.prog = prog
+        args = help_parser.parse_args(arguments)
         if args.help_subcommand:
             sub = subcommand_map[args.help_subcommand].populate_parser()
             sub.print_help()
         else:
-            parser.print_help()
+            help_parser.print_help()
         return 0
 
     return Subcommand('help', help_description, help_main,
                       help_populate_parser)
 
-def _main_impl(arguments, module_dir):
+def _main_impl(arguments, module_dir, prog=None):
     'Implementation of main'
     subcommands = load_subcommands(module_dir)
     subcommands.append(create_help_subcommand(subcommands))
 
     parser = populate_parser(subcommands=subcommands)
-    args = parser.parse_args(arguments)
+    if prog: parser.prog = prog
+    args, remaining = parser.parse_known_args(arguments)
 
     subcommand_map = {sub.name: sub for sub in subcommands}
     subcommand = subcommand_map[args.subcommand]
-    return subcommand.main(arguments[1:])
+    return subcommand.main(remaining, prog=parser.prog + ' ' + args.subcommand)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

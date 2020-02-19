@@ -1238,11 +1238,12 @@ def populate_parser(parser=None):
                             ''')
     return parser
 
-def parse_args(arguments):
+def parse_args(arguments, prog=None):
     '''
     Builds a parser, parses the arguments, and returns the parsed arguments.
     '''
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Split the compilation into separate components
@@ -1663,7 +1664,7 @@ def compile_trouble(directory, compiler, optl, switches, compiler_type,
     if delete:
         shutil.rmtree(trouble_path)
 
-def run_bisect(arguments):
+def run_bisect(arguments, prog=None):
     '''
     The actual function for running the bisect command-line tool.
 
@@ -1680,7 +1681,7 @@ def run_bisect(arguments):
     return value for sources and symbols are both None.  If the search fails in
     the symbols part, then only the symbols return value is None.
     '''
-    args = parse_args(arguments)
+    args = parse_args(arguments, prog=prog)
 
     if args.compiler_type == 'auto':
         projconf = util.load_projconf(args.directory)
@@ -1983,7 +1984,7 @@ def auto_bisect_worker(arg_queue, result_queue):
         result_queue.put((row, -1, None, None, None, 1))
         raise
 
-def parallel_auto_bisect(arguments, prog=sys.argv[0]):
+def parallel_auto_bisect(arguments, prog=None):
     '''
     Runs bisect in parallel under the auto mode.  This is only applicable if
     the --auto-sqlite-run option has been specified in the arguments.
@@ -2026,7 +2027,8 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     # prepend a compilation and test case so that if the user provided
     # some, then an error will occur.
     args = parse_args(
-        ['--precision', 'double', 'compilation', 'testcase'] + arguments)
+        ['--precision', 'double', 'compilation', 'testcase'] + arguments,
+        prog=prog)
 
     sqlitefile = args.auto_sqlite_run
     projconf = util.load_projconf(args.directory)
@@ -2159,7 +2161,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     return return_tot
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     '''
     A wrapper around the bisect program.  This checks for the --auto-sqlite-run
     stuff and runs the run_bisect multiple times if so.

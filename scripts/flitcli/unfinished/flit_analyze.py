@@ -108,8 +108,9 @@ def populate_parser(parser=None):
                             ''')
     return parser
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Subcommand logic here

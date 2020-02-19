@@ -105,15 +105,17 @@ def populate_parser(parser=None, subcommands=None):
         '''
     return parser
 
-def main(arguments):
+def main(arguments, prog=None):
     'Main logic here'
     subcommands = flit.load_subcommands(experimental_dir)
     subcommands.append(flit.create_help_subcommand(subcommands))
     parser = populate_parser(subcommands=subcommands)
-    return flit._main_impl(
-        arguments,
-        module_dir=os.path.join(conf.script_dir, 'experimental'),
-        description=description)
+    if prog: parser.prog = prog
+    args, remaining = parser.parse_known_args(arguments)
+
+    subcommand_map = {sub.name: sub for sub in subcommands}
+    subcommand = subcommand_map[args.subcommand]
+    return subcommand.main(remaining, prog=parser.prog + ' ' + args.subcommand)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

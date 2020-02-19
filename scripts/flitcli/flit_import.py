@@ -168,9 +168,10 @@ def get_dbfile_from_toml(tomlfile):
             'Only sqlite database supported'
     return projconf['database']['filepath']
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     'Main logic here'
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     if args.dbfile is None:

@@ -371,9 +371,10 @@ def create_makefile(args, makefile='Makefile'):
     util.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
                          makefile, replacements, overwrite=True)
 
-def main(arguments):
+def main(arguments, prog=None):
     'Main logic here'
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     makefile = os.path.join(args.directory, 'Makefile')

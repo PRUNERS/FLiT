@@ -108,8 +108,9 @@ def populate_parser(parser=None):
                             connections and maybe other things.''')
     return parser
 
-def main(arguments):
+def main(arguments, prog=None):
     parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Subcommand logic here
