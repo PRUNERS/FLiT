@@ -1,137 +1,41 @@
 #!/usr/bin/env python3
 
 import os
-import subprocess as subp
 import sys
 import unittest
 
-before_path = sys.path[:]
-sys.path.append('../..')
+import util.arginspect as arginspect
+from util.completion import get_completion
+
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+prev_path = sys.path
+sys.path.append(os.path.join(SCRIPT_DIR, '..', '..'))
 import test_harness as th
-sys.path = before_path
+sys.path = prev_path
 
-def _completion_vars(program, command):
-    '''
-    Returns a dictionary of bash varibles to trigger bash-completion.
+class TestArgparse_Flit(arginspect.ArgParseTestBase):
+    FLIT_PROG = 'flit'
+    FLIT_BASH_COMPLETION = os.path.join(
+        th._flit_dir, 'scripts', 'bash-completion', 'flit')
 
-    >>> vals = _completion_vars('foo', 'bar --he')
-    >>> sorted(vals.keys())
-    ['COMP_CWORD', 'COMP_LINE', 'COMP_POINT', 'COMP_WORDS']
-    >>> [vals[x] for x in sorted(vals.keys())]
-    [2, 'foo bar --he', 12, 'foo bar --he']
+    def bashcomplete(self, args):
+        return get_completion(self.FLIT_BASH_COMPLETION, self.FLIT_PROG, args)
 
-    >>> vals = _completion_vars('foo', 'bar --help ')
-    >>> sorted(vals.keys())
-    ['COMP_CWORD', 'COMP_LINE', 'COMP_POINT', 'COMP_WORDS']
-    >>> [vals[x] for x in sorted(vals.keys())]
-    [3, 'foo bar --help ', 15, 'foo bar --help ']
-    '''
-    line = program + ' ' + command
-    words = line.rstrip()
-    args = command.split()
-    cword = len(args)
-    point = len(line)
-    if line[-1] == ' ':
-        words += ' '
-        cword += 1
-    return {
-        'COMP_LINE': line,
-        'COMP_WORDS': words,
-        'COMP_CWORD': cword,
-        'COMP_POINT': point,
-        }
+    def get_parser(self):
+        subcommands = th.flit.load_subcommands(th.config.script_dir)
+        subcommands.append(th.flit.create_help_subcommand(subcommands))
+        return th.flit.populate_parser(subcommands=subcommands)
 
-def get_completion(completion_file, program, command):
-    '''
-    Returns the potential completions from a bash-completion
+    def test_empty_available_options(self):
+        self.assertEmptyAvailableOptions(self.get_parser())
 
-    @param completion_file (str): file containing bash-completion definition
-    @param program (str): program being invoked and completed (e.g., 'cp')
-    @param command (str): rest of the command-line args (e.g., '-r ./')
-    @return (list(str)): All potential completions if the user were to have
-        entered program + ' ' + command into an interactive terminal and hit
-        tab twice.
-    '''
-    replacements = _completion_vars(program, command)
-    replacements['completion_file'] = completion_file
-    replacements['program'] = program
-    full_cmdline = (
-        r'source {completion_file};'
-        'COMP_LINE="{COMP_LINE}"'
-        ' COMP_WORDS=({COMP_WORDS})'
-        ' COMP_CWORD={COMP_CWORD}'
-        ' COMP_POINT={COMP_POINT};'
-        '$(complete -p {program} |'
-        ' sed "s/.*-F \\([^ ]*\\) .*/\\1/") &&'
-        ' for elem in "${{COMPREPLY[@]}}"; do'
-        '   echo "${{elem}}";'
-        ' done'.format(**replacements))
-    out = subp.check_output(['bash', '-i', '-c', full_cmdline])
-    return out.decode('utf-8').splitlines()
+    def test_empty_available_options_for_subparsers(self):
+        self.assertEachSubparserEmptyAvailableOptions(self.get_parser())
 
-class TestFlitBaseCompletion(unittest.TestCase):
-    def assertEqualCompletion(self, args, expected):
-        'Asserts that the expected completions are obtained'
-        completion_file = os.path.join(th.config.bash_completion_dir, 'flit')
-        actual = get_completion(completion_file, 'flit', args)
-        self.assertEqual(sorted(actual), sorted(expected))
-
-    def test_no_args(self):
-        self.assertEqualCompletion('', [
-            '-h', '--help',
-            '-v', '--version',
-            'help',
-            'bisect',
-            'experimental',
-            'import',
-            'init',
-            'make',
-            'update',
-            ])
-
-    def test_dash(self):
-        self.assertEqualCompletion('-', ['-h', '--help', '-v', '--version'])
-
-    def test_dash_help(self):
-        self.assertEqualCompletion('-h', ['-h'])
-        self.assertEqualCompletion('-h ', [])
-        self.assertEqualCompletion('--help', ['--help'])
-        self.assertEqualCompletion('--help ', [])
-
-    def test_dash_version(self):
-        self.assertEqualCompletion('-v', ['-v'])
-        self.assertEqualCompletion('-v ', [])
-        self.assertEqualCompletion('--version', ['--version'])
-        self.assertEqualCompletion('--version ', [])
-
-    def test_nonmatching(self):
-        self.assertEqualCompletion('-a', [])
-        self.assertEqualCompletion('a', [])
-        self.assertEqualCompletion('c', [])
-        self.assertEqualCompletion('bisecj', [])
-
-    def test_matching_subcommand(self):
-        self.assertEqualCompletion('h', ['help'])
-        self.assertEqualCompletion('bi', ['bisect'])
-        self.assertEqualCompletion('exp', ['experimental'])
-        self.assertEqualCompletion('i', ['import', 'init'])
-        self.assertEqualCompletion('m', ['make'])
-        self.assertEqualCompletion('up', ['update'])
-
-def main():
-    'Calls unittest.main(), only printing if the tests failed'
-    from io import StringIO
-    captured = StringIO()
-    old_stderr = sys.stderr
-    try:
-        sys.stderr = captured
-        result = unittest.main(exit=False)
-    finally:
-        sys.stderr = old_stderr
-    if not result.result.wasSuccessful():
-        print(captured.getvalue())
-        return 1
-    return 0
+    def test_no_positional_args(self):
+        inspector = arginspect.ParserInspector(self.get_parser())
+        # test that there are no positional arguments
+        self.assertEqual(inspector.position_actions, [])
 
 if __name__ == '__main__':
-    sys.exit(main())
+    unittest.main()
