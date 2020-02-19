@@ -160,7 +160,7 @@ def populate_parser(parser=None, subcommands=None, recursive=False):
             '''
     parser.add_argument('-v', '--version', action='version',
                         version='flit version ' + conf.version,
-                        help='print the version and exit')
+                        help='Print version and exit')
     if subcommands:
         subparsers = parser.add_subparsers(
             title='Subcommands',

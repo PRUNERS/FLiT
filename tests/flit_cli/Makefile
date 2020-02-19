@@ -23,11 +23,11 @@ help:
 .PHONY: build__% check__% clean__%
 
 build__%:
-	@$(MAKE) build --directory $*
+	@$(MAKE) --no-print-directory build --directory $*
 
 check__%:
-	@$(MAKE) check --directory $*
+	@$(MAKE) --no-print-directory check --directory $*
 
 clean__%:
-	@$(MAKE) clean --directory $*
+	@$(MAKE) --no-print-directory clean --directory $*
 
