@@ -363,7 +363,7 @@ public:
   virtual long double compare(long double ground_truth,
                               long double test_results) const {
     // absolute error
-    return std::abs(test_results - ground_truth);
+    return flit::abs_compare(ground_truth, test_results);
   }
 
   /** There is no good default implementation comparing two strings */

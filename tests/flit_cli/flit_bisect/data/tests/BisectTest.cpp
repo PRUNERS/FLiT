@@ -115,7 +115,7 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
   virtual long double compare(long double ground_truth,
                               long double test_results) const override {
-    return std::abs(test_results - ground_truth);
+    return flit::abs_compare(ground_truth, test_results);
   }
 
 protected:
