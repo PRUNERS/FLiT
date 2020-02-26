@@ -88,9 +88,11 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <sstream>
 #include <vector>
 
+#include <cmath>
 #include <cstdio>
 #include <cstring>  // for memcpy()
 
@@ -275,6 +277,141 @@ TH_TEST(tst_as_int_128bit) {
 }
 
 } // end of namespace tst_as_int
+
+namespace tst_abs_compare {
+
+template <typename T>
+bool equal_with_nan_inf(T a, T b) {
+  if (std::fpclassify(a) == std::fpclassify(b)) {
+    switch (std::fpclassify(a)) {
+      case FP_INFINITE:
+      case FP_NAN:
+        return std::signbit(a) == std::signbit(b);
+
+      case FP_NORMAL:
+      case FP_SUBNORMAL:
+      case FP_ZERO:
+      default:
+        return a == b;
+    }
+  }
+  return false;
+}
+
+template <typename T>
+void tst_equal_with_nan_inf_impl() {
+  using lim = std::numeric_limits<T>;
+
+  static_assert(lim::has_quiet_NaN);
+  static_assert(lim::has_infinity);
+
+  auto eq = equal_with_nan_inf<T>;
+  T my_nan = lim::quiet_NaN();
+  T my_inf = lim::infinity();
+  T normal = -3.2;
+  T zero = 0.0;
+
+  TH_VERIFY( eq( my_nan,  my_nan));
+  TH_VERIFY(!eq( my_nan, -my_nan));
+  TH_VERIFY(!eq( my_nan,  my_inf));
+  TH_VERIFY(!eq( my_nan, -my_inf));
+  TH_VERIFY(!eq( my_nan,  normal));
+  TH_VERIFY(!eq( my_nan, -normal));
+
+  TH_VERIFY(!eq(-my_nan,  my_nan));
+  TH_VERIFY( eq(-my_nan, -my_nan));
+  TH_VERIFY(!eq(-my_nan,  my_inf));
+  TH_VERIFY(!eq(-my_nan, -my_inf));
+  TH_VERIFY(!eq(-my_nan,  normal));
+  TH_VERIFY(!eq(-my_nan, -normal));
+
+  TH_VERIFY(!eq( my_inf,  my_nan));
+  TH_VERIFY(!eq( my_inf, -my_nan));
+  TH_VERIFY( eq( my_inf,  my_inf));
+  TH_VERIFY(!eq( my_inf, -my_inf));
+  TH_VERIFY(!eq( my_inf,  normal));
+  TH_VERIFY(!eq( my_inf, -normal));
+
+  TH_VERIFY(!eq(-my_inf,  my_nan));
+  TH_VERIFY(!eq(-my_inf, -my_nan));
+  TH_VERIFY(!eq(-my_inf,  my_inf));
+  TH_VERIFY( eq(-my_inf, -my_inf));
+  TH_VERIFY(!eq(-my_inf,  normal));
+  TH_VERIFY(!eq(-my_inf, -normal));
+
+  TH_VERIFY(!eq( normal,  my_nan));
+  TH_VERIFY(!eq( normal, -my_nan));
+  TH_VERIFY(!eq( normal,  my_inf));
+  TH_VERIFY(!eq( normal, -my_inf));
+  TH_VERIFY( eq( normal,  normal));
+  TH_VERIFY(!eq( normal, -normal));
+
+  TH_VERIFY(!eq(-normal,  my_nan));
+  TH_VERIFY(!eq(-normal, -my_nan));
+  TH_VERIFY(!eq(-normal,  my_inf));
+  TH_VERIFY(!eq(-normal, -my_inf));
+  TH_VERIFY(!eq(-normal,  normal));
+  TH_VERIFY( eq(-normal, -normal));
+}
+
+TH_TEST(tst_equal_with_nan_inf) {
+  tst_equal_with_nan_inf_impl<float>();
+  tst_equal_with_nan_inf_impl<double>();
+  tst_equal_with_nan_inf_impl<long double>();
+}
+
+template<typename T>
+void tst_abs_compare_impl() {
+  using lim = std::numeric_limits<T>;
+  static_assert(lim::has_quiet_NaN);
+  static_assert(lim::has_infinity);
+  T my_nan = lim::quiet_NaN();
+  T my_inf = lim::infinity();
+  T normal = -3.2;
+  T zero = 0.0;
+
+  auto eq = equal_with_nan_inf<T>;
+  auto comp = flit::abs_compare<T>;
+
+  // we have 25 cases
+  TH_VERIFY(eq(comp( my_nan,  my_nan),   zero ));
+  TH_VERIFY(eq(comp( my_nan, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp( my_nan,  my_inf),  my_inf));
+  TH_VERIFY(eq(comp( my_nan, -my_inf),  my_inf));
+  TH_VERIFY(eq(comp( my_nan,  normal),  my_nan));
+
+  TH_VERIFY(eq(comp(-my_nan,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp(-my_nan, -my_nan),   zero ));
+  TH_VERIFY(eq(comp(-my_nan,  my_inf),  my_inf));
+  TH_VERIFY(eq(comp(-my_nan, -my_inf),  my_inf));
+  TH_VERIFY(eq(comp(-my_nan,  normal),  my_nan));
+
+  TH_VERIFY(eq(comp( my_inf,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp( my_inf, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp( my_inf,  my_inf),   zero ));
+  TH_VERIFY(eq(comp( my_inf, -my_inf),  my_inf));
+  TH_VERIFY(eq(comp( my_inf,  normal),  my_inf));
+
+  TH_VERIFY(eq(comp(-my_inf,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp(-my_inf, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp(-my_inf,  my_inf),  my_inf));
+  TH_VERIFY(eq(comp(-my_inf, -my_inf),   zero ));
+  TH_VERIFY(eq(comp(-my_inf,  normal),  my_inf));
+
+  TH_VERIFY(eq(comp( normal,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp( normal, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp( normal,  my_inf),  my_inf));
+  TH_VERIFY(eq(comp( normal, -my_inf),  my_inf));
+  TH_VERIFY(eq(comp( normal,  normal),   zero ));
+}
+
+TH_TEST(tst_abs_compare) {
+  tst_abs_compare_impl<float>();
+  //tst_abs_compare_impl<double>();
+  //tst_abs_compare_impl<long double>();
+}
+
+} // end of namespace tst_abs_compare
 
 TH_TEST(tst_l2norm) {
   std::vector<float> empty;

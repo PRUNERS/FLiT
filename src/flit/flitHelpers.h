@@ -254,6 +254,22 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
+/**
+ * Default comparison used by FLiT.  Similar to
+ *
+ *   abs(actual - expected)
+ *
+ * The main difference is
+ * - If actual is the exact same as expected, then return 0.0.
+ *   That includes NaN, -NaN, inf, and -inf
+ * - If expected is NaN and actual is inf, return inf
+ */
+template <typename T>
+T abs_compare(T expected, T actual) {
+  // TODO: implement all other cases
+  return std::abs(actual - expected);
+}
+
 template <typename T>
 long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
   static_assert(std::is_floating_point<T>::value,
@@ -261,7 +277,7 @@ long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
   long double score = 0.0L;
   int len = std::min(v1.size(), v2.size());
   for (int i = 0; i < len; i++) {
-    T diff = v1[i] - v2[i];
+    T diff = abs_compare(v1[i], v2[i]);
     score += diff * diff;
   }
   // remaining elements
