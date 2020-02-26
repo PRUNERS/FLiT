@@ -284,8 +284,8 @@ template <typename T>
 void tst_equal_with_nan_inf_impl() {
   using lim = std::numeric_limits<T>;
 
-  static_assert(lim::has_quiet_NaN);
-  static_assert(lim::has_infinity);
+  static_assert(lim::has_quiet_NaN, "Type T does not have quiet NaNs");
+  static_assert(lim::has_infinity,  "Type T does not have infinity");
 
   auto &eq = flit::equal_with_nan_inf<T>;
   T my_nan = lim::quiet_NaN();
@@ -345,8 +345,8 @@ TH_TEST(tst_equal_with_nan_inf) {
 template<typename T>
 void tst_abs_compare_impl() {
   using lim = std::numeric_limits<T>;
-  static_assert(lim::has_quiet_NaN);
-  static_assert(lim::has_infinity);
+  static_assert(lim::has_quiet_NaN, "Type T does not have quiet NaNs");
+  static_assert(lim::has_infinity,  "Type T does not have infinity");
   T my_nan = lim::quiet_NaN();
   T my_inf = lim::infinity();
   T normal = -3.2;
