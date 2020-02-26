@@ -289,9 +289,6 @@ T abs_compare(T expected, T actual) {
   if (equal_with_nan_inf(expected, actual)) {
     return T(0.0);
   }
-  if (std::isnan(expected) && std::isinf(actual)) {
-    return std::numeric_limits<T>::infinity();
-  }
   return std::abs(actual - expected);
 }
 

@@ -78,35 +78,15 @@ like to override that behavior.
 The `flit::abs_compare()` function used as the default implementation for
 `compare(long double ground_truth, long double test_value)` does more than just
 `std::abs(test_value - ground_truth)`.  It handles `NaN` and `inf` in a special
-way according to the following table:
+way.  The table below has only the instances where the behavior of
+`flit::abs_compare()` is different from `std::abs()`:
 
-| ground truth| test value | Return | Why?                          |
-|-------------|------------|--------|-------------------------------|
-|  NaN        |  NaN       |  0.0   | Match                         |
-|  NaN        | -NaN       |  NaN   | Do not match                  |
-|  NaN        |  inf       |  inf   | To be different than `-NaN`   |
-|  NaN        | -inf       |  inf   | To be different than `-NaN`   |
-|  NaN        |  normal    |  NaN   | Only thing that makes sense   |
-| -NaN        |  NaN       |  NaN   | Do not match                  |
-| -NaN        | -NaN       |  0.0   | Match                         |
-| -NaN        |  inf       |  inf   | To be different than `NaN`    |
-| -NaN        | -inf       |  inf   | To be different than `NaN`    |
-| -NaN        |  normal    |  NaN   | Only thing that makes sense   |
-|  inf        |  NaN       |  NaN   | To be different than `-inf`   |
-|  inf        | -NaN       |  NaN   | To be different than `-inf`   |
-|  inf        |  inf       |  0.0   | Match                         |
-|  inf        | -inf       |  inf   | Do not match                  |
-|  inf        |  normal    |  inf   | Only thing that makes sense   |
-| -inf        |  NaN       |  NaN   | To be different than `inf`    |
-| -inf        | -NaN       |  NaN   | To be different than `inf`    |
-| -inf        |  inf       |  inf   | Do not match                  |
-| -inf        | -inf       |  0.0   | Match                         |
-| -inf        |  normal    |  inf   | Only thing that makes sense   |
-|  normal     |  NaN       |  NaN   | Regular `std::abs()` behavior |
-|  normal     | -NaN       |  NaN   | Regular `std::abs()` behavior |
-|  normal     |  inf       |  inf   | Regular `std::abs()` behavior |
-|  normal     | -inf       |  inf   | Regular `std::abs()` behavior |
-|  normal     |  normal    |  abs   | Regular `std::abs()` behavior |
+| ground truth| test value | Return |
+|-------------|------------|--------|
+|  NaN        |  NaN       |  0.0   |
+| -NaN        | -NaN       |  0.0   |
+|  inf        |  inf       |  0.0   |
+| -inf        | -inf       |  0.0   |
 
 The differences from using the regular `std::abs()` is that
 
@@ -114,10 +94,6 @@ The differences from using the regular `std::abs()` is that
   then return `0.0`.  If the value from the ground truth is `NaN`, then we
   return `0.0` if the test value is also `NaN` to signify that we got the
   expected value.
-* If the ground truth is `NaN` and the test value is `inf`, then return `inf`
-  (ignoring sign).  This is to signify that we got an unexpected value of `inf`
-  instead of `NaN`, since a test value of `-NaN` would result in an output of
-  `NaN`.
 
 The `flit::l2norm()` function uses the `flit::abs_compare()` function to take
 the difference element-wise between the two vectors before doing summation.
