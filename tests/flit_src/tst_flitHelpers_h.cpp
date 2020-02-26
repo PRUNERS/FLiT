@@ -281,31 +281,13 @@ TH_TEST(tst_as_int_128bit) {
 namespace tst_abs_compare {
 
 template <typename T>
-bool equal_with_nan_inf(T a, T b) {
-  if (std::fpclassify(a) == std::fpclassify(b)) {
-    switch (std::fpclassify(a)) {
-      case FP_INFINITE:
-      case FP_NAN:
-        return std::signbit(a) == std::signbit(b);
-
-      case FP_NORMAL:
-      case FP_SUBNORMAL:
-      case FP_ZERO:
-      default:
-        return a == b;
-    }
-  }
-  return false;
-}
-
-template <typename T>
 void tst_equal_with_nan_inf_impl() {
   using lim = std::numeric_limits<T>;
 
   static_assert(lim::has_quiet_NaN);
   static_assert(lim::has_infinity);
 
-  auto eq = equal_with_nan_inf<T>;
+  auto &eq = flit::equal_with_nan_inf<T>;
   T my_nan = lim::quiet_NaN();
   T my_inf = lim::infinity();
   T normal = -3.2;
@@ -370,8 +352,8 @@ void tst_abs_compare_impl() {
   T normal = -3.2;
   T zero = 0.0;
 
-  auto eq = equal_with_nan_inf<T>;
-  auto comp = flit::abs_compare<T>;
+  auto &eq = flit::equal_with_nan_inf<T>;
+  auto &comp = flit::abs_compare<T>;
 
   // we have 25 cases
   TH_VERIFY(eq(comp( my_nan,  my_nan),   zero ));

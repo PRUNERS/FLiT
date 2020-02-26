@@ -93,6 +93,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <mutex>
 #include <ostream>
 #include <random>
@@ -102,6 +103,7 @@
 #include <vector>
 
 #include <cfloat>
+#include <cmath>
 
 #ifndef FLIT_UNUSED
 #define FLIT_UNUSED(x) (void)x
@@ -254,6 +256,24 @@ as_int(long double val) {
   return temp & (~zero >> 48);
 }
 
+template <typename T>
+bool equal_with_nan_inf(T a, T b) {
+  if (std::fpclassify(a) == std::fpclassify(b)) {
+    switch (std::fpclassify(a)) {
+      case FP_INFINITE:
+      case FP_NAN:
+        return std::signbit(a) == std::signbit(b);
+
+      case FP_NORMAL:
+      case FP_SUBNORMAL:
+      case FP_ZERO:
+      default:
+        return a == b;
+    }
+  }
+  return false;
+}
+
 /**
  * Default comparison used by FLiT.  Similar to
  *
@@ -266,7 +286,12 @@ as_int(long double val) {
  */
 template <typename T>
 T abs_compare(T expected, T actual) {
-  // TODO: implement all other cases
+  if (equal_with_nan_inf(expected, actual)) {
+    return T(0.0);
+  }
+  if (std::isnan(expected) && std::isinf(actual)) {
+    return std::numeric_limits<T>::infinity();
+  }
   return std::abs(actual - expected);
 }
 
