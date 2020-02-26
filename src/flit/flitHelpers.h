@@ -282,7 +282,6 @@ bool equal_with_nan_inf(T a, T b) {
  * The main difference is
  * - If actual is the exact same as expected, then return 0.0.
  *   That includes NaN, -NaN, inf, and -inf
- * - If expected is NaN and actual is inf, return inf
  */
 template <typename T>
 T abs_compare(T expected, T actual) {
