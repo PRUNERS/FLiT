@@ -84,49 +84,13 @@
 Tests the use of the compiler-specific flags in flit-config.toml for both the
 compilation under test and for the link step (to use the baseline compilation)
 
->>> import glob
 >>> import os
 >>> import shutil
->>> import subprocess as subp
 >>> from io import StringIO
->>> import flitutil as util
-
->>> class BisectTestError(RuntimeError): pass
-
->>> def bisect_compile(compiler, directory):
-...     'Runs bisect with the given compiler and returns makefile variables'
-...
-...     # create static variable i for how many times this function is called
-...     if not hasattr(bisect_compile, 'i'):
-...         bisect_compile.i = 0  # initialize only once
-...     bisect_compile.i += 1
-...
-...     # Note: we give a bad flag to cause bisect to error out early
-...     #   we just need it to get far enough to create the first makefile
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['bisect', '-C', directory,
-...                                '--precision', 'double',
-...                                compiler + ' -bad-flag', 'EmptyTest'],
-...                                outstream=ostream)
-...         if retval == 0:
-...             raise BisectTestError('Expected bisect to fail\\n' +
-...                                   ostream.getvalue())
-...
-...     # Since each call creates a separate bisect dir, we use our counter
-...     makevars = util.extract_make_vars(
-...         makefile=os.path.join(directory,
-...                               'bisect-{0:02d}'.format(bisect_compile.i),
-...                               'bisect-make-01.mk'),
-...         directory=directory)
-...     return makevars
+>>> from common import bisect_compile, flit_init, flit_update, BisectTestError
 
 >>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         if retval != 0:
-...             raise BisectTestError(
-...                 'Could not initialize (retval={0}):\\n'.format(retval) +
-...                 ostream.getvalue())
+...     _ = flit_init(temp_dir)
 ...     _ = shutil.copy(
 ...         os.path.join('data', 'flit-config-compilerspecificflags.toml'),
 ...         os.path.join(temp_dir, 'flit-config.toml'))
@@ -134,15 +98,11 @@ compilation under test and for the link step (to use the baseline compilation)
 ...     _ = shutil.copy(os.path.join('data', 'fake_gcc9.py'), temp_dir)
 ...     _ = shutil.copy(os.path.join('data', 'fake_clang34.py'), temp_dir)
 ...     _ = shutil.copy(os.path.join('data', 'fake_intel19.py'), temp_dir)
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['update', '-C', temp_dir],
-...                               outstream=ostream)
-...         if retval != 0:
-...             raise BisectTestError('Could not update Makefile\\n' +
-...                                   ostream.getvalue())
+...     flit_update(temp_dir)
 ...
+...     # Note: ./fake_gcc9.py is not in flit-config.toml
 ...     bisect_makevars_gcc4 = bisect_compile('./fake_gcc4.py', temp_dir)
-...     bisect_makevars_gcc9 = bisect_compile('./fake_gcc9.py', temp_dir) # not in flitconfig
+...     bisect_makevars_gcc9 = bisect_compile('./fake_gcc9.py', temp_dir)
 ...     bisect_makevars_clang = bisect_compile('./fake_clang34.py', temp_dir)
 ...     bisect_makevars_intel = bisect_compile('./fake_intel19.py', temp_dir)
 

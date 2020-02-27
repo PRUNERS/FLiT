@@ -89,11 +89,10 @@ The tests are below using doctest
 Let's now make a temporary directory and test that we can successfully compile
 and run FLiT bisect
 
->>> import glob
 >>> import os
 >>> import shutil
->>> import subprocess as subp
 >>> from io import StringIO
+>>> from common import flit_init
 
 let's stub out some functions that actually confer with the compiler.  These
 make the test take way too long and that interaction has already been tested in
@@ -195,9 +194,7 @@ tst_bisect.py.
 Now for the test after we stubbed a single file
 
 >>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         init_out = ostream.getvalue().splitlines()
+...     init_out = flit_init(temp_dir)
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))
