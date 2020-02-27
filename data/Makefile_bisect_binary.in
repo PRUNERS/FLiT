@@ -314,7 +314,7 @@ recursion-target: $(BISECT_TARGET)
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	@$(call color_out,BLUE,  Creating $@)
-	$(GT_CXX) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
+	$(BISECT_LINK) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
 	  $(BISECT_LDFLAGS) $(LDLIBS)
 
 # compile BISECT_GT_OBJ

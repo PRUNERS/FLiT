@@ -1237,6 +1237,37 @@ def populate_parser(parser=None):
                             given compiler is the same as that used by the
                             ground-truth compilation.
                             ''')
+    parser.add_argument('--ldflags',
+                        help='''
+                            Replace the linker flags that would be used by the
+                            linker program (pulled from 'fixed_link_flags' from
+                            flit_config.toml).  If you want to add linker flags
+                            instead of replacing them, use '--add-ldflags'
+                            instead.
+
+                            Note: since flags start with a '-', to not confuse
+                            this argument parser, use the '=' syntax.  For
+                            example: '--ldflags="-Wl,-rpath=/usr
+                            -Wl,-rpath=/usr/lib64"'
+                            ''')
+    parser.add_argument('--add-ldflags', default='',
+                        help='''
+                            Add linker flags on top of the default that would be used.
+
+                            Note: since flags start with a '-', to not confuse
+                            this argument parser, use the '=' syntax.  For
+                            example: '--add-ldflags="-Wl,-rpath=/usr
+                            -Wl,-rpath=/usr/lib64"'
+                            ''')
+    parser.add_argument('--use-linker',
+                        help='''
+                            Specify a different linker to use.  This should
+                            probably be a C++ compiler, like 'g++'.  If this
+                            program is found in 'flit-config.toml', then the
+                            linker flags used will be from the
+                            'fixed_link_flags' specified there, unless
+                            '--ldflags' is also specified.
+                            ''')
     return parser
 
 def parse_args(arguments, prog=None):

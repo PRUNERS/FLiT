@@ -671,18 +671,19 @@ def main(arguments, prog=None):
     args = parser.parse_args(arguments)
     arguments = [x for x in arguments if x not in ('-q', '--quiet')]
 
-    if not args.quiet:
-        if os.path.exists(BUILD_FILENAME):
-            print('Updating', BUILD_FILENAME)
-        else:
-            print('Creating', BUILD_FILENAME)
+    with util.pushd(args.directory):
+        if not args.quiet:
+            if os.path.exists(BUILD_FILENAME):
+                print('Updating', BUILD_FILENAME)
+            else:
+                print('Creating', BUILD_FILENAME)
 
-    with open(BUILD_FILENAME, 'w') as build_file:
-        writer = NinjaWriter(build_file, prog, arguments)
-        writer.load_project_config('flit-config.toml')
-        if os.path.isfile('custom.mk'):
-            writer.load_makefile('custom.mk')
-        writer.write()
+        with open(BUILD_FILENAME, 'w') as build_file:
+            writer = NinjaWriter(build_file, prog, arguments)
+            writer.load_project_config('flit-config.toml')
+            if os.path.isfile('custom.mk'):
+                writer.load_makefile('custom.mk')
+            writer.write()
 
     return 0
 

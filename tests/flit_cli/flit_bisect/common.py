@@ -29,7 +29,8 @@ def flit_update(directory):
             raise BisectTestError('Could not update Makefile\n' +
                                   ostream.getvalue())
 
-def bisect_compile(compiler, directory=None, linker=None, ldflags=None):
+def bisect_compile(compiler, directory=None, linker=None, ldflags=None,
+                   add_ldflags=None):
     '''
     Runs bisect with the given compiler and returns makefile variables
 
@@ -41,6 +42,9 @@ def bisect_compile(compiler, directory=None, linker=None, ldflags=None):
     @param ldflags (str): Linker flags to use
         If None is given, use value from flit-config.toml for the linker
         executable (if given)
+    @param add_ldflags (str): Linker flags to add to the base linker flags
+        (either from the ldflags given or the ones from the baseline compiler)
+        If None is given, no linker flags are added
 
     @return Dictionary of Makefile variables for first bisect Makefile
     '''
@@ -54,12 +58,14 @@ def bisect_compile(compiler, directory=None, linker=None, ldflags=None):
     #   we just need it to get far enough to create the first makefile
     args = ['bisect']
 
-    if directory:
+    if directory is not None:
         args.extend(['-C', directory])
-    if linker:
+    if linker is not None:
         args.extend(['--use-linker', linker])
-    if ldflags:
-        args.extend(['--ldflags', ldflags])
+    if ldflags is not None:
+        args.extend(['--ldflags={}'.format(ldflags)])
+    if add_ldflags is not None:
+        args.extend(['--add-ldflags={}'.format(add_ldflags)])
 
     args.extend([
         '--precision', 'double',
@@ -74,10 +80,11 @@ def bisect_compile(compiler, directory=None, linker=None, ldflags=None):
                                   ostream.getvalue())
 
     # Since each call creates a separate bisect dir, we use our counter
+    makepath = os.path.join(directory,
+                            'bisect-{0:02d}'.format(bisect_compile.i),
+                            'bisect-make-01.mk')
     makevars = th.util.extract_make_vars(
-        makefile=os.path.join(directory,
-                              'bisect-{0:02d}'.format(bisect_compile.i),
-                              'bisect-make-01.mk'),
+        makefile=os.path.relpath(makepath, directory),
         directory=directory)
     return makevars
 
