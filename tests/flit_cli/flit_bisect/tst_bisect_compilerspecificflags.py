@@ -142,7 +142,7 @@ compilation under test and for the link step (to use the baseline compilation)
 ...                                   ostream.getvalue())
 ...
 ...     bisect_makevars_gcc4 = bisect_compile('./fake_gcc4.py', temp_dir)
-...     bisect_makevars_gcc9 = bisect_compile('./fake_gcc9.py', temp_dir)
+...     bisect_makevars_gcc9 = bisect_compile('./fake_gcc9.py', temp_dir) # not in flitconfig
 ...     bisect_makevars_clang = bisect_compile('./fake_clang34.py', temp_dir)
 ...     bisect_makevars_intel = bisect_compile('./fake_intel19.py', temp_dir)
 
@@ -185,6 +185,15 @@ Note: fake_gcc9.py is not in the flit-config.toml, and therefore should not
 ['-l-intel-link1', '-l-intel-link2', '-no-pie']
 >>> sorted(bisect_makevars_gcc9['TROUBLE_LDFLAGS'])
 []
+
+>>> sorted(bisect_makevars_gcc4['BISECT_LDFLAGS'])
+['-l-gcc-link1', '-l-gcc-link2']
+>>> sorted(bisect_makevars_clang['BISECT_LDFLAGS'])
+['-l-gcc-link1', '-l-gcc-link2']
+>>> sorted(bisect_makevars_intel['BISECT_LDFLAGS'])
+['-l-gcc-link1', '-l-gcc-link2']
+>>> sorted(bisect_makevars_gcc9['BISECT_LDFLAGS'])
+['-l-gcc-link1', '-l-gcc-link2']
 '''
 
 # Test setup before the docstring is run.

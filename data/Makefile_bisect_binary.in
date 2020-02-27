@@ -140,6 +140,7 @@ SPLIT_SRC        :=
 
 TROUBLE_CXXFLAGS := {trouble_cxxflags}
 TROUBLE_LDFLAGS  := {trouble_ldflags}
+BISECT_LDFLAGS   := {bisect_ldflags}
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
@@ -314,7 +315,7 @@ recursion-target: $(BISECT_TARGET)
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	@$(call color_out,BLUE,  Creating $@)
 	$(GT_CXX) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
-	  $(GT_LDFLAGS) $(LDLIBS)
+	  $(BISECT_LDFLAGS) $(LDLIBS)
 
 # compile BISECT_GT_OBJ
 $(foreach s,$(BISECT_GT_SRC),\

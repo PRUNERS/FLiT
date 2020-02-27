@@ -316,6 +316,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
         pass # skip over unsupported compiler types
     repl_copy['trouble_cxxflags'] = cxxflags
     repl_copy['trouble_ldflags'] = ldflags
+    repl_copy['bisect_ldflags'] = '$(GT_LDFLAGS)'
     repl_copy['TROUBLE_SRC'] = '\n'.join(['TROUBLE_SRC      += {0}'.format(x)
                                           for x in trouble_src])
     repl_copy['BISECT_GT_SRC'] = '\n'.join(['BISECT_GT_SRC    += {0}'.format(x)
