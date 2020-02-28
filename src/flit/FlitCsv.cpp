@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -81,62 +81,94 @@
  * -- LICENSE END --
  */
 
-#include "timeFunction.h"
+#include <flit/FlitCsv.h>
 
 #include <algorithm>
-#include <chrono>
-#include <limits>
-#include <vector>
+#include <sstream>
+#include <stdexcept>
 
 namespace flit {
 
-namespace {
-
-int_fast64_t time_function_impl(const TimingFunction &func, size_t loops = 1,
-                                size_t repeats = 3)
-{
-  int_fast64_t min_time = std::numeric_limits<int_fast64_t>::max();
-  for (size_t r = 0; r < repeats; r++) {
-    auto start = std::chrono::high_resolution_clock::now();
-    for (size_t i = 0; i < loops; i++) {
-      func();
-    }
-    auto end = std::chrono::high_resolution_clock::now();
-    int_fast64_t time =
-        std::chrono::duration_cast<
-          std::chrono::duration<int_fast64_t, std::nano>>(end - start).count();
-    min_time = std::min(min_time, time);
+std::string const& CsvRow::operator[](std::string col) const {
+  if (m_header == nullptr) {
+    throw std::logic_error("No header defined");
   }
-  return min_time;
+  auto iter = std::find(m_header->begin(), m_header->end(), col);
+  if (iter == m_header->end()) {
+    std::stringstream message;
+    message << "No column named " << col;
+    throw std::invalid_argument(message.str());
+  }
+  auto idx = iter - m_header->begin();
+  return this->at(idx);
 }
 
-} // end of unnamed namespace
+CsvRow CsvReader::parseRow(std::istream &in) {
+  enum class State {
+    DEFAULT,
+    IN_STRING,
+  };
+  State state = State::DEFAULT;
 
-int_fast64_t time_function(const TimingFunction &func, size_t loops,
-                           size_t repeats)
-{
-  return time_function_impl(func, loops, repeats) / loops;
-}
+  char quote_char = '"';
+  char separator = ',';
+  char line_end = '\n';
 
-int_fast64_t time_function_autoloop(const TimingFunction &func, size_t repeats)
-{
-  const size_t min_loops = 1;
-  const size_t max_loops = 1e6;
-  const int_fast64_t min_time = 2e8; // nanosecs -> 0.2 seconds
-  size_t min_avg = SIZE_MAX;
-  for (size_t r = 0; r < repeats; r++) {
-    size_t time;
-    size_t loops;
-    for (loops = min_loops; loops <= max_loops; loops *= 10) {
-      time = time_function_impl(func, loops, 1);
-      if (time >= min_time) {
-        break;
+  auto transition_state = [&state](State newstate) {
+    //std::cout << "State transitioned from "
+    //          << static_cast<int>(state)
+    //          << " to "
+    //          << static_cast<int>(newstate)
+    //          << std::endl;
+    state = newstate;
+  };
+
+  CsvRow row;
+  char current;
+  std::ostringstream running;
+  int running_size = 0;
+  while (in.get(current)) {
+    if (state == State::DEFAULT) {
+      if (running_size == 0 && current == quote_char) {
+        transition_state(State::IN_STRING);
+      } else if (current == separator) {
+        row.emplace_back(running.str());
+        running.str("");
+        running_size = 0;
+      } else if (current == line_end) {
+        row.emplace_back(running.str());
+        running.str("");
+        running_size = 0;
+        break; // break out of the while loop
+      } else {
+        running << current;
+        running_size++;
       }
+    } else if (state == State::IN_STRING) {
+      if (current == quote_char) {
+        transition_state(State::DEFAULT);
+      } else {
+        running << current;
+        running_size++;
+      }
+    } else {
+      throw std::runtime_error(
+        "Please contact Michael Bentley, this shouldn't happen...");
     }
-    loops = std::min(max_loops, loops); // in case the for loop reaches the end
-    min_avg = std::min(min_avg, time / loops);
   }
-  return min_avg;
+
+  // We should not be within a STRING when we exit the while loop
+  if (state != State::DEFAULT) {
+    throw std::runtime_error("Error parsing CSV file");
+  }
+
+  // If we stopped because we reached the end of file...
+  // (i.e. ignore empty last rows)
+  if (!in && !row.empty()) {
+    row.emplace_back(running.str());
+  }
+
+  return row;
 }
 
 } // end of namespace flit

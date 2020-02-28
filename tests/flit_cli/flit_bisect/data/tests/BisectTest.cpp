@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -87,7 +87,7 @@
 #include "file4.h"
 #include "A.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <string>
 
@@ -115,7 +115,7 @@ public:
   virtual std::vector<T> getDefaultInput() override { return {}; }
   virtual long double compare(long double ground_truth,
                               long double test_results) const override {
-    return std::abs(test_results - ground_truth);
+    return flit::abs_compare(ground_truth, test_results);
   }
 
 protected:

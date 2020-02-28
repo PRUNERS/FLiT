@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -90,7 +90,7 @@
 #ifndef FSUTIL_H
 #define FSUTIL_H
 
-#include "tinydir.h"    // for tinydir_file and tinydir_dir
+#include <flit/tinydir.h> // for tinydir_file and tinydir_dir
 
 #include <string>       // for std::string
 #include <vector>       // for std::vector

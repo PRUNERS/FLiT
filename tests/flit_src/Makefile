@@ -1,20 +1,21 @@
 CC          := g++
 FLITDIR     := ../..
-FLITLIBDIR  := $(FLITDIR)/lib
-FLITLIB     := $(FLITLIBDIR)/libflit.so
+FLIT_SRC    := $(FLITDIR)/src/flit/ALL-FLIT.cpp
 
 CFLAGS      := -O0 -g
 CFLAGS      += -std=c++11
 CFLAGS      += -fprofile-arcs
 CFLAGS      += -ftest-coverage
 CFLAGS      += -fPIC
-LDFLAGS     := -L$(FLITLIBDIR) -lflit
-LDFLAGS     += -Wl,-rpath=$(FLITLIBDIR)
+LDFLAGS     := -lflit -L. -Wl,-rpath=$(CURDIR)
 SRC         := $(wildcard *.cpp)
 DEPS        := $(SRC:%.cpp=%.d)
+DEPS        += $(notdir $(FLIT_SRC:%.cpp=%.d))
 TARGETS     := $(SRC:%.cpp=%)
 GCOV_FILES  := $(SRC:%.cpp=%.gcda)
 GCOV_FILES  += $(SRC:%.cpp=%.gcno)
+GCOV_FILES  += $(notdir $(FLIT_SRC:%.cpp=%.gcda))
+GCOV_FILES  += $(notdir $(FLIT_SRC:%.cpp=%.gcno))
 RUN_TARGETS := $(TARGETS:%=run_%)
 HARNESS     := ../test_harness.h
 CFLAGS      += $(addprefix -I,$(dir $(HARNESS)))
@@ -44,6 +45,7 @@ clean:
 	rm -f $(DEPS)
 	rm -f $(TARGETS)
 	rm -f $(GCOV_FILES)
+	rm -f libflit.so
 
 run_% : %
 	@$(call color_out_noline,BROWN,  running)
@@ -57,7 +59,8 @@ run_% : %
 .PRECIOUS: %.d
 -include $(DEPS)
 
-$(TARGETS): $(FLITLIB)
+$(TARGETS): libflit.so
 
-$(FLITLIB):
-	@$(MAKE) -C $(FLITDIR)
+libflit.so: $(FLIT_SRC) Makefile
+	@$(call color_out,CYAN,  $< -> $@)
+	$(CC) -shared $(CFLAGS) $(DEPFLAGS) $< -o $@

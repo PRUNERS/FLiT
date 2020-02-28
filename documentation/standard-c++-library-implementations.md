@@ -6,7 +6,7 @@
 |
 [Next](writing-test-cases.md)
 
-Ever since C++11, it seems every compiler vender has written their own C++
+Ever since C++11, it seems every compiler vendor has written their own C++
 standard library.  They have moved away from `glibc`.  GCC has implemented
 their own `libstdc++` library.  LLVM has implemented their own `libc++`
 library.  Intel by default uses the GCC implementation from the system path.
@@ -76,7 +76,7 @@ where `<libcxx-install-prefix>` is wherever the header files are installed.
 For the Clang compiler, we can specify to use the `libstdc++` standard library
 implementation from GCC.  They make this pretty easy to do.  In fact, it is
 usually the default behavior on Linux (but not for OS X since Mavericks).  This
-is to help with compatability since most libraries are compiled using GCC on
+is to help with compatibility since most libraries are compiled using GCC on
 Linux.
 
 To specify a specific version of the GCC standard library to use, you specify
@@ -123,10 +123,10 @@ fixed_compile_flags = '--gxx-name=/opt/compilers/gcc-9.1.0/bin/g++'
 ...
 ```
 
-The intel compiler will automatically insert the correct include and linker
+The Intel compiler will automatically insert the correct include and linker
 flags.  I am unsure if the `--gcc-names` argument is really required.  I
 believe only `--gxx-name` is required to do what you want when compiling C++
-code.  I immagine `--gcc-name` is for when you are compiling C code with `icc`.
+code.  I imagine `--gcc-name` is for when you are compiling C code with `icc`.
 
 [Prev](available-compiler-flags.md)
 |

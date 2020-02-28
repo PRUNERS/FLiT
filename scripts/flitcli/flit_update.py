@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -329,10 +329,10 @@ def create_makefile(args, makefile='Makefile'):
         'gt_cxxflags': '$(' + gt_compiler['type'].upper() + '_CXXFLAGS)',
         'gt_ldflags': '$(' + gt_compiler['type'].upper() + '_LDFLAGS)',
         'flit_include_dir': conf.include_dir,
-        'flit_lib_dir': conf.lib_dir,
         'flit_data_dir': conf.data_dir,
         'flit_script_dir': conf.script_dir,
         'flit_version': conf.version,
+        'flit_src_dir': conf.src_dir,
         'test_run_args': test_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpi_cxxflags': ' '.join(mpi_cxxflags),

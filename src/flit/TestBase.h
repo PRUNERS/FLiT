@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -88,10 +88,10 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
-#include "Variant.h"
-#include "flitHelpers.h"
-#include "timeFunction.h"
-#include "fsutil.h"
+#include <flit/Variant.h>
+#include <flit/flitHelpers.h>
+#include <flit/timeFunction.h>
+#include <flit/fsutil.h>
 
 #include <fstream>
 #include <functional>
@@ -363,7 +363,7 @@ public:
   virtual long double compare(long double ground_truth,
                               long double test_results) const {
     // absolute error
-    return std::abs(test_results - ground_truth);
+    return flit::abs_compare(ground_truth, test_results);
   }
 
   /** There is no good default implementation comparing two strings */

@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -101,7 +101,8 @@ COMPILERS       := {compilers}
 {compiler_fixed_link_flags}
 
 FLIT_INC_DIR    := {flit_include_dir}
-FLIT_LIB_DIR    := {flit_lib_dir}
+FLIT_SRC_DIR    := {flit_src_dir}
+FLIT_SRC        := $(FLIT_SRC_DIR)/ALL-FLIT.cpp
 FLIT_DATA_DIR   := {flit_data_dir}
 FLIT_SCRIPT_DIR := {flit_script_dir}
 
@@ -159,13 +160,6 @@ DEV_CXXFLAGS    += -Wno-shift-count-overflow
 
 LDLIBS          += -lm
 LDLIBS          += -lstdc++
-LDLIBS          += -lflit
-ifeq ($(UNAME_S),Darwin) # If we are on a Mac OSX system
-  LDFLAGS       += -Llib
-else
-  LDFLAGS       += -L$(FLIT_LIB_DIR)
-  LDFLAGS       += -Wl,-rpath=$(realpath $(FLIT_LIB_DIR))
-endif
 
 # Be silent by default
 ifndef VERBOSE
@@ -248,18 +242,6 @@ SOURCE          := $(sort $(SOURCE))
 MKDIR = \
   @$(call color_out,BROWN,  mkdir $@); \
   mkdir -p $@
-
-# For OS X support, we copy the libflit.so to a subdirectory
-ifeq ($(UNAME_S),Darwin)
-LIBFLIT := lib/libflit.so
-$(LIBFLIT): $(FLIT_LIB_DIR)/libflit.so | lib
-	@$(call color_out,CYAN,  $< -> $@)
-	cp $< $@
-lib:
-	+$(MKDIR) $@
-else
-LIBFLIT := $(FLIT_LIB_DIR)/libflit.so
-endif # end of ifeq ($(UNAME_S),Darwin)
 
 # individual flags
 
@@ -385,10 +367,6 @@ ALL_DIRS += $(foreach c,$(COMPILERS),\
                 $(foreach o,$(OPCODES_$(strip $c)),\
                   $(OBJ_DIR)/$c_$s_$o)))
 
-ifeq ($(UNAME_S),Darwin)
-ALL_DIRS += lib
-endif
-
 recursion-target: $(ALL_DIRS)
 
 $(ALL_DIRS):
@@ -477,13 +455,14 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
+R_OBJ   += $(addprefix $(R_OBJ_DIR)/,$(notdir $(FLIT_SRC:%=%.o)))
 R_DEP   := $(R_OBJ:%.o=%.d)
 
 -include $(R_DEP)
 
 recursion-target: $(R_TARGET)
 
-$(R_TARGET): $(R_OBJ) $(LIBFLIT)
+$(R_TARGET): $(R_OBJ)
 	@$(call color_out,BLUE,  Creating $(R_TARGET))
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
@@ -492,7 +471,7 @@ $(R_TARGET): $(R_OBJ) $(LIBFLIT)
 $(R_OBJ_DIR):
 	+$(MKDIR) $@
 
-$(foreach s,$(SOURCE), \
+$(foreach s,$(SOURCE) $(FLIT_SRC), \
   $(eval $(call COMPILE_RULE,\
     $s,\
     $(R_OBJ_DIR)/$(notdir $s).o,\

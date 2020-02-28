@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -81,94 +81,82 @@
  * -- LICENSE END --
  */
 
-#include "FlitCsv.h"
+#ifndef SUBPROCESS_H
+#define SUBPROCESS_H
 
-#include <algorithm>
-#include <sstream>
-#include <stdexcept>
+#define FLIT_REGISTER_MAIN(mainfunc)                           \
+  struct Flit_##mainfunc##Factory {                            \
+    Flit_##mainfunc##Factory() {                               \
+      flit::register_main_func(#mainfunc, mainfunc);           \
+    }                                                          \
+  };                                                           \
+  static Flit_##mainfunc##Factory global_##mainfunc##Factory;  \
 
+#include <string>
+ 
 namespace flit {
 
-std::string const& CsvRow::operator[](std::string col) const {
-  if (m_header == nullptr) {
-    throw std::logic_error("No header defined");
-  }
-  auto iter = std::find(m_header->begin(), m_header->end(), col);
-  if (iter == m_header->end()) {
-    std::stringstream message;
-    message << "No column named " << col;
-    throw std::invalid_argument(message.str());
-  }
-  auto idx = iter - m_header->begin();
-  return this->at(idx);
-}
+struct ProcResult {
+  int ret;
+  std::string out;
+  std::string err;
+};
 
-CsvRow CsvReader::parseRow(std::istream &in) {
-  enum class State {
-    DEFAULT,
-    IN_STRING,
-  };
-  State state = State::DEFAULT;
+/** Calls a command in the shell and returns the output and result */
+ProcResult call_with_output(const std::string &command);
 
-  char quote_char = '"';
-  char separator = ',';
-  char line_end = '\n';
+std::ostream& operator<<(std::ostream& out, const ProcResult &res);
 
-  auto transition_state = [&state](State newstate) {
-    //std::cout << "State transitioned from "
-    //          << static_cast<int>(state)
-    //          << " to "
-    //          << static_cast<int>(newstate)
-    //          << std::endl;
-    state = newstate;
-  };
+using MainFunc = int(int, char**);
 
-  CsvRow row;
-  char current;
-  std::ostringstream running;
-  int running_size = 0;
-  while (in.get(current)) {
-    if (state == State::DEFAULT) {
-      if (running_size == 0 && current == quote_char) {
-        transition_state(State::IN_STRING);
-      } else if (current == separator) {
-        row.emplace_back(running.str());
-        running.str("");
-        running_size = 0;
-      } else if (current == line_end) {
-        row.emplace_back(running.str());
-        running.str("");
-        running_size = 0;
-        break; // break out of the while loop
-      } else {
-        running << current;
-        running_size++;
-      }
-    } else if (state == State::IN_STRING) {
-      if (current == quote_char) {
-        transition_state(State::DEFAULT);
-      } else {
-        running << current;
-        running_size++;
-      }
-    } else {
-      throw std::runtime_error(
-        "Please contact Michael Bentley, this shouldn't happen...");
-    }
-  }
+/** Don't call this directly.  Use FLIT_REGISTER_MAIN() instead */
+void register_main_func(const std::string &main_name, MainFunc *main_func);
 
-  // We should not be within a STRING when we exit the while loop
-  if (state != State::DEFAULT) {
-    throw std::runtime_error("Error parsing CSV file");
-  }
+/** Return the registered main function from the name */
+MainFunc* find_main_func(const std::string &main_name);
 
-  // If we stopped because we reached the end of file...
-  // (i.e. ignore empty last rows)
-  if (!in && !row.empty()) {
-    row.emplace_back(running.str());
-  }
+/** Return the registered main name from the function pointer */
+std::string find_main_name(MainFunc *main_func);
 
-  return row;
-}
+/** Call the main function in a child process
+ *
+ * It is required that the user has not changed to a different directory
+ * from where it was originally called.  That way we can find and run this
+ * executable.
+ *
+ * Example:
+ *
+ *   #define main mymain
+ *   #include "main.cc"
+ *   #undef main
+ *
+ *   #include <flit/flit.h>
+ *
+ *   #include <iostream>
+ *
+ *   FLIT_REGISTER_MAIN(mymain)
+ *
+ *   int run_my_main() {
+ *     auto results = flit::call_main(
+ *         mymain, "myapp", "--data '../My Documents/tmp.dat' --all");
+ *     std::cout << results.out;
+ *     std::cerr << results.err;
+ *     return results.ret;
+ *   }
+ *
+ * @param func: function pointer to a custom renamed main() function
+ * @param progname: the name you want that main to see as the program name
+ *        (i.e., it will be in argv[0])
+ * @param remaining_args: all command-line arguments as would be given in a
+ *        shell.
+ * @return result, including stdout, stderr, and return code.
+ */
+ProcResult call_main(MainFunc *func, std::string progname = "",
+                     std::string remaining_args = "");
 
+ProcResult call_mpi_main(MainFunc *func, std::string mpirun_command = "mpirun",
+                         std::string progname = "",
+                         std::string remaining_args = "");
 } // end of namespace flit
+
+#endif // SUBPROCESS_H

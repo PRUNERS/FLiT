@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -83,8 +83,8 @@
 
 #include "test_harness.h"
 
-#include "Variant.h"
-#include "Variant.cpp"
+#include <flit/Variant.h>
+#include <flit/Variant.cpp>
 
 #include <sstream>
 #include <string>

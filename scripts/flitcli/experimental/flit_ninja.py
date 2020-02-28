@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -87,6 +87,7 @@ import os
 import re
 import subprocess as subp
 import sys
+from itertools import chain
 from socket import gethostname
 
 try:
@@ -277,6 +278,7 @@ class NinjaWriter:
         self.configure_args = arguments
         self.hostname = gethostname()
         self.sources = []
+        self.flit_sources = [os.path.join(conf.src_dir, 'ALL-FLIT.cpp')]
         self.cxxflags = [
             '-fno-pie',
             '-std=c++11',
@@ -286,9 +288,6 @@ class NinjaWriter:
         self.ldflags = [
             '-lm',
             '-lstdc++',
-            '-L' + conf.lib_dir,
-            '-Wl,-rpath=' + os.path.abspath(conf.lib_dir),
-            '-lflit',
             ]
         self.compilers = {}
         self.gt_compilation = None
@@ -339,7 +338,6 @@ class NinjaWriter:
         ...     _ = makefile_out.write('CXXFLAGS  = -std=c++11 -Werror\\n')
         ...     _ = makefile_out.write('LDFLAGS  += -L/usr/local/lib64 -L/opt/gcc\\n')
         ...     _ = makefile_out.write('LDLIBS    = -lm\\n')
-        ...     _ = makefile_out.write('LDLIBS   += -lflit\\n')
         ...     _ = makefile_out.write('RUN_WRAPPER := /usr/bin/echo -ne \\n')
         ...     makefile_out.flush()
         ...     w.load_makefile(makefile_out.name)
@@ -349,7 +347,7 @@ class NinjaWriter:
         >>> w.cxxflags == cxxflags_orig + ['-std=c++11', '-Werror']
         True
         >>> w.ldflags == ldflags_orig + [
-        ...     '-L/usr/local/lib64', '-L/opt/gcc', '-lm', '-lflit']
+        ...     '-L/usr/local/lib64', '-L/opt/gcc', '-lm']
         True
         >>> w.run_wrapper
         '/usr/bin/echo -ne'
@@ -567,10 +565,10 @@ class NinjaWriter:
 
         n.build(compilation['target'], link_rule_name,
                 inputs=[os.path.join(obj_dir, os.path.basename(x) + '.o')
-                        for x in self.sources])
+                        for x in chain(self.sources, self.flit_sources)])
         n.newline()
 
-        for source in self.sources:
+        for source in chain(self.sources, self.flit_sources):
             n.build(os.path.join(obj_dir, os.path.basename(source) + '.o'),
                     compile_rule_name, source)
         n.newline()

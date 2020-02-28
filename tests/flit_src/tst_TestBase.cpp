@@ -82,12 +82,12 @@
  */
 
 #include "test_harness.h"
-#include "fsutil.h"
+#include <flit/fsutil.h>
 
 #define time_function wrap_time_function
 #define time_function_autoloop wrap_time_function_autoloop
-#include "TestBase.h"
-#include "TestBase.cpp"
+#include <flit/TestBase.h>
+#include <flit/TestBase.cpp>
 #undef time_function
 #undef time_function_autoloop
 
