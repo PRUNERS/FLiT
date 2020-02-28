@@ -70,7 +70,7 @@ There are a few other files copied over:
 
 If you want to play with the litmus tests in this directory, you can pass the
 `--litmus-tests` flag which will copy over the litmus tests into the `tests`
-directory for use.
+directory for use, replacing 'Empty.cpp' with the existing tests.
 
 ## flit update
 
