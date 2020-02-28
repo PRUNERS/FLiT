@@ -80,92 +80,43 @@
 #
 # -- LICENSE END --
 
-'Implements the init subcommand'
+'''
+Test FLiT init --litmus-test argument
 
-import argparse
-import os
-import shutil
+These tests use doctest
+
+>>> import os
+>>> import subprocess as subp
+>>> import tempfile
+
+Call init --litmus-tests into a temporary directory
+  We suppress console output here
+>>> with th.tempdir() as temp_dir:
+...     fname = os.path.join(temp_dir, 'tests/')
+...     null = subp.check_call(['flit', 'init', '-C', temp_dir, '--litmus-tests'])
+...     tests = os.listdir(fname)
+
+Assert Empty.cpp does not exist
+>>> 'Empty.cpp' in tests
+False
+
+Compare all tests against litmust-tests directory
+>>> base_tests = os.listdir('../../../litmus-tests/tests/')
+>>> tests.sort()
+>>> base_tests.sort()
+>>> tests == base_tests
+True
+
+'''
+
+# Test setup before the docstring is run.
 import sys
-
-import flitconfig as conf
-import flitutil
-import flit_update
-
-brief_description = 'Initializes a flit test directory for use'
-
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
-            Initializes a flit test directory for use.  It will initialize
-            the directory by copying the default configuration file into
-            the given directory.  If a configuration file already exists,
-            this command does nothing.  The config file is called
-            flit-config.toml.
-            ''',
-        )
-    parser.add_argument('-C', '--directory', default='.',
-                        help='The directory to initialize')
-    parser.add_argument('--overwrite', action='store_true',
-                        help='Overwrite init files if they are already there')
-    parser.add_argument('-L', '--litmus-tests', action='store_true',
-                        help='Copy over litmus tests too')
-    args = parser.parse_args(arguments)
-
-    os.makedirs(args.directory, exist_ok=True)
-
-    # write flit-config.toml
-    flit_config_dest = os.path.join(args.directory, 'flit-config.toml')
-    print('Creating {0}'.format(flit_config_dest))
-    with open(flit_config_dest, 'w') as fout:
-        fout.write(flitutil.get_default_toml_string())
-
-    def copy_files(dest_to_src, remove_license=True):
-        '''
-        @param dest_to_src: dictionary of dest -> src for copies
-        @param remove_license: (default True) True means remove the license
-            declaration at the top of each file copied.
-        @return None
-        '''
-        for dest, src in sorted(dest_to_src.items()):
-            realdest = os.path.join(args.directory, dest)
-            print('Creating {0}'.format(realdest))
-            if not args.overwrite and os.path.exists(realdest):
-                print('Warning: {0} already exists, not overwriting'.format(realdest),
-                      file=sys.stderr)
-                continue
-            os.makedirs(os.path.dirname(os.path.realpath(realdest)), exist_ok=True)
-            if remove_license:
-                with open(src, 'r') as fin:
-                    with open(realdest, 'w') as fout:
-                        fout.writelines(flitutil.remove_license_lines(fin))
-            else:
-                shutil.copy(src, realdest)
-
-    # Copy the remaining files over
-    to_copy = {
-        'custom.mk': os.path.join(conf.data_dir, 'custom.mk'),
-        'main.cpp': os.path.join(conf.data_dir, 'main.cpp'),
-        'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
-        }
-
-    # Add litmus tests too
-    if args.litmus_tests:
-        litmus_to_copy = {}
-        for srcfile in os.listdir(conf.litmus_test_dir):
-            if os.path.splitext(srcfile)[1] in ('.cpp', '.h'):
-                srcpath = os.path.join(conf.litmus_test_dir, srcfile)
-                litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
-        copy_files(litmus_to_copy)
-
-        # No need for Empty test if other litmus tests are being used
-        to_copy.pop('tests/Empty.cpp')
-
-    return flit_update.main(['--directory', args.directory])
-
-    # Finish copying remaining files, after determining if Empty test is needed
-    copy_files(to_copy, remove_license=True)
+before_path = sys.path[:]
+sys.path.append('../..')
+import test_harness as th
+sys.path = before_path
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    from doctest import testmod
+    failures, tests = testmod()
+    sys.exit(failures)
