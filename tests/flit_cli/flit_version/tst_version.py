@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -124,7 +124,7 @@ both from the install at DESTDIR/PREFIX, and at PREFIX
 ...     _ = subp.check_output(['make', 'install',
 ...                            'DESTDIR=' + destdir,
 ...                            'PREFIX=' + prefix,
-...                            '-C', os.path.dirname(th.config.lib_dir)])
+...                            '-C', os.path.dirname(th.config.doc_dir)])
 ...     actual = subp.check_output([
 ...         os.path.join(effective_prefix, 'bin', 'flit'), '-v'])
 ...     _ = shutil.copytree(effective_prefix, prefix, symlinks=True)

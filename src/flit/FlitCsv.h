@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -84,7 +84,7 @@
 #ifndef FLIT_CSV_H
 #define FLIT_CSV_H
 
-#include "flitHelpers.h"
+#include <flit/flitHelpers.h>
 
 #include <istream>
 #include <string>

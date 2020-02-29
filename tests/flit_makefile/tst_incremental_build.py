@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -136,7 +136,7 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['devrun', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
+['devrun', 'obj/dev/ALL-FLIT.cpp.o', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_build)
 []
@@ -174,7 +174,7 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['gtrun', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
+['gtrun', 'obj/gt/ALL-FLIT.cpp.o', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_build)
 []

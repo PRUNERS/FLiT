@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -83,15 +83,16 @@
 
 #include "test_harness.h"
 
-#include "flitHelpers.h"
-
-#include "TestBase.h"   // for operator<<(flit::TestResult ...)
+#include <flit/flitHelpers.h>
+#include <flit/TestBase.h>   // for operator<<(flit::TestResult ...)
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <sstream>
 #include <vector>
 
+#include <cmath>
 #include <cstdio>
 #include <cstring>  // for memcpy()
 
@@ -277,7 +278,126 @@ TH_TEST(tst_as_int_128bit) {
 
 } // end of namespace tst_as_int
 
-TH_TEST(tst_l2norm) {
+namespace tst_abs_compare {
+
+template <typename T>
+void tst_equal_with_nan_inf_impl() {
+  using lim = std::numeric_limits<T>;
+
+  static_assert(lim::has_quiet_NaN, "Type T does not have quiet NaNs");
+  static_assert(lim::has_infinity,  "Type T does not have infinity");
+
+  auto &eq = flit::equal_with_nan_inf<T>;
+  T my_nan = lim::quiet_NaN();
+  T my_inf = lim::infinity();
+  T normal = -3.2;
+  T zero = 0.0;
+
+  TH_VERIFY( eq( my_nan,  my_nan));
+  TH_VERIFY(!eq( my_nan, -my_nan));
+  TH_VERIFY(!eq( my_nan,  my_inf));
+  TH_VERIFY(!eq( my_nan, -my_inf));
+  TH_VERIFY(!eq( my_nan,  normal));
+  TH_VERIFY(!eq( my_nan, -normal));
+
+  TH_VERIFY(!eq(-my_nan,  my_nan));
+  TH_VERIFY( eq(-my_nan, -my_nan));
+  TH_VERIFY(!eq(-my_nan,  my_inf));
+  TH_VERIFY(!eq(-my_nan, -my_inf));
+  TH_VERIFY(!eq(-my_nan,  normal));
+  TH_VERIFY(!eq(-my_nan, -normal));
+
+  TH_VERIFY(!eq( my_inf,  my_nan));
+  TH_VERIFY(!eq( my_inf, -my_nan));
+  TH_VERIFY( eq( my_inf,  my_inf));
+  TH_VERIFY(!eq( my_inf, -my_inf));
+  TH_VERIFY(!eq( my_inf,  normal));
+  TH_VERIFY(!eq( my_inf, -normal));
+
+  TH_VERIFY(!eq(-my_inf,  my_nan));
+  TH_VERIFY(!eq(-my_inf, -my_nan));
+  TH_VERIFY(!eq(-my_inf,  my_inf));
+  TH_VERIFY( eq(-my_inf, -my_inf));
+  TH_VERIFY(!eq(-my_inf,  normal));
+  TH_VERIFY(!eq(-my_inf, -normal));
+
+  TH_VERIFY(!eq( normal,  my_nan));
+  TH_VERIFY(!eq( normal, -my_nan));
+  TH_VERIFY(!eq( normal,  my_inf));
+  TH_VERIFY(!eq( normal, -my_inf));
+  TH_VERIFY( eq( normal,  normal));
+  TH_VERIFY(!eq( normal, -normal));
+
+  TH_VERIFY(!eq(-normal,  my_nan));
+  TH_VERIFY(!eq(-normal, -my_nan));
+  TH_VERIFY(!eq(-normal,  my_inf));
+  TH_VERIFY(!eq(-normal, -my_inf));
+  TH_VERIFY(!eq(-normal,  normal));
+  TH_VERIFY( eq(-normal, -normal));
+}
+
+TH_TEST(tst_equal_with_nan_inf) {
+  tst_equal_with_nan_inf_impl<float>();
+  tst_equal_with_nan_inf_impl<double>();
+  tst_equal_with_nan_inf_impl<long double>();
+}
+
+template<typename T>
+void tst_abs_compare_impl() {
+  using lim = std::numeric_limits<T>;
+  static_assert(lim::has_quiet_NaN, "Type T does not have quiet NaNs");
+  static_assert(lim::has_infinity,  "Type T does not have infinity");
+  T my_nan = lim::quiet_NaN();
+  T my_inf = lim::infinity();
+  T normal = -3.2;
+  T zero = 0.0;
+
+  auto &eq = flit::equal_with_nan_inf<T>;
+  auto &comp = flit::abs_compare<T>;
+
+  // we have 25 cases
+  TH_VERIFY(eq(comp( my_nan,  my_nan),   zero ));
+  TH_VERIFY(eq(comp( my_nan, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp( my_nan,  my_inf),  my_nan));
+  TH_VERIFY(eq(comp( my_nan, -my_inf),  my_nan));
+  TH_VERIFY(eq(comp( my_nan,  normal),  my_nan));
+
+  TH_VERIFY(eq(comp(-my_nan,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp(-my_nan, -my_nan),   zero ));
+  TH_VERIFY(eq(comp(-my_nan,  my_inf),  my_nan));
+  TH_VERIFY(eq(comp(-my_nan, -my_inf),  my_nan));
+  TH_VERIFY(eq(comp(-my_nan,  normal),  my_nan));
+
+  TH_VERIFY(eq(comp( my_inf,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp( my_inf, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp( my_inf,  my_inf),   zero ));
+  TH_VERIFY(eq(comp( my_inf, -my_inf),  my_inf));
+  TH_VERIFY(eq(comp( my_inf,  normal),  my_inf));
+
+  TH_VERIFY(eq(comp(-my_inf,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp(-my_inf, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp(-my_inf,  my_inf),  my_inf));
+  TH_VERIFY(eq(comp(-my_inf, -my_inf),   zero ));
+  TH_VERIFY(eq(comp(-my_inf,  normal),  my_inf));
+
+  TH_VERIFY(eq(comp( normal,  my_nan),  my_nan));
+  TH_VERIFY(eq(comp( normal, -my_nan),  my_nan));
+  TH_VERIFY(eq(comp( normal,  my_inf),  my_inf));
+  TH_VERIFY(eq(comp( normal, -my_inf),  my_inf));
+  TH_VERIFY(eq(comp( normal,  normal),   zero ));
+}
+
+TH_TEST(tst_abs_compare) {
+  tst_abs_compare_impl<float>();
+  //tst_abs_compare_impl<double>();
+  //tst_abs_compare_impl<long double>();
+}
+
+} // end of namespace tst_abs_compare
+
+namespace tst_l2norm {
+
+TH_TEST(tst_l2norm_normal_numbers) {
   std::vector<float> empty;
   std::vector<float> one_elem { 1.0L };
   std::vector<float> two_elems { 3.5L, 1.0L };
@@ -292,6 +412,27 @@ TH_TEST(tst_l2norm) {
   TH_EQUAL(flit::l2norm(one_elem , two_elems),  7.25L);
   TH_EQUAL(flit::l2norm(two_elems, two_elems),  0.0L );
 }
+
+TH_TEST(tst_l2norm_nan_and_inf) {
+  using lim = std::numeric_limits<float>;
+  float my_nan = lim::quiet_NaN();
+  float my_inf = lim::infinity();
+
+  auto &eq = flit::equal_with_nan_inf<long double>;
+
+  std::vector<float> nans  { my_nan, -my_nan, my_nan};
+  std::vector<float> nans2 {-my_nan, -my_nan, my_nan}; // mismatching in val 0
+  std::vector<float> infs  { my_inf, -my_inf, my_inf};
+  std::vector<float> infs2 { my_inf,  my_inf, my_inf}; // mismatching in val 1
+
+  TH_VERIFY(eq(flit::l2norm(nans, nans ),  0.0L ));
+  TH_VERIFY(eq(flit::l2norm(nans, nans2), my_nan));
+  TH_VERIFY(eq(flit::l2norm(infs, infs ),  0.0L ));
+  TH_VERIFY(eq(flit::l2norm(infs, infs2), my_inf));
+  TH_VERIFY(eq(flit::l2norm(nans, infs ), my_nan));
+}
+
+} // end of namespace tst_l2norm
 
 namespace tst_split {
 

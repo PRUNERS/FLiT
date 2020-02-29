@@ -10,9 +10,9 @@
 
 [![FLiT Bird](/images/flit-small.png)](https://github.com/PRUNERS/FLiT "FLiT")
 
-Floating-point Litmus Tests (FLiT) is a C++ test infrastructure for detecting
-variability in floating-point code caused by variations in compiler code
-generation, hardware and execution environments.
+FLiT is a C++ test infrastructure for detecting variability in floating-point
+code caused by variations in compiler code generation, hardware and execution
+environments.
 
 Originally, FLiT stood for "Floating-point Litmus Tests", but has grown into a
 tool with much more flexability than to study simple litmus tests.  However, it
@@ -33,6 +33,11 @@ difference is typically very small.  But there are situations where
 3. Your application is so large (such as a weather simulation) that a small
    change may propagate into very large result variability.
 
+_Note: It may be the variability observed is more a cause of bad programming
+practice than over-aggressive compiler optimizations.  In this case, compiler
+optimizations may act as fuzzers for your code.  It is up to you to determine
+if this is the case._
+
 FLiT helps developers determine where reproducibility problems may occur due to
 compilers.  The developer creates reproducibility tests with their code using
 the FLiT testing framework.  Then FLiT takes those reproducibility tests and
@@ -45,7 +50,7 @@ More than simply comparing against a "ground truth" test result, the FLiT
 framework also measures runtime of your tests.  Using this information, you can
 not only determine which compilations of your code are safe for your specific
 application, but you can also determine the fastest safe compilation.  This
-ability helps the developer navigate the tradeoff between reproducibility and
+ability helps the developer navigate the trade-off between reproducibility and
 performance.
 
 It consists of the following components:
