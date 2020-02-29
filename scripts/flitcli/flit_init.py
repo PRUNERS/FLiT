@@ -150,8 +150,6 @@ def main(arguments, prog=sys.argv[0]):
         'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
         }
 
-    copy_files(to_copy, remove_license=True)
-
     # Add litmus tests too
     if args.litmus_tests:
         litmus_to_copy = {}
@@ -160,6 +158,12 @@ def main(arguments, prog=sys.argv[0]):
                 srcpath = os.path.join(conf.litmus_test_dir, srcfile)
                 litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
         copy_files(litmus_to_copy)
+
+        # No need for Empty test if other litmus tests are being used
+        to_copy.pop('tests/Empty.cpp')
+
+    # Finish copying remaining files, after determining if Empty test is needed
+    copy_files(to_copy, remove_license=True)
 
     return flit_update.main(['--directory', args.directory])
 
