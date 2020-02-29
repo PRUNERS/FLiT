@@ -106,7 +106,7 @@ Assert Empty.cpp does not exist
 >>> 'Empty.cpp' in tests
 False
 
-Compare all tests against litmust-tests directory
+Compare all tests against the litmus tests directory
 >>> base_tests = os.listdir('../../../litmus-tests/tests/')
 >>> set(tests) == set(base_tests)
 True
