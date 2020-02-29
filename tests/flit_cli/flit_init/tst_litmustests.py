@@ -88,13 +88,19 @@ These tests use doctest
 >>> import os
 >>> import subprocess as subp
 >>> import tempfile
+>>> from io import StringIO
+
+>>> class InitTestError(RuntimeError): pass
 
 Call init --litmus-tests into a temporary directory
   We suppress console output here
 >>> with th.tempdir() as temp_dir:
-...     fname = os.path.join(temp_dir, 'tests/')
-...     null = subp.check_call(['flit', 'init', '-C', temp_dir, '--litmus-tests'])
-...     tests = os.listdir(fname)
+...     with StringIO() as ostream:
+...         test_dir = os.path.join(temp_dir, 'tests')
+...         retval = th.flit.main(['init', '-C', temp_dir, '--litmus-tests'], outstream=ostream)
+...         if retval != 0:
+...             raise InitTestError('Could not initialize (retval={0}):\\n'.format(retval) + ostream.getvalue())
+...         tests = os.listdir(test_dir)
 
 Assert Empty.cpp does not exist
 >>> 'Empty.cpp' in tests
@@ -102,9 +108,7 @@ False
 
 Compare all tests against litmust-tests directory
 >>> base_tests = os.listdir('../../../litmus-tests/tests/')
->>> tests.sort()
->>> base_tests.sort()
->>> tests == base_tests
+>>> set(tests) == set(base_tests)
 True
 
 '''

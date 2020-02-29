@@ -162,10 +162,10 @@ def main(arguments, prog=sys.argv[0]):
         # No need for Empty test if other litmus tests are being used
         to_copy.pop('tests/Empty.cpp')
 
-    return flit_update.main(['--directory', args.directory])
-
     # Finish copying remaining files, after determining if Empty test is needed
     copy_files(to_copy, remove_license=True)
+
+    return flit_update.main(['--directory', args.directory])
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
