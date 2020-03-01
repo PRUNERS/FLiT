@@ -17,6 +17,7 @@ you name it with a different ending than `.cpp`, then you will need to ensure
 it is included from within `custom.mk` in the `SOURCE` variable.
 
 - [Test Case Requirements](#test-case-requirements)
+- [Default Comparison Details](#default-comparison-details)
 - [Disabling Test Cases](#disabling-test-cases)
 - [Only Using Particular Precisions](#only-using-particular-precisions)
 - [Writing Tests With More Template Parameters](#writing-tests-with-more-template-parameters)
@@ -61,7 +62,7 @@ like to override that behavior.
   value returned from `run_impl()`.
     - `compare(long double, long double)`: used if your test returns a
       floating-point value.  The default implementation is to calculate the
-      absolute error.
+      absolute error (using `flit::abs_compare()`).
     - `compare(string, string)`: used if your test returns a string.  There is
       no good default implementation, so be sure to override this if used.
     - `compare(std::vector<string>, std::vector<string>)`: used if your test
@@ -71,6 +72,33 @@ like to override that behavior.
       vector of floating-point values.  The default implementation calculates
       the L2 norm (using `flit::l2norm()`), which is great if that is what you
       want.  Otherwise, you will want to override this function.
+
+## Default Comparison Details
+
+The `flit::abs_compare()` function used as the default implementation for
+`compare(long double ground_truth, long double test_value)` does more than just
+`std::abs(test_value - ground_truth)`.  It handles `NaN` and `inf` in a special
+way.  The table below has only the instances where the behavior of
+`flit::abs_compare()` is different from `std::abs()`:
+
+| ground truth| test value | Return |
+|-------------|------------|--------|
+|  NaN        |  NaN       |  0.0   |
+| -NaN        | -NaN       |  0.0   |
+|  inf        |  inf       |  0.0   |
+| -inf        | -inf       |  0.0   |
+
+The differences from using the regular `std::abs()` is that
+
+* If the ground truth and the test value exactly match (type, value, and sign),
+  then return `0.0`.  If the value from the ground truth is `NaN`, then we
+  return `0.0` if the test value is also `NaN` to signify that we got the
+  expected value.
+
+The `flit::l2norm()` function uses the `flit::abs_compare()` function to take
+the difference element-wise between the two vectors before doing summation.
+Therefore, if the two vectors have `NaN` and `inf` in the same locations in the
+vector, it will be accounted for.
 
 
 ## Disabling Test Cases

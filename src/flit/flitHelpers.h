@@ -93,6 +93,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <mutex>
 #include <ostream>
 #include <random>
@@ -102,6 +103,7 @@
 #include <vector>
 
 #include <cfloat>
+#include <cmath>
 
 #ifndef FLIT_UNUSED
 #define FLIT_UNUSED(x) (void)x
@@ -255,13 +257,48 @@ as_int(long double val) {
 }
 
 template <typename T>
+bool equal_with_nan_inf(T a, T b) {
+  if (std::fpclassify(a) == std::fpclassify(b)) {
+    switch (std::fpclassify(a)) {
+      case FP_INFINITE:
+      case FP_NAN:
+        return std::signbit(a) == std::signbit(b);
+
+      case FP_NORMAL:
+      case FP_SUBNORMAL:
+      case FP_ZERO:
+      default:
+        return a == b;
+    }
+  }
+  return false;
+}
+
+/**
+ * Default comparison used by FLiT.  Similar to
+ *
+ *   abs(actual - expected)
+ *
+ * The main difference is
+ * - If actual is the exact same as expected, then return 0.0.
+ *   That includes NaN, -NaN, inf, and -inf
+ */
+template <typename T>
+T abs_compare(T expected, T actual) {
+  if (equal_with_nan_inf(expected, actual)) {
+    return T(0.0);
+  }
+  return std::abs(actual - expected);
+}
+
+template <typename T>
 long double l2norm(const std::vector<T> &v1, const std::vector<T> &v2) {
   static_assert(std::is_floating_point<T>::value,
                 "Can only use floating-point types for l2norm()");
   long double score = 0.0L;
   int len = std::min(v1.size(), v2.size());
   for (int i = 0; i < len; i++) {
-    T diff = v1[i] - v2[i];
+    T diff = abs_compare(v1[i], v2[i]);
     score += diff * diff;
   }
   // remaining elements
