@@ -14,7 +14,7 @@ _A clear and concise description of what your problem is. Ex. I have an issue wh
 
 ### Suggested change:
 
-_A clear and concise description of what you want to happen. Add any considered drawbacks.  You can also specify potential design or architecture directions with planned implementation details._
+_A clear and concise description of what you want to happen. Add any considered drawbacks. You can also specify potential design or architecture directions with planned implementation details._
 
 
 ### Alternative approaches:
