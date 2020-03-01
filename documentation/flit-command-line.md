@@ -72,6 +72,9 @@ If you want to play with the litmus tests in this directory, you can pass the
 `--litmus-tests` flag which will copy over the litmus tests into the `tests`
 directory for use.
 
+Note: Only the litmus tests will be in this folder, the `Empty.cpp` file is
+not copied.
+
 ## flit update
 
 Updates the `Makefile` based on `flit-config.toml`. The `Makefile` is
