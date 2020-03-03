@@ -101,7 +101,7 @@ TROUBLE_CXX      := {trouble_cxx}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
 TROUBLE_CXX_TYPE := {trouble_type}
-BISECT_LINK      := $(GT_CXX)
+BISECT_LINK      := {bisect_linker}
 RM               := rm -f
 RMDIR            := rm -rf
 

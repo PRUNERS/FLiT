@@ -118,7 +118,7 @@ Tests FLiT Bisect, specifically the command-line options related to linking.
 ...         add_ldflags='-add6 -add7 -add8')
 ...     vars_unknown_linker_ld, vars_unknown_linker_ld_added = dual_bisect_compile(
 ...         './fake_gcc4.py', temp_dir, linker='./fake_gcc9.py',
-...         ldflags='-ld-for-unkonwn', add_ldflags='')
+...         ldflags='-ld-for-unknown', add_ldflags='')
 
 Test that BISECT_LDFLAGS is populated correctly
 -----------------------------------------------
@@ -126,32 +126,52 @@ Test that BISECT_LDFLAGS is populated correctly
 Uses the ld flags that were given
 >>> sorted(vars_ldflags['BISECT_LDFLAGS'])
 ['-ldflags', '-other']
+>>> sorted(vars_ldflags['LDFLAGS'])
+[]
 >>> sorted(vars_ldflags_added['BISECT_LDFLAGS'])
-['-add1', '-add2', '-ldflags', '-other']
+['-ldflags', '-other']
+>>> sorted(vars_ldflags_added['LDFLAGS'])
+['-add1', '-add2']
 
 Use flags from ./fake_clang34.py
 >>> sorted(vars_clanglink['BISECT_LDFLAGS'])
 ['-l-clang-link1', '-l-clang-link2', '-nopie']
+>>> sorted(vars_clanglink['LDFLAGS'])
+[]
 >>> sorted(vars_clanglink_added['BISECT_LDFLAGS'])
-['-add3', '-l-clang-link1', '-l-clang-link2', '-nopie']
+['-l-clang-link1', '-l-clang-link2', '-nopie']
+>>> sorted(vars_clanglink_added['LDFLAGS'])
+['-add3']
 
 Use the ld flags that were given
 >>> sorted(vars_both['BISECT_LDFLAGS'])
 ['-more', '-still']
+>>> sorted(vars_both['LDFLAGS'])
+[]
 >>> sorted(vars_both_added['BISECT_LDFLAGS'])
-['-add4', '-add5', '-more', '-still']
+['-more', '-still']
+>>> sorted(vars_both_added['LDFLAGS'])
+['-add4', '-add5']
 
 Empty because linker is not found in flit-config.toml
 >>> sorted(vars_unknown_linker['BISECT_LDFLAGS'])
 []
+>>> sorted(vars_unknown_linker['LDFLAGS'])
+[]
 >>> sorted(vars_unknown_linker_added['BISECT_LDFLAGS'])
+[]
+>>> sorted(vars_unknown_linker_added['LDFLAGS'])
 ['-add6', '-add7', '-add8']
 
 Use the ld flags that were given
 >>> sorted(vars_unknown_linker_ld['BISECT_LDFLAGS'])
 ['-ld-for-unknown']
+>>> sorted(vars_unknown_linker_ld['LDFLAGS'])
+[]
 >>> sorted(vars_unknown_linker_ld_added['BISECT_LDFLAGS'])
 ['-ld-for-unknown']
+>>> sorted(vars_unknown_linker_ld_added['LDFLAGS'])
+[]
 
 Test that the BISECT_LINK is set appropriately
 --------------------------------------------
