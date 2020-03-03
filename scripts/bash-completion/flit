@@ -46,7 +46,10 @@ _flit_bisect()
     --compile-only
     --precompile-fpic
     --skip-verification
-    -t --compiler-type"
+    -t --compiler-type
+    --ldflags
+    --add-ldflags
+    --use-linker"
 
   case "${prev}" in
 
