@@ -82,8 +82,6 @@
  */
 
 // This file includes all of the source files within FLiT to be compiled in one go
-//
-// For now, this is an experiment to see how it affects compile-time
 
 #include "flit.cpp"
 #include "FlitCsv.cpp"
