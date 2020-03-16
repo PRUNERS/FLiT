@@ -1,14 +1,67 @@
 import abc
 import argparse
 import unittest
+import sys
 
 def is_option_action(action):
+    '''
+    If the ArgumentParser action (which is ArgumentParser's way to store
+    possible arguments) is an option argument (meaning it starts with a "-"),
+    then return True.
+
+    >>> p = argparse.ArgumentParser()
+    >>> is_option_action(p.add_argument('--number'))
+    True
+
+    >>> is_option_action(p.add_argument('another_number'))
+    False
+
+    >>> subparsers = p.add_subparsers()
+    >>> _ = subparsers.add_parser('subcommand')
+    >>> is_option_action(subparsers)
+    False
+    '''
     return bool(action.option_strings)
 
 def is_position_action(action):
-    return not is_option_arg(action)
+    '''
+    If the ArgumentParser action (which is ArgumentParser's way to store
+    possible arguments) is a positional argument, then return True.
+
+    >>> p = argparse.ArgumentParser()
+    >>> is_position_action(p.add_argument('--number'))
+    False
+
+    >>> is_position_action(p.add_argument('another_number'))
+    True
+
+    >>> subparsers = p.add_subparsers()
+    >>> _ = subparsers.add_parser('subcommand')
+    >>> is_position_action(subparsers)
+    True
+    '''
+    return not is_option_action(action)
 
 def is_subparser_action(action):
+    '''
+    If the ArgumentParser action (which is ArgumentParser's way to store
+    possible arguments) is a subcommand with its own argument parsing, then
+    return True.
+
+    Note: all subparser actions are also position actions.
+
+    >>> p = argparse.ArgumentParser()
+    >>> is_subparser_action(p.add_argument('--number'))
+    False
+
+    >>> is_subparser_action(p.add_argument('another_number'))
+    False
+
+    >>> subparsers = p.add_subparsers()
+    >>> _ = subparsers.add_parser('subcommand')
+    >>> is_subparser_action(subparsers)
+    True
+    '''
     return isinstance(action, argparse._SubParsersAction)
 
 _p = argparse.ArgumentParser()
@@ -47,6 +100,8 @@ class ActionInspector:
             self.action_type = self.NAME_MAP[action.__class__]
         else:
             self.action_type = action.__class__.__name__
+            print('Warning: unrecognized action class: {}'.format(self.action_type),
+                  file=sys.stderr)
 
         # passthrough of attributes
         self.action = action
