@@ -92,15 +92,14 @@ import flit_import
 
 brief_description = 'Runs the make and adds to the database'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
-            This command runs the full set of tests and adds the results
-            to the configured database.
-            ''',
-        )
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description = '''
+        This command runs the full set of tests and adds the results
+        to the configured database.
+        '''
     processors = multiprocessing.cpu_count()
     parser.add_argument('-j', '--jobs', type=int, default=processors,
                         help='''
@@ -130,6 +129,12 @@ def main(arguments, prog=sys.argv[0]):
                             when creating a new run.  This argument is ignored
                             if --append is specified.  The default label is
                             ''')
+    return parser
+
+def main(arguments, prog=None):
+    'Main logic here'
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     check_call_kwargs = dict()

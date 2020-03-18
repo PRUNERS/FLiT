@@ -12,6 +12,7 @@ Instruction Contents:
   * [Compilers](#compilers)
   * [Optional Dependencies](#optional-dependencies)
 * [FLiT Setup](#flit-setup)
+* [Bash Completion](#bash-completion)
 * [Database Setup](#database-setup)
 * [Uninstallation](#uninstallation)
 
@@ -217,6 +218,48 @@ ln -s ~/FLiT/scripts/flitcli/flit.py ~/bin/flit
 
 See [FLiT Command-Line](flit-command-line.md) for more information on how to
 use the command-line tool.
+
+## Bash Completion
+
+FLiT comes with a bash-completion script to be used with bash.  In the
+repository, the script can be found at `scripts/bash-completion/flit`.  If you
+install FLiT using `make install`, it gets installed to
+`$PREFIX/share/bash-completion/completions/flit`.  Some systems will be able to
+use the flit bash completion from this location directly (if `$PREFIX="/usr"`).
+Other systems store these scripts in `/etc/bash_completion.d/`.
+
+If your system stores bash-completion scripts in `/etc/bash_completion.d/`, you
+can either copy the script, or create a symbolic link (preferred).
+
+```bash
+sudo ln -s /usr/share/bash-completion/completions/flit /etc/bash_completion.d/flit
+```
+
+If you do not have sudo permissions or do not want to install bash-completion
+for flit system-wide, then you can implement it locally for your user account.
+Newer bash-completion installations allow users to have a script in their home
+directory called `$HOME/.bash_completion`.  We recommend you have a directory
+for storing bash-completion scripts.  You can put the following in your
+`$HOME/.bash_completion` file
+
+```bash
+if [ -d ~/.local/share/bash-completion/completions ]; then
+  for file in ~/.local/share/bash-completion/completions/*; do
+    if [ -f "$file" ]; then
+      source "$file"
+    fi
+  done
+fi
+```
+
+Then you can simply copy or symbolically link bash-completion scripts into
+`~/.local/share/bash-completion/completions`.  If you are using FLiT from the
+repository, you can accomplish that with
+
+```bash
+mkdir -p ~/.local/share/bash-completion/completions
+ln -s <git-repo-dir>/FLiT/scripts/bash-completion/flit ~/.local/share/bash-completion/completions/flit
+```
 
 ## Database Setup
 

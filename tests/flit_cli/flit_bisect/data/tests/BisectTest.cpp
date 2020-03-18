@@ -94,7 +94,7 @@
 #include <cmath>
 
 int real_problem_test(int, char**) {
-  double answer = 
+  double answer =
       file1_all() +
       file2_all() +
       file3_all() +

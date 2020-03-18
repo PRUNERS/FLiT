@@ -98,33 +98,17 @@ def _file_check(filename):
         raise argparse.ArgumentTypeError('File does not exist: {0}'.format(filename))
     return filename
 
-def get_dbfile_from_toml(tomlfile):
-    'get and return the database.filepath field'
-    import toml
-    try:
-        projconf = toml.load(tomlfile)
-    except FileNotFoundError:
-        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
-              file=sys.stderr)
-        raise
-    util.fill_defaults(projconf)
-
-    assert projconf['database']['type'] == 'sqlite', \
-            'Only sqlite database supported'
-    return projconf['database']['filepath']
-
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description='''
             Import flit results into the configured database.  The configured
             database is found from the settings in flit-config.toml.  You can
             import either exported results or results from manually running the
             tests.  Note that importing the same thing twice will result in
             having two copies of it in the database.
-            ''',
-        )
+            '''
     parser.add_argument('importfile', nargs='+', type=_file_check,
                         help='''
                             File(s) to import into the database.  These files
@@ -167,6 +151,27 @@ def main(arguments, prog=sys.argv[0]):
                             can also be used when you do not have the toml
                             python package installed (goodie!).
                             ''')
+    return parser
+
+def get_dbfile_from_toml(tomlfile):
+    'get and return the database.filepath field'
+    import toml
+    try:
+        projconf = toml.load(tomlfile)
+    except FileNotFoundError:
+        print('Error: {0} not found.  Run "flit init"'.format(tomlfile),
+              file=sys.stderr)
+        raise
+    util.fill_defaults(projconf)
+
+    assert projconf['database']['type'] == 'sqlite', \
+            'Only sqlite database supported'
+    return projconf['database']['filepath']
+
+def main(arguments, prog=None):
+    'Main logic here'
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     if args.dbfile is None:

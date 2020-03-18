@@ -92,19 +92,30 @@ import flit
 import flitconfig as conf
 
 brief_description = 'Allows access to experimental features'
+experimental_dir = os.path.join(conf.script_dir, 'experimental')
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    description = '''
+def populate_parser(parser=None, subcommands=None):
+    if subcommands is None:
+        subcommands = flit.load_subcommands(experimental_dir)
+    parser = flit.populate_parser(subcommands=subcommands, parser=parser)
+    parser.description = '''
         The experimental command gives access to more subcommands that are not
         yet fully mature or are under evaluation for adoption as a true FLiT
         command.
         '''
-    return flit._main_impl(
-        arguments,
-        prog=prog,
-        module_dir=os.path.join(conf.script_dir, 'experimental'),
-        description=description)
+    return parser
+
+def main(arguments, prog=None):
+    'Main logic here'
+    subcommands = flit.load_subcommands(experimental_dir)
+    subcommands.append(flit.create_help_subcommand(subcommands))
+    parser = populate_parser(subcommands=subcommands)
+    if prog: parser.prog = prog
+    args, remaining = parser.parse_known_args(arguments)
+
+    subcommand_map = {sub.name: sub for sub in subcommands}
+    subcommand = subcommand_map[args.subcommand]
+    return subcommand.main(remaining, prog=parser.prog + ' ' + args.subcommand)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

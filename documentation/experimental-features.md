@@ -72,7 +72,7 @@ read variables if they are present.  The variables read from `custom.mk` are
 
 This `custom.mk` file is in GNU Makefile format.  Any additional variables and
 rules defined inside are completely ignored.  Feel free to use anything from
-GNU Make including `if` statements and things like `$(wildcard ../src/*.cpp)`. 
+GNU Make including `if` statements and things like `$(wildcard ../src/*.cpp)`.
 
 
 

@@ -328,7 +328,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
             for x in repl_copy['link_flags']])
         del repl_copy['link_flags']
 
-    
+
 
     # Find the next unique file name available in directory
     num = 0
@@ -1056,16 +1056,16 @@ def bisect_search(score_func, elements, found_callback=None,
 
     return differing_list
 
-def parse_args(arguments, prog=sys.argv[0]):
+def populate_parser(parser=None):
     '''
     Builds a parser, parses the arguments, and returns the parsed arguments.
 
     @param arguments: (list of str) arguments given to the program
     @param prog: (str) name of the program
     '''
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description = '''
             Compiles the source code under both the ground-truth
             compilation and a given problematic compilation.  This tool
             then finds the minimal set of source files needed to be
@@ -1075,8 +1075,7 @@ def parse_args(arguments, prog=sys.argv[0]):
 
             The log of the procedure will be kept in bisect.log.  Note that
             this file is overwritten if you call flit bisect again.
-            ''',
-        )
+            '''
 
     # These positional arguments only make sense if not doing an auto run
     parser.add_argument('compilation',
@@ -1237,7 +1236,14 @@ def parse_args(arguments, prog=sys.argv[0]):
                             given compiler is the same as that used by the
                             ground-truth compilation.
                             ''')
+    return parser
 
+def parse_args(arguments, prog=None):
+    '''
+    Builds a parser, parses the arguments, and returns the parsed arguments.
+    '''
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Split the compilation into separate components
@@ -1658,7 +1664,7 @@ def compile_trouble(directory, compiler, optl, switches, compiler_type,
     if delete:
         shutil.rmtree(trouble_path)
 
-def run_bisect(arguments, prog=sys.argv[0]):
+def run_bisect(arguments, prog=None):
     '''
     The actual function for running the bisect command-line tool.
 
@@ -1675,7 +1681,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
     return value for sources and symbols are both None.  If the search fails in
     the symbols part, then only the symbols return value is None.
     '''
-    args = parse_args(arguments, prog)
+    args = parse_args(arguments, prog=prog)
 
     if args.compiler_type == 'auto':
         projconf = util.load_projconf(args.directory)
@@ -1978,7 +1984,7 @@ def auto_bisect_worker(arg_queue, result_queue):
         result_queue.put((row, -1, None, None, None, 1))
         raise
 
-def parallel_auto_bisect(arguments, prog=sys.argv[0]):
+def parallel_auto_bisect(arguments, prog=None):
     '''
     Runs bisect in parallel under the auto mode.  This is only applicable if
     the --auto-sqlite-run option has been specified in the arguments.
@@ -2022,7 +2028,8 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     # some, then an error will occur.
     args = parse_args(
         ['--precision', 'double', 'compilation', 'testcase'] + arguments,
-        prog)
+        prog=prog)
+
     sqlitefile = args.auto_sqlite_run
     projconf = util.load_projconf(args.directory)
 
@@ -2154,7 +2161,7 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     return return_tot
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     '''
     A wrapper around the bisect program.  This checks for the --auto-sqlite-run
     stuff and runs the run_bisect multiple times if so.

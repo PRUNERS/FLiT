@@ -96,6 +96,7 @@ __all__ = [
     'src_dir',
     'include_dir',
     'config_dir',
+    'bash_completion_dir',
     'data_dir',
     'litmus_test_dir',
     ]
@@ -114,6 +115,9 @@ include_dir = os.path.realpath(os.path.join(script_dir, '..', '..', 'src'))
 
 # default configuration for flit init
 config_dir = os.path.join(script_dir, 'config')
+
+# where bash completion scripts for flit reside
+bash_completion_dir = os.path.join(script_dir, '..', 'bash-completion')
 
 with open(os.path.join(config_dir, 'version.txt'), 'r') as version_file:
     version = version_file.read().strip()

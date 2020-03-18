@@ -138,6 +138,10 @@ True
 >>> flitconfig.config_dir == os.path.join(prefix, 'share', 'flit', 'config')
 True
 
+>>> flitconfig.bash_completion_dir == os.path.join(
+...     prefix, 'share', 'bash-completion', 'completions')
+True
+
 >>> flitconfig.data_dir == os.path.join(prefix, 'share', 'flit', 'data')
 True
 
@@ -168,6 +172,9 @@ True
  'include/flit/timeFunction.h',
  'include/flit/tinydir.h',
  'share',
+ 'share/bash-completion',
+ 'share/bash-completion/completions',
+ 'share/bash-completion/completions/flit',
  'share/flit',
  'share/flit/benchmarks',
  'share/flit/benchmarks/README.md',

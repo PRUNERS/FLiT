@@ -29,6 +29,10 @@ Possible subcommands:
 * [flit bisect](#flit-bisect): Assign variability blame to files and functions
 * [flit experimental](#flit-experimental): Access to experimental features
 
+Possibly of interest:
+
+* [Adding More Subcommands](#adding-more-subcommands)
+
 ## flit help
 
 This can display the help documentation for a specific subcommand.  This is
@@ -218,6 +222,17 @@ available.
 
 You may also read the documentation on
 [experimental features](experimental-features.md).
+
+
+## Adding More Subcommands
+
+The FLiT command-line structure is extremely modular.  If you create a file
+with the correct naming scheme, put it in the correct directory, and implement
+three things, it will automatically be picked up and become available as a
+subcommand from the `flit` command-line tool.
+
+See the flit command-line [README.md](../scripts/flitcli/README.md) for more
+information.
 
 
 [Prev](litmus-tests.md)

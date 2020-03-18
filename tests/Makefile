@@ -38,11 +38,11 @@ run_tester_py: $(HARNESS_PY)
 	python3 -m doctest $(HARNESS_PY)
 
 build__%:
-	@$(MAKE) build --directory $*
+	@$(MAKE) --no-print-directory build --directory $*
 
 check__%:
-	@$(MAKE) check --directory $*
+	@$(MAKE) --no-print-directory check --directory $*
 
 clean__%:
-	@$(MAKE) clean --directory $*
+	@$(MAKE) --no-print-directory clean --directory $*
 

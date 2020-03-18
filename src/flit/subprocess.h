@@ -93,7 +93,7 @@
   static Flit_##mainfunc##Factory global_##mainfunc##Factory;  \
 
 #include <string>
- 
+
 namespace flit {
 
 struct ProcResult {
