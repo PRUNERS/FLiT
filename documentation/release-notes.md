@@ -6,7 +6,7 @@
 
 Release note versions:
 
-- [v2.1.0](#v2.1.0) _(TODO: Date)_
+- [v2.1.0](#v2.1.0) _(19 March 2020)_
 - [v2.0-beta.2](#v2.0-beta.2) _(10 April 2019)_
 - [v2.0-beta.1](#v2.0-beta.1) _(18 July 2018)_
 - [v2.0-alpha.3](#v2.0-alpha.3) _(29 January 2018)_
@@ -16,7 +16,7 @@ Release note versions:
 
 ## v2.1.0
 
-_Released on TODO: Date_
+_Released on 19 March 2020_
 
 FLiT is now very stable, so we can exit the beta releases.  Honestly, we kept it in the beta release not because the tool was unreliable, but rather because we were unsure if the interface would undergo breaking changes with design reworks.
 
