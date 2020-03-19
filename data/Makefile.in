@@ -462,11 +462,16 @@ R_DEP   := $(R_OBJ:%.o=%.d)
 
 recursion-target: $(R_TARGET)
 
+# By giving "phony-%" as the value to R_TARGET, we only create the object files
+ifeq ($(patsubst phony-%,phony,$(R_TARGET)),phony)
+$(R_TARGET): $(R_OBJ)
+else
 $(R_TARGET): $(R_OBJ)
 	@$(call color_out,BLUE,  Creating $(R_TARGET))
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
+endif
 
 $(R_OBJ_DIR):
 	+$(MKDIR) $@

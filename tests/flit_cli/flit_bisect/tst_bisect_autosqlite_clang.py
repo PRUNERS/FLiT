@@ -89,23 +89,14 @@ The tests are below using doctest
 Let's now make a temporary directory and test that we can successfully compile
 and run FLiT bisect
 
->>> import glob
 >>> import os
 >>> import shutil
 >>> import subprocess as subp
 >>> from io import StringIO
->>> import flitutil as util
-
->>> class BisectTestError(RuntimeError): pass
+>>> from common import BisectTestError, flit_init
 
 >>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         if retval != 0:
-...             raise BisectTestError(
-...                 'Could not initialize (retval={0}):\\n'.format(retval) +
-...                 ostream.getvalue())
-...         init_out = ostream.getvalue().splitlines()
+...     init_out = flit_init(temp_dir)
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))
@@ -152,11 +143,11 @@ and run FLiT bisect
 ...         '--no-print-directory', '--always-make',
 ...         '-f', os.path.join('bisect-precompile', 'bisect-make-01.mk')])
 ...     makeout3 = makeout3.strip().decode('utf-8').splitlines()
-...     troublecxx = util.extract_make_var(
+...     troublecxx = th.util.extract_make_var(
 ...         'TROUBLE_CXX',
 ...         os.path.join('bisect-precompile', 'bisect-make-01.mk'),
 ...         directory=temp_dir)
-...     troublecxx_type = util.extract_make_var(
+...     troublecxx_type = th.util.extract_make_var(
 ...         'TROUBLE_CXX_TYPE',
 ...         os.path.join('bisect-precompile', 'bisect-make-01.mk'),
 ...         directory=temp_dir)
@@ -173,7 +164,7 @@ Let's make sure that the fake clang is not called with --gcc-toolchain
 >>> fakeclang_lines = [line for line in makeout1
 ...                    if line.startswith('./fake_clang34.py')]
 >>> len(fakeclang_lines)
-9
+8
 >>> any('--gcc-toolchain' in line for line in fakeclang_lines)
 False
 

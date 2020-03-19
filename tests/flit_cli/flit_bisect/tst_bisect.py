@@ -95,17 +95,12 @@ and run FLiT bisect
 >>> import subprocess as subp
 >>> from io import StringIO
 >>> import flitutil as util
+>>> from common import BisectTestError, flit_init
 
 >>> class BisectTestError(RuntimeError): pass
 
 >>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         retval = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         if retval != 0:
-...             raise BisectTestError(
-...                 'Could not initialize (retval={0}):\\n'.format(retval) +
-...                 ostream.getvalue())
-...         init_out = ostream.getvalue().splitlines()
+...     init_out = flit_init(temp_dir)
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))

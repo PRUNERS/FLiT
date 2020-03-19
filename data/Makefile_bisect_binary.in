@@ -101,7 +101,7 @@ TROUBLE_CXX      := {trouble_cxx}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
 TROUBLE_CXX_TYPE := {trouble_type}
-BISECT_LINK      := $(GT_CXX)
+BISECT_LINK      := {bisect_linker}
 RM               := rm -f
 RMDIR            := rm -rf
 
@@ -140,6 +140,7 @@ SPLIT_SRC        :=
 
 TROUBLE_CXXFLAGS := {trouble_cxxflags}
 TROUBLE_LDFLAGS  := {trouble_ldflags}
+BISECT_LDFLAGS   := {bisect_ldflags}
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
@@ -161,34 +162,6 @@ else
   GT_TARGET_TO_USE  := $(GT_TARGET)
 endif
 
-# Similar to REC_COMPILE_RULE but has an extra param
-# @param 8: directory where a copy may reside.  If this directory has the
-#   desired object file, then copy it instead of compiling one
-define REC_COMPILE_OR_COPY_RULE
-ifneq ($$(R_TARGET),$1)
-.PHONY: $1
-$1: Makefile custom.mk $$(MAKEFILE)
-	+$$(REC_MAKE) R_TYPE=compile-or-copy \
-	  R_TARGET="$1" \
-	  R_COMPILER="$2" \
-	  R_OPTL="$3" \
-	  R_SWITCHES="$4" \
-	  R_CXXFLAGS="$5" \
-	  R_LDFLAGS="$6" \
-	  R_OBJ_DIR="$7" \
-	  R_COPY_DIR="$8"
-endif
-endef
-
-# Note: trouble-fpic is to create the fpic version of the executable
-#   it is used to precompile fpic object files if requested for speedier search
-#   This target is not reentrant, do not have multiple of them running at the
-#   same time
-.PHONY: trouble trouble-out trouble-fpic
-trouble: $(TROUBLE_TARGET)
-trouble-out: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
-trouble-fpic: $(TROUBLE_TARGET)-fpic
-
 .PHONY: bisect
 bisect: $(BISECT_TARGET) $(BISECT_RESULT)
 
@@ -199,10 +172,6 @@ bisect-smallclean:
 	$(RM) $(BISECT_TARGET)
 	$(RM) $(BISECT_OUT)
 	$(RM) $(addsuffix *.dat,$(BISECT_OUT))
-	$(RM) $(TROUBLE_TARGET)
-	$(RM) $(TROUBLE_TARGET)-fpic
-	$(RM) $(TROUBLE_TARGET_OUT)
-	$(RM) $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
 	$(RMDIR) $(SPLIT_DIR)
 
 bisect-clean: bisect-smallclean
@@ -215,15 +184,17 @@ bisect-clean: bisect-smallclean
 
 bisect-distclean: bisect-clean
 	$(RM) bisect.log
-	$(RM) $(TROUBLE_TARGET_RESULT)
 	$(RM) $(BISECT_RESULT)
 	$(RM) $(MAKEFILE)
 	$(RMDIR) $(SYMBOLS_DIR)
 	$(RMDIR) $(LOCAL_OBJ_DIR)
 	-rmdir --ignore-fail-on-non-empty $(BISECT_DIR)
 
+.PHONY: trouble phony-trouble
+trouble: phony-trouble
+# Note: phony-target here causes no executable to be created
 $(eval $(call REC_COMPILE_RULE,\
-  $(TROUBLE_TARGET),\
+  phony-trouble,\
   $(TROUBLE_CXX),\
   $(TROUBLE_OPTL),\
   $(TROUBLE_SWITCHES),\
@@ -231,8 +202,12 @@ $(eval $(call REC_COMPILE_RULE,\
   $(TROUBLE_LDFLAGS),\
   $(BISECT_OBJ_DIR)))
 
+# to create the fpic version of the object files
+.PHONY: trouble-fpic phony-trouble-fpic
+trouble-fpic: phony-trouble-fpic
+# Note: phony-target here causes no executable to be created
 $(eval $(call REC_COMPILE_RULE,\
-  $(TROUBLE_TARGET)-fpic,\
+  phony-trouble-fpic,\
   $(TROUBLE_CXX),\
   $(TROUBLE_OPTL),\
   $(TROUBLE_SWITCHES),\
@@ -275,16 +250,6 @@ $(BISECT_RESULT): $(BISECT_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_TO_USE)
 	$(RUNWRAP) ./$(GT_TARGET_TO_USE) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
 	  --suffix "-comparison.csv" $< -o /dev/null
 
-$(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET)
-	@$(call color_out,CYAN,  $< -> $@)
-	$(RUNWRAP) ./$(TROUBLE_TARGET) --output $(TROUBLE_TARGET_OUT) --no-timing \
-	  --precision "$(PRECISION)" $(TEST_CASE)
-
-$(TROUBLE_TARGET_RESULT): $(TROUBLE_TARGET_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_TO_USE)
-	@$(call color_out,CYAN,  $< -> $@)
-	$(RUNWRAP) ./$(GT_TARGET_TO_USE) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
-	  --suffix "-comparison.csv" $< -o /dev/null
-
 #################################
 # *** R_TYPE=bisect-compile *** #
 #################################
@@ -313,8 +278,8 @@ recursion-target: $(BISECT_TARGET)
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	@$(call color_out,BLUE,  Creating $@)
-	$(GT_CXX) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
-	  $(GT_LDFLAGS) $(LDLIBS)
+	$(BISECT_LINK) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
+	  $(BISECT_LDFLAGS) $(LDLIBS)
 
 # compile BISECT_GT_OBJ
 $(foreach s,$(BISECT_GT_SRC),\
