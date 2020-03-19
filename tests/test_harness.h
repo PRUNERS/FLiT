@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -107,18 +107,17 @@
  *
  * These macros can be called from the top-level or from helper functions
  *
- * A test is simply a void function taking no arguments.  It is registered with
+ * A test is simply a void function taking no arguments.  It is created with
  * the macro
  *
- * TH_REGISTER(test_name)
+ * TH_TEST(test_name)
  *
  * Here is an example:
  *
  *   #include "test_harness.h"
- *   void test_add() {
+ *   TH_TEST(test_add) {
  *     TH_EQUAL(1 + 2, 3);
  *   }
- *   TH_REGISTER(test_add)
  *
  * That is all that is required to implement and add a test.  Tests will
  * execute in alphabetical order.
@@ -129,30 +128,33 @@
 
 // Assertion definitions
 #define TH_VERIFY_MSG(x, msg) \
-  if (!(x)) { \
-    throw th::AssertionError(__FILE__, __func__, __LINE__, msg);\
-  }
+  do {                                                         \
+    if (!(x)) {                                                \
+      throw th::AssertionError(__FILE__, __func__, __LINE__, msg);\
+    }                                                          \
+  } while (false)
 #define TH_VERIFY(x) TH_VERIFY_MSG(x, "TH_VERIFY("#x")")
 #define TH_EQUAL(a, b) TH_VERIFY_MSG((a) == (b), "TH_EQUAL("#a", "#b")")
 #define TH_NOT_EQUAL(a, b) TH_VERIFY_MSG((a) != (b), "TH_NOT_EQUAL("#a", "#b")")
 #define TH_FAIL(msg) \
   TH_VERIFY_MSG(false, std::string("TH_FAIL(\"") + msg + "\")")
 #define TH_SKIP(msg) throw th::SkipError(__FILE__, __func__, __LINE__, msg)
-#define TH_THROWS(exp, exception)                            \
-  try {                                                      \
-    exp;                                                     \
-    TH_VERIFY_MSG(false, #exp " did not throw " #exception); \
-  } catch (exception&) {}
+#define TH_THROWS(exp, exception)                              \
+  do {                                                         \
+    try {                                                      \
+      exp;                                                     \
+      TH_VERIFY_MSG(false, #exp " did not throw " #exception); \
+    } catch (exception&) {}                                    \
+  } while(false)
 // Adds the test to map th::tests before main() is called
-#define TH_REGISTER(test_name)             \
-  struct TH_Registered_Test_##test_name {  \
-    TH_Registered_Test_##test_name() {     \
-      th::tests[#test_name] = test_name;   \
-    }                                      \
-  };                                       \
-  TH_Registered_Test_##test_name r_##test_name
+#define TH_REGISTER(func) static th::TestRegistrar registrar_##func(#func, func)
+#define TH_TEST(name) \
+  void name(); \
+  TH_REGISTER(name); \
+  void name()
 
 // includes
+
 #include <exception>
 #include <iostream>
 #include <map>
@@ -205,15 +207,75 @@ namespace th {
     }
   };
 
-};
+  struct TestRegistrar {
+    TestRegistrar(const std::string &name, test func) {
+      tests[name] = func;
+    }
+  };
+
+}; // end of namespace th
+
+void printUsage(char *progname) {
+  std::cout <<
+    "Usage:\n"
+    "  " << progname << " --help\n"
+    "  " << progname << " [--verbose|--quiet|--semi-quiet|--list-tests]\n"
+    "\n"
+    "Description:\n"
+    "  Runs unit tests and reports back.\n"
+    "\n"
+    "Return Code:\n"
+    "  Returns the number of failed tests.\n"
+    "\n"
+    "Options:\n"
+    "  -h, --help      Print this usage and exit\n"
+    "  -v, --verbose   Print verbose information\n"
+    "  --semi-quiet    Only print if something goes wrong\n"
+    "  -q, --quiet     Do not print anything, just use return codes\n"
+    "  --list-tests    Only list tests and exit; don't run anything\n";
+}
 
 int main(int argCount, char *argList[]) {
+  // quiet implies semiquiet
   bool quiet = false;
-  if (argCount > 1 &&
-      (argList[1] == std::string("--quiet") ||
-       argList[1] == std::string("-q")))
-  {
-    quiet = true;
+  bool semiquiet = false;
+  bool verbose = false;
+  for (int i = 1; i < argCount; i++) {
+    if (argList[i] == std::string("--quiet") ||
+        argList[i] == std::string("-q"))
+    {
+      quiet = true;
+      semiquiet = true;
+      verbose = false;
+    }
+    else if (argList[i] == std::string("--semi-quiet")) {
+      quiet = false;
+      semiquiet = true;
+      verbose = false;
+    }
+    else if (argList[i] == std::string("--verbose") ||
+             argList[i] == std::string("-v"))
+    {
+      quiet = false;
+      semiquiet = false;
+      verbose = true;
+    }
+    else if (argList[i] == std::string("--help") ||
+             argList[i] == std::string("-h"))
+    {
+      printUsage(argList[0]);
+      return 0;
+    }
+    else if (argList[i] == std::string("--list-tests")) {
+      for (auto &test_pair : th::tests) {
+        std::cout << test_pair.first << std::endl;
+      }
+      return 0;
+    }
+    else {
+      std::cerr << "Error: Unrecognized argument: " << argList[i] << std::endl;
+      return 1;
+    }
   }
   std::vector<std::string> failed_tests;
   std::vector<std::string> skipped_tests;
@@ -224,27 +286,35 @@ int main(int argCount, char *argList[]) {
     th::current_test = test_name;
     try {
       test_ptr();
+      if (verbose) {
+        std::cout << test_name << ": PASSED\n";
+      }
     } catch (const th::SkipError &err) {
-      if (!quiet) {
+      if (!semiquiet) {
         std::cout << test_name << ": " << err.what() << "\n";
       }
       skipped_tests.emplace_back(test_name);
     } catch (const th::AssertionError &err) {
-      std::cout << test_name << ":\n  " << err.what() << "\n";
+      if (!quiet) {
+        std::cout << test_name << ":\n  " << err.what() << "\n";
+      }
       failed_tests.emplace_back(test_name);
     } catch (const std::exception &err) {
-      std::cout << test_name << ": Uncought exception\n  "
-                << typeid(err).name() << ": " << err.what() << "\n";
+      if (!quiet) {
+        std::cout << test_name << ": Uncaught exception\n  "
+                  << typeid(err).name() << ": " << err.what() << "\n";
+      }
       failed_tests.emplace_back(test_name);
     } catch (...) {
-      auto err = std::current_exception;
-      std::cout << test_name << ": Uncought throw (not a std::exception)\n";
+      if (!quiet) {
+        std::cout << test_name << ": Uncaught throw (not a std::exception)\n";
+      }
       failed_tests.emplace_back(test_name);
     }
   }
 
   // print results
-  if (!quiet) {
+  if (!semiquiet) {
     if (failed_tests.size() > 0 || skipped_tests.size() > 0) {
       std::cout << "\n----------------------------------------"
                    "----------------------------------------\n\n";

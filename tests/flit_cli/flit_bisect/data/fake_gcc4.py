@@ -1,0 +1,1 @@
+../../../shared/fake_gcc4.py

@@ -9,7 +9,8 @@
 There are currently only two tables in the created SQLite3 database (although
 there may be more added later).  The schema for this database can be found in
 `data/db/tables-sqlite.sql`, or in the install located at
-`<PREFIX>/share/flit/data/db/tables-sqlite.sql`.  Alternatively, you can see
+`<DESTDIR><PREFIX>/share/flit/data/db/tables-sqlite.sql`.
+Alternatively, you can see
 the schema of the SQLite3 database by querying for it:
 
 ```sqlite3

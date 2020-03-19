@@ -15,7 +15,7 @@ The benchmarks are found in the top-level directory `benchmarks`.
 These benchmarks are also part of the installation, and can be copied from
 there to exercise FLiT's capabilities.  They are installed in
 
-`$(PREFIX)/share/flit/benchmarks`
+`$(DESTDIR)$(PREFIX)/share/flit/benchmarks`
 
 Here is a brief summary of each benchmark:
 

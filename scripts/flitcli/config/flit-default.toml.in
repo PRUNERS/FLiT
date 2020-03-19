@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -85,9 +85,6 @@
 # General information
 [host]
 
-# if you omit name, the system hostname will be used
-name = '{hostname}'
-
 # if you omit flit_path, the current flit executable will be used
 flit_path = '{flit_path}'
 
@@ -120,12 +117,9 @@ timing_repeats = 3
 
 # The tests can be run with MPI to test MPI applications
 # Warning: FLiT assumes tests are deterministic.  It is your responsability to
-#          ensure that your test will always produce the same result even using
-#          MPI.
-# The mpirun_args are for any flags passed to mpirun.  For example, you can do
-#   mpirun_args = '-n 16 --verbose'
+#          ensure that your test will always produce equivalent results even
+#          using MPI.
 enable_mpi = false
-mpirun_args = ''
 
 
 # The settings for "make dev", which generates the "devrun" executable
@@ -166,6 +160,9 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+# compiler-specific flags always used
+fixed_compile_flags = ''
+fixed_link_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -202,6 +199,9 @@ switches_list = [
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+# compiler-specific flags always used
+fixed_compile_flags = ''
+fixed_link_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',
@@ -240,6 +240,9 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+# compiler-specific flags always used
+fixed_compile_flags = ''
+fixed_link_flags = ''
 # search space of optimization levels
 optimization_levels = [
   '-O0',

@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -129,10 +129,40 @@ True
 True
 >>> '-DFLIT_FILENAME=\\'"devrun"\\'' in actual
 True
->>> '-o devrun obj/main_dev.o obj/Empty_dev.o' in actual
+>>> '-o devrun' in actual
 True
->>> '-lm -lstdc++ -L{libdir} -lflit -Wl,-rpath={libdir}' \\
-... .format(libdir=th.config.lib_dir) in actual
+>>> 'obj/dev/main.cpp.o obj/dev/Empty.cpp.o' in actual
+True
+>>> '-lm' in actual
+True
+>>> '-lstdc++' in actual
+True
+
+The same test, but with the 'gt' target
+
+>>> import subprocess as subp
+>>> with th.tempdir() as temp_dir:
+...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
+...     actual = subp.check_output(['make', '-C', temp_dir, '-n', 'gt'])
+Creating ...
+>>> actual = actual.decode('utf-8').strip()
+>>> '-DFLIT_HOST=' in actual
+True
+>>> '-DFLIT_COMPILER=\\'"g++"\\'' in actual
+True
+>>> '-DFLIT_OPTL=\\'"-O0"\\'' in actual
+True
+>>> '-DFLIT_SWITCHES=\\'""\\'' in actual
+True
+>>> '-DFLIT_FILENAME=\\'"gtrun"\\'' in actual
+True
+>>> '-o gtrun' in actual
+True
+>>> 'obj/gt/main.cpp.o obj/gt/Empty.cpp.o' in actual
+True
+>>> '-lm' in actual
+True
+>>> '-lstdc++' in actual
 True
 
 Let's actually now compile and run the empty test under different circumstances

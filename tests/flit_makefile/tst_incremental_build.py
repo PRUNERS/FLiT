@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -92,26 +92,34 @@ The tests are below using doctest
 >>> import re
 >>> import time
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 Test that the dev target will be rebuilt if one of the files is updated.
 We use 'make --touch' to simply touch files it would create and then we will
 test that the correct files are updated.
->>> def compile_target(directory, target):
+>>> def compile_target(directory, target, touch=True):
 ...     'Compiles the dev target using "make --touch" and returns the output'
-...     output = subp.check_output(['make', '-C', directory, '--touch', target])
+...     command = ['make', '-C', directory, target, 'VERBOSE=1']
+...     if touch:
+...         command.append('--touch')
+...     output = subp.check_output(command)
 ...     return output.decode('utf-8').strip()
 >>> compile_dev = lambda x: compile_target(x, 'dev')
 >>> with th.tempdir() as temp_dir:
 ...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
 ...     # fake the built elements -- don't actually build for time's sake
-...     os.mkdir(os.path.join(temp_dir, 'obj'))
+...     _ = compile_target(temp_dir, 'dirs', touch=False)
 ...     before_build = compile_dev(temp_dir)
 ...     # this next build should say nothing to do
 ...     after_build = compile_dev(temp_dir)
 ...     # update one file and recompile
 ...     with open(os.path.join(temp_dir, 'main.cpp'), 'a') as mainfile:
 ...         mainfile.write('#include "new_header.h"\\n')
-...     with open(os.path.join(temp_dir, 'obj', 'main_dev.d'), 'w') as maindep:
-...         maindep.write('obj/main_dev.o: main.cpp new_header.h\\n')
+...     maindepname = os.path.join(temp_dir, 'obj', 'dev', 'main.cpp.d')
+...     with open(maindepname, 'w') as maindep:
+...         maindep.write('obj/dev/main.cpp.o: main.cpp new_header.h\\n')
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_dev(temp_dir)
 ...     # touch the header file and make sure it recompiles again
@@ -122,22 +130,22 @@ Creating ...
 
 >>> def touched_files(outstring):
 ...     'Returns list of touched files in sorted order'
-...     return sorted([x[6:] for x in outstring.splitlines()
-...                    if x.startswith('touch ')])
+...     return sorted({x[6:] for x in outstring.splitlines()
+...                    if x.startswith('touch ')})
 
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['devrun', 'obj/Empty_dev.o', 'obj/main_dev.o']
+['devrun', 'obj/dev/ALL-FLIT.cpp.o', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_build)
 []
 
 >>> touched_files(after_modify)
-['devrun', 'obj/main_dev.o']
+['devrun', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_touch)
-['devrun', 'obj/main_dev.o']
+['devrun', 'obj/dev/main.cpp.o']
 
 Now, let's test the same thing with the "gt" target
 
@@ -145,15 +153,16 @@ Now, let's test the same thing with the "gt" target
 >>> with th.tempdir() as temp_dir:
 ...     th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
 ...     # fake the built elements -- don't actually build for time's sake
-...     os.mkdir(os.path.join(temp_dir, 'obj'))
+...     compile_target(temp_dir, 'dirs', touch=False)
 ...     before_build = compile_gt(temp_dir)
 ...     # this next build should say nothing to do
 ...     after_build = compile_gt(temp_dir)
 ...     # update one file and recompile
 ...     with open(os.path.join(temp_dir, 'main.cpp'), 'a') as mainfile:
 ...         mainfile.write('#include "new_header.h"\\n')
-...     with open(os.path.join(temp_dir, 'obj', 'main_gt.d'), 'w') as maindep:
-...         maindep.write('obj/main_gt.o: main.cpp new_header.h\\n')
+...     maindepname = os.path.join(temp_dir, 'obj', 'gt', 'main.cpp.d')
+...     with open(maindepname, 'w') as maindep:
+...         maindep.write('obj/gt/main.cpp.o: main.cpp new_header.h\\n')
 ...     th.touch(os.path.join(temp_dir, 'new_header.h'))
 ...     after_modify = compile_gt(temp_dir)
 ...     # touch the header file and make sure it recompiles again
@@ -165,16 +174,16 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['gtrun', 'obj/Empty_gt.o', 'obj/main_gt.o']
+['gtrun', 'obj/gt/ALL-FLIT.cpp.o', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_build)
 []
 
 >>> touched_files(after_modify)
-['gtrun', 'obj/main_gt.o']
+['gtrun', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_touch)
-['gtrun', 'obj/main_gt.o']
+['gtrun', 'obj/gt/main.cpp.o']
 '''
 
 # Test setup before the docstring is run.

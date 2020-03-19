@@ -1,0 +1,2 @@
+name,host,compiler,optl,switches,precision,score_hex,score,resultfile,comparison_hex,comparison,file,nanosec
+BisectTest,does not matter,./fake_clang34.py,-O2,-funsafe-math-optimizations,d,0x40059200000000000000,73,NULL,0x3f800000,1,CLANG_yoga-manjaro_FUNSAFE_MATH_OPTIMIZATIONS_O2,106

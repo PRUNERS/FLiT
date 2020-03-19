@@ -22,7 +22,6 @@ used._
 
 ```toml
 [host]
-name = 'my.hostname.com'
 flit_path = '/usr/bin/flit'
 config_dir = '/usr/share/flit/config'
 ```
@@ -30,7 +29,6 @@ config_dir = '/usr/share/flit/config'
 When you initialize your project with `flit init`, these fields will be
 populated with values corresponding to the values on your machine:
 
-- `name`: hostname of the current machine
 - `flit_path`: will be initialized to the path of the `flit.py` script or its
   symbolic link
 - `config_dir`: directory containing default configuration values.  Either the
@@ -68,7 +66,6 @@ timing = true
 timing_loops = -1
 timing_repeats = 3
 enable_mpi = false
-mpirun_args = ''
 ```
 
 Here we have information about how to execute the tests.  More specifically
@@ -92,9 +89,6 @@ not the timing ones since `flit bisect` does not care so much about timing.
   [test executable](test-executable.md#Timing).
 * `enable_mpi`: Turns on compiling and running tests with MPI support.  See the
   [MPI Support](mpi-support.md) page for more information.
-* `mpirun_args`: Arguments to pass to `mpirun`.  This is where you specify how
-  many processes to run, for example `-n 16` to run 16 instances of the tests
-  under MPI.
 
 **A note about MPI:** FLiT requires the tests to be deterministic.  If the
 tests employ MPI, it is the test creator's responsibility to ensure that the
@@ -155,6 +149,8 @@ executable.
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -195,6 +191,16 @@ Here we specify the first compiler.
 - `type`: The type of compiler.  The supported types are `gcc`, `clang` and
   `intel`.  If you need an additional type supported, please submit an
   [issue](https://github.com/PRUNERS/FLiT/issues).
+- `fixed_compile_flags`: Compile flags to use specifically with this compiler.
+  These flags will be used in all compilations with this compiler.  Here, we
+  didn't specify any, but we could.  For example, to use LLVM's libc++ library
+  instead of GCC's libstdc++, you could use the value
+  `'-nostdinc++ -I<libcxx-install-prefix>/include/c++/v1'`.
+- `fixed_link_flags`: Link flags to use specifically with this compiler.  These
+  flags will be used in all compilations with this compiler.  Here, we didn't
+  specify any, but we could.  For example, to use LLVM's libc++ library instead
+  of GCC's libstdc++, you could use the value
+  `'-nodefaultlibs -lc++ -lc++abi -lm -lc -lgcc_s -lgcc'`.
 - `optimization_levels`: List of optimization levels to search over.  You may
   remove from or add to this list.  If you omit this list, the default list
   will be used (which is the same as the one shown here).  The defaults are
@@ -217,6 +223,8 @@ which includes the one from above named `g++` and the following two:
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -248,6 +256,8 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -297,7 +307,6 @@ default) configuration file:
 
 ```toml
 [host]
-name = 'my.hostname.com'
 flit_path = '/usr/bin/flit'
 config_dir = '/usr/share/flit/config'
 
@@ -310,7 +319,6 @@ timing = true
 timing_loops = -1
 timing_repeats = 3
 enable_mpi = false
-mpirun_args = ''
 
 [dev_build]
 compiler_name = 'g++'
@@ -326,6 +334,8 @@ switches = ''
 binary = 'g++'
 name = 'g++'
 type = 'gcc'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -356,6 +366,8 @@ switches_list = [
 binary = 'clang++'
 name = 'clang++'
 type = 'clang'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',
@@ -387,6 +399,8 @@ switches_list = [
 binary = 'icpc'
 name = 'icpc'
 type = 'intel'
+fixed_compile_flags = ''
+fixed_link_flags = ''
 optimization_levels = [
   '-O0',
   '-O1',

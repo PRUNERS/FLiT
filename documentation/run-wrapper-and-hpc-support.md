@@ -26,16 +26,16 @@ echo "$@" >> test-execution.log
 time "$@"
 ```
 
-This will give you freedom to log, to time, or to even then run them in
-parallel with Slurm (using `srun` or `sbatch`).  You can also do things like
-monitor memory usage or use an automated checker for memory leaks.  Overall it
-can be a useful feature to tie in your own custom functionality on top of the
-test executables.
+It used to be this approach was used to integrate with Slurm.  Instead, we
+prefer you perform an `sbatch` or `salloc` before-hand, and within that
+allocation, you run the FLiT tests.  If you want parallelism in the FLiT tests
+themselves, then call `flit_mpi_main()`.  If your program has different
+parallelism than MPI, this function can still be used with `srun` instead of
+`mpirun`.
 
-Note, it is not good to launch too many small jobs using srun, but the amount
-of jobs that FLiT generates is only approximately 300 or so, depending on how
-many compilers are found in your PATH.  That may or may not be too many for
-your needs.
+You can use this wrapper to do other things like monitor memory usage or use an
+automated checker for memory leaks.  Overall it can be a useful feature to tie
+in your own custom functionality on top of the test executables.
 
 
 [Prev](cuda-support.md)

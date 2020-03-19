@@ -1,0 +1,20 @@
+# Test the fixed_compile_flags and fixed_link_flags
+
+[[compiler]]
+binary = './fake_gcc9.py'
+name = 'g++'
+type = 'gcc'
+fixed_compile_flags = '-first-gxx'
+fixed_link_flags = '-first-gxx-ld -second-gxx-ld'
+
+[[compiler]]
+binary = './fake_clang34.py'
+name = 'clang++'
+type = 'clang'
+fixed_compile_flags = '-first-clang -second-clang'
+
+[[compiler]]
+binary = './fake_intel19.py'
+name = 'icpc'
+type = 'intel'
+fixed_link_flags = '-first-intel-ld'
