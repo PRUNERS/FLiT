@@ -21,7 +21,7 @@
 # This file is part of FLiT. For details, see
 #   https://pruners.github.io/flit
 # Please also read
-#   https://github.com/PRUNERS/FLiT/blob/master/LICENSE
+#   https://github.com/PRUNERS/FLiT/blob/main/LICENSE
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
