@@ -1,6 +1,6 @@
 | branch  | status  |
 |---------|---------|
-| master  | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=master)](https://travis-ci.org/PRUNERS/FLiT) |
+| main    | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=main)](https://travis-ci.org/PRUNERS/FLiT) |
 | devel   | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=devel)](https://travis-ci.org/PRUNERS/FLiT) |
 
 ![PyPI - License](https://img.shields.io/pypi/l/Django.svg)
