@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -101,6 +101,7 @@ import subprocess as subp
 import sys
 
 import flitconfig as conf
+import flit_update
 import flitutil as util
 try:
     import flitelf as elf
@@ -113,6 +114,58 @@ brief_description = 'Bisect compilation to identify problematic source code'
 def hash_compilation(compiler, optl, switches):
     'Takes a compilation and returns a 10 digit hash string.'
     return hashlib.sha1((compiler + optl + switches).encode()).hexdigest()[:10]
+
+def try_get_compiler_flags(compiler_binary, projconf):
+    '''
+    Try to get the compiler flags for the given binary for both compiling and
+    linking.  This it tries to do from the project configuration (loaded from
+    flit-config.toml).  If we are unable to find a matching compiler based on
+    the binary given, then return two empty strings.
+
+    @param compiler_binary: binary_name (to find in PATH) or path to compiler
+        binary
+    @param projconf: A dictionary loaded from flit-config.toml for the project.
+        Specifically, the list of compilers will be used, i.e., the list found
+        in projconf['compiler'], using fields 'binary', 'fixed_compile_flags',
+        and 'fixed_link_flags'.
+    @return two strings representing the 'fixed_compile_flags' and the
+        'fixed_link_flags' of the matching compiler from the given projconf.
+        If no matching compiler is found, then return two empty strings.
+
+    >>> try_get_compiler_flags('', {})
+    ('', '')
+
+    >>> try_get_compiler_flags('emptyname', {})
+    ('', '')
+
+    >>> try_get_compiler_flags(
+    ...     'nonmatching',
+    ...     {'compiler': [{'binary': 'mycompiler', 'fixed_compile_flags': 'FF',
+    ...                    'fixed_link_flags': 'LL'}]})
+    ('', '')
+
+    >>> try_get_compiler_flags(
+    ...     'mycompiler',
+    ...     {'compiler': [{'binary': 'mycompiler', 'fixed_compile_flags': 'FF',
+    ...                    'fixed_link_flags': 'LL'}]})
+    ('FF', 'LL')
+    '''
+    compiler_map = {}
+    if 'compiler' in projconf:
+        compiler_map = {x['binary']: x for x in projconf['compiler']}
+        which_map = {shutil.which(k): v for k, v in compiler_map.items()
+                     if shutil.which(k)}
+    else:
+        return '', ''
+
+    which_binary = shutil.which(compiler_binary)
+    if compiler_binary in compiler_map:
+        compiler = compiler_map[compiler_binary]
+    elif which_binary in which_map:
+        compiler = which_map[which_binary]
+    else:
+        return '', ''
+    return compiler['fixed_compile_flags'], compiler['fixed_link_flags']
 
 def try_resolve_compiler_type(compiler_name, projconf):
     '''
@@ -243,32 +296,61 @@ def create_bisect_makefile(directory, replacements, gt_src,
         baseline and differing symbols for each file.
 
     Within replacements, there are some optional fields:
-    - cpp_flags: (list) (optional) List of c++ compiler flags to give to
-          each compiler when compiling object files from source files.
-    - link_flags: (list) (optional) List of linker flags to give to the
+    - added_link_flags: (list) (optional) List of linker flags to give to the
           ground-truth compiler when performing linking.
 
     @return the bisect makefile name without directory prepended to it
     '''
+    # TODO: refactor this function.  it is too complicated
     if split_symbol_map is None:
         split_symbol_map = {} # default to an empty dictionary
     repl_copy = dict(replacements)
+    projdir = os.path.join(directory, '..')
+    projconf = util.load_projconf(projdir)
+    cxxflags, tbl_ldflags = try_get_compiler_flags(repl_copy['trouble_cxx'],
+                                                   projconf)
+    try:
+        with util.pushd(projdir):
+            tbl_ldflags += ' {}'.format(flit_update._additional_ldflags(
+                {'type': repl_copy['trouble_type'],
+                 'binary': repl_copy['trouble_cxx']}))
+    except NotImplementedError:
+        pass # skip over unsupported compiler types
+    repl_copy['trouble_cxxflags'] = cxxflags
+    repl_copy['trouble_ldflags'] = tbl_ldflags
+    if repl_copy['bisect_ldflags'] is None:
+        # TODO: have this be linker flags for $(BISECT_LINK) executable
+        #   (similar to ldflags and cxxflags)
+        if repl_copy['bisect_linker'] is not None:
+            _, bisect_ldflags = try_get_compiler_flags(
+                repl_copy['bisect_linker'], projconf)
+            bisect_c_type = try_resolve_compiler_type(
+                repl_copy['bisect_linker'], projconf)
+            try:
+                with util.pushd(projdir):
+                    bisect_ldflags += ' {}'.format(
+                        flit_update._additional_ldflags(
+                            {'type': bisect_c_type,
+                             'binary': repl_copy['bisect_linker']}))
+            except NotImplementedError:
+                pass # skip over unsupported compiler types
+            repl_copy['bisect_ldflags'] = bisect_ldflags
+        else:
+            repl_copy['bisect_ldflags'] = '$(GT_LDFLAGS)'
+    if repl_copy['bisect_linker'] is None:
+        repl_copy['bisect_linker'] = '$(GT_CXX)'
     repl_copy['TROUBLE_SRC'] = '\n'.join(['TROUBLE_SRC      += {0}'.format(x)
                                           for x in trouble_src])
     repl_copy['BISECT_GT_SRC'] = '\n'.join(['BISECT_GT_SRC    += {0}'.format(x)
                                             for x in gt_src])
     repl_copy['SPLIT_SRC'] = '\n'.join(['SPLIT_SRC        += {0}'.format(x)
                                         for x in split_symbol_map])
-    if 'cpp_flags' in repl_copy:
-        repl_copy['EXTRA_CC_FLAGS'] = '\n'.join([
-            'CC_REQUIRED      += {0}'.format(x)
-            for x in repl_copy['cpp_flags']])
-        del repl_copy['cpp_flags']
-    if 'link_flags' in repl_copy:
-        repl_copy['EXTRA_LD_FLAGS'] = '\n'.join([
-            'LD_REQUIRED      += {0}'.format(x)
-            for x in repl_copy['link_flags']])
-        del repl_copy['link_flags']
+    if 'added_link_flags' in repl_copy:
+        repl_copy['EXTRA_LDFLAGS'] = '\n'.join([
+            'LDFLAGS          += {0}'.format(x)
+            for x in repl_copy['added_link_flags']])
+        del repl_copy['added_link_flags']
+
 
 
     # Find the next unique file name available in directory
@@ -285,7 +367,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
         else:
             break
 
-    repl_copy['makefile'] = makepath
+    repl_copy['makefile'] = os.path.realpath(makepath)
     repl_copy['number'] = '{0:02d}'.format(num)
     logging.info('Creating makefile: %s', makepath)
     util.process_in_file(
@@ -294,17 +376,18 @@ def create_bisect_makefile(directory, replacements, gt_src,
         repl_copy,
         overwrite=True)
 
-    # Create the obj directory
+    # Create the obj/symbols directory
     if len(split_symbol_map) > 0:
-        try:
-            os.mkdir(os.path.join(directory, 'obj'))
-        except FileExistsError:
-            pass # ignore if the directory already exists
+        for subdir in ('obj', os.path.join('obj', 'symbols')):
+            try:
+                os.mkdir(os.path.join(directory, subdir))
+            except FileExistsError:
+                pass # ignore if the directory already exists
 
     # Create the txt files containing symbol lists within the obj directory
     for split_srcfile, split_symbols in split_symbol_map.items():
         split_basename = os.path.basename(split_srcfile)
-        split_base = os.path.join(directory, 'obj', split_basename)
+        split_base = os.path.join(directory, 'obj', 'symbols', split_basename)
         trouble_symbols_fname = split_base + '_trouble_symbols_' \
                 + repl_copy['number'] + '.txt'
         gt_symbols_fname = split_base + '_gt_symbols_' \
@@ -324,7 +407,8 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
     Runs a make command.  If the build fails, then stdout and stderr will be
     output into the log.
 
-    @param makefilename: Name of the Makefile (default 'Makefile')
+    @param makefilename: Name of the Makefile (either absolute path or relative
+        path to the given directory) (default 'Makefile')
     @param directory: Path to the directory to run in (default '.')
     @param verbose: True means echo the output to the console (default False)
     @param jobs: number of parallel jobs (default #cpus)
@@ -377,6 +461,53 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
     Undo the logger configurations
     >>> for handler in logger.handlers[:]:
     ...     logger.removeHandler(handler)
+
+    Create a temporary directory
+    >>> import tempfile
+    >>> temporary_directory = tempfile.mkdtemp()
+
+    Given a directory and an absolute path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('.PHONY: default', file=makefile)
+    ...     print('default:', file=makefile)
+    ...     print('\\t@false', file=makefile)
+    ...     print('.PHONY: correct', file=makefile)
+    ...     print('correct:', file=makefile)
+    ...     print('\\t@echo correct', file=makefile)
+    ...     print('\\t@cat {}'.format(os.path.basename(makefilepath)),
+    ...           file=makefile)
+    ...     makefile.flush()
+    ...     run_make(makefilename=makefilepath,
+    ...              directory=temporary_directory,
+    ...              target='correct') #doctest: +ELLIPSIS
+
+    Given a directory and a relative path to a Makefile
+    >>> makefilepath = os.path.join(temporary_directory, 'my-makefile.mk')
+    >>> with open(makefilepath, 'w') as makefile:
+    ...     print('.PHONY: default', file=makefile)
+    ...     print('default:', file=makefile)
+    ...     print('\\t@false', file=makefile)
+    ...     print('.PHONY: correct', file=makefile)
+    ...     print('correct:', file=makefile)
+    ...     print('\\t@echo correct', file=makefile)
+    ...     print('\\t@cat {}'.format(os.path.basename(makefilepath)),
+    ...           file=makefile)
+    ...     makefile.flush()
+    ...     curdir = os.path.realpath(os.curdir)
+    ...     try:
+    ...         os.chdir(os.path.dirname(temporary_directory))
+    ...         run_make(os.path.basename(makefilepath),
+    ...                  directory=os.path.basename(temporary_directory),
+    ...                  target='correct') #doctest: +ELLIPSIS
+    ...     except:
+    ...         raise
+    ...     finally:
+    ...         os.chdir(curdir)
+
+    Delete the temporary directory
+    >>> import shutil
+    >>> shutil.rmtree(temporary_directory)
     '''
     command = [
         'make',
@@ -418,7 +549,8 @@ def build_bisect(makefilename, directory,
     recompile for the next bisect step, or
     'distclean' to clean everything, including the generated makefile.
 
-    @param makefilename: the filepath to the makefile
+    @param makefilename: the filepath to the makefile relative to the given
+        directory
     @param directory: where to execute make
     @param target: Makefile target to run
     @param verbose: False means block output from GNU make and running
@@ -447,8 +579,7 @@ def update_gt_results(directory, verbose=False,
 
     @return None
     '''
-    gt_resultfile = util.extract_make_var(
-        'GT_OUT', os.path.join(directory, 'Makefile'))[0]
+    gt_resultfile = util.extract_make_var('GT_OUT', directory=directory)[0]
     logging.info('Updating ground-truth results - %s', gt_resultfile)
     print('Updating ground-truth results -', gt_resultfile, end='', flush=True)
     run_make(
@@ -948,16 +1079,16 @@ def bisect_search(score_func, elements, found_callback=None,
 
     return differing_list
 
-def parse_args(arguments, prog=sys.argv[0]):
+def populate_parser(parser=None):
     '''
     Builds a parser, parses the arguments, and returns the parsed arguments.
 
     @param arguments: (list of str) arguments given to the program
     @param prog: (str) name of the program
     '''
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description = '''
             Compiles the source code under both the ground-truth
             compilation and a given problematic compilation.  This tool
             then finds the minimal set of source files needed to be
@@ -967,8 +1098,7 @@ def parse_args(arguments, prog=sys.argv[0]):
 
             The log of the procedure will be kept in bisect.log.  Note that
             this file is overwritten if you call flit bisect again.
-            ''',
-        )
+            '''
 
     # These positional arguments only make sense if not doing an auto run
     parser.add_argument('compilation',
@@ -1129,7 +1259,45 @@ def parse_args(arguments, prog=sys.argv[0]):
                             given compiler is the same as that used by the
                             ground-truth compilation.
                             ''')
+    parser.add_argument('--ldflags',
+                        help='''
+                            Replace the linker flags that would be used by the
+                            linker program (pulled from 'fixed_link_flags' from
+                            flit_config.toml).  If you want to add linker flags
+                            instead of replacing them, use '--add-ldflags'
+                            instead.
 
+                            Note: since flags start with a '-', to not confuse
+                            this argument parser, use the '=' syntax.  For
+                            example: '--ldflags="-Wl,-rpath=/usr
+                            -Wl,-rpath=/usr/lib64"'
+                            ''')
+    parser.add_argument('--add-ldflags', default='',
+                        help='''
+                            Add linker flags on top of the default that would be used.
+
+                            Note: since flags start with a '-', to not confuse
+                            this argument parser, use the '=' syntax.  For
+                            example: '--add-ldflags="-Wl,-rpath=/usr
+                            -Wl,-rpath=/usr/lib64"'
+                            ''')
+    parser.add_argument('--use-linker',
+                        help='''
+                            Specify a different linker to use.  This should
+                            probably be a C++ compiler, like 'g++'.  If this
+                            program is found in 'flit-config.toml', then the
+                            linker flags used will be from the
+                            'fixed_link_flags' specified there, unless
+                            '--ldflags' is also specified.
+                            ''')
+    return parser
+
+def parse_args(arguments, prog=None):
+    '''
+    Builds a parser, parses the arguments, and returns the parsed arguments.
+    '''
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Split the compilation into separate components
@@ -1163,14 +1331,15 @@ def test_makefile(args, makepath, testing_list, indent='  '):
     for src in testing_list:
         logging.info('  %s%s', indent, src)
 
+    relmakepath = os.path.relpath(makepath, args.directory)
     try:
-        build_bisect(makepath, args.directory, verbose=args.verbose,
+        build_bisect(relmakepath, args.directory, verbose=args.verbose,
                      jobs=args.jobs)
     finally:
         if args.delete:
-            build_bisect(makepath, args.directory, verbose=args.verbose,
+            build_bisect(relmakepath, args.directory, verbose=args.verbose,
                          jobs=args.jobs, target='bisect-smallclean')
-    resultfile = util.extract_make_var('BISECT_RESULT', makepath,
+    resultfile = util.extract_make_var('BISECT_RESULT', relmakepath,
                                        args.directory)[0]
     resultpath = os.path.join(args.directory, resultfile)
     result = get_comparison_result(resultpath)
@@ -1200,8 +1369,8 @@ def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
             full baseline compilation.
         '''
         repl_copy = dict(replacements)
-        repl_copy['link_flags'] = list(repl_copy['link_flags'])
-        repl_copy['link_flags'].extend(libs)
+        repl_copy['added_link_flags'] = list(repl_copy['added_link_flags'])
+        repl_copy['added_link_flags'].extend(libs)
         makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
@@ -1494,18 +1663,34 @@ def search_for_k_most_diff_symbols(args, bisect_path, replacements, sources):
 
     return differing_sources, differing_symbols
 
-def compile_trouble(directory, compiler, optl, switches, compiler_type,
-                    verbose=False, jobs=mp.cpu_count(), delete=True,
-                    fpic=False):
+def gen_replacements(args, bisect_dir):
+    'Build the replacements dictionary from parsed command-line arguments'
+    hashval = hash_compilation(args.compiler, args.optl, args.switches)
+    return {
+        'bisect_dir': bisect_dir,
+        'datetime': datetime.date.today().strftime("%B %d, %Y"),
+        'flit_version': conf.version,
+        'precision': args.precision,
+        'test_case': args.testcase,
+        'trouble_cxx': args.compiler,
+        'trouble_optl': args.optl,
+        'trouble_switches': args.switches,
+        'trouble_type': args.compiler_type,
+        'trouble_id': hashval,
+        'bisect_ldflags': args.ldflags,
+        'bisect_linker': args.use_linker,
+        'added_link_flags': [args.add_ldflags],
+        'build_gt_local': 'false',
+        }
+
+def compile_trouble(directory, replacements, verbose=False,
+                    jobs=mp.cpu_count(), delete=True, fpic=False):
     '''
     Compiles the trouble executable for the given arguments.  This is useful to
     compile the trouble executable as it will force the creation of all needed
     object files for bisect.  This can be used to precompile all object files
     needed for bisect.
     '''
-    # TODO: much of this was copied from run_bisect().  Refactor code.
-    trouble_hash = hash_compilation(compiler, optl, switches)
-
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
     run_make(
@@ -1521,21 +1706,6 @@ def compile_trouble(directory, compiler, optl, switches, compiler_type,
     except FileExistsError:
         pass # not a problem if it already exists
 
-    replacements = {
-        'bisect_dir': 'bisect-precompile',
-        'datetime': datetime.date.today().strftime("%B %d, %Y"),
-        'flit_version': conf.version,
-        'precision': '',
-        'test_case': '',
-        'trouble_cxx': compiler,
-        'trouble_optl': optl,
-        'trouble_switches': switches,
-        'trouble_type': compiler_type,
-        'trouble_id': trouble_hash,
-        'link_flags': [],
-        'cpp_flags': [],
-        'build_gt_local': 'false',
-        }
     makefile = create_bisect_makefile(trouble_path, replacements, [])
     makepath = os.path.join(trouble_path, makefile)
 
@@ -1550,7 +1720,7 @@ def compile_trouble(directory, compiler, optl, switches, compiler_type,
     if delete:
         shutil.rmtree(trouble_path)
 
-def run_bisect(arguments, prog=sys.argv[0]):
+def run_bisect(arguments, prog=None):
     '''
     The actual function for running the bisect command-line tool.
 
@@ -1567,13 +1737,11 @@ def run_bisect(arguments, prog=sys.argv[0]):
     return value for sources and symbols are both None.  If the search fails in
     the symbols part, then only the symbols return value is None.
     '''
-    args = parse_args(arguments, prog)
+    args = parse_args(arguments, prog=prog)
 
     if args.compiler_type == 'auto':
         projconf = util.load_projconf(args.directory)
         args.compiler_type = try_resolve_compiler_type(args.compiler, projconf)
-
-    trouble_hash = hash_compilation(args.compiler, args.optl, args.switches)
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
@@ -1597,35 +1765,21 @@ def run_bisect(arguments, prog=sys.argv[0]):
         #level=logging.INFO)
         level=logging.DEBUG)
 
+    replacements = gen_replacements(args, bisect_dir)
+
     logging.info('Starting the bisect procedure')
     logging.debug('  trouble compiler:           "%s"', args.compiler)
     logging.debug('  trouble optimization level: "%s"', args.optl)
     logging.debug('  trouble switches:           "%s"', args.switches)
     logging.debug('  trouble testcase:           "%s"', args.testcase)
-    logging.debug('  trouble hash:               "%s"', trouble_hash)
+    logging.debug('  trouble hash:               "%s"',
+                  replacements['trouble_id'])
 
     # get the list of source files from the Makefile
-    sources = util.extract_make_var('SOURCE', 'Makefile',
-                                    directory=args.directory)
+    sources = util.extract_make_var('SOURCE', directory=args.directory)
     logging.debug('Sources')
     for source in sources:
         logging.debug('  %s', source)
-
-    replacements = {
-        'bisect_dir': bisect_dir,
-        'datetime': datetime.date.today().strftime("%B %d, %Y"),
-        'flit_version': conf.version,
-        'precision': args.precision,
-        'test_case': args.testcase,
-        'trouble_cxx': args.compiler,
-        'trouble_optl': args.optl,
-        'trouble_switches': args.switches,
-        'trouble_type': args.compiler_type,
-        'trouble_id': trouble_hash,
-        'link_flags': [],
-        'cpp_flags': [],
-        'build_gt_local': 'false',
-        }
 
     update_gt_results(args.directory, verbose=args.verbose, jobs=args.jobs)
 
@@ -1688,7 +1842,7 @@ def run_bisect(arguments, prog=sys.argv[0]):
 
         # Compile all following executables with these static libraries
         # regardless of their effect
-        replacements['link_flags'].extend(libs)
+        replacements['added_link_flags'].extend(libs)
 
         # If the libraries were a problem, then reset what the baseline
         # ground-truth is, especially since we updated the LINK_FLAGS in the
@@ -1872,7 +2026,7 @@ def auto_bisect_worker(arg_queue, result_queue):
         result_queue.put((row, -1, None, None, None, 1))
         raise
 
-def parallel_auto_bisect(arguments, prog=sys.argv[0]):
+def parallel_auto_bisect(arguments, prog=None):
     '''
     Runs bisect in parallel under the auto mode.  This is only applicable if
     the --auto-sqlite-run option has been specified in the arguments.
@@ -1916,7 +2070,8 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
     # some, then an error will occur.
     args = parse_args(
         ['--precision', 'double', 'compilation', 'testcase'] + arguments,
-        prog)
+        prog=prog)
+
     sqlitefile = args.auto_sqlite_run
     projconf = util.load_projconf(args.directory)
 
@@ -1945,14 +2100,14 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     print('Before parallel bisect run, compile all object files')
     for i, compilation in enumerate(sorted(compilation_set)):
-        compiler, optl, switches = compilation
+        args.compiler, args.optl, args.switches = compilation
         print('  ({0} of {1})'.format(i + 1, len(compilation_set)),
-              ' '.join((compiler, optl, switches)) + ':',
+              ' '.join((args.compiler, args.optl, args.switches)) + ':',
               end='',
               flush=True)
-        compiler_type = try_resolve_compiler_type(compiler, projconf)
-        compile_trouble(args.directory, compiler, optl, switches,
-                        compiler_type, verbose=args.verbose,
+        args.compiler_type = try_resolve_compiler_type(args.compiler, projconf)
+        replacements = gen_replacements(args, 'bisect-precompile')
+        compile_trouble(args.directory, replacements, verbose=args.verbose,
                         jobs=args.jobs, delete=args.delete,
                         fpic=args.precompile_fpic)
         print('  done', flush=True)
@@ -2039,13 +2194,16 @@ def parallel_auto_bisect(arguments, prog=sys.argv[0]):
 
     # Remove the files that were precompiled
     if args.delete:
-        for makepath in glob.iglob('bisect-*/bisect-make-01.mk'):
+        makepaths = glob.iglob(
+            os.path.join(args.directory, 'bisect-*/bisect-make-01.mk'))
+        for makepath in makepaths:
+            makepath = os.path.relpath(makepath, args.directory)
             build_bisect(makepath, args.directory, verbose=args.verbose,
                          jobs=args.jobs, target='bisect-clean')
 
     return return_tot
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     '''
     A wrapper around the bisect program.  This checks for the --auto-sqlite-run
     stuff and runs the run_bisect multiple times if so.

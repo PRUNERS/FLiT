@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -94,17 +94,19 @@ SOURCE         += $(wildcard tests/*.cpp)
 
 # required compiler flags
 # for example, include directories
-#   CC_REQUIRED += -I<path>
+#   CXXFLAGS    += -I<path>
 # or defines
-#   CC_REQUIRED += -DDEBUG_ENABLED=1
-CC_REQUIRED    +=
+#   CXXFLAGS    += -DDEBUG_ENABLED=1
+CXXFLAGS       +=
 
 # required linker flags
 # for example, link libraries
-#   LD_REQUIRED += -L<library-path> -l<library-name>
+#   LDFLAGS     += -L<library-path>
+#   LDLIBS      += -l<library-name>
 # or rpath
-#   LD_REQUIRED += -Wl,-rpath=<abs-path-to-library-dir>
-LD_REQUIRED    +=
+#   LDFLAGS     += -Wl,-rpath=<abs-path-to-library-dir>
+LDFLAGS        +=
+LDLIBS         +=
 
 # compiler and linker flags respectively - specifically for a dev build
 # - DEV_CFLAGS:   non-recorded compiler flags (such as includes)

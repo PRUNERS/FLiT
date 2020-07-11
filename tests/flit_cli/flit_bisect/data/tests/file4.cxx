@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -83,7 +83,7 @@
 
 #include "file4.h"
 
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <string>
 
@@ -91,6 +91,10 @@ int file4_func1() { return 1; }
 int file4_func2() { return 2; }
 int file4_func3() { return 3; }
 int file4_func4() { return 4; }
+
+// Needs to be put into an unnamed namespace so that the symbols are local
+// instead of global and weak.  This is needed for Bisect to work properly.
+namespace {
 
 template<int i>
 int file4_func5_TEMPLATE_PROBLEM() {
@@ -101,7 +105,7 @@ int file4_func5_TEMPLATE_PROBLEM() {
   }
 }
 
-
+} // end of unnamed namespace
 
 int file4_all() {
   return file4_func1()

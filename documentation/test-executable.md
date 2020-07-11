@@ -43,6 +43,10 @@ update`.
 - **distclean:** Remove everything including executables and results (but not
   the results database).
 
+The output from `make` is very brief by default.  If you want to see all of the
+compilation details, define `VERBOSE=1` or `VERBOSE=true` in as an argument to
+`make` or as an environment variable (e.g., `make VERBOSE=1 ...`)
+
 ## Test Executable Details
 
 The test executables that are generated all have the same command-line

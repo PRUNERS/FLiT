@@ -4,6 +4,10 @@ CHECK_TARGETS := $(addprefix check__,$(SUB_DIRS))
 CLEAN_TARGETS := $(addprefix clean__,$(SUB_DIRS))
 BUILD_TARGETS := $(addprefix build__,$(SUB_DIRS))
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: build check help clean
 build: $(BUILD_TARGETS)
 
@@ -19,11 +23,11 @@ help:
 .PHONY: build__% check__% clean__%
 
 build__%:
-	@$(MAKE) build --directory $*
+	@$(MAKE) --no-print-directory build --directory $*
 
 check__%:
-	@$(MAKE) check --directory $*
+	@$(MAKE) --no-print-directory check --directory $*
 
 clean__%:
-	@$(MAKE) clean --directory $*
+	@$(MAKE) --no-print-directory clean --directory $*
 

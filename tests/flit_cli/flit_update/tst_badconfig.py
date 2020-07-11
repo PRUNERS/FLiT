@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -95,7 +95,7 @@ Tests error cases in the configuration file, such as specifying more than one of
 >>> runconfig(configstr)
 Traceback (most recent call last):
 ...
-AssertionError: Compiler name name-does-not-exist not found
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: Compiler name name-does-not-exist not found
 
 >>> configstr = \\
 ...     '[ground_truth]\\n' \\
@@ -103,7 +103,7 @@ AssertionError: Compiler name name-does-not-exist not found
 >>> runconfig(configstr)
 Traceback (most recent call last):
 ...
-AssertionError: Compiler name another-name-that-does-not-exist not found
+tst_common_funcs.UpdateTestError: Failed to update Makefile: Error: Compiler name another-name-that-does-not-exist not found
 
 >>> runconfig('[compiler]\\n')
 Traceback (most recent call last):

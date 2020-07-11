@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -89,11 +89,10 @@ The tests are below using doctest
 Let's now make a temporary directory and test that we can successfully compile
 and run FLiT bisect
 
->>> import glob
 >>> import os
 >>> import shutil
->>> import subprocess as subp
 >>> from io import StringIO
+>>> from common import flit_init
 
 let's stub out some functions that actually confer with the compiler.  These
 make the test take way too long and that interaction has already been tested in
@@ -149,8 +148,16 @@ tst_bisect.py.
 ...     assert verbose == False
 ...     # Get the files being tested out of the makepath, and the BISECT_RESULT
 ...     # variable, and generate the expected results.
-...     sources = util.extract_make_var('TROUBLE_SRC', makepath)
-...     symbol_files = util.extract_make_var('TROUBLE_SYMBOLS', makepath)
+...     makevars = util.extract_make_vars(makepath, directory)
+...     sources = makevars['TROUBLE_SRC']
+...     split_sources = makevars['SPLIT_SRC']
+...     symbols_dir = makevars['SYMBOLS_DIR'][0]
+...     number = makevars['NUMBER'][0]
+...     symbol_files = [
+...         os.path.join(symbols_dir,
+...                      '{}_trouble_symbols_{}.txt'.format(os.path.basename(x),
+...                                                         number))
+...         for x in split_sources]
 ...     symbols = []
 ...     if symbol_files:
 ...         with open(os.path.join(directory, symbol_files[0]), 'r') as fin:
@@ -158,7 +165,8 @@ tst_bisect.py.
 ...     source_score = sum([all_file_scores[x] for x in sources])
 ...     symbol_score = sum([score for symbol, score in all_symbol_scores.items()
 ...                         if symbol.symbol in symbols])
-...     result_file = util.extract_make_var('BISECT_RESULT', makepath)[0]
+...     result_file = util.extract_make_var('BISECT_RESULT', makepath,
+...                                         directory)[0]
 ...     with open(os.path.join(directory, result_file), 'w') as rout:
 ...         rout.write('comparison\\n')
 ...         rout.write('{}\\n'.format(source_score + symbol_score))
@@ -186,9 +194,7 @@ tst_bisect.py.
 Now for the test after we stubbed a single file
 
 >>> with th.tempdir() as temp_dir:
-...     with StringIO() as ostream:
-...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
-...         init_out = ostream.getvalue().splitlines()
+...     init_out = flit_init(temp_dir)
 ...     shutil.rmtree(os.path.join(temp_dir, 'tests'))
 ...     _ = shutil.copytree(os.path.join('data', 'tests'),
 ...                         os.path.join(temp_dir, 'tests'))

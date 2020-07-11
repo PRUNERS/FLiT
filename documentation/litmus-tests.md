@@ -11,9 +11,9 @@ simple aspect of compiler variability (or lack thereof) due to different
 compilations.
 
 These litmus tests can be found in `litmus-tests/tests` in the git repository,
-or in `<PREFIX>/share/flit/litmus-tests` in the install.  They can be copied to
-your test directory using the `flit init` command-line tool (see [flit
-init](flit-command-line.md#flit-init)).
+or in `<DESTDIR><PREFIX>/share/flit/litmus-tests` in the install.  They can be
+copied to your test directory using the `flit init` command-line tool (see
+[flit init](flit-command-line.md#flit-init)).
 
 The community is encouraged to contribute back interesting test cases that can
 be added to these litmus tests.  Simply create a **Pull Request** on GitHub.

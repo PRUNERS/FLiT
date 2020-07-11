@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -93,24 +93,29 @@ import flit_update
 
 brief_description = 'Initializes a flit test directory for use'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        description='''
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.description='''
             Initializes a flit test directory for use.  It will initialize
             the directory by copying the default configuration file into
             the given directory.  If a configuration file already exists,
             this command does nothing.  The config file is called
             flit-config.toml.
-            ''',
-        )
+            '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
     parser.add_argument('--overwrite', action='store_true',
                         help='Overwrite init files if they are already there')
     parser.add_argument('-L', '--litmus-tests', action='store_true',
                         help='Copy over litmus tests too')
+    return parser
+
+def main(arguments, prog=None):
+    'Main logic here'
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     os.makedirs(args.directory, exist_ok=True)
@@ -150,8 +155,6 @@ def main(arguments, prog=sys.argv[0]):
         'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
         }
 
-    copy_files(to_copy, remove_license=True)
-
     # Add litmus tests too
     if args.litmus_tests:
         litmus_to_copy = {}
@@ -160,6 +163,12 @@ def main(arguments, prog=sys.argv[0]):
                 srcpath = os.path.join(conf.litmus_test_dir, srcfile)
                 litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
         copy_files(litmus_to_copy)
+
+        # No need for Empty test if other litmus tests are being used
+        to_copy.pop('tests/Empty.cpp')
+
+    # Finish copying remaining files, after determining if Empty test is needed
+    copy_files(to_copy, remove_license=True)
 
     return flit_update.main(['--directory', args.directory])
 

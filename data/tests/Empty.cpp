@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -79,9 +79,11 @@
  *    purposes.
  *
  * -- LICENSE END -- */
-#include <flit.h>
+#include <flit/flit.h>
 
 #include <string>
+
+#include <cmath>
 
 /** An example test class to show how to make FLiT tests
  *
@@ -130,8 +132,8 @@ public:
    */
   virtual long double compare(long double ground_truth,
                               long double test_results) const override {
-    // absolute error
-    return test_results - ground_truth;
+    // absolute error with NaN and inf support
+    return flit::abs_compare(ground_truth, test_results);
   }
 
   /** There is no good default implementation comparing two strings */
@@ -140,6 +142,22 @@ public:
     FLIT_UNUSED(ground_truth);
     FLIT_UNUSED(test_results);
     return 0.0;
+  }
+
+  /** There is no good default implementation comparing two string vectors */
+  virtual long double compare(const std::vector<std::string> &ground_truth,
+                              const std::vector<std::string> &test_results)
+  const override {
+    FLIT_UNUSED(ground_truth);
+    FLIT_UNUSED(test_results);
+    return 0.0;
+  }
+
+  /** Default implementation: L2 norm */
+  virtual long double compare(const std::vector<T> &ground_truth,
+                              const std::vector<T> &test_results)
+  const override {
+    return flit::l2norm(ground_truth, test_results);
   }
 
 protected:

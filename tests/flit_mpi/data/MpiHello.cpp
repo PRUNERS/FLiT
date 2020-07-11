@@ -1,6 +1,6 @@
 /* -- LICENSE BEGIN --
  *
- * Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+ * Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
  *
  * Produced at the Lawrence Livermore National Laboratory
  *
@@ -81,10 +81,64 @@
  * -- LICENSE END --
  */
 
-#include <flit.h>
+#include <flit/flit.h>
 
+#include <mpi.h>
+
+#include <iostream>
 #include <string>
 #include <sstream>
+
+#include <cstring>
+#include <cstdio>
+
+// this is the real test, run under MPI in separate processes
+int mpi_main(int argCount, char* argList[]) {
+  MPI_Init(&argCount, &argList);
+
+  int world_size = -1;
+  int rank = -1;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  std::ostringstream buffer;
+
+  printf("\n");
+  printf("hello from rank %d of %d\n", rank, world_size);
+  std::fflush(stdout);
+
+  buffer << "mpi_main(" << argCount << ", {";
+  bool first = true;
+  for (int i = 0; i < argCount; i++) {
+    if (!first) { buffer << ", "; }
+    first = false;
+    buffer << argList[i];
+  }
+  buffer << "})\n";
+  printf("%s", buffer.str().c_str());
+  std::fflush(stdout);
+
+  // send a message from rank 0 to rank 1
+  if (rank == 0) {
+    char message[13];
+    strcpy(message, "hello world!");
+    MPI_Send(message, 13, MPI_BYTE, 1, 0, MPI_COMM_WORLD);
+    printf("Sending '%s' from rank 0\n", message);
+    std::fflush(stdout);
+  } else if (rank == 1) {
+    char message[13];
+    MPI_Recv(message, 13, MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    printf("Received '%s' from rank 0 to rank 1\n", message);
+    std::fflush(stdout);
+  } else {
+    throw std::logic_error("there should only be two ranks");
+  }
+
+  MPI_Finalize();
+
+  return 0;
+}
+FLIT_REGISTER_MAIN(mpi_main);
 
 template <typename T>
 class MpiHello : public flit::TestBase<T> {
@@ -93,21 +147,29 @@ public:
 
   virtual size_t getInputsPerRun() override { return 1; }
   virtual std::vector<T> getDefaultInput() override {
-    return { T(flit::mpi->rank) };
+    return { 1 };
   }
 
 protected:
   virtual flit::Variant run_impl(const std::vector<T> &ti) override {
-    std::ostringstream ss;
-    ss
-      << id << ": hello from rank " << flit::mpi->rank
-      << " of " << flit::mpi->size << std::endl;
-    std::cout << ss.str();
-    return ss.str();
+    FLIT_UNUSED(ti);
+    return flit::Variant();
   }
 
 protected:
   using flit::TestBase<T>::id;
 };
+
+// only implement double precision
+template<>
+flit::Variant MpiHello<double>::run_impl(const std::vector<double> &ti)
+{
+  FLIT_UNUSED(ti);
+  auto result = flit::call_mpi_main(mpi_main, "mpirun -n 2", "mympi",
+                                    "remaining arguments");
+  std::ostringstream all;
+  all << result;
+  return all.str();
+}
 
 REGISTER_TYPE(MpiHello)

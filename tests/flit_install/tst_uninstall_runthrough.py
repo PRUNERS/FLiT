@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -90,20 +90,30 @@ Let's now make a temporary directory, install there, and then uninstall.
 >>> import os
 >>> import subprocess as subp
 >>> with th.tempdir() as temp_dir:
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
-...                          'install', 'PREFIX=' + temp_dir],
+...     destdir = os.path.join(temp_dir, 'install')
+...     prefix = os.path.join(temp_dir, 'usr')
+...     effective_prefix = os.path.join(destdir, prefix[1:])
+...     _ = subp.check_call(['make',
+...                          '-C', os.path.join(th.config.doc_dir, '..'),
+...                          'install',
+...                          'DESTDIR=' + destdir,
+...                          'PREFIX=' + prefix],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     dirs1 = os.listdir(temp_dir)
+...     dirs1 = os.listdir(effective_prefix)
 ...     dirs2 = [os.path.join(x, y) for x in dirs1
-...                                 for y in os.listdir(os.path.join(temp_dir, x))]
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
-...                          'uninstall', 'PREFIX=' + temp_dir],
+...                                 for y in os.listdir(
+...                                     os.path.join(effective_prefix, x))]
+...     _ = subp.check_call(['make',
+...                          '-C', os.path.join(th.config.doc_dir, '..'),
+...                          'uninstall',
+...                          'DESTDIR=' + destdir,
+...                          'PREFIX=' + prefix],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     tempdir_exists = os.path.exists(temp_dir)
+...     tempdir_exists = os.path.exists(effective_prefix)
 >>> sorted(dirs1)
-['bin', 'include', 'lib', 'share']
+['bin', 'include', 'share']
 >>> sorted(dirs2)
-['bin/flit', 'include/flit', 'lib/libflit.so', 'share/flit', 'share/licenses']
+['bin/flit', 'include/flit', 'include/flit.h', 'share/bash-completion', 'share/flit', 'share/licenses']
 >>> tempdir_exists
 False
 
@@ -111,12 +121,12 @@ Now we test that directories are not deleted when other files exist in the
 PREFIX path
 >>> import glob
 >>> with th.tempdir() as temp_dir:
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...     _ = subp.check_call(['make', '-C', os.path.join(th.config.doc_dir, '..'),
 ...                          'install', 'PREFIX=' + temp_dir],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
-...     with open(os.path.join(temp_dir, 'lib', 'otherlib.so'), 'w'):
+...     with open(os.path.join(temp_dir, 'include', 'otherheader.h'), 'w'):
 ...         pass
-...     _ = subp.check_call(['make', '-C', os.path.join(th.config.lib_dir, '..'),
+...     _ = subp.check_call(['make', '-C', os.path.join(th.config.doc_dir, '..'),
 ...                          'uninstall', 'PREFIX=' + temp_dir],
 ...                         stdout=subp.DEVNULL, stderr=subp.DEVNULL)
 ...     prevdir = os.path.realpath(os.curdir)
@@ -126,7 +136,7 @@ PREFIX path
 ...                  for name in folders + filenames]
 ...     os.chdir(prevdir)
 >>> sorted(all_files)
-['./lib', './lib/otherlib.so']
+['./include', './include/otherheader.h']
 '''
 
 # Test setup before the docstring is run.

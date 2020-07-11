@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -93,10 +93,11 @@ This module provides the following things:
 from contextlib import contextmanager
 
 import os
+import sys
 
 _harness_dir = os.path.dirname(os.path.realpath(__file__))
 _flit_dir = os.path.dirname(_harness_dir)
-_script_dir = os.path.join(_flit_dir, 'scripts/flitcli')
+_script_dir = os.path.join(_flit_dir, 'scripts', 'flitcli')
 
 del os
 
@@ -168,55 +169,6 @@ def _path_import(module_dir, name):
         import importlib
         return importlib.import_module(name)
 
-@contextmanager
-def tempdir(*args, **kwargs):
-    '''
-    Creates a temporary directory using tempfile.mkdtemp().  All arguments are
-    passed there.  This function is to be used in a with statement.  At the end
-    of the with statement, the temporary directory will be deleted with
-    everything in it.
-
-    Test that the temporary directory exists during the block and is removed
-    after
-    >>> import os
-    >>> temporary_directory = None
-    >>> with tempdir() as new_dir:
-    ...     temporary_directory = new_dir
-    ...     print(os.path.isdir(temporary_directory))
-    ...
-    True
-    >>> os.path.isdir(temporary_directory)
-    False
-    >>> os.path.exists(temporary_directory)
-    False
-
-    Test that an exception is not thrown if it was already deleted
-    >>> import shutil
-    >>> with tempdir() as new_dir:
-    ...     shutil.rmtree(new_dir)
-
-    Test that the directory is still deleted even if an exception is thrown
-    within the with statement.
-    >>> try:
-    ...     with tempdir() as new_dir:
-    ...         temporary_directory = new_dir
-    ...         raise RuntimeError()
-    ... except:
-    ...     pass
-    >>> os.path.isdir(temporary_directory)
-    False
-    '''
-    import tempfile
-    import shutil
-    new_dir = tempfile.mkdtemp(*args, **kwargs)
-    try:
-        yield new_dir
-    finally:
-        try:
-            shutil.rmtree(new_dir)
-        except FileNotFoundError:
-            pass
-
 def touch(filename):
     '''
     Create an emtpy file if it does not exist, otherwise updates the
@@ -225,9 +177,26 @@ def touch(filename):
     from pathlib import Path
     Path(filename).touch()
 
+def unittest_main():
+    'Calls unittest.main(), only printing if the tests failed'
+    from io import StringIO
+    import unittest
+    captured = StringIO()
+    old_stderr = sys.stderr
+    try:
+        sys.stderr = captured
+        result = unittest.main(exit=False)
+    finally:
+        sys.stderr = old_stderr
+    if not result.result.wasSuccessful():
+        print(captured.getvalue())
+        return 1
+    return 0
+
 flit = _path_import(_script_dir, 'flit')
 config = _path_import(_script_dir, 'flitconfig')
 util = _path_import(_script_dir, 'flitutil')
+tempdir = util.tempdir
 
 # Remove the things that are no longer necessary
 del contextmanager

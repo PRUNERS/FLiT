@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -92,12 +92,16 @@ The tests are below using doctest
 >>> import re
 >>> import time
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 Test that the dev target will be rebuilt if one of the files is updated.
 We use 'make --touch' to simply touch files it would create and then we will
 test that the correct files are updated.
 >>> def compile_target(directory, target, touch=True):
 ...     'Compiles the dev target using "make --touch" and returns the output'
-...     command = ['make', '-C', directory, target]
+...     command = ['make', '-C', directory, target, 'VERBOSE=1']
 ...     if touch:
 ...         command.append('--touch')
 ...     output = subp.check_output(command)
@@ -126,13 +130,13 @@ Creating ...
 
 >>> def touched_files(outstring):
 ...     'Returns list of touched files in sorted order'
-...     return sorted([x[6:] for x in outstring.splitlines()
-...                    if x.startswith('touch ')])
+...     return sorted({x[6:] for x in outstring.splitlines()
+...                    if x.startswith('touch ')})
 
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['devrun', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
+['devrun', 'obj/dev/ALL-FLIT.cpp.o', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_build)
 []
@@ -170,7 +174,7 @@ Creating ...
 Make sure all of the correct files were created with our build commands
 
 >>> touched_files(before_build)
-['gtrun', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
+['gtrun', 'obj/gt/ALL-FLIT.cpp.o', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_build)
 []
