@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -92,6 +92,10 @@ verify correct usage.
 >>> import shutil
 >>> import subprocess as subp
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 >>> with th.tempdir() as temp_dir:
 ...     with StringIO() as ostream:
 ...         _ = th.flit.main(['init', '-C', temp_dir], outstream=ostream)
@@ -107,8 +111,10 @@ verify correct usage.
 ...         _ = conf.write("name = 'fake-clang'\\n")
 ...         _ = conf.write("type = 'clang'\\n")
 ...     _ = shutil.copy('fake_clang34.py', temp_dir)
-...     _ = subp.check_output(['make', '--always-make', 'Makefile', '-C', temp_dir])
-...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir])
+...     _ = subp.check_output(['make', '--always-make', 'Makefile',
+...                            '-C', temp_dir])
+...     make_out = subp.check_output(['make', 'gt', '-C', temp_dir,
+...                                   'VERBOSE=1'])
 ...     make_out = make_out.decode('utf8').splitlines()
 
 Verify the output of flit init
@@ -123,7 +129,7 @@ Check the output of Make
 >>> any(['-no-pie' in x for x in make_out])
 False
 >>> len([1 for x in make_out if '-nopie' in x])
-1
+2
 
 Make sure gcc toolchain is not used since gcc is not there
 >>> any(['--gcc-toolchain' in x for x in make_out])

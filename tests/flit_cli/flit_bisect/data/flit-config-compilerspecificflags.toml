@@ -1,0 +1,30 @@
+[dev_build]
+compiler_name = 'fake-gcc'
+optimization_level = '-O2'
+switches = '-funsafe-math-optimizations'
+
+[ground_truth]
+compiler_name = 'fake-gcc'
+optimization_level = '-O0'
+switches = '-W-baseline-flag1'
+
+[[compiler]]
+binary = './fake_gcc4.py'
+name = 'fake-gcc'
+type = 'gcc'
+fixed_compile_flags = '-W-gcc-flag1 -W-gcc-flag2'
+fixed_link_flags = '-l-gcc-link1 -l-gcc-link2'
+
+[[compiler]]
+binary = './fake_clang34.py'
+name = 'fake-clang'
+type = 'clang'
+fixed_compile_flags = '-W-clang-flag1 -W-clang-flag2'
+fixed_link_flags = '-l-clang-link1 -l-clang-link2'
+
+[[compiler]]
+binary = './fake_intel19.py'
+name = 'fake-intel'
+type = 'intel'
+fixed_compile_flags = '-W-intel-flag1 -W-intel-flag2'
+fixed_link_flags = '-l-intel-link1 -l-intel-link2'

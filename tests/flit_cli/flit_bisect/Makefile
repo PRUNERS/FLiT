@@ -8,12 +8,16 @@ IS_PYELF      := $(shell if python3 -c 'import elftools' 2>/dev/null; then \
 
 include ../../color_out.mk
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: check help clean build run_%
 ifeq ($(IS_PYELF),true)
 check: $(TARGETS) $(RUN_TARGETS)
 else
 check:
-	$(call color_out,RED,Warning: pyelftools is not found on your system;\
+	@$(call color_out,RED,Warning: pyelftools is not found on your system;\
 	  skipping flit-bisect tests)
 endif
 
@@ -30,4 +34,4 @@ clean:
 run_% : %.py
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@$(RUNNER) $<
+	$(RUNNER) $<

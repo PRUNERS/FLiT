@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -119,9 +119,11 @@ matrix:
           packages:
             - *native_deps
 
-before_install: pip3 install --user toml $extra_pip
+before_install:
+  - pip3 install --user setuptools
+  - pip3 install --user toml $extra_pip
 
-script: make -j 4 && make -j 4 -C tests && make check
+script: make -j4 && make -j4 -C tests && make check
 
 #notifications:
 #  email: false

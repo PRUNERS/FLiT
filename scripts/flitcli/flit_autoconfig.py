@@ -103,12 +103,12 @@ import flitconfig as conf
 
 brief_description = 'Autogenerates custom.mk from a JSON compilation database'
 
-def parse_args(arguments, prog=sys.argv[0]):
-    'Parse arguments and return parsed args'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
+def populate_parser(parser=None):
+    'Populate parser or create ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaSpaciousHelpFormatter
+    parser.description = '''
             Autogenerates a file used as a custom.mk file for FLiT.  It takes
             in a compilation database generated from "flit capture" and
             attempts to identify the necessary values for variables in
@@ -120,10 +120,9 @@ def parse_args(arguments, prog=sys.argv[0]):
             remove entries in the output file to suit your needs.
 
             Note: currently this tool is limited to generating the SOURCE and
-            CC_REQUIRED variables in the "custom.mk", not the "LD_REQUIRED"
+            CXXFLAGS variables in the "custom.mk", not the "LDFLAGS"
             values.
-            ''',
-        )
+            '''
     parser.add_argument('-o', '--output', default='custom.mk',
                         help='''
                             Where to output the contents that would typically
@@ -140,10 +139,7 @@ def parse_args(arguments, prog=sys.argv[0]):
                         help='Show debugging information')
     parser.add_argument('compilation_database',
                         help='Compilations database from "flit capture".')
-    args = parser.parse_args(arguments)
-    if args.verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    return args
+    return parser
 
 def first(iterable, condition):
     '''
@@ -357,8 +353,8 @@ def _output_custom_makefile(outfile, replacements, overwrite):
 
 # Makefile variables
 _FILES_MAKEVAR = 'SOURCE'
-_CXXFLAGS_MAKEVAR = 'CC_REQUIRED'
-_LDFLAGS_MAKEVAR = 'LD_REQUIRED'
+_CXXFLAGS_MAKEVAR = 'CXXFLAGS'
+_LDFLAGS_MAKEVAR = 'LDFLAGS'
 
 def _filter_out_existing_makevars(files, cxxflags, ldflags, outfile):
     'Filter out from variables (in place) existing values in outfile.'
@@ -426,9 +422,14 @@ def gen_custom_makefile(outfile='custom.mk', files=None, cxxflags=None,
 
     _output_custom_makefile(outfile, replacements, overwrite)
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     'Main logic here'
-    args = parse_args(arguments, prog)
+    parser = populate_parser()
+    if prog: parser.prog = prog
+    args = parser.parse_args(arguments)
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+
     logging.debug('arguments: %s', args)
 
     with open(args.compilation_database, 'r') as infile:

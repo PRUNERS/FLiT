@@ -4,6 +4,10 @@ RUN_TARGETS := $(SRC:%.py=run_%)
 
 include ../color_out.mk
 
+ifndef VERBOSE
+.SILENT:
+endif
+
 .PHONY: check help clean build run_%
 check: $(TARGETS) $(RUN_TARGETS)
 
@@ -20,4 +24,4 @@ clean:
 run_% : %.py
 	@$(call color_out_noline,BROWN,  running)
 	@echo " $<"
-	@$(RUNNER) $<
+	$(RUNNER) $<

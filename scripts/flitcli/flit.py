@@ -2,7 +2,7 @@
 
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -97,73 +97,87 @@ import glob
 import importlib
 import os
 import sys
+from collections import namedtuple
 
 import flitargformatter
+import flitconfig as conf
 
-def import_helper_modules(directory):
-    'Imports the modules found in the given directory.'
+Subcommand = namedtuple('Subcommand',
+                        'name, brief_description, main, populate_parser')
+
+def load_subcommands(directory):
+    '''
+    Creates subcommands from modules found in the given directory.
+
+    From that directory, all subcommands will be loaded with the pattern
+    flit_*.py.
+
+    Returns a list of Subcommand tuples.
+    '''
     if directory not in sys.path:
         sys.path.insert(0, directory)
     subcommand_files = glob.glob(os.path.join(directory, 'flit_*.py'))
-    subcommands = [os.path.basename(x)[5:-3] for x in subcommand_files]
+    subcommand_names = [os.path.basename(x)[5:-3] for x in subcommand_files]
     subcom_modules = [importlib.import_module(os.path.basename(x)[:-3])
                       for x in subcommand_files]
-    subcom_map = dict(zip(subcommands, subcom_modules))
+    module_map = dict(zip(subcommand_names, subcom_modules))
 
     # Make sure each module has the expected interface
-    for name, module in subcom_map.items():
+    for name, module in module_map.items():
         expected_attributes = [
             'brief_description',
+            'populate_parser',
             'main',
             ]
         for attr in expected_attributes:
             assert hasattr(module, attr), \
-                'Module {0} is missing attribute {1}'.format(name, attr)
+                'Module flit_{0} is missing attribute {1}'.format(name, attr)
 
-    return subcom_map
+    subcommands = [
+        Subcommand(name, m.brief_description, m.main, m.populate_parser)
+        for name, m in module_map.items()]
 
-def generate_help_documentation(subcom_map):
+    return subcommands
+
+def populate_parser(parser=None, subcommands=None, recursive=False):
     '''
-    Generates and returns both the formatted help for the general flit
-    executable, but also for the help subcommand.  They are returned as a
-    tuple.
+    Populate and return the ArgumentParser.  If not given, a new one is made.
+    All arguments are optional.
 
-    >>> help_str, help_subcom_str = generate_help_documentation(dict())
+    @param parser (argparse.ArgumentParser): parser to populate or None to
+        generate a new one. (default=None)
+    @param subcommands (list(Subcommand)): list of subcommands (default=None)
+    @param recursive (bool): True means to add subcommand parsing beyond
+        the top-level
     '''
-    parser = argparse.ArgumentParser(
-        formatter_class=flitargformatter.DefaultsParaHelpFormatter,
-        description='''
-            The flit command-line tool allows for users to write
-            portability test cases.  One can test primarily for
-            compiler effects on reproducibility of floating-point
-            algorithms.  That at least is the main use case for this
-            tool, although you may come up with some other uses.
-            ''',
-        )
-    parser.add_argument('-v', '--version', action='store_true',
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaHelpFormatter
+    parser.description = '''
+            The flit command-line tool allows for users to write portability
+            test cases.  One can test primarily for compiler effects on
+            reproducibility of floating-point algorithms.  That at least is the
+            main use case for this tool, although you may come up with some
+            other uses.
+            '''
+    parser.add_argument('-v', '--version', action='version',
+                        version='flit version ' + conf.version,
                         help='Print version and exit')
-    subparsers = parser.add_subparsers(metavar='subcommand', dest='subcommand')
-    help_subparser = subparsers.add_parser(
-        'help', help='display help for a specific subcommand')
-    help_subparser.add_argument(
-        metavar='subcommand',
-        dest='help_subcommand',
-        choices=subcom_map.keys(),
-        help='''
-            display the help documentation for a specific subcommand.
-            choices are {0}.
-            '''.format(', '.join(sorted(subcom_map.keys()))),
-        )
-    for name, module in sorted(subcom_map.items()):
-        subparsers.add_parser(name, help=module.brief_description)
+    if subcommands:
+        subparsers = parser.add_subparsers(
+            title='Subcommands',
+            dest='subcommand',
+            metavar='subcommand')
+        for subcommand in subcommands:
+            subparser = subparsers.add_parser(
+                subcommand.name, help=subcommand.brief_description,
+                add_help=recursive)
+            if recursive:
+                subcommand.populate_parser(subparser)
+    return parser
 
-    # Note: we do not use parser for the actual parsing, because we want the
-    # arguments for each subcommand to be handled by the associated module.
-    # That does not seem to be well supported by the argparse module.
-
-    return (parser.format_help(), help_subparser.format_help())
-
-def main(arguments, outstream=None, errstream=None):
+def main(arguments, module_dir=conf.script_dir, outstream=None,
+         errstream=None, prog=None):
     '''
     Main logic here.
 
@@ -172,7 +186,7 @@ def main(arguments, outstream=None, errstream=None):
     would go to the console and put it into a StringStream or maybe a file.
     '''
     if outstream is None and errstream is None:
-        return _main_impl(arguments)
+        return _main_impl(arguments, module_dir, prog=prog)
     oldout = sys.stdout
     olderr = sys.stderr
     try:
@@ -180,72 +194,59 @@ def main(arguments, outstream=None, errstream=None):
             sys.stdout = outstream
         if errstream is not None:
             sys.stderr = errstream
-        return _main_impl(arguments)
+        return _main_impl(arguments, module_dir, prog=prog)
     finally:
         sys.stdout = oldout
         sys.stderr = olderr
 
-def _handle_help_subcommand(arguments, subcommand_map, help_string):
-    '''
-    Handles the 'flit help' subcommand.
+def create_help_subcommand(subcommands):
+    'Create and return the help subcommand'
+    subcommand_map = {sub.name: sub for sub in subcommands}
 
-    @param arguments (list(str)): command-line arguments coming after
-        'flit help'
-    @param subcommand_map (dict{'str': module}): dictionary of all subcommands
-        and their corresponding Python modules.
-    @return 0 on success and 1 on failure
-    '''
-    if len(arguments) == 0:
-        help_subcommand = 'help'
-    else:
-        help_subcommand = arguments.pop(0)
+    help_description = 'display help for a specific subcommand'
 
-    if help_subcommand in ('-h', '--help', 'help'):
-        print(help_string)
+    def help_populate_parser(parser=None):
+        'populate_parser() for the help subcommand'
+        if parser is None:
+            parser = argparse.ArgumentParser()
+        parser.description = help_description
+        subparsers = parser.add_subparsers(
+            title='Subcommands',
+            dest='help_subcommand',
+            metavar='subcommand')
+        for subcommand in subcommand_map.values():
+            subparsers.add_parser(subcommand.name,
+                                  help=subcommand.brief_description)
+        return parser
+
+    help_parser = help_populate_parser()
+
+    def help_main(arguments, prog=sys.argv[0]):
+        'main() for the help subcommand'
+        help_parser.prog = prog
+        args = help_parser.parse_args(arguments)
+        if args.help_subcommand:
+            sub = subcommand_map[args.help_subcommand].populate_parser()
+            sub.print_help()
+        else:
+            help_parser.print_help()
         return 0
 
-    if help_subcommand not in subcommand_map:
-        sys.stderr.write('Error: invalid subcommand: {0}.\n' \
-                         .format(help_subcommand))
-        sys.stderr.write('Call with --help for more information\n')
-        return 1
+    return Subcommand('help', help_description, help_main,
+                      help_populate_parser)
 
-    # just forward to the documentation from the submodule
-    return subcommand_map[help_subcommand].main(
-        ['--help'], prog='{0} {1}'.format(sys.argv[0], help_subcommand))
-
-def _main_impl(arguments):
+def _main_impl(arguments, module_dir, prog=None):
     'Implementation of main'
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    sys.path.insert(0, script_dir)
+    subcommands = load_subcommands(module_dir)
+    subcommands.append(create_help_subcommand(subcommands))
 
-    subcom_map = import_helper_modules(script_dir)
+    parser = populate_parser(subcommands=subcommands)
+    if prog: parser.prog = prog
+    args, remaining = parser.parse_known_args(arguments)
 
-    help_str, help_subcommand_str = generate_help_documentation(subcom_map)
-    if len(arguments) == 0 or arguments[0] in ('-h', '--help'):
-        print(help_str)
-        return 0
-
-    if arguments[0] in ('-v', '--version'):
-        import flitconfig as conf
-        print('flit version', conf.version)
-        return 0
-
-    subcommand = arguments.pop(0)
-
-    if subcommand == 'help':
-        return _handle_help_subcommand(arguments, subcom_map,
-                                       help_subcommand_str)
-
-    if subcommand not in subcom_map:
-        sys.stderr.write('Error: invalid subcommand: {0}.\n'
-                         .format(subcommand))
-        sys.stderr.write('Call with --help for more information\n')
-        return 1
-
-    # it is one of the other subcommands.  Just forward the request on
-    return subcom_map[subcommand].main(
-        arguments, prog='{0} {1}'.format(sys.argv[0], subcommand))
+    subcommand_map = {sub.name: sub for sub in subcommands}
+    subcommand = subcommand_map[args.subcommand]
+    return subcommand.main(remaining, prog=parser.prog + ' ' + args.subcommand)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

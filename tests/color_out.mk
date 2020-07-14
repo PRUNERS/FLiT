@@ -1,31 +1,41 @@
-# A Makefile function
-# @param 1: color (e.g. BLUE or GREEN)
-# @param 2: message to be printed in the color
-color_out_noline = \
-             @if [ -t 1 ]; then \
-               /bin/echo -ne "$(BASH_$1)$2$(BASH_CLEAR)"; \
-             else \
-               /bin/echo -n "$2"; \
-             fi
-color_out = \
-             @if [ -t 1 ]; then \
-               /bin/echo -e "$(BASH_$1)$2$(BASH_CLEAR)"; \
-             else \
-               /bin/echo "$2"; \
-             fi
+ECHO            := printf "%s"
+ECHO_NEWLINE    := printf "%s\n"
+NCOLORS         := $(shell tput colors)
 
-BASH_CLEAR    := \e[0m
-BASH_BLACK    := \e[0;30m
-BASH_BROWN    := \e[0;33m
-BASH_GRAY     := \e[0;37m
-BASH_GREY     := \e[0;37m
-BASH_DARKGRAY := \e[1;30m
-BASH_DARKGREY := \e[1;30m
-BASH_RED      := \e[1;31m
-BASH_GREEN    := \e[1;32m
-BASH_YELLOW   := \e[1;33m
-BASH_BLUE     := \e[1;34m
-BASH_PURPLE   := \e[1;35m
-BASH_CYAN     := \e[1;36m
-BASH_WHITE    := \e[1;37m
+# A Makefile function
+# @param 1: color (e.g., BLUE or GREEN)
+# @param 2: message to be printed in the color
+bold_color_noline = $(call print_impl,$(ECHO),$(BASH_BOLD)$(BASH_$1),$2)
+bold_color        = $(call print_impl,$(ECHO_NEWLINE),$(BASH_BOLD)$(BASH_$1),$2)
+color_out_noline  = $(call print_impl,$(ECHO),$(BASH_$1),$2)
+color_out         = $(call print_impl,$(ECHO_NEWLINE),$(BASH_$1),$2)
+
+# implementation
+# @param 1: print command
+# @param 2: terminal settings (e.g., $(BASH_BLUE) or $(BASH_GREEN))
+# @param 3: message to be printed in the color
+print_impl = \
+  if [ -t 1 ] && [ $(NCOLORS) -ge 8 ]; then \
+    $1 "$2$3$(BASH_CLEAR)"; \
+  else \
+    $1 "$3"; \
+  fi
+
+BASH_CLEAR    := $(shell tput sgr0)
+BASH_BOLD     := $(shell tput bold)
+BASH_BLACK    := $(shell tput setaf 0)
+BASH_RED      := $(shell tput setaf 1)
+BASH_GREEN    := $(shell tput setaf 2)
+BASH_YELLOW   := $(shell tput setaf 3)
+BASH_BLUE     := $(shell tput setaf 4)
+BASH_PURPLE   := $(shell tput setaf 5)
+BASH_CYAN     := $(shell tput setaf 6)
+BASH_WHITE    := $(shell tput setaf 7)
+BASH_BROWN    := $(shell tput setaf 94)
+BASH_GRAY     := $(shell tput setaf 245)
+BASH_GREY     := $(BASH_GRAY)
+BASH_DARKGRAY := $(shell tput setaf 240)
+BASH_DARKGREY := $(BASH_DARKGRAY)
+BASH_LIGHTGRAY:= $(shell tput setaf 250)
+BASH_LIGHTGREY:= $(BASH_LIGHTGRAY)
 

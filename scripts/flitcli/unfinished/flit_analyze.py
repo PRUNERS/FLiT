@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -90,17 +90,15 @@ import flitconfig as conf
 
 brief_description = 'Runs analysis on a previous flit run'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
-            Runs analysis on a previous flit run.  The analysis will be of
-            the current flit repository and will create a directory called
-            analysis inside of the flit directory.
-            ''',
-        )
+def populate_parser(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaSpaciousHelpFormatter
+    parser.description = '''
+        Runs analysis on a previous flit run.  The analysis will be of the
+        current flit repository and will create a directory called analysis
+        inside of the flit directory.
+        '''
     parser.add_argument('-C', '--directory', default='.',
                         help='Directory containing flit-config.toml')
     parser.add_argument('-l', '--list', action='store_true',
@@ -109,7 +107,12 @@ def main(arguments, prog=sys.argv[0]):
                         help='''
                             Analyze the given run(s).  Defaults to the latest
                             run.
-                            ''',)
+                            ''')
+    return parser
+
+def main(arguments, prog=None):
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Subcommand logic here

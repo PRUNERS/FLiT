@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -89,20 +89,24 @@ import flitargformatter
 
 brief_description = 'Run flit on the configured remote machine(s)'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
-            Run flit on the configured remote machine(s).  Note that you
-            may need to provide a password for SSH, but that should be
-            taken care of pretty early on in the process.  The results
-            should be sent to the database computer for later analysis.
-            ''',
-        )
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaSpaciousHelpFormatter
+    parser.description = '''
+        Run flit on the configured remote machine(s).  Note that you may need
+        to provide a password for SSH, but that should be taken care of pretty
+        early on in the process.  The results should be sent to the database
+        computer for later analysis.
+        '''
     parser.add_argument('description',
                         help='A description of the test run (required)')
+    return parser
+
+def main(arguments, prog=None):
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Subcommand logic here

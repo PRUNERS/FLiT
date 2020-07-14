@@ -9,8 +9,8 @@
 FLiT comes with a command-line tool called `flit`.  This command-line tool is
 simply a symbolic link to `flit.py`.  In the repository, it is located in
 `scripts/flitcli/flit.py`.  When installed, it is installed in
-`<PREFIX>/share/flit/scripts/flit.py` with the symbolic link at
-`<PREFIX>/bin/flit`.
+`<DESTDIR><PREFIX>/share/flit/scripts/flit.py` with the symbolic link at
+`<DESTDIR><PREFIX>/bin/flit`.
 
 This command is split up into many subcommands.  Most of it is self documented.
 For more information, simply call:
@@ -27,6 +27,11 @@ Possible subcommands:
 * [flit make](#flit-make): Run flit tests locally and add results to the database
 * [flit import](#flit-import): Imports test results into an SQLite3 database
 * [flit bisect](#flit-bisect): Assign variability blame to files and functions
+* [flit experimental](#flit-experimental): Access to experimental features
+
+Possibly of interest:
+
+* [Adding More Subcommands](#adding-more-subcommands)
 
 ## flit help
 
@@ -71,6 +76,9 @@ If you want to play with the litmus tests in this directory, you can pass the
 `--litmus-tests` flag which will copy over the litmus tests into the `tests`
 directory for use.
 
+Note: Only the litmus tests will be in this folder, the `Empty.cpp` file is
+not copied.
+
 ## flit update
 
 Updates the `Makefile` based on `flit-config.toml`. The `Makefile` is
@@ -96,6 +104,23 @@ this manually, but this does a few things conveniently for you, such as
 
 Again, you can do these things manually and have more control.  But for most
 users, this will be the most direct and convenient way to run locally.
+
+If you use the `Makefile` directly, which is totally fine, then there are a few
+things to know.
+
+```bash
+make help
+```
+
+will output help documentation on what targets are available and what they mean.
+
+The output from the `Makefile` will be short by default.  You can output all of
+the details by defining `VERBOSE=1` or `VERBOSE=true` either as an argument to
+`make` or as an environment variable.
+
+```bash
+make VERBOSE=1 ...
+```
 
 ## flit import
 
@@ -160,10 +185,16 @@ flit init --directory litmus-test-run --litmus-tests
 cd litmus-test-run
 flit bisect \
   --precision double \
-  --compiler-type gcc \
-  "gcc -O3 -funsafe-math-optimizations" \
+  "g++ -O3 -funsafe-math-optimizations" \
   subnormal
 ```
+
+Note: if the compiler given (e.g., `g++`) is found in the `compiler` section of
+`flit-config.toml`, then the `fixed_compile_flags` specified there will be used
+when compiling object files from this compilation under test.  However, the
+`fixed_link_flags` will not be used since the link step is performed by default
+with the baseline compilation's compiler.  This behavior can be overridden with
+the `--ldflags`, `--use-linker`, and `--add-ldflags` options.
 
 And here is an example of giving a full SQLite3 database
 
@@ -181,6 +212,29 @@ the sqlite database with `flit-config.toml`.  The same is true for a single
 bisect invocation if the given compiler is found within `flit-config.toml`.
 
 Call `flit bisect --help` for more documentation.
+
+
+## flit experimental
+
+There may or may not be any experimental features currently available.  These
+features are available by the `flit experimental` command.  Please call `flit
+experimental` to see the documentation of what experimental features are
+available.
+
+You may also read the documentation on
+[experimental features](experimental-features.md).
+
+
+## Adding More Subcommands
+
+The FLiT command-line structure is extremely modular.  If you create a file
+with the correct naming scheme, put it in the correct directory, and implement
+three things, it will automatically be picked up and become available as a
+subcommand from the `flit` command-line tool.
+
+See the flit command-line [README.md](../scripts/flitcli/README.md) for more
+information.
+
 
 [Prev](litmus-tests.md)
 |

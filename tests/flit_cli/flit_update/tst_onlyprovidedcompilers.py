@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -94,7 +94,8 @@ Tests only providing gcc and no other compiler.  Tests that
 
 >>> testconf = 'data/onlyprovidedcompilers.toml'
 >>> with open(testconf, 'r') as fin:
-...     init_out, update_out, makevars = runconfig(fin.read())
+...     init_out, update_out, makevars = runconfig(
+...         fin.read(), copyfiles=['data/fake_gcc9.py'])
 
 Get default values for each compiler from the default configuration
 
@@ -110,7 +111,7 @@ Updating .../Makefile
 
 Check that the compiler binaries are the default values
 >>> makevars['GCC']
-['/usr/bin/my-g++']
+['./fake_gcc9.py']
 
 >>> makevars['CLANG']
 ['None']

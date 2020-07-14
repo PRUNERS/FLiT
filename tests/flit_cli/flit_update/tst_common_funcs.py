@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -86,6 +86,7 @@ This module holds common functions used in all of the tests for
 
 from io import StringIO
 import os
+import shutil
 import sys
 
 before_path = sys.path[:]
@@ -154,12 +155,14 @@ def get_default_compiler(typename):
     assert len(default_compiler) == 1
     return default_compiler[0]
 
-def runconfig(configstr):
+def runconfig(configstr, copyfiles=None):
     '''
     Runs `flit init`, then writes the given configuration string into
     `flit-config.toml`, and then runs `flit update`.
 
     @param configstr (str) contents to put into `flit-config.toml`
+    @param copyfiles (list(str)) list of files to copy to the initialized
+        directory before calling update
     @return (tuple(list(str), list(str), dict{str: list(str)})
         Three things are returned:
         1. init_out (list(str)): the lines of output from `flit init`
@@ -171,6 +174,7 @@ def runconfig(configstr):
     in the other test functions.
     '''
     with th.tempdir() as temp_dir:
+        ignore_stream = StringIO()
         with StringIO() as ostream:
             retval = th.flit.main(['init', '-C', temp_dir],
                                   outstream=ostream, errstream=ostream)
@@ -179,13 +183,18 @@ def runconfig(configstr):
             raise UpdateTestError('Failed to initialize flit directory')
         with open(os.path.join(temp_dir, 'flit-config.toml'), 'w') as fout:
             print(configstr, file=fout, flush=True)
+        if copyfiles is not None:
+            for filename in copyfiles:
+                shutil.copy(filename, temp_dir)
         with StringIO() as ostream:
-            retval = th.flit.main(['update', '-C', temp_dir],
-                                  outstream=ostream, errstream=ostream)
-            update_out = ostream.getvalue().splitlines()
+            with StringIO() as errstream:
+                retval = th.flit.main(['update', '-C', temp_dir],
+                                      outstream=ostream, errstream=errstream)
+                update_out = ostream.getvalue().splitlines()
+                update_err = errstream.getvalue().splitlines()
         if retval != 0:
             raise UpdateTestError('Failed to update Makefile: ' +
-                                  ' '.join(update_out))
+                                  ' '.join(update_err))
         makevars = th.util.extract_make_vars(directory=temp_dir)
     return (init_out, update_out, makevars)
 

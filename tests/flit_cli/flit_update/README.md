@@ -19,8 +19,8 @@
 
 1. `FLIT_INC_DIR`, `FLIT_LIB_DIR`, `FLIT_DATA_DIR`, and `FLIT_SCRIPT_DIR`, for
    both from git repository and for an installed FLiT
-2. `DEV_CC`, `DEV_OPTL`, and `DEV_SWITCHES` for both provided and non-provided
-3. `GT_CC`, `GT_OPTL`, and `GT_SWITCHES` for both provided and non-provided
+2. `DEV_CXX`, `DEV_OPTL`, and `DEV_SWITCHES` for both provided and non-provided
+3. `GT_CXX`, `GT_OPTL`, and `GT_SWITCHES` for both provided and non-provided
 4. `TEST_RUN_ARGS` from `timing`, `timing_loops`, and `timing_repeats` for both
    provided and non-provided
 5. `ENABLE_MPI` and `MPIRUN_ARGS` for both provided and non-provided

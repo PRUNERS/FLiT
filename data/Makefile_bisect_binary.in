@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -101,7 +101,9 @@ TROUBLE_CXX      := {trouble_cxx}
 TROUBLE_OPTL     := {trouble_optl}
 TROUBLE_SWITCHES := {trouble_switches}
 TROUBLE_CXX_TYPE := {trouble_type}
-BISECT_LINK      := $(GT_CXX)
+BISECT_LINK      := {bisect_linker}
+RM               := rm -f
+RMDIR            := rm -rf
 
 TROUBLE_ID       := {trouble_id}
 
@@ -109,12 +111,20 @@ MAKEFILE         := {makefile}
 NUMBER           := {number}
 BISECT_DIR       := {bisect_dir}
 LOCAL_OBJ_DIR    := $(BISECT_DIR)/obj
+FPIC_DIR         := $(LOCAL_OBJ_DIR)/fpic
+SPLIT_DIR        := $(LOCAL_OBJ_DIR)/split
+SYMBOLS_DIR      := $(LOCAL_OBJ_DIR)/symbols
+
 BISECT_OBJ_DIR   := $(OBJ_DIR)/bisect/$(TROUBLE_ID)
 MORE_DIRS        += $(BISECT_DIR)
-MORE_DIRS        += $(LOCAL_OBJ_DIR)
-MORE_DIRS        += $(BISECT_OBJ_DIR)
+MORE_DIRS        += $(LOCAL_OBJ_DIR)/trouble
+MORE_DIRS        += $(LOCAL_OBJ_DIR)/gt
+MORE_DIRS        += $(FPIC_DIR)/trouble
+MORE_DIRS        += $(FPIC_DIR)/gt
+MORE_DIRS        += $(SPLIT_DIR)
+MORE_DIRS        += $(SYMBOLS_DIR)
 BISECT_TARGET    := $(BISECT_DIR)/runbisect-$(NUMBER)
-TROUBLE_TARGET   := $(BISECT_DIR)/runtrouble-$(TROUBLE_ID)
+TROUBLE_TARGET   := $(BISECT_DIR)/runtrouble-$(NUMBER)
 
 BISECT_GT_SRC    :=
 {BISECT_GT_SRC}
@@ -125,256 +135,244 @@ TROUBLE_SRC      :=
 SPLIT_SRC        :=
 {SPLIT_SRC}
 
-# Add to the CC_REQUIRED and LD_REQUIRED if necessary
-{EXTRA_CC_FLAGS}
-{EXTRA_LD_FLAGS}
+# Add to the LDFLAGS if necessary
+{EXTRA_LDFLAGS}
 
-TROUBLE_LDFLAGS  :=
-TROUBLE_CFLAGS   :=
-
-ifeq ($(TROUBLE_CXX_TYPE),$(CLANG_TYPE))
-  TROUBLE_LDFLAGS += -nopie
-  TROUBLE_CFLAGS  += $(CLANG_REQUIRED)
-else ifeq ($(TROUBLE_CXX_TYPE),$(GCC_TYPE))
-ifeq ($(call IS_VER_4_OR_5,$(TROUBLE_CXX)),0)
-  TROUBLE_LDFLAGS += -no-pie
-endif
-endif
-
-BUILD_GT_LOCAL   := {build_gt_local}
-
-TROUBLE_TARGET_OBJ := $(addprefix \
-    $(BISECT_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
-ALL_TROUBLE_FPIC := $(TROUBLE_TARGET_OBJ:%.o=%_fPIC.o)
-BISECT_GT_OBJ    := $(addprefix \
-    $(GT_OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%=%.o)))
-TROUBLE_OBJ      := $(addprefix \
-    $(BISECT_OBJ_DIR)/,$(notdir $(TROUBLE_SRC:%=%.o)))
-BISECT_OBJ       := $(BISECT_GT_OBJ)
-BISECT_OBJ       += $(TROUBLE_OBJ)
-TROUBLE_TARGET_DEPS := $(TROUBLE_TARGET_OBJ:%.o=%.d)
-FPIC_OBJ         := $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_fPIC.o)))
-FPIC_OBJ         += $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_fPIC.o)))
-FPIC_DEPS        := $(FPIC_OBJ:%.o=%.d)
-SPLIT_OBJ        := $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_split_$(NUMBER).o)))
-SPLIT_OBJ        += $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir \
-      $(SPLIT_SRC:%=%_trouble_split_$(NUMBER).o)))
-SPLIT_DEPS       := $(SPLIT_OBJ:%.o=%.d)
-TROUBLE_SYMBOLS  := $(addprefix \
-    $(LOCAL_OBJ_DIR)/,$(notdir \
-      $(SPLIT_SRC:%=%_trouble_symbols_$(NUMBER).txt)))
+TROUBLE_CXXFLAGS := {trouble_cxxflags}
+TROUBLE_LDFLAGS  := {trouble_ldflags}
+BISECT_LDFLAGS   := {bisect_ldflags}
 
 TROUBLE_TARGET_OUT := $(TROUBLE_TARGET:%=%-out)
 TROUBLE_TARGET_RESULT := $(TROUBLE_TARGET_OUT:%=%-comparison.csv)
 BISECT_OUT         := $(BISECT_TARGET:%=%-out)
 BISECT_RESULT      := $(BISECT_OUT:%=%-comparison.csv)
 
-# TODO: test this on a mac
-ifeq ($(UNAME_S),Darwin)
-$(BISECT_TARGET):  lib/libflit.so
-$(TROUBLE_TARGET): lib/libflit.so
-else
-$(BISECT_TARGET):  $(FLIT_LIB_DIR)/libflit.so
-$(TROUBLE_TARGET): $(FLIT_LIB_DIR)/libflit.so
-endif # ifeq ($(UNAME_S),Darwin): meaning, we are on a mac
+# make recursive calls use this makefile
+REC_MAKE           += -f $(MAKEFILE)
 
-
-# If we want the ground-truth build to be done locally, for example if we have
-# added to the $(LD_REQUIRED) flag and want to recompile the ground-truth
-# executable, then simply set BUILD_GT_LOCAL=true.  This generates
-# $(BISECT_DIR)/gtrun-lib that will be the ground truth for this bisect
-# execution.
-
-GT_LIB_TARGET      := $(BISECT_DIR)/gtrun-lib
-GT_LIB_OUT         := $(BISECT_DIR)/gtrun-lib-out
+BUILD_GT_LOCAL   := {build_gt_local}
+GT_LIB_TARGET    := $(BISECT_DIR)/gtrun-lib
+GT_LIB_OUT       := $(BISECT_DIR)/gtrun-lib.csv
 
 ifeq ($(BUILD_GT_LOCAL),true)
-
-ifeq ($(UNAME_S),Darwin)
-$(GT_LIB_TARGET): lib/libflit.so
+  GT_RESULT_TO_USE  := $(GT_LIB_OUT)
+  GT_TARGET_TO_USE  := $(GT_LIB_TARGET)
 else
-$(GT_LIB_TARGET): $(FLIT_LIB_DIR)/libflit.so
-endif # ifeq ($(UNAME_S),Darwin): meaning we are on a mac
-
-$(GT_LIB_OUT): $(GT_LIB_TARGET)
-	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing --precision "$(PRECISION)" $(TEST_CASE)
-
-$(GT_LIB_TARGET): $(GT_OBJ) Makefile custom.mk $(MAKEFILE)
-	$(GT_CXX) $(CC_REQUIRED) -o $@ $(GT_OBJ) $(LD_REQUIRED)
-
-$(BISECT_RESULT): $(BISECT_OUT) $(GT_LIB_OUT) $(GT_LIB_TARGET)
-	$(RUNWRAP) ./$(GT_LIB_TARGET) --compare-mode --compare-gt $(GT_LIB_OUT) --suffix "-comparison.csv" $< -o /dev/null
-
-endif # ifeq ($(BUILD_GT_LOCAL),true): meaning we are making a local gt
-
-
--include $(TROUBLE_TARGET_DEPS)
--include $(FPIC_DEPS)
--include $(SPLIT_DEPS)
-
-$(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
-	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
-$(TROUBLE_TARGET_OUT): $(TROUBLE_TARGET) | $(BISECT_DIR)
-	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
-
-$(BISECT_TARGET): $(BISECT_OBJ) $(SPLIT_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(GT_CXX) $(CC_REQUIRED) $(GT_CFLAGS) -o $@ $(BISECT_OBJ) $(SPLIT_OBJ) $(LD_REQUIRED) $(GT_LDFLAGS)
-
-$(TROUBLE_TARGET): $(TROUBLE_TARGET_OBJ) Makefile custom.mk | $(BISECT_DIR)
-	$(TROUBLE_CXX) $(CC_REQUIRED) $(TROUBLE_CFLAGS) -o $@ $(TROUBLE_TARGET_OBJ) $(LD_REQUIRED) $(TROUBLE_LDFLAGS)
-
-.PHONY: trouble trouble-out trouble-fpic
-trouble: $(TROUBLE_TARGET)
-trouble-out: $(TROUBLE_TARGET_RESULT) $(TROUBLE_TARGET_OUT)
-trouble-fpic: $(ALL_TROUBLE_FPIC)
+  GT_RESULT_TO_USE  := $(GT_OUT)
+  GT_TARGET_TO_USE  := $(GT_TARGET)
+endif
 
 .PHONY: bisect
-bisect: $(BISECT_TARGET) $(GT_TARGET)
-bisect: $(BISECT_RESULT) $(BISECT_OUT)
+bisect: $(BISECT_TARGET) $(BISECT_RESULT)
 
 .PHONY: bisect-smallclean bisect-clean bisect-distclean
 clean: bisect-clean
 distclean: bisect-distclean
 bisect-smallclean:
-	rm -f $(BISECT_TARGET)
-	rm -f $(BISECT_OUT)
-	rm -f $(addsuffix *.dat,$(BISECT_OUT))
-	rm -f $(TROUBLE_TARGET)
-	rm -f $(TROUBLE_TARGET_OUT)
-	rm -f $(addsuffix *.dat,$(TROUBLE_TARGET_OUT))
-	rm -rf $(LOCAL_OBJ_DIR)
+	$(RM) $(BISECT_TARGET)
+	$(RM) $(BISECT_OUT)
+	$(RM) $(addsuffix *.dat,$(BISECT_OUT))
+	$(RMDIR) $(SPLIT_DIR)
 
 bisect-clean: bisect-smallclean
-	rm -f $(TROUBLE_TARGET_OBJ)
-	rm -f $(TROUBLE_TARGET_DEPS)
-	rm -f $(GT_LIB_TARGET)
-	rm -f $(GT_LIB_OUT)
-	rm -f $(addsuffix *.dat,$(GT_LIB_OUT))
+	$(RM) $(GT_LIB_TARGET)
+	$(RM) $(GT_LIB_OUT)
+	$(RM) $(addsuffix *.dat,$(GT_LIB_OUT))
+	$(RMDIR) $(FPIC_DIR)
+	$(RMDIR) $(BISECT_OBJ_DIR)
+	$(RMDIR) $(LOCAL_OBJ_DIR)/trouble
 
 bisect-distclean: bisect-clean
-	rm -f bisect.log
-	rm -f $(TROUBLE_TARGET_RESULT)
-	rm -f $(BISECT_RESULT)
-	rm -f $(MAKEFILE)
-	-rmdir $(BISECT_DIR)
+	$(RM) bisect.log
+	$(RM) $(BISECT_RESULT)
+	$(RM) $(MAKEFILE)
+	$(RMDIR) $(SYMBOLS_DIR)
+	$(RMDIR) $(LOCAL_OBJ_DIR)
+	-rmdir --ignore-fail-on-non-empty $(BISECT_DIR)
 
-dirs: $(MORE_DIRS)
+.PHONY: trouble phony-trouble
+trouble: phony-trouble
+# Note: phony-target here causes no executable to be created
+$(eval $(call REC_COMPILE_RULE,\
+  phony-trouble,\
+  $(TROUBLE_CXX),\
+  $(TROUBLE_OPTL),\
+  $(TROUBLE_SWITCHES),\
+  $(TROUBLE_CXXFLAGS),\
+  $(TROUBLE_LDFLAGS),\
+  $(BISECT_OBJ_DIR)))
+
+# to create the fpic version of the object files
+.PHONY: trouble-fpic phony-trouble-fpic
+trouble-fpic: phony-trouble-fpic
+# Note: phony-target here causes no executable to be created
+$(eval $(call REC_COMPILE_RULE,\
+  phony-trouble-fpic,\
+  $(TROUBLE_CXX),\
+  $(TROUBLE_OPTL),\
+  $(TROUBLE_SWITCHES),\
+  $(TROUBLE_CXXFLAGS) -fPIC,\
+  $(TROUBLE_LDFLAGS),\
+  $(BISECT_OBJ_DIR)/fpic))
+
+# Note: this differs from GT_TARGET because LDFLAGS was changed above
+$(GT_LIB_TARGET): $(LIBFLIT)
+$(eval $(call REC_COMPILE_RULE,\
+  $(GT_LIB_TARGET),\
+  $(GT_CXX),\
+  $(GT_OPTL),\
+  $(GT_SWITCHES),\
+  $(GT_CXXFLAGS),\
+  $(GT_LDFLAGS),\
+  $(GT_OBJ_DIR)))
 
 $(MORE_DIRS):
-	mkdir -p $@
+	+$(MKDIR) $@
 
-# Copied mostly from Makefile.in COMPILE_RULE, but customized for bisect
-# Compiles a single object file with -fPIC, checking first for a precompiled
-# version (and if so, copy it instead of recompiling).
-# @param 1: source file
-# @param 2: object file
-# @param 3: other object file location
-# @param 4: compiler
-# @param 5: optimization level
-# @param 6: switches
-# @param 7: target filename
-# @param 8: extra compiler flags
-define FPIC_COMPILE_RULE
-$2: $1 Makefile custom.mk | $(LOCAL_OBJ_DIR)
-	if [ -f "$3" ]; then \
-	  ln -s "../../$(strip 3)" "$(strip $2)"; \
-	else \
-	  $4 $5 $6 -c $8 $(CC_REQUIRED) -fPIC $(DEPFLAGS) $(2:%.o=%.d) $1 -o $2 \
-	    -DFLIT_HOST='"$(HOSTNAME)"' \
-	    -DFLIT_COMPILER='"$(strip $4)"' \
-	    -DFLIT_OPTL='"$(strip $5)"' \
-	    -DFLIT_SWITCHES='"$(strip $6)"' \
-	    -DFLIT_FILENAME='"$(notdir $(strip $7))"'; \
-	fi
-endef
+# rule guarded because the bisect-compile section redefines $(BISECT_TARGET)
+ifndef R_TYPE
+.PHONY: $(BISECT_TARGET)
+$(BISECT_TARGET):
+	+$(REC_MAKE) R_TYPE=bisect-compile
+endif
 
-$(foreach s,$(SOURCE),\
-  $(eval $(call FPIC_COMPILE_RULE,\
+$(GT_LIB_OUT): $(GT_LIB_TARGET) | $(BISECT_DIR)
+	@$(call color_out,CYAN,  $< -> $@)
+	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing \
+	  --precision "$(PRECISION)" $(TEST_CASE)
+
+$(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
+	@$(call color_out,CYAN,  $< -> $@)
+	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
+
+$(BISECT_RESULT): $(BISECT_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_TO_USE)
+	@$(call color_out,CYAN,  $< -> $@)
+	$(RUNWRAP) ./$(GT_TARGET_TO_USE) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
+	  --suffix "-comparison.csv" $< -o /dev/null
+
+#################################
+# *** R_TYPE=bisect-compile *** #
+#################################
+
+ifeq ($(R_TYPE),bisect-compile)
+
+BISECT_GT_OBJ    := $(addprefix \
+    $(GT_OBJ_DIR)/,$(notdir $(BISECT_GT_SRC:%=%.o)))
+TROUBLE_OBJ      := $(addprefix \
+    $(LOCAL_OBJ_DIR)/trouble/,$(notdir $(TROUBLE_SRC:%=%.o)))
+SPLIT_OBJ        := $(addprefix \
+    $(SPLIT_DIR)/,$(notdir $(SPLIT_SRC:%=%_gt_split_$(NUMBER).o)))
+SPLIT_OBJ        += $(addprefix \
+    $(SPLIT_DIR)/,$(notdir \
+      $(SPLIT_SRC:%=%_trouble_split_$(NUMBER).o)))
+BISECT_OBJ       := $(BISECT_GT_OBJ)
+BISECT_OBJ       += $(GT_OBJ_DIR)/ALL-FLIT.cpp.o
+BISECT_OBJ       += $(TROUBLE_OBJ)
+BISECT_OBJ       += $(SPLIT_OBJ)
+BISECT_DEP       := $(BISECT_OBJ:%.o=%.d)
+
+
+-include $(BISECT_DEP)
+
+recursion-target: $(BISECT_TARGET)
+
+$(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
+	@$(call color_out,BLUE,  Creating $@)
+	$(BISECT_LINK) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
+	  $(BISECT_LDFLAGS) $(LDLIBS)
+
+# compile BISECT_GT_OBJ
+$(foreach s,$(BISECT_GT_SRC),\
+  $(eval $(call COMPILE_RULE,\
     $s,\
-    $(LOCAL_OBJ_DIR)/$(notdir $s)_gt_fPIC.o,\
-		$(GT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
+    $(GT_OBJ_DIR)/$(notdir $s).o,\
     $(GT_CXX),\
     $(GT_OPTL),\
     $(GT_SWITCHES),\
-    $(GT_TARGET),\
-    $(GT_CFLAGS))))
+    $(notdir $(BISECT_TARGET)),\
+    $(GT_CXXFLAGS))))
 
-# specify how to build the troublesome ones
-$(foreach s,$(SOURCE),\
-  $(eval $(call COMPILE_RULE,\
-    $s,\
-    $(BISECT_OBJ_DIR)/$(notdir $s).o,\
-    $(TROUBLE_CXX),\
-    $(TROUBLE_OPTL),\
-    $(TROUBLE_SWITCHES),\
-    bisect-default-out,\
-    $(TROUBLE_CFLAGS))))
-
-# and the fPIC variant
-$(foreach s,$(SOURCE),\
-  $(eval $(call FPIC_COMPILE_RULE,\
-    $s,\
-    $(LOCAL_OBJ_DIR)/$(notdir $s)_fPIC.o,\
-		$(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
-    $(TROUBLE_CXX),\
-    $(TROUBLE_OPTL),\
-    $(TROUBLE_SWITCHES),\
-    bisect-default-out,\
-    $(TROUBLE_CFLAGS))))
-
-# The fPIC variant built in OBJ_DIR instead of LOCAL_OBJ_DIR
-$(foreach s,$(SOURCE),\
-  $(eval $(call COMPILE_RULE,\
-    $s,\
-    $(BISECT_OBJ_DIR)/$(notdir $s)_fPIC.o,\
-    $(TROUBLE_CXX),\
-    $(TROUBLE_OPTL),\
-    $(TROUBLE_SWITCHES),\
-    bisect-default-out,\
-    $(TROUBLE_CFLAGS))))
-
-# Specify how to split symbols using objcopy
-
-# Defines how to split the one object file into two object files using objcopy
-# @param 1: src basename (e.g. for 'tests/Example01.cpp' pass in
-#     'Example01.cpp')
-define SPLIT_RULE
-
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: $$(MAKEFILE)
-$$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o: | $$(LOCAL_OBJ_DIR)
-	if [ -s "$$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt" ]; then \
-	  objcopy \
-	    --weaken-symbols=$$(LOCAL_OBJ_DIR)/$1_trouble_symbols_$$(NUMBER).txt \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+# Similar to COMPILE_RULE in Makefile but has an extra param
+# @param 8: directory where a copy may reside.  If this directory has the
+#   desired object file, then copy it instead of compiling one
+define COMPILE_OR_COPY_RULE
+$2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
+	if [ -f "$(strip $8)/$(notdir $2)" ]; then \
+	  $(call color_out,CYAN,  $8/$(notdir $2) -> $2); \
+	  ln -s $$(shell realpath --relative-to $(dir $2) $(strip $8)/$(notdir $2)) $2; \
 	else \
-	  cp \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_gt_split_$$(NUMBER).o; \
+	  $(call color_out,CYAN,  $1 -> $2); \
+	  $3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
+	    -DFLIT_HOST='"$(HOSTNAME)"' \
+	    -DFLIT_COMPILER='"$(strip $3)"' \
+	    -DFLIT_OPTL='"$(strip $4)"' \
+	    -DFLIT_SWITCHES='"$(strip $5)"' \
+	    -DFLIT_FILENAME='"$(notdir $(strip $6))"'; \
 	fi
-
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_fPIC.o
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(MAKEFILE)
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: $$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt
-$$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o: | $$(LOCAL_OBJ_DIR)
-	if [ -s "$$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt" ]; then \
-	  objcopy \
-	    --weaken-symbols=$$(LOCAL_OBJ_DIR)/$1_gt_symbols_$$(NUMBER).txt \
-	    $$(LOCAL_OBJ_DIR)/$1_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
-	else \
-	  cp \
-	    $$(LOCAL_OBJ_DIR)/$1_fPIC.o \
-	    $$(LOCAL_OBJ_DIR)/$1_trouble_split_$$(NUMBER).o; \
-	fi
-
 endef
 
-$(foreach s, $(notdir $(SPLIT_SRC:%=%)), \
-  $(eval $(call SPLIT_RULE,$s)))
+# compile TROUBLE_OBJ
+$(foreach s,$(TROUBLE_SRC),\
+  $(eval $(call COMPILE_OR_COPY_RULE,\
+    $s,\
+    $(LOCAL_OBJ_DIR)/trouble/$(notdir $s).o,\
+    $(TROUBLE_CXX),\
+    $(TROUBLE_OPTL),\
+    $(TROUBLE_SWITCHES),\
+    $(notdir $(BISECT_TARGET)),\
+    $(TROUBLE_CXXFLAGS),\
+    $(BISECT_OBJ_DIR))))
+
+# compile GT fPIC object files
+$(foreach s,$(SPLIT_SRC) $(FLIT_SRC),\
+  $(eval $(call COMPILE_OR_COPY_RULE,\
+    $s,\
+    $(FPIC_DIR)/gt/$(notdir $s).o,\
+    $(GT_CXX),\
+    $(GT_OPTL),\
+    $(GT_SWITCHES),\
+    $(notdir $(BISECT_TARGET)),\
+    $(GT_CXXFLAGS) -fPIC,\
+    $(GT_OBJ_DIR)-fpic)))
+
+# compile trouble fPIC object files
+$(foreach s,$(SPLIT_SRC),\
+  $(eval $(call COMPILE_OR_COPY_RULE,\
+    $s,\
+    $(FPIC_DIR)/trouble/$(notdir $s).o,\
+    $(TROUBLE_CXX),\
+    $(TROUBLE_OPTL),\
+    $(TROUBLE_SWITCHES),\
+    $(notdir $(BISECT_TARGET)),\
+    $(TROUBLE_CXXFLAGS) -fPIC,\
+    $(BISECT_OBJ_DIR)/fpic)))
+
+# Defines how to copy a given object file weakening certain symbols in the copy
+# @param 1: source object file
+# @param 2: destination object file (e.g., the copy to make)
+# @param 3: file containing symbols to weaken
+define WEAKENED_COPY_RULE
+$2: $1 $3 $$(MAKEFILE) | $(patsubst %/,%,$(dir $2))
+	@$(call color_out,CYAN,  $1 -> $2)
+	if [ -s "$(strip $3)" ]; then \
+	  objcopy --weaken-symbols="$(strip $3)" $1 $2; \
+	else \
+	  cp $1 $2; \
+	fi
+endef
+
+# weakened gt object files
+$(foreach s,$(SPLIT_SRC),\
+  $(eval $(call WEAKENED_COPY_RULE,\
+    $(FPIC_DIR)/gt/$(notdir $s).o,\
+    $(SPLIT_DIR)/$(notdir $s)_gt_split_$(NUMBER).o,\
+    $(SYMBOLS_DIR)/$(notdir $s)_trouble_symbols_$(NUMBER).txt)))
+
+# weakened trouble object files
+$(foreach s,$(SPLIT_SRC),\
+  $(eval $(call WEAKENED_COPY_RULE,\
+    $(FPIC_DIR)/trouble/$(notdir $s).o,\
+    $(SPLIT_DIR)/$(notdir $s)_trouble_split_$(NUMBER).o,\
+    $(SYMBOLS_DIR)/$(notdir $s)_gt_symbols_$(NUMBER).txt)))
+
+endif # of ifeq ($(R_TYPE),bisect-compile)

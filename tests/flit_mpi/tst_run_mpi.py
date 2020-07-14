@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -95,6 +95,10 @@ and run the FLiT test with MPI
 
 >>> class TestError(RuntimeError): pass
 
+Delete MAKEFLAGS so that silent mode does not propogate
+>>> if 'MAKEFLAGS' in os.environ:
+...     del os.environ['MAKEFLAGS']
+
 >>> with th.tempdir() as temp_dir:
 ...     retval = th.flit.main(['init', '-C', temp_dir]) # doctest:+ELLIPSIS
 ...     if retval != 0:
@@ -107,32 +111,15 @@ and run the FLiT test with MPI
 ...     if retval != 0:
 ...         raise TestError('Main #2 returned with {}, failed to update'
 ...                         .format(retval))
-...     compile_str = subp.check_output(['make', '-C', temp_dir, 'gt'],
+...     compile_str = subp.check_output(['make', '-C', temp_dir, 'gt',
+...                                      'VERBOSE=1'],
 ...                                     stderr=subp.STDOUT)
-...     run_str = subp.check_output(['make', '-C', temp_dir, 'ground-truth.csv'],
+...     run_str = subp.check_output(['make', '-C', temp_dir,
+...                                  'ground-truth.csv', 'VERBOSE=1'],
 ...                                 stderr=subp.STDOUT)
-...     file_f = os.path.join(temp_dir, 'ground-truth.csv_MpiHello_f.dat')
 ...     file_d = os.path.join(temp_dir, 'ground-truth.csv_MpiHello_d.dat')
-...     file_e = os.path.join(temp_dir, 'ground-truth.csv_MpiHello_e.dat')
-...     with open(file_f, 'r') as fin: contents_f = fin.read()
 ...     with open(file_d, 'r') as fin: contents_d = fin.read()
-...     with open(file_e, 'r') as fin: contents_e = fin.read()
-...     run_str_2 = subp.check_output([
-...         'mpirun', '-n', '2',
-...         os.path.join(temp_dir, 'gtrun'),
-...         '--precision', 'double',
-...         '--output', os.path.join(temp_dir, 'ground-truth.csv'),
-...         '--timing-repeats', '1',
-...         '--timing-loops', '-1',
-...         ], stderr=subp.STDOUT)
-...     run_str_3 = subp.check_output([
-...         'mpirun', '-n', '1',
-...         os.path.join(temp_dir, 'gtrun'),
-...         '--precision', 'double',
-...         '--output', os.path.join(temp_dir, 'ground-truth.csv'),
-...         '--timing-repeats', '1',
-...         '--timing-loops', '-1',
-...         ], stderr=subp.STDOUT)
+...     lines_d = contents_d.splitlines()
 Creating /.../custom.mk
 Creating /.../flit-config.toml
 Creating /.../main.cpp
@@ -140,53 +127,24 @@ Creating /.../tests/Empty.cpp
 Creating /.../Makefile
 >>> compile_str = compile_str.decode('utf-8').strip().splitlines()
 >>> run_str = run_str.decode('utf-8').strip().splitlines()
->>> run_str_2 = run_str_2.decode('utf-8').strip().splitlines()
->>> run_str_3 = run_str_3.decode('utf-8').strip().splitlines()
 
 Make sure the correct arguments are passed to mpirun
 
->>> 'mpirun -n 2 ./gtrun --output ground-truth.csv --no-timing' in run_str
+>>> './gtrun --output ground-truth.csv --no-timing' in run_str
 True
 
 Make sure the console messages are there, but they can be out of order
 
->>> run_str.count('MpiHello: hello from rank 0 of 2')
-3
->>> run_str.count('MpiHello: hello from rank 1 of 2')
-3
-
-The string output files should only be written from rank 0, not rank 1
-
->>> contents_f
-'MpiHello: hello from rank 0 of 2\\n'
->>> contents_d
-'MpiHello: hello from rank 0 of 2\\n'
->>> contents_e
-'MpiHello: hello from rank 0 of 2\\n'
-
-Run #2 was with 2 mpi processes only running the test with double precision.
-First make sure that the warning about looping only once is issued.
-
->>> run_str_2.count('Warning: cannot run auto-looping with MPI; Looping set to 1')
+>>> lines_d.count('hello from rank 0 of 2')
 1
-
-Now make sure the test was only run once
-
->>> run_str_2.count('MpiHello: hello from rank 0 of 2')
+>>> lines_d.count('hello from rank 1 of 2')
 1
->>> run_str_2.count('MpiHello: hello from rank 1 of 2')
+>>> lines_d.count('mpi_main(3, {mympi, remaining, arguments})')
+2
+>>> lines_d.count("Sending 'hello world!' from rank 0")
 1
-
-Run #3 was with 1 mpi process only running the test with double precision.
-First make sure that the warning about looping was NOT issued.
-
->>> run_str_3.count('Warning: cannot run auto-looping with MPI; Looping set to 1')
-0
-
-Make sure the test was run multiple times
-
->>> run_str_3.count('MpiHello: hello from rank 0 of 1') > 1
-True
+>>> lines_d.count("Received 'hello world!' from rank 0 to rank 1")
+1
 '''
 
 # Test setup before the docstring is run.

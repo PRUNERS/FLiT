@@ -194,12 +194,12 @@ class CustomCompilation(Compilation):
                 return executable, parameters
         return None
 
-def parse_args(arguments, prog=sys.argv[0]):
-    'Parse arguments and return parsed args'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaSpaciousHelpFormatter
+    parser.description = '''
             Captures source file compilations into a JSON database.  This can
             then be used by flit import and flit update to generate custom.mk.
             The JSON compilation database is similar to the format defined by
@@ -210,8 +210,7 @@ def parse_args(arguments, prog=sys.argv[0]):
             Note: this program compiles a library to be used with LD_PRELOAD.
             As such, you must ensure a valid C compiler is available either as
             the executable "cc" or within the "CC" environment variable.
-            ''',
-        )
+            '''
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Show debugging information')
     parser.add_argument('-o', '--cdb', '--output', metavar='<file>',
@@ -267,7 +266,14 @@ def parse_args(arguments, prog=sys.argv[0]):
     parser.add_argument(
         dest='build', nargs=argparse.REMAINDER,
         help='Command to run (e.g., make -j4)')
+
+    return parser
+
+def parse_args(parser, arguments, prog=None):
+    'Parse command-line arguments'
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
+
     if len(args.build) == 0:
         parser.error(message='missing build command')
     args.override_compiler = False
@@ -408,7 +414,7 @@ def main(arguments, prog=sys.argv[0]):
               file=sys.stderr)
         return 1
 
-    args = parse_args(arguments, prog)
+    args = parse_args(populate_parser(), arguments, prog)
     logging.debug('arguments: %s', args)
     if len(LANG_COMPILER_LISTS) > 0:
         logging.debug('added language compilers:')

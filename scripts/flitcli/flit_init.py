@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -95,30 +95,32 @@ import flit_update
 
 brief_description = 'Initializes a flit test directory for use'
 
-def parse_args(arguments, prog=sys.argv[0]):
-    'Parse arguments and return parsed args'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = argparse.ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaSpaciousHelpFormatter
+    parser.description = '''
             Initializes a flit test directory for use.  It will initialize
             the directory by copying the default configuration file into
             the given directory.  If a configuration file already exists,
             this command does nothing.  The config file is called
             flit-config.toml.
-            ''',
-        )
+            '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
     parser.add_argument('--overwrite', action='store_true',
                         help='Overwrite init files if they are already there')
     parser.add_argument('-L', '--litmus-tests', action='store_true',
                         help='Copy over litmus tests too')
-    return parser.parse_args(arguments)
+    return parser
 
-def main(arguments, prog=sys.argv[0]):
+def main(arguments, prog=None):
     'Main logic here'
-    args = parse_args(arguments, prog)
+    parser = populate_parser()
+    if prog: parser.prog = prog
+    args = parser.parse_args(arguments)
+
     os.makedirs(args.directory, exist_ok=True)
 
     def copy_files(dest_to_src, remove_license=True):
@@ -145,7 +147,25 @@ def main(arguments, prog=sys.argv[0]):
             else:
                 shutil.copy(src, realdest)
 
-    # Copy the remaining files over
+    to_copy = {
+        'main.cpp': os.path.join(conf.data_dir, 'main.cpp'),
+        'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
+        }
+
+    # Add litmus tests too
+    if args.litmus_tests:
+        litmus_to_copy = {}
+        for srcfile in os.listdir(conf.litmus_test_dir):
+            if os.path.splitext(srcfile)[1] in ('.cpp', '.h'):
+                srcpath = os.path.join(conf.litmus_test_dir, srcfile)
+                litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
+        copy_files(litmus_to_copy)
+
+        # No need for Empty test if other litmus tests are being used
+        to_copy.pop('tests/Empty.cpp')
+
+
+    # handle files needing replacements
     temp_file = lambda: NamedTemporaryFile(mode='w')
     with temp_file() as tmp_custommk, temp_file() as tmp_flitconfig:
         tmp_flitconfig.write(flitutil.get_default_toml_string())
@@ -158,23 +178,13 @@ def main(arguments, prog=sys.argv[0]):
         flitutil.process_in_file(os.path.join(conf.data_dir, 'custom.mk.in'),
                                  tmp_custommk.name, custommk_vals,
                                  overwrite=True)
-        to_copy = {
+        to_copy.update({
             'flit-config.toml': tmp_flitconfig.name,
             'custom.mk': tmp_custommk.name,
-            'main.cpp': os.path.join(conf.data_dir, 'main.cpp'),
-            'tests/Empty.cpp': os.path.join(conf.data_dir, 'tests/Empty.cpp'),
-            }
+            })
 
+        # Finish copying remaining files, after determining if Empty test is needed
         copy_files(to_copy, remove_license=True)
-
-    # Add litmus tests too
-    if args.litmus_tests:
-        litmus_to_copy = {}
-        for srcfile in os.listdir(conf.litmus_test_dir):
-            if os.path.splitext(srcfile)[1] in ('.cpp', '.h'):
-                srcpath = os.path.join(conf.litmus_test_dir, srcfile)
-                litmus_to_copy[os.path.join('tests', srcfile)] = srcpath
-        copy_files(litmus_to_copy)
 
     return flit_update.main(['--directory', args.directory])
 

@@ -1,6 +1,6 @@
 # -- LICENSE BEGIN --
 #
-# Copyright (c) 2015-2018, Lawrence Livermore National Security, LLC.
+# Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 #
 # Produced at the Lawrence Livermore National Laboratory
 #
@@ -84,33 +84,37 @@
 
 import argparse
 import sys
+>>>>>>> devel
 
 import flitargformatter
 
 brief_description = 'Verifies the correctness of a config file'
 
-def main(arguments, prog=sys.argv[0]):
-    'Main logic here'
-    parser = argparse.ArgumentParser(
-        prog=prog,
-        formatter_class=flitargformatter.DefaultsParaSpaciousHelpFormatter,
-        description='''
-            This command only verifies the correctness of the
-            configurations you have for your flit tests.  As part of this
-            verification, this command checks to see if the remote
-            connections are capable of being done, such as the connection
-            to the machines to run the software, the connection to the
-            database machine, and the connection to the database machine
-            from the run machine.  You may need to provide a few SSH
-            passwords to do this check.
-            ''',
-        )
+def populate_parser(parser=None):
+    'Populate or create an ArgumentParser'
+    if parser is None:
+        parser = ArgumentParser()
+    parser.formatter_class = flitargformatter.DefaultsParaSpaciousHelpFormatter
+    parser.description='''
+        This command only verifies the correctness of the configurations you
+        have for your flit tests.  As part of this verification, this command
+        checks to see if the remote connections are capable of being done, such
+        as the connection to the machines to run the software, the connection
+        to the database machine, and the connection to the database machine
+        from the run machine.  You may need to provide a few SSH passwords to
+        do this check.
+        '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory containing flit-config.toml')
     parser.add_argument('-c', '--config-only', action='store_true',
                         help='''
                             Only check the config file instead of also the SSH
                             connections and maybe other things.''')
+    return parser
+
+def main(arguments, prog=None):
+    parser = populate_parser()
+    if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
     # Subcommand logic here
