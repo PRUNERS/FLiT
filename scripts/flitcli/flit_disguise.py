@@ -154,13 +154,16 @@ def populate_parser(parser=None):
                                 demangled, and
                             (3) "test": name of the test.
                             ''')
-    parser.add_argument('file',
+    parser.add_argument('file', nargs='?',
                         help='''
                             Text file to disguise.  Disguising is done with
                             simple search and replace.  The "value" column of
                             the disguise map CSV file is searched for and
                             replaced with the "value" field.  If --undo is
                             specified, then it is done in reverse.
+
+                            If the file is not specified, then it is read from
+                            standard in.
                             ''')
     return parser
 
