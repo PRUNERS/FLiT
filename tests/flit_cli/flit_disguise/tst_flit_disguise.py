@@ -104,7 +104,7 @@ class FlitTestBase(ut.TestCase):
         Runs the flit command-line tool with the given args.  Returns the
         standard output from the flit run as a list of lines.
         '''
-        print(args)
+        print('flit', args)
         with StringIO() as ostream:
             retval = th.flit.main(args, outstream=ostream)
             lines = ostream.getvalue().splitlines()
@@ -160,12 +160,62 @@ class FlitDisguiseTest(FlitTestBase):
         self.assertEqual(disguise_contents, expected_disguise_contents)
 
     def test_disguise_empty_map(self):
-        to_disguise = '''
-            Just some file contents.
-            Nothing to worry about here.
-            '''
-        disguised = self.disguise_string(to_disguise, mapping={})
-        self.assertEqual(disguised, to_disguise.splitlines())
+        to_disguise = [
+            '  Just some file contents.',
+            'Nothing to worry about here.',
+            ]
+        disguised = self.disguise_string('\n'.join(to_disguise), mapping={})
+        self.assertEqual(disguised, to_disguise)
+
+    def test_disguise_normal(self):
+        disguise_mapping = {
+            'disguise-01': 'map',
+            'disguise-02': 'hi',
+            'disguise-03': 'function(string, int, int)',
+            'disguise-04': 'not found',
+            }
+        to_disguise = [
+            'hi there chico',
+            'may mapping map file is not so good',
+            'has a function called function(string, int, int).',
+            ]
+        expected_disguised = [
+            'disguise-02 there chico',
+            'may mapping disguise-01 file is not so good',
+            'has a function called disguise-03.',
+            ]
+        disguised = self.disguise_string(
+            '\n'.join(to_disguise), mapping=disguise_mapping)
+        self.assertEqual(disguised, to_disguise)
+
+    def test_disguise_normal_undo(self):
+        disguise_mapping = {
+            'disguise-01': 'map',
+            'disguise-02': 'hi',
+            'disguise-03': 'function(string, int, int)',
+            'disguise-04': 'not found',
+            }
+        disguised = [
+            'disguise-02 there chico',
+            'may mapping disguise-01 file is not so good',
+            'has a function called disguise-03.',
+            ]
+        expected_undisguised = [
+            'hi there chico',
+            'may mapping map file is not so good',
+            'has a function called function(string, int, int).',
+            ]
+        undisguised = self.disguise_string(
+            '\n'.join(disguised), mapping=disguise_mapping, undo=True)
+        self.assertEqual(undisguised, expected_undisguised)
+
+    def test_disguise_bad_map_file(self):
+        with NamedTempFile() as mapfile:
+            mapfile.write('not the correct header\n'
+                          'does not matter\n'
+                          'what the rest has...\n')
+            with self.assertRaises(AssertionError):
+                self.run_flit(['disguise', '--disguise-map', mapfile.name])
 
 if __name__ == '__main__':
     sys.exit(th.unittest_main())
