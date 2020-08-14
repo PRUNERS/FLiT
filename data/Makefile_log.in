@@ -261,7 +261,7 @@ MKDIR = \
 
 # Create log directory, and command for writing to log file
 LOG_FILE = $(LOG_DIR)/makelog.log
-LOG_EVENT = echo '{date: "$(shell date)", time: "$(shell date +%s%N)", type: "$1", message: "$2"}' >> $(LOG_FILE)
+LOG_EVENT = echo '{"date": '$$(date)', "time": '$$(date +%s%N)', "type": "$1", "message": "$2"}' >> $(LOG_FILE)
 
 .PHONY: recursion-target
 REC_MAKE   = $(MAKE) recursion-target --no-print-directory

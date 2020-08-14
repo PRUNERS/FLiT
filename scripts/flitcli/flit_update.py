@@ -107,7 +107,7 @@ def populate_parser(parser=None):
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
 
-    parser.add_argument('--enable-logging', default=False, action='store_true',
+    parser.add_argument('--logging', default=False, action='store_true',
                         help='Enable logging of FLiT events.')
 
     return parser
@@ -372,7 +372,7 @@ def create_makefile(args, makefile='Makefile'):
             for compiler in projconf['compiler']}),
         }
 
-    if args.enable-logging:
+    if args.logging:
         makefile_template = 'Makefile_log.in'
     else:
         makefile_template = 'Makefile.in'
@@ -394,12 +394,12 @@ def main(arguments, prog=None):
 
     with util.pushd(args.directory):
         try:
-            if args.enable-logging:
+            if args.logging:
                 events = []
                 events.append(util.get_event_log('create makefile', 
                               'Start creating makefile for flit run.'))
             create_makefile(args)
-            if args.enable-logging:
+            if args.logging:
                 events.append(util.get_event_log('create makefile',
                               'End creating makefile for flit run.'))
                 util.write_log(events, './event_logs', 'flit_update.log')
