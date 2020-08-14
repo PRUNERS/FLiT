@@ -107,7 +107,7 @@ def populate_parser(parser=None):
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
 
-    parser.add_argument('--enable-logging', default=False, action='store_true'
+    parser.add_argument('--enable-logging', default=False, action='store_true',
                         help='Enable logging of FLiT events.')
 
     return parser

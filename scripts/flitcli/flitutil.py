@@ -91,6 +91,7 @@ from datetime import datetime
 from pathlib import Path
 import copy
 import logging
+import logging.config
 import os
 import socket
 import sqlite3
@@ -98,6 +99,7 @@ import subprocess as subp
 import sys
 import tempfile
 import json
+import time
 
 # cached values
 _default_toml = None
@@ -680,9 +682,9 @@ def get_event_log(event_name, message=''):
     '''
 
     event = {
-        'date': str(datetime.utcnow()) 
-        'time': time.perf_counter()
-        'type': event_name
+        'date': str(datetime.utcnow()), 
+        'time': time.perf_counter(),
+        'type': event_name,
         'message': message
     }
 
@@ -714,8 +716,9 @@ def write_log(events, path, filename, config=None):
     Check that data is written to existing log file.
     >>> 
     '''
-  
-    Path(path).mkdir(parents=True, exists_ok=True)
+ 
+    # Create directory for logs, if necessary 
+    Path(path).mkdir(parents=True, exist_ok=True)
 
     logfile = os.path.join(path, filename)
 
