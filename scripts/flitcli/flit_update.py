@@ -106,6 +106,10 @@ def populate_parser(parser=None):
             '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
+
+    parser.add_argument('--enable-logging', default=False, action='store_true'
+                        help='Enable logging of FLiT events.')
+
     return parser
 
 def flag_name(flag):
@@ -368,7 +372,12 @@ def create_makefile(args, makefile='Makefile'):
             for compiler in projconf['compiler']}),
         }
 
-    util.process_in_file(os.path.join(conf.data_dir, 'Makefile.in'),
+    if args.enable-logging:
+        makefile_template = 'Makefile_log.in'
+    else:
+        makefile_template = 'Makefile.in'
+
+    util.process_in_file(os.path.join(conf.data_dir, makefile_template),
                          makefile, replacements, overwrite=True)
 
 def main(arguments, prog=None):
@@ -385,7 +394,15 @@ def main(arguments, prog=None):
 
     with util.pushd(args.directory):
         try:
+            if args.enable-logging:
+                events = []
+                events.append(util.get_event_log('create makefile', 
+                              'Start creating makefile for flit run.'))
             create_makefile(args)
+            if args.enable-logging:
+                events.append(util.get_event_log('create makefile',
+                              'End creating makefile for flit run.'))
+                util.write_log(events, './event_logs', 'flit_update.log')
         except FileNotFoundError as ex:
             print('Error {}:'.format(ex.errno), ex.strerror,
                   '"{}"'.format(ex.filename),

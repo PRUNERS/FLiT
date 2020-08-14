@@ -87,6 +87,8 @@ Utility functions shared between multiple flit subcommands.
 import flitconfig as conf
 
 from contextlib import contextmanager
+from datetime import datetime
+from pathlib import Path
 import copy
 import logging
 import os
@@ -95,6 +97,7 @@ import sqlite3
 import subprocess as subp
 import sys
 import tempfile
+import json
 
 # cached values
 _default_toml = None
@@ -669,3 +672,92 @@ def check_output(*args, **kwargs):
     '''
     output = subp.check_output(stderr=subp.DEVNULL, *args, **kwargs)
     return output.decode(encoding='utf-8')
+
+
+def get_event_log(event_name, message=''):
+    '''
+    Creates a JSON string for writing to event logs.
+    '''
+
+    event = {
+        'date': str(datetime.utcnow()) 
+        'time': time.perf_counter()
+        'type': event_name
+        'message': message
+    }
+
+    return json.dumps(event)
+
+
+def write_log(events, path, filename, config=None):
+    '''
+    Utility for creating and writing FLiT event information to log files.
+    
+    Parameters:
+    filename: Desired log file name. If file exists, data will be appended, 
+      else file is created. It is left to the user to handle access conflicts.
+    config: A dictionary in logging.dictConfig() format for configuring logger
+      manually.
+  
+    -- Tests -- 
+    Check that event_logs directory is created if it does not yet exist.
+  
+    Check that log file is generated if none exists
+    >>> import os
+    >>> 
+    >>> os.path.exists('1.log')
+    False
+    >>> write_log('1.log')
+    >>> os.path.exists('1.log')
+    True
+  
+    Check that data is written to existing log file.
+    >>> 
+    '''
+  
+    Path(path).mkdir(parents=True, exists_ok=True)
+
+    logfile = os.path.join(path, filename)
+
+    if config is None:
+        config = {
+            'version': 1,
+            'formatters': {
+                'messageOnly': {
+                    'class': 'logging.Formatter',
+                    'format': '%(message)s'
+                }
+            },
+            'handlers': {
+                'console': {
+                    'class': 'logging.StreamHandler',
+                    'level': 'DEBUG',
+                },
+                'file': {
+                    'class': 'logging.FileHandler',
+                    'filename': logfile,
+                    'mode': 'w',
+                    'formatter': 'messageOnly',
+                }
+            },
+            'root': {
+                'level': 'DEBUG',
+                'handlers': ['file']
+            },
+        }
+  
+    logging.config.dictConfig(config)
+    logger = logging.getLogger()    
+
+    for event in events:
+        logger.info(event)  
+  
+
+def parse_logs(directory):
+    '''
+    Utility for parsing multiple log files.
+  
+    
+    '''
+  
+    pass
