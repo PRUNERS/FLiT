@@ -139,7 +139,7 @@ DEV_OBJ_DIR     := $(OBJ_DIR)/dev
 GT_OBJ_DIR      := $(OBJ_DIR)/gt
 RESULTS_DIR     := results
 RUNBUILD_DIR    := bin
-LOG_DIR         := logs
+LOG_DIR         := event-logs
 ALL_DIRS         = $(OBJ_DIR)
 ALL_DIRS        += $(DEV_OBJ_DIR)
 ALL_DIRS        += $(GT_OBJ_DIR)
@@ -260,7 +260,7 @@ MKDIR = \
 {compiler_switches}
 
 # Create log directory, and command for writing to log file
-LOG_FILE = $(LOG_DIR)/makelog.log
+LOG_FILE = $(LOG_DIR)/flit_makelog.log
 LOG_EVENT = echo '{"date": '$$(date)', "time": '$$(date +%s%N)', "type": "$1", "message": "$2"}' >> $(LOG_FILE)
 
 .PHONY: recursion-target
@@ -385,8 +385,6 @@ $(ALL_DIRS):
 
 else ifeq ($(R_TYPE),runbuild)
 
-$(call LOG_EVENT, "Start Runbuild", "Starting runbuild process to compile source files.")
-
 # @param 1: compiler variable name
 # @param 2: switches variable name
 # @param 3: optl variable name
@@ -408,8 +406,6 @@ $(foreach c,$(COMPILERS),\
       $(eval $(call RUNBUILD_REC_RULE,$(strip $c),$(strip $s),$(strip $o))))))
 
 recursion-target: $(GT_TARGET)
-
-$(call LOG_EVENT, "End Runbuild", "Runbuild complete.")
 
 
 ######################
@@ -455,12 +451,15 @@ else ifeq ($(R_TYPE),compile)
 define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
+	@# Log object file
+	@$(call LOG_EVENT,Make COMPILE_RULE,Begin compilation of object files)
 	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
 	  -DFLIT_OPTL='"$(strip $4)"' \
 	  -DFLIT_SWITCHES='"$(strip $5)"' \
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
+	@$(call LOG_EVENT,Make COMPILE_RULE,End compilation of object files)
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
