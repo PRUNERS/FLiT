@@ -260,8 +260,10 @@ MKDIR = \
 {compiler_switches}
 
 # Create log directory, and command for writing to log file
-LOG_FILE = $(LOG_DIR)/flit_makelog.log
-LOG_EVENT = echo '{"date": '$$(date)', "time": '$$(date +%s%N)', "type": "$1", "message": "$2"}' >> $(LOG_FILE)
+# This file is processed with Python strings format() function,
+# so bracket escaping is necessary.
+LOG_FILE = $(LOG_DIR)/flit_makelog_$(shell echo $$$$).log
+LOG_EVENT = echo '{{"date": '$$(date)', "time": '$$(date +%s%N)', "type": "$1", "message": "$2"}}' >> $(LOG_FILE)
 
 .PHONY: recursion-target
 REC_MAKE   = $(MAKE) recursion-target --no-print-directory
@@ -452,14 +454,16 @@ define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
 	@# Log object file
-	@$(call LOG_EVENT,Make COMPILE_RULE,Begin compilation of object files)
+	@$(call LOG_EVENT,Make COMPILE_RULE,Start File: '"$6"' Compiler: '"$3"' \
+	  Switches: '"$5"' Optl: '"$4"')
 	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
 	  -DFLIT_OPTL='"$(strip $4)"' \
 	  -DFLIT_SWITCHES='"$(strip $5)"' \
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
-	@$(call LOG_EVENT,Make COMPILE_RULE,End compilation of object files)
+	@$(call LOG_EVENT,Make COMPILE_RULE,End File: '"$6"' Compiler: '"$3"' \
+	  Switches: '"$5"' Optl: '"$4"')
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))

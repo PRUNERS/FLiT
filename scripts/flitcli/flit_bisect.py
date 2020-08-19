@@ -111,6 +111,10 @@ except ImportError:
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
+LOG_DIR = ''
+LOG_FILE = 'bisect_log'
+LOG_EVENTS = []
+
 def hash_compilation(compiler, optl, switches):
     'Takes a compilation and returns a 10 digit hash string.'
     return hashlib.sha1((compiler + optl + switches).encode()).hexdigest()[:10]
@@ -1368,13 +1372,17 @@ def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
         @return The comparison value between this mixed compilation and the
             full baseline compilation.
         '''
+        global LOG_EVENTS
         repl_copy = dict(replacements)
         repl_copy['added_link_flags'] = list(repl_copy['added_link_flags'])
         repl_copy['added_link_flags'].extend(libs)
         makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
-        return test_makefile(args, makepath, libs, indent=indent)
+        LOG_EVENTS.append('flit_bisect-check_libs','Start Path: ' + bisect_path + ' Libs: ' + str(libs))
+        result = test_makefile(args, makepath, libs, indent=indent) 
+        LOG_EVENTS.append('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(libs))
+        return result
 
     return memoize_strlist_func(builder_and_checker)
 
@@ -1397,11 +1405,15 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
         @return The comparison value between this mixed compilation and the
             full baseline compilation.
         '''
+        global LOG_EVENTS
         gt_src = list(set(sources).difference(sources_to_optimize))
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           sources_to_optimize, dict())
         makepath = os.path.join(bisect_path, makefile)
-        return test_makefile(args, makepath, sources_to_optimize, indent=indent)
+        LOG_EVENTS.append('flit_bisect-check_source','Start Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize))
+        result = test_makefile(args, makepath, sources_to_optimize, indent=indent)
+        LOG_EVENTS.append('flit_bisect-check_source','End Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize))
+        return result 
 
     return memoize_strlist_func(builder_and_checker)
 
@@ -1426,6 +1438,7 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
         @return The comparison value between this mixed compilation and the
             full baseline compilation.
         '''
+        global LOG_EVENTS
         gt_symbols = list(set(fsymbols + remainingsymbols)
                           .difference(symbols_to_optimize))
         all_sources = list(sources)  # copy the list of all source files
@@ -1445,7 +1458,10 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
             .format(sym=sym) for sym in symbols_to_optimize
             ]
-        return test_makefile(args, makepath, symbol_strings, indent=indent)
+        LOG_EVENTS.append('flit_bisect-check_symbol','Start Path: ' + bisect_path + ' Symbols: ' + str(symbol_strings))
+        result = test_makefile(args, makepath, symbol_strings, indent=indent)
+        LOG_EVENTS.append('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(libs))
+        return result 
 
     return memoize_strlist_func(builder_and_checker)
 
@@ -1737,6 +1753,7 @@ def run_bisect(arguments, prog=None):
     return value for sources and symbols are both None.  If the search fails in
     the symbols part, then only the symbols return value is None.
     '''
+    global LOG_DIR, LOG_FILE, LOG_EVENTS
     args = parse_args(arguments, prog=prog)
 
     if args.compiler_type == 'auto':
@@ -1957,6 +1974,9 @@ def run_bisect(arguments, prog=None):
         print('    None')
         logging.info('  None')
 
+    if args.logging:
+        util.write_log(LOG_EVENTS, LOG_DIR, LOG_FILE+'.log')
+
     return bisect_num, differing_libs, differing_sources, differing_symbols, 0
 
 def auto_bisect_worker(arg_queue, result_queue):
@@ -1992,6 +2012,8 @@ def auto_bisect_worker(arg_queue, result_queue):
         'd': 'double',
         'e': 'long double',
         }
+    global LOG_FILE
+    LOG_FILE = LOG_FILE + str(mp.current_process().pid)
     try:
         while True:
             arguments, row, i, rowcount = arg_queue.get(False)
