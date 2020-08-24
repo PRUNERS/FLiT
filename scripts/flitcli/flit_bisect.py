@@ -1294,6 +1294,8 @@ def populate_parser(parser=None):
                             'fixed_link_flags' specified there, unless
                             '--ldflags' is also specified.
                             ''')
+    parser.add_argument('--logging', default=False, action='store_true',
+                        help='Enable logging of FLiT events.')
     return parser
 
 def parse_args(arguments, prog=None):
@@ -1379,9 +1381,9 @@ def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
         makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
-        LOG_EVENTS.append('flit_bisect-check_libs','Start Path: ' + bisect_path + ' Libs: ' + str(libs))
+        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_libs','Start Path: ' + bisect_path + ' Libs: ' + str(libs)))
         result = test_makefile(args, makepath, libs, indent=indent) 
-        LOG_EVENTS.append('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(libs))
+        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(libs)))
         return result
 
     return memoize_strlist_func(builder_and_checker)
@@ -1410,9 +1412,9 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           sources_to_optimize, dict())
         makepath = os.path.join(bisect_path, makefile)
-        LOG_EVENTS.append('flit_bisect-check_source','Start Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize))
+        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_source','Start Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
         result = test_makefile(args, makepath, sources_to_optimize, indent=indent)
-        LOG_EVENTS.append('flit_bisect-check_source','End Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize))
+        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_source','End Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
         return result 
 
     return memoize_strlist_func(builder_and_checker)
@@ -1458,9 +1460,9 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
             .format(sym=sym) for sym in symbols_to_optimize
             ]
-        LOG_EVENTS.append('flit_bisect-check_symbol','Start Path: ' + bisect_path + ' Symbols: ' + str(symbol_strings))
+        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_symbol','Start Path: ' + bisect_path + ' Symbols: ' + str(symbol_strings)))
         result = test_makefile(args, makepath, symbol_strings, indent=indent)
-        LOG_EVENTS.append('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(libs))
+        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(symbol_strings)))
         return result 
 
     return memoize_strlist_func(builder_and_checker)
@@ -1759,6 +1761,10 @@ def run_bisect(arguments, prog=None):
     if args.compiler_type == 'auto':
         projconf = util.load_projconf(args.directory)
         args.compiler_type = try_resolve_compiler_type(args.compiler, projconf)
+    
+    LOG_DIR = os.path.join(args.directory, 'event_logs')
+    if not os.path.exists(LOG_DIR):
+        os.makedirs(LOG_DIR)
 
     # see if the Makefile needs to be regenerated
     # we use the Makefile to check for itself, sweet
