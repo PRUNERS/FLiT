@@ -1381,9 +1381,11 @@ def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
         makefile = create_bisect_makefile(bisect_path, repl_copy, sources,
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
-        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_libs','Start Path: ' + bisect_path + ' Libs: ' + str(libs)))
+        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_libs', 'start', 
+                          'Path: ' + bisect_path + ' Libs: ' + str(libs)))
         result = test_makefile(args, makepath, libs, indent=indent) 
-        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(libs)))
+        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_libs', 'end',
+                          'Path: ' + bisect_path + ' Libs: ' + str(libs)))
         return result
 
     return memoize_strlist_func(builder_and_checker)
@@ -1412,9 +1414,11 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           sources_to_optimize, dict())
         makepath = os.path.join(bisect_path, makefile)
-        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_source','Start Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
+        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_source', 'start',
+                          'Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
         result = test_makefile(args, makepath, sources_to_optimize, indent=indent)
-        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_source','End Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
+        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_source', 'end',
+                          'Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
         return result 
 
     return memoize_strlist_func(builder_and_checker)
@@ -1460,9 +1464,11 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
             .format(sym=sym) for sym in symbols_to_optimize
             ]
-        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_symbol','Start Path: ' + bisect_path + ' Symbols: ' + str(symbol_strings)))
+        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_symbol', 'start',
+                          'Path: ' + bisect_path + ' Symbols: ' + str(symbol_strings)))
         result = test_makefile(args, makepath, symbol_strings, indent=indent)
-        LOG_EVENTS.append(util.get_event_log('flit_bisect-check_libs','End Path: ' + bisect_path + ' Libs: ' + str(symbol_strings)))
+        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_libs', 'end',
+                          'Path: ' + bisect_path + ' Libs: ' + str(symbol_strings)))
         return result 
 
     return memoize_strlist_func(builder_and_checker)
