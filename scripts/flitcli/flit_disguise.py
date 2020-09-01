@@ -80,15 +80,12 @@
 #
 # -- LICENSE END --
 
-'Implements the make subcommand'
+'Implements the disguise subcommand to anonymize project-specific data'
 
 import argparse
-import glob
-import multiprocessing
-import subprocess
+import csv
+import subprocess as subp
 import sys
-
-import flit_import
 
 brief_description = 'Anonymizes project-specific data from text files'
 
@@ -167,39 +164,56 @@ def populate_parser(parser=None):
                             ''')
     return parser
 
+def generate_disguise_map():
+    'Generate the disguise map, often called from the Makefile'
+    print('Created disguise.csv')
+    with open('disguise.csv', 'w') as fout:
+        fout.write('hello')
+
+def check_disguise_map_regenerate():
+    'check to see if disguise.csv needs regenerating and do it if so.'
+    # TODO: implement
+    #subp.check_call(['make', 'disguise.csv'])
+    pass
+
+def read_disguise_map(fname):
+    'Read and return the forward and reverse dictionary of the disguise map'
+    forward_map = {}
+    reverse_map = {}
+    with open(fname, 'r') as fin:
+        reader = csv.DictReader(fin)
+        assert 'disguise' in reader.fieldnames
+        assert 'value' in reader.fieldnames
+        for entry in reader:
+            disguise, value = entry['disguise'], entry['value']
+            assert disguise not in forward_map
+            assert value not in reverse_map
+            foward_map[disguise] = value
+            reverse_map[value] = disguise
+    return forward_map, reverse_map
+
 def main(arguments, prog=None):
     'Main logic here'
     parser = populate_parser()
     if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
-    ###check_call_kwargs = dict()
-    ###if args.quiet:
-    ###    check_call_kwargs['stdout'] = subprocess.DEVNULL
-    ###    #check_call_kwargs['stderr'] = subprocess.DEVNULL
-    ###make_args = []
-    ###if args.make_args is not None:
-    ###    make_args = args.make_args.split(',')
+    # TODO: implement
+    if args.generate:
+        generate_disguise_map()
+        return 0
 
-    #### TODO: can we make a progress bar here?
-    ###print('Calling GNU Make for the runbuild')
-    ###subprocess.check_call([
-    ###    'make',
-    ###    'runbuild',
-    ###    '-j{0}'.format(args.jobs),
-    ###    ] + make_args, **check_call_kwargs)
-    ###print('Calling GNU Make to execute the tests')
-    ###subprocess.check_call([
-    ###    'make',
-    ###    'run',
-    ###    '-j{0}'.format(args.exec_jobs),
-    ###    ] + make_args, **check_call_kwargs)
-    ###print('Importing into the database')
-    #### TODO: find a way to not import over again if called multiple times
-    ###status = flit_import.main(['--label', args.label] +
-    ###                          glob.glob('results/*_out.csv'))
-    ###if status != 0:
-    ###    return status
+    # TODO: implement
+    if args.disguise_map == 'disguise.csv':
+        check_disguise_map_regenerate()
+
+    forward_map, reverse_map = read_disguise_map(args.disguise_map)
+
+    # choose the output stream
+    if args.output:
+        out = open(args.output, 'w')
+    else:
+        out = sys.stdout
 
     return 0
 
