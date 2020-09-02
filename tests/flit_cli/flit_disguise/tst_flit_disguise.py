@@ -123,6 +123,8 @@ class FlitDisguiseTest(FlitTestBase):
     def disguise_string(self, content, fields=None, mapping=None, undo=False):
         'Runs flit disguise on the content and returns the disguised version'
         with NamedTempFile() as fcontent:
+            fcontent.write(content)
+            fcontent.flush()
             args = ['disguise', fcontent.name]
 
             if fields is not None:
@@ -134,8 +136,9 @@ class FlitDisguiseTest(FlitTestBase):
             if mapping is not None:
                 with NamedTempFile() as fout:
                     fout.write('disguise,value\n')
-                    fout.file.writelines(['"{}","{}"\n'.format(value, key)
+                    fout.file.writelines(['"{}","{}"\n'.format(key, value)
                         for key, value in mapping.items()])
+                    fout.flush()
                     args.extend(['--disguise-map', fout.name])
                     return self.capture_flit(args)
 
@@ -186,7 +189,7 @@ class FlitDisguiseTest(FlitTestBase):
             ]
         disguised = self.disguise_string(
             '\n'.join(to_disguise), mapping=disguise_mapping)
-        self.assertEqual(disguised, to_disguise)
+        self.assertEqual(disguised, expected_disguised)
 
     def test_disguise_normal_undo(self):
         disguise_mapping = {
@@ -205,6 +208,7 @@ class FlitDisguiseTest(FlitTestBase):
             'may mapping map file is not so good',
             'has a function called function(string, int, int).',
             ]
+
         undisguised = self.disguise_string(
             '\n'.join(disguised), mapping=disguise_mapping, undo=True)
         self.assertEqual(undisguised, expected_undisguised)

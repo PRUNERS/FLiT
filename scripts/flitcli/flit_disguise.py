@@ -84,6 +84,7 @@
 
 import argparse
 import csv
+import re
 import subprocess as subp
 import sys
 
@@ -186,10 +187,10 @@ def read_disguise_map(fname):
         assert 'value' in reader.fieldnames
         for entry in reader:
             disguise, value = entry['disguise'], entry['value']
-            assert disguise not in forward_map
-            assert value not in reverse_map
-            foward_map[disguise] = value
-            reverse_map[value] = disguise
+            assert value not in forward_map
+            assert disguise not in reverse_map
+            forward_map[value] = disguise
+            reverse_map[disguise] = value
     return forward_map, reverse_map
 
 def main(arguments, prog=None):
@@ -208,12 +209,37 @@ def main(arguments, prog=None):
         check_disguise_map_regenerate()
 
     forward_map, reverse_map = read_disguise_map(args.disguise_map)
+    mapping_to_use = reverse_map if args.undo else forward_map
+
+    # choose the input stream
+    if args.file:
+        fin = open(args.file, 'r')
+    else:
+        fin = sys.stdin
 
     # choose the output stream
     if args.output:
-        out = open(args.output, 'w')
+        fout = open(args.output, 'w')
     else:
-        out = sys.stdout
+        fout = sys.stdout
+
+    # like "grep -w" with a replace
+    for line in fin:
+        for key, val in mapping_to_use.items():
+            pattern = re.escape(key)
+            if key[0].isalpha():
+                pattern = r'\b' + pattern
+            if key[-1].isalpha():
+                pattern = pattern + r'\b'
+            if re.search(pattern, line):
+                fout.write(re.sub(pattern, val, line))
+                break
+        else:
+            fout.write(line)
+
+    fout.flush()
+    if args.file:   fin.close()
+    if args.output: fout.close()
 
     return 0
 
