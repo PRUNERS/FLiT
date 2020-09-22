@@ -82,8 +82,12 @@
 
 'Implements the disguise subcommand to anonymize project-specific data'
 
+import flitutil as util
+import flit_bisect as bisect
+
 import argparse
 import csv
+import os
 import re
 import subprocess as subp
 import sys
@@ -112,7 +116,9 @@ def populate_parser(parser=None):
                             Just generate the disguise map as "disguise.csv"
                             and then exit.  It will be overwritten if it
                             already exists.  Most users will not need to use
-                            this flag.
+                            this flag.  If you use this flag with the
+                            --disguise-map flag, then it will output the map to
+                            the specified disguise map.
                             ''')
     parser.add_argument('-o', '--output',
                         help='''
@@ -165,11 +171,91 @@ def populate_parser(parser=None):
                             ''')
     return parser
 
-def generate_disguise_map():
+def generate_disguise_map(outfile='disguise.csv'):
     'Generate the disguise map, often called from the Makefile'
-    print('Created disguise.csv')
-    with open('disguise.csv', 'w') as fout:
-        fout.write('hello')
+
+    # make sure gtrun is compiled
+    subp.check_call(['make', 'gtrun'])
+    makevars = util.extract_make_vars()
+
+    # get list of source files
+    sources = sorted(makevars['SOURCE'])
+
+    # get list of object files
+    objdir = makevars['GT_OBJ_DIR'][0]
+    objects = sorted([os.path.basename(source) + '.o' for source in sources])
+
+    # get list of function symbols and demangled signatures
+    symbol_objects, _ = bisect.extract_symbols(sources, objdir)
+    symbols = [sym.symbol for sym in symbol_objects]
+    demangled = [sym.demangled for sym in symbol_objects]
+
+    # get list of tests
+    tests = subp.check_output(['./gtrun', '--list-tests']).decode('utf-8').splitlines()
+
+    seen_values = set()
+
+    # write mapping to file
+    with open(outfile, 'w') as fout:
+        writer = csv.DictWriter(fout, ['disguise', 'value'])
+        writer.writeheader()
+
+        def writerows(disguise_base, values):
+            'Only write rows that have a unique value'
+            unique_values = [val for val in values if val not in seen_values]
+            seen_values.update(unique_values)
+            writer.writerows(gen_disguise_list(disguise_base, unique_values))
+
+        writerows('objfile', objects)
+        writerows('filepath', sources)
+        writerows('filename', [os.path.basename(x) for x in sources])
+        writerows('symbol', symbols)
+        writerows('demangled', demangled)
+        writerows('test', tests)
+
+    print('Created {}'.format(outfile))
+
+def gen_disguise_list(disguise_base, values):
+    '''
+    Generates a list of dictionaries for insertion into a disguise map.
+    Will add an integer to the disguise base, zero padded based on the number
+    of values in the given list of values.
+
+    @param disguise_base (str): basename of the disguise value
+    @param values (list(str)): values to be disguised in this order
+
+    >>> gen_disguise_list('ababab', [])
+    []
+
+    >>> expected = [
+    ...     {'disguise': 'happy-1', 'value': 'me'},
+    ...     {'disguise': 'happy-2', 'value': 'myself'},
+    ...     {'disguise': 'happy-3', 'value': 'I'},
+    ...     ]
+    >>> expected == gen_disguise_list('happy', ['me', 'myself', 'I'])
+    True
+
+    >>> expected = [
+    ...     {'disguise': 'sad-01', 'value': '0'},
+    ...     {'disguise': 'sad-02', 'value': '1'},
+    ...     {'disguise': 'sad-03', 'value': '2'},
+    ...     {'disguise': 'sad-04', 'value': '3'},
+    ...     {'disguise': 'sad-05', 'value': '4'},
+    ...     {'disguise': 'sad-06', 'value': '5'},
+    ...     {'disguise': 'sad-07', 'value': '6'},
+    ...     {'disguise': 'sad-08', 'value': '7'},
+    ...     {'disguise': 'sad-09', 'value': '8'},
+    ...     {'disguise': 'sad-10', 'value': '9'},
+    ...     {'disguise': 'sad-11', 'value': '10'},
+    ...     ]
+    >>> expected == gen_disguise_list('sad', [str(i) for i in range(11)])
+    True
+    '''
+    ndigits = len(str(len(values)))
+    format_str = '{}-{{i:0{}d}}'.format(disguise_base, ndigits)
+    disguises = [{'disguise': format_str.format(i=i+1), 'value': val}
+                 for i, val in enumerate(values)]
+    return disguises
 
 def check_disguise_map_regenerate():
     'check to see if disguise.csv needs regenerating and do it if so.'
@@ -199,14 +285,12 @@ def main(arguments, prog=None):
     if prog: parser.prog = prog
     args = parser.parse_args(arguments)
 
-    # TODO: implement
     if args.generate:
-        generate_disguise_map()
+        generate_disguise_map(args.disguise_map)
         return 0
 
-    # TODO: implement
     if args.disguise_map == 'disguise.csv':
-        check_disguise_map_regenerate()
+        generate_disguise_map(args.disguise_map)
 
     forward_map, reverse_map = read_disguise_map(args.disguise_map)
     mapping_to_use = reverse_map if args.undo else forward_map

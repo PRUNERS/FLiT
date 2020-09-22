@@ -154,11 +154,13 @@ class FlitDisguiseTest(FlitTestBase):
                     disguise_contents = disguise_in.readlines()
         expected_disguise_contents = [
             'disguise,value\n',
-            'file-00001,ALL-FLIT.cpp\n',
-            'file-00002,Empty.cpp\n',
-            'file-00003,main.cpp\n',
-            'path-00001,tests/Empty.cpp\n',
-            'func-00001,main\n',
+            'objfile-1,Empty.cpp.o\n',
+            'objfile-2,main.cpp.o\n',
+            'filepath-1,main.cpp\n',
+            'filepath-2,tests/Empty.cpp\n',
+            'filename-1,Empty.cpp\n',
+            'symbol-1,main\n',
+            'test-1,Empty\n',
             ]
         self.assertEqual(disguise_contents, expected_disguise_contents)
 
