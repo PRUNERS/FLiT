@@ -88,6 +88,7 @@ Tests FLiT's disguise subcommand as integration tests
 import unittest as ut
 import tempfile
 from io import StringIO
+import re
 
 import sys
 before_path = sys.path[:]
@@ -104,7 +105,6 @@ class FlitTestBase(ut.TestCase):
         Runs the flit command-line tool with the given args.  Returns the
         standard output from the flit run as a list of lines.
         '''
-        print('flit', args)
         with StringIO() as ostream:
             retval = th.flit.main(args, outstream=ostream)
             lines = ostream.getvalue().splitlines()
@@ -152,17 +152,18 @@ class FlitDisguiseTest(FlitTestBase):
                 self.assertEqual(output, ['Created disguise.csv'])
                 with open('disguise.csv') as disguise_in:
                     disguise_contents = disguise_in.readlines()
-        expected_disguise_contents = [
-            'disguise,value\n',
-            'objfile-1,Empty.cpp.o\n',
-            'objfile-2,main.cpp.o\n',
-            'filepath-1,main.cpp\n',
-            'filepath-2,tests/Empty.cpp\n',
-            'filename-1,Empty.cpp\n',
-            'symbol-1,main\n',
-            'test-1,Empty\n',
-            ]
-        self.assertEqual(disguise_contents, expected_disguise_contents)
+        self.assertEqual('disguise,value\n', disguise_contents[0])
+        self.assertEqual('objfile-1,Empty.cpp.o\n', disguise_contents[1])
+        self.assertEqual('objfile-2,main.cpp.o\n', disguise_contents[2])
+        self.assertEqual('filepath-1,main.cpp\n', disguise_contents[3])
+        self.assertEqual('filepath-2,tests/Empty.cpp\n', disguise_contents[4])
+        self.assertEqual('filename-1,Empty.cpp\n', disguise_contents[5])
+        self.assertEqual('test-1,Empty\n', disguise_contents[-1])
+        expected_symbols = ['main']
+        symbol_lines = [x for x in disguise_contents if x.startswith('symbol')]
+        for symbol in expected_symbols:
+            self.assertTrue(any(re.match('symbol-\d*,{}\n'.format(symbol), line)
+                                for line in disguise_contents))
 
     def test_disguise_empty_map(self):
         to_disguise = [

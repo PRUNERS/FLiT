@@ -87,10 +87,15 @@ import flit_bisect as bisect
 
 import argparse
 import csv
+import glob
 import os
 import re
 import subprocess as subp
 import sys
+try:
+    import flitelf_nm as elf
+except ImportError:
+    elf = None
 
 brief_description = 'Anonymizes project-specific data from text files'
 
@@ -186,9 +191,12 @@ def generate_disguise_map(outfile='disguise.csv'):
     objects = sorted([os.path.basename(source) + '.o' for source in sources])
 
     # get list of function symbols and demangled signatures
-    symbol_objects, _ = bisect.extract_symbols(sources, objdir)
-    symbols = [sym.symbol for sym in symbol_objects]
-    demangled = [sym.demangled for sym in symbol_objects]
+    #symbol_objects, _ = bisect.extract_symbols(sources, objdir) # too slow
+    #symbol_objects, _ = elf.extract_symbols('gtrun') # too few symbols
+    symbol_objects, _ = elf.extract_symbols([
+        os.path.join(objdir, obj) for obj in objects])
+    symbols = sorted(sym.symbol for sym in symbol_objects)
+    demangled = sorted(sym.demangled for sym in symbol_objects)
 
     # get list of tests
     tests = subp.check_output(['./gtrun', '--list-tests']).decode('utf-8').splitlines()
@@ -208,10 +216,10 @@ def generate_disguise_map(outfile='disguise.csv'):
 
         writerows('objfile', objects)
         writerows('filepath', sources)
-        writerows('filename', [os.path.basename(x) for x in sources])
+        writerows('filename', sorted(os.path.basename(x) for x in sources))
         writerows('symbol', symbols)
         writerows('demangled', demangled)
-        writerows('test', tests)
+        writerows('test', sorted(tests))
 
     print('Created {}'.format(outfile))
 
@@ -256,12 +264,6 @@ def gen_disguise_list(disguise_base, values):
     disguises = [{'disguise': format_str.format(i=i+1), 'value': val}
                  for i, val in enumerate(values)]
     return disguises
-
-def check_disguise_map_regenerate():
-    'check to see if disguise.csv needs regenerating and do it if so.'
-    # TODO: implement
-    #subp.check_call(['make', 'disguise.csv'])
-    pass
 
 def read_disguise_map(fname):
     'Read and return the forward and reverse dictionary of the disguise map'
