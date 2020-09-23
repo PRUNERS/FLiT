@@ -82,6 +82,7 @@
 
 language: cpp
 os: linux
+dist: bionic
 addons:
   apt:
     packages: &native_deps
