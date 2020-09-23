@@ -123,7 +123,7 @@ before_install:
   - pip3 install --user setuptools
   - pip3 install --user toml $extra_pip
 
-script: make -j4 && make -j4 -C tests && make check
+script: dpkg --list | grep binutil && make -j4 && make -j4 -C tests && make check
 
 #notifications:
 #  email: false
