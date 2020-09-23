@@ -243,6 +243,7 @@ def _gen_file_line_table(dwarfinfo):
     # generate the table
     table = []
     for unit in dwarfinfo.iter_CUs():
+        compile_dir = _get_compile_dir(unit)
         lineprog = dwarfinfo.line_program_for_CU(unit)
         prevstate = None
         for entry in lineprog.get_entries():
@@ -256,6 +257,8 @@ def _gen_file_line_table(dwarfinfo):
                 dirno = lineprog['file_entry'][prevstate.file - 1].dir_index
                 filepath = os.path.join(
                         lineprog['include_directory'][dirno - 1], filename)
+                if compile_dir and not os.path.isabs(filepath): # make absolute
+                    filepath = os.path.join(compile_dir, filepath)
                 line = prevstate.line
                 fromaddr = prevstate.address
                 toaddr = max(fromaddr, entry.state.address)
@@ -278,3 +281,19 @@ def _gen_file_line_table(dwarfinfo):
     consolidated.append(prev)
 
     return consolidated
+
+def _get_compile_dir(compile_unit):
+    '''
+    Returns the directory where the compile unit was compiled from.
+
+    @param compile_unit: A CU from a dwarfinfo.iterCUs()
+
+    @return (bytes) the DW_AT_comp_dir attribute for the given compile unit
+        or None if this attribute is missing
+    '''
+    die = next(compile_unit.iter_DIEs()) # first DIE
+    key = 'DW_AT_comp_dir'
+    if key in die.attributes:
+        return die.attributes['DW_AT_comp_dir'].value
+    else:
+        return None
