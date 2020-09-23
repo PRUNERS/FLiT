@@ -96,19 +96,17 @@ from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import SymbolTableSection
 
 SymbolTuple = namedtuple('SymbolTuple',
-                         'src, symbol, demangled, fname, lineno')
+                         'symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
 Tuple containing information about the symbols in a file.  Has the following
 attributes:
-    src:        source file that was compiled
     symbol:     mangled symbol in the compiled version
     demangled:  demangled version of symbol
-    fname:      filename where the symbol is actually defined.  This usually
-                will be equal to src, but may not be in some situations.
+    fname:      filename where the symbol is defined.
     lineno:     line number of definition within fname.
 '''
 
-def extract_symbols(objfile, srcfile):
+def extract_symbols(objfile):
     '''
     Extracts symbols for the given object file.
 
@@ -147,10 +145,10 @@ def extract_symbols(objfile, srcfile):
         fdemangled = _demangle([sym.name for sym in fsyms])
         rdemangled = _demangle([sym.name for sym in rsyms])
 
-        funcsym_tuples = [SymbolTuple(srcfile, fsyms[i].name, fdemangled[i],
+        funcsym_tuples = [SymbolTuple(fsyms[i].name, fdemangled[i],
                                       locs[i][0], locs[i][1])
                           for i in range(len(fsyms))]
-        remaining_tuples = [SymbolTuple(srcfile, rsyms[i].name, rdemangled[i],
+        remaining_tuples = [SymbolTuple(rsyms[i].name, rdemangled[i],
                                         None, None)
                             for i in range(len(rsyms))]
 
