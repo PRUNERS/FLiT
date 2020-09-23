@@ -90,7 +90,7 @@ Instead, this package uses binutils through subprocesses.  The programs used
 are "nm" and "c++filt" to perform the same functionality.
 '''
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import subprocess as subp
 import os
 import shutil
@@ -127,7 +127,6 @@ def extract_symbols(objfile_or_list):
         '--print-file-name',
         '--extern-only',
         '--defined-only',
-        '--line-numbers',
         ]
     if isinstance(objfile_or_list, str):
         nm_args.append(objfile_or_list)
@@ -135,34 +134,32 @@ def extract_symbols(objfile_or_list):
         nm_args.extend(objfile_or_list)
     symbol_strings = subp.check_output(nm_args).decode('utf-8').splitlines()
 
+    obj_symbols = defaultdict(list)
     symbols = []
-    filenames = []
-    linenumbers = []
     for symbol_string in symbol_strings:
-        try:
-            stype, symbol_plus_extra = symbol_string.split(maxsplit=2)[1:]
-        except:
-            import pdb; pdb.set_trace()
-        if stype.lower() == 'w':
-            symbol = symbol_plus_extra.split()[0]
-            filename = None
-            linenumber = None
-        elif '\t' in symbol_plus_extra:
-            symbol, definition = symbol_plus_extra.split('\t', maxsplit=1)
-            filename, linenumber= definition.split(':')
-            linenumber = int(linenumber)
-        else:
-            symbol = symbol_plus_extra
-            filename = None
-            linenumber = None
+        loc, stype, symbol = symbol_string.split(maxsplit=2)
+        objfile, offset = loc.split(':')
         symbols.append(symbol)
-        filenames.append(filename)
-        linenumbers.append(linenumber)
+        obj_symbols[objfile].append((offset, stype, symbol))
 
-    demangled = _demangle(symbols)
+    demangle_map = dict(zip(symbols, _demangle(symbols)))
 
-    for sym, dem, fnam, line in zip(symbols, demangled, filenames, linenumbers):
-        symbol_tuple = SymbolTuple(sym, dem, fnam, line)
+    fileinfo_map = {}
+    linenumber_map = {}
+    for obj, symlist in obj_symbols.items():
+        to_check = []
+        for offset, stype, symbol in symlist:
+            if symbol in fileinfo_map and fileinfo_map[symbol]:
+                continue
+            elif stype.lower() != 't':
+                fileinfo_map[symbol] = (None, None)
+            else:
+                to_check.append((offset, symbol))
+        fileinfo_map.update(_fnames_and_line_numbers(obj, to_check))
+
+    for symbol in symbols:
+        fnam, line = fileinfo_map[symbol]
+        symbol_tuple = SymbolTuple(symbol, demangle_map[symbol], fnam, line)
         if fnam:
             funcsym_tuples.append(symbol_tuple)
         else:
@@ -172,8 +169,36 @@ def extract_symbols(objfile_or_list):
 
 def _demangle(symbol_list):
     'Demangles each C++ name in the given list'
+    if not symbol_list:
+        return []
     proc = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
     out, _ = proc.communicate('\n'.join(symbol_list).encode())
     demangled = out.decode('utf8').splitlines()
     assert len(demangled) == len(symbol_list)
     return demangled
+
+def _fnames_and_line_numbers(objfile, offset_symbol_tuples):
+    '''
+    Given a list of tuples of (offset, symbol), return a single dictionaries, a
+    mapping from symbol name to a tuple of (filename, line number).  If the
+    filename and/or line number could not be determined, then both will be set
+    to None.
+    '''
+    if not offset_symbol_tuples:
+        return {}
+    proc = subp.Popen(['addr2line', '-e', objfile], stdin=subp.PIPE,
+                      stdout=subp.PIPE)
+    out, _ = proc.communicate('\n'.join(x[0] for x in offset_symbol_tuples)
+                              .encode())
+    info = out.decode('utf8').splitlines()
+    assert len(info) == len(offset_symbol_tuples), \
+        'len(info) = {}, len(offset_symbol_tuples) = {}'\
+        .format(len(info), len(offset_symbol_tuples))
+    mapping = {}
+    for line, symbol in zip(info, (x[1] for x in offset_symbol_tuples)):
+        filename, linenumber = line.strip().split(':')
+        if filename == '??' or linenumber == '0':
+            filename = None
+            linenumber = None
+        mapping[symbol] = (filename, linenumber)
+    return mapping
