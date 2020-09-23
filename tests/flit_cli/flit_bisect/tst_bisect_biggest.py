@@ -100,7 +100,7 @@ tst_bisect.py.
 
 >>> flit_bisect = th._path_import(th._script_dir, 'flit_bisect')
 >>> util = th._path_import(th._script_dir, 'flitutil')
->>> Sym = flit_bisect.elf.SymbolTuple
+>>> Sym = flit_bisect.BisectSymbolTuple
 >>> def create_symbol(fileno, funcno, lineno, isproblem):
 ...     prob_str = '_PROBLEM' if isproblem else ''
 ...     filename = 'tests/file{}.cpp'.format(fileno)
