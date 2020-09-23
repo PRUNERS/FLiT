@@ -93,6 +93,7 @@ install:
 	install -m 0644 $(SCRIPT_DIR)/experimental/ninja_syntax.py $(INST_SHAREDIR)/scripts/experimental/
 	install -m 0644 $(SCRIPT_DIR)/flitutil.py $(INST_SHAREDIR)/scripts/
 	install -m 0644 $(SCRIPT_DIR)/flitelf.py $(INST_SHAREDIR)/scripts/
+	install -m 0644 $(SCRIPT_DIR)/flitelf_nm.py $(INST_SHAREDIR)/scripts/
 	install -m 0644 $(SCRIPT_DIR)/README.md $(INST_SHAREDIR)/scripts/
 	@$(call color_out,BROWN,  Intalling bash-completion script into $(INST_BASH_COMPLETE_DIR))
 	@$(call color_out,GREEN,    You can source it in your ~/.bashrc or copy it to /etc/bash_completion.d/)
