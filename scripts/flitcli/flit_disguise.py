@@ -93,7 +93,7 @@ import re
 import subprocess as subp
 import sys
 try:
-    import flitelf_nm as elf
+    import flitelf as elf
 except ImportError:
     elf = None
 
@@ -191,8 +191,6 @@ def generate_disguise_map(outfile='disguise.csv'):
     objects = sorted([os.path.basename(source) + '.o' for source in sources])
 
     # get list of function symbols and demangled signatures
-    #symbol_objects, _ = bisect.extract_symbols(sources, objdir) # too slow
-    #symbol_objects, _ = elf.extract_symbols('gtrun') # too few symbols
     symbol_objects, _ = elf.extract_symbols([
         os.path.join(objdir, obj) for obj in objects])
     symbols = sorted(sym.symbol for sym in symbol_objects)

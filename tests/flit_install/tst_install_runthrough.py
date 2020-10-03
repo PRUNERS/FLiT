@@ -302,7 +302,6 @@ True
  'share/flit/scripts/flit_update.py',
  'share/flit/scripts/flitconfig.py',
  'share/flit/scripts/flitelf.py',
- 'share/flit/scripts/flitelf_nm.py',
  'share/flit/scripts/flitutil.py',
  'share/flit/src',
  'share/flit/src/ALL-FLIT.cpp',

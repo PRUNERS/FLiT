@@ -31,9 +31,6 @@ Stuff you may need to get
 * [python3](https://www.python.org)
   * [toml](https://github.com/uiri/toml) module (for
     [TOML](https://github.com/toml-lang/toml) configuration files)
-  * (optional) [pyelftools](https://github.com/eliben/pyelftools) module for
-    parsing ELF files.  This is used for `flit bisect`; all other functionality
-    will work without it.
 * [make](https://www.gnu.org/software/make)
 * A C++11 compatible compiler
   (see section [Compilers](#compilers) for supported versions)
@@ -51,21 +48,21 @@ sudo apt install \
 The python modules can be installed with `apt`
 
 ```bash
-sudo apt install python3-toml python3-pyelftools
+sudo apt install python3-toml
 ```
 
 or with `pip`
 
 ```bash
 sudo apt install python3-pip
-pip3 install --user toml pyelftools
+pip3 install --user toml
 ```
 
 For homebrew on OSX (besides installing [Xcode](https://developer.apple.com/xcode))
 
 ```bash
 brew install make python3 gcc git
-pip3 install toml pyelftools
+pip3 install toml
 ```
 
 If you install python version 3.0 or later, then you will need to have a

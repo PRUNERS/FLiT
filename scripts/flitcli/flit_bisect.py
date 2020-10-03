@@ -107,10 +107,7 @@ import flitutil as util
 try:
     import flitelf as elf
 except ImportError:
-    try:
-        import flitelf_nm as elf
-    except ImportError:
-        elf = None
+    elf = None
 
 
 brief_description = 'Bisect compilation to identify problematic source code'
@@ -2225,7 +2222,7 @@ def main(arguments, prog=None):
     '''
 
     if elf is None:
-        print('Error: pyelftools or binutils is not installed, bisect disabled',
+        print('Error: binutils is not installed, bisect disabled',
               file=sys.stderr)
         return 1
 
