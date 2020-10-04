@@ -105,7 +105,7 @@ _flit_disguise()
     -o --output
     -m --disguise-map
     -u --undo
-    --fields"
+    -j --jobs"
   # file field
 
   case "${prev}" in
@@ -115,26 +115,8 @@ _flit_disguise()
       return 0
       ;;
 
-    --fields)
-      # three possible fields: file, function, test
-      # TODO: separate on comma and only complete since the last comma
-      local possibilities="
-        file
-        file,function
-        file,function,test
-        file,test
-        file,test,function
-        function
-        function,file
-        function,file,test
-        function,test
-        function,test,file
-        test
-        test,file
-        test,file,function
-        test,function
-        test,function,file"
-      COMPREPLY=( $(compgen -W "${possibilities}" -- "${cur}") )
+    -j|--jobs)
+      # do no completion -- numbers
       return 0
       ;;
 
