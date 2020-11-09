@@ -99,6 +99,7 @@ import shutil
 import sqlite3
 import subprocess as subp
 import sys
+import socket # for hostname in logging
 
 import flitconfig as conf
 import flit_update
@@ -111,8 +112,8 @@ except ImportError:
 
 brief_description = 'Bisect compilation to identify problematic source code'
 
-LOG_DIR = ''
-LOG_FILE = 'bisect_log'
+LOG_DIR = './event_logs'
+LOG_FILE = 'bisect_log_' + socket.gethostname()
 LOG_EVENTS = []
 
 def hash_compilation(compiler, optl, switches):
@@ -374,8 +375,10 @@ def create_bisect_makefile(directory, replacements, gt_src,
     repl_copy['makefile'] = os.path.realpath(makepath)
     repl_copy['number'] = '{0:02d}'.format(num)
     logging.info('Creating makefile: %s', makepath)
+
+    # TODO: allow toggling of logging
     util.process_in_file(
-        os.path.join(conf.data_dir, 'Makefile_bisect_binary.in'),
+        os.path.join(conf.data_dir, 'Makefile_bisect_binary_log.in'),
         makepath,
         repl_copy,
         overwrite=True)
@@ -1382,10 +1385,10 @@ def _gen_bisect_lib_checker(args, bisect_path, replacements, sources,
                                           [], dict())
         makepath = os.path.join(bisect_path, makefile)
         LOG_EVENTS.append(util.get_log_string('flit_bisect-check_libs', 'start', 
-                          'Path: ' + bisect_path + ' Libs: ' + str(libs)))
+            {'Path': bisect_path, 'Libs': str(libs)}))
         result = test_makefile(args, makepath, libs, indent=indent) 
         LOG_EVENTS.append(util.get_log_string('flit_bisect-check_libs', 'end',
-                          'Path: ' + bisect_path + ' Libs: ' + str(libs)))
+            {'Path': bisect_path, 'Libs': str(libs)}))
         return result
 
     return memoize_strlist_func(builder_and_checker)
@@ -1414,11 +1417,12 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
         makefile = create_bisect_makefile(bisect_path, replacements, gt_src,
                                           sources_to_optimize, dict())
         makepath = os.path.join(bisect_path, makefile)
-        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_source', 'start',
-                          'Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
+        print('writing bisect file')
+        LOG_EVENTS.append(util.get_log_string('Bisect File', 'start',
+            {'Path': bisect_path, 'Trouble': sources_to_optimize}))
         result = test_makefile(args, makepath, sources_to_optimize, indent=indent)
-        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_source', 'end',
-                          'Path: ' + bisect_path + ' Source: ' + str(sources_to_optimize)))
+        LOG_EVENTS.append(util.get_log_string('Bisect File', 'end',
+            {'Path': bisect_path, 'Trouble': sources_to_optimize}))
         return result 
 
     return memoize_strlist_func(builder_and_checker)
@@ -1464,11 +1468,11 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
             .format(sym=sym) for sym in symbols_to_optimize
             ]
-        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_symbol', 'start',
-                          'Path: ' + bisect_path + ' Symbols: ' + str(symbol_strings)))
+        LOG_EVENTS.append(util.get_log_string('Bisect Symbol', 'start',
+            {'Path': bisect_path, 'Trouble': symbols_to_optimize}))
         result = test_makefile(args, makepath, symbol_strings, indent=indent)
-        LOG_EVENTS.append(util.get_log_string('flit_bisect-check_libs', 'end',
-                          'Path: ' + bisect_path + ' Libs: ' + str(symbol_strings)))
+        LOG_EVENTS.append(util.get_log_string('Bisect Symbol', 'end',
+            {'Path': bisect_path, 'Trouble': symbols_to_optimize}))
         return result 
 
     return memoize_strlist_func(builder_and_checker)

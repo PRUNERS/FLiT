@@ -100,6 +100,8 @@ import sys
 import tempfile
 import json
 import time
+import matplotlib.pyplot as plt
+# import anytree as at
 
 # cached values
 _default_toml = None
@@ -676,16 +678,16 @@ def check_output(*args, **kwargs):
     return output.decode(encoding='utf-8')
 
 
-def get_log_string(event_name, start_stop, message=''):
+def get_log_string(event_name, start_stop, message=dict()):
     '''
     Creates a JSON string for writing to event logs.
     '''
 
     event = {
         'date': str(datetime.utcnow()), 
-        'time': time.perf_counter(),
+        'time': time.perf_counter_ns(),
         'name': event_name,
-        'start_stop': start_stop
+        'start_stop': start_stop,
         'message': message
     }
 
@@ -720,6 +722,8 @@ def write_log(events, path, filename, config=None):
  
     # Create directory for logs, if necessary 
     Path(path).mkdir(parents=True, exist_ok=True)
+
+    print(path)
 
     logfile = os.path.join(path, filename)
 
@@ -757,11 +761,55 @@ def write_log(events, path, filename, config=None):
         logger.info(event)  
   
 
-def parse_logs(directory):
+def logplot(event_time_dict, path):
     '''
-    Utility for parsing multiple log files.
-  
+    Utility for plotting elapsed time from provided dictionary
+    containing start_total and stop_total times.  
     
     '''
-  
-    pass
+
+    events = []
+    elapsed_times = []
+    for key, val in event_time_dict.items():
+        events.append(key)
+        elapsed_times.append(val['stop_total'] - val['start_total'])
+
+    event_num = [i for i, _ in enumerate(events)]
+    plt.bar(event_num, elapsed_times, color='green')
+    plt.xticks(event_num, events, rotation=30)
+    plt.xlabel('Event')
+    plt.ylabel('Time (ns)')
+    plt.title('Elapsed time by event')
+   
+    plt.savefig('plot.png')
+
+
+### def texttree(event_time_dict, path):
+###     '''
+###     Utility for plotting elapsed time from provided dictionary
+###     containing start_total and stop_total times.  
+###     
+###     '''
+### 
+###     return 0
+### 
+###     events = []
+###     elapsed_times = []
+###     for key, val in event_time_dict.items():
+###         events.append(key)
+###         elapsed_times.append(val['stop_total'] - val['start_total'])
+###     
+###     # Create tree and label nodes
+###     root = at.AnyNode(id="FLiT Run")
+### 
+###     create_gt = at.AnyNode(id='Create baseline test results', parent=root)
+###     compile_gt = at.AnyNode(id='Compile baseline test executable', parent=create_gt)
+###     compile_gt_o = at.AnyNode(id='Compile baseline object file', parent=compile_gt)
+### 
+###     # TODO: link to fastest parent
+###     compile_gt_l = at.AnyNode(id='Link baseline object files', parent=0)
+###     run_gt = at.AnyNode(id='Run baseline test executable', parent=0)
+###     run_c = at.AnyNode(id='Run compilation ____ test executable', parent=0)
+
+
+

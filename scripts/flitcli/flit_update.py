@@ -397,11 +397,11 @@ def main(arguments, prog=None):
             if args.logging:
                 events = []
                 events.append(util.get_log_string('create makefile', 
-                              'start', 'Creating makefile for flit run.'))
+                    'start', {'Note': 'Creating makefile for flit run.'}))
             create_makefile(args)
             if args.logging:
                 events.append(util.get_log_string('create makefile',
-                              'end', 'Creating makefile for flit run.'))
+                    'end', {'Note': 'Creating makefile for flit run.'}))
                 util.write_log(events, './event_logs', 'flit_update.log')
         except FileNotFoundError as ex:
             print('Error {}:'.format(ex.errno), ex.strerror,
