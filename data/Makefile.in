@@ -139,11 +139,13 @@ DEV_OBJ_DIR     := $(OBJ_DIR)/dev
 GT_OBJ_DIR      := $(OBJ_DIR)/gt
 RESULTS_DIR     := results
 RUNBUILD_DIR    := bin
+LOG_DIR         ?= event_logs
 ALL_DIRS         = $(OBJ_DIR)
 ALL_DIRS        += $(DEV_OBJ_DIR)
 ALL_DIRS        += $(GT_OBJ_DIR)
 ALL_DIRS        += $(RESULTS_DIR)
 ALL_DIRS        += $(RUNBUILD_DIR)
+ALL_DIRS        += $(LOG_DIR)
 
 # This flag specifies NOT to build position-independent executables
 CXXFLAGS        += -fno-pie
@@ -257,6 +259,51 @@ MKDIR = \
 
 {compiler_switches}
 
+LOGGING ?= false
+
+# 
+ifeq ($(LOGGING),true)
+
+# Create log directory, and command for writing to log file
+# This file is processed with Python strings format() function,
+# so bracket escaping is necessary.
+comma := ,
+LOGFILE ?= $(LOG_DIR)/flit-makelog-$(shell hostname)-$$PPID.log
+
+# @param 1: Event name
+# @param 2: start or end of event
+# @param 3: message for event, as list of [ "key": "value"$(comma) ] json items.
+LOG_EVENT ?= echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
+            "name": "$1", "start_stop": "$2", "message": {{$3}}}}'
+
+endif
+
+# If LOGFILE is nonempty, enable logging by executing the given make command
+# with an additional flag.
+ifneq ($(LOGFILE),)
+
+$(LOG_DIR):
+	+$(MKDIR) $@
+
+.PHONY: %
+
+# If event logging is enabled, make command is passed through this rule.
+# The same make command will be run, with 'output-sync=line' enabled to avoid 
+# race conditions when writing the log to file.
+#
+# All make output will be tee'd into the logfile, and only non-log entries will
+# be sent to stdout (determined by whether an output line begins with '{{', as
+# current logs are in JSON format.) Logfile will then be rewritten to filter 
+# contents to JSON strings only.
+%: | $(LOG_DIR)
+	@$(MAKE) $@ --output-sync=line LOGFILE="" LOGGING=true -f $(firstword $(MAKEFILE_LIST)) \
+		| tee -a $(LOGFILE) \
+		| grep -v "^\\{{"
+	@grep "^\\{{" $(LOGFILE) > tmp.log
+	@mv tmp.log $(LOGFILE)
+
+else
+
 .PHONY: recursion-target
 REC_MAKE   = $(MAKE) recursion-target --no-print-directory
 
@@ -283,6 +330,7 @@ distclean: clean
 	rm -f $(GT_OUT)
 	rm -f $(addsuffix *.dat,$(GT_OUT))
 	rm -rf lib
+	rm -rf $(LOG_DIR)
 
 Makefile: flit-config.toml
 Makefile: $(FLIT_DATA_DIR)/Makefile.in
@@ -302,6 +350,8 @@ define REC_COMPILE_RULE
 ifneq ($$(R_TARGET),$1)
 .PHONY: $1
 $1: Makefile custom.mk
+	@$(call LOG_EVENT,$8,start,"File": "$1"$(comma) "Compilation": "$(strip $2)_$(strip $4)_$(strip $3)"$(comma) \
+	  "Flags": "$5"$(comma) "LinkFlags": "$6")
 	+$$(REC_MAKE) R_TYPE=compile \
 	  R_TARGET="$1" \
 	  R_COMPILER="$2" \
@@ -310,6 +360,8 @@ $1: Makefile custom.mk
 	  R_CXXFLAGS="$5" \
 	  R_LDFLAGS="$6" \
 	  R_OBJ_DIR="$7"
+	@$(call LOG_EVENT,$8,end,"File": "$1"$(comma) "Compilation": "$(strip $2)_$(strip $4)_$(strip $3)"$(comma) \
+	  "Flags": "$5"$(comma) "LinkFlags": "$6")
 endif
 endef
 
@@ -327,7 +379,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_SWITCHES),\
   $(GT_CXXFLAGS) -fPIC,\
   $(GT_LDFLAGS),\
-  $(GT_OBJ_DIR)-fpic))
+  $(GT_OBJ_DIR)-fpic,Baseline Compile))
 
 $(eval $(call REC_COMPILE_RULE,\
   $(DEV_TARGET),\
@@ -336,7 +388,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $(DEV_SWITCHES),\
   $(DEV_CXXFLAGS),\
   $(DEV_LDFLAGS),\
-  $(DEV_OBJ_DIR)))
+  $(DEV_OBJ_DIR),Dev Compile))
 
 $(eval $(call REC_COMPILE_RULE,\
   $(GT_TARGET),\
@@ -345,11 +397,13 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_SWITCHES),\
   $(GT_CXXFLAGS),\
   $(GT_LDFLAGS),\
-  $(GT_OBJ_DIR)))
+  $(GT_OBJ_DIR),Baseline Compile))
 
 $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
+	@$(call LOG_EVENT,Run Test Baseline,start,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
 	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
+	@$(call LOG_EVENT,Run Test Baseline,end,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
 
 #
 # Enter the recursion types
@@ -402,7 +456,6 @@ $(foreach c,$(COMPILERS),\
 recursion-target: $(GT_TARGET)
 
 
-
 ######################
 # *** R_TYPE=run *** #
 ######################
@@ -418,11 +471,19 @@ recursion-target: $(ALL_RESULTS)
 
 $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
+	@$(call LOG_EVENT,Run Test,start,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+		"Test": "$@"$(comma) "Compilation": "$*")
 	$(RUNWRAP) ./$< $(TEST_RUN_ARGS) --output $@ || touch $@
+	@$(call LOG_EVENT,Run Test,end,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+		"Test": "$@"$(comma) "Compilation": "$*")
 
 %-out-comparison.csv: %-out $(GT_TARGET) $(GT_OUT)
 	@$(call color_out,CYAN,  $< -> $@)
+	@$(call LOG_EVENT,Compare Test,start,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
+		"Compilation": "$*")
 	$(RUNWRAP) ./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
+	@$(call LOG_EVENT,Compare Test,end,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
+		"Compilation": "$*")
 
 $(RESULTS_DIR):
 	+$(MKDIR) $@
@@ -446,12 +507,17 @@ else ifeq ($(R_TYPE),compile)
 define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
+	@# Log object file
+	@$(call LOG_EVENT,Compile,start,"File": "$1"$(comma) "Object File": "$(strip $2)"$(comma)\
+		"Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
 	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
 	  -DFLIT_OPTL='"$(strip $4)"' \
 	  -DFLIT_SWITCHES='"$(strip $5)"' \
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
+	@$(call LOG_EVENT,Compile,start,"File": "$1"$(comma) "Object File": "$(strip $2)"$(comma)\
+		"Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
@@ -468,9 +534,21 @@ $(R_TARGET): $(R_OBJ)
 else
 $(R_TARGET): $(R_OBJ)
 	@$(call color_out,BLUE,  Creating $(R_TARGET))
+	@$(call LOG_EVENT,Linking,start,"File": "$(R_OBJ)"$(comma) \
+	  "Compiler": "$(R_COMPILER)"$(comma) "Optimization": "$(R_OPTL)"$(comma) \
+	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
+	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
+	  "LDFLAGS": "$(LDFLAGS) $(R_LDFLAGS)"$(comma) \
+	  "Compilation": "$(strip $(R_COMPILER))_$(strip $(R_SWITCHES))_$(strip $(R_OPTL))")
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
+	@$(call LOG_EVENT,Linking,end,"File": "$(R_OBJ)"$(comma) \
+	  "Compiler": "$(R_COMPILER)"$(comma) "Optimization": "$(R_OPTL)"$(comma) \
+	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
+	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
+	  "LDFLAGS": "$(LDFLAGS) $(R_LDFLAGS)"$(comma) \
+	  "Compilation": "$(strip $(R_COMPILER))_$(strip $(R_SWITCHES))_$(strip $(R_OPTL))")
 endif
 
 $(R_OBJ_DIR):
@@ -487,3 +565,4 @@ $(foreach s,$(SOURCE) $(FLIT_SRC), \
     $(R_CXXFLAGS))))
 
 endif # end of R_TYPE chain
+endif # end of output-sync pass
