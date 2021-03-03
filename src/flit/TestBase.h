@@ -88,10 +88,11 @@
 #ifndef TEST_BASE_HPP
 #define TEST_BASE_HPP
 
+#include <flit/FlitEventLogger.h>
 #include <flit/Variant.h>
 #include <flit/flitHelpers.h>
-#include <flit/timeFunction.h>
 #include <flit/fsutil.h>
+#include <flit/timeFunction.h>
 
 #include <fstream>
 #include <functional>
@@ -212,10 +213,23 @@ public:
 
     // By default, the function to be timed is run_impl
     std::function<Variant(const std::vector<T>&)> runner;
+    size_t input_index = 0;
     int runcount = 0;
-    runner = [this,&runcount] (const std::vector<T>& runInput) {
+    runner = [this, &runcount, &input_index] (const std::vector<T>& runInput) {
       runcount++;
-      return this->run_impl(runInput);
+      flit::logger->log_event("TestRun", flit::FlitEventLogger::START,
+                              {{"test-name", id},
+                               {"input-index", std::to_string(input_index)},
+                               {"precision", typeid(T).name()}});
+      auto retval = this->run_impl(runInput);
+      flit::logger->log_event("TestRun", flit::FlitEventLogger::STOP,
+                              {{"test-name", id},
+                               {"input-index", std::to_string(input_index)},
+                               {"disabled",
+                                (retval.type() == Variant::Type::None) ?
+                                   "true" : "false"},
+                               {"precision", typeid(T).name()}});
+      return retval;
     };
 
     // Run the tests
@@ -238,10 +252,18 @@ public:
       indices.push_back(idx);
     }
 
-    for (auto i : indices) {
-      auto& runInput = inputSequence.at(i);
+    flit::logger->log_event("TestInputLoop", flit::FlitEventLogger::START,
+                            {{"test-name", id},
+                             {"precision", typeid(T).name()}});
+    for (size_t i = 0; i < indices.size(); ++i) {
+      input_index = indices[i];
+      auto& runInput = inputSequence.at(input_index);
       Variant testResult;
       int_fast64_t timing = 0;
+      flit::logger->log_event("TestLoop", flit::FlitEventLogger::START,
+                              {{"test-name", id},
+                               {"input-index", std::to_string(input_index)},
+                               {"precision", typeid(T).name()}});
       if (shouldTime) {
         auto timed_runner = [runner,&runInput,&testResult] () {
           testResult = runner(runInput);
@@ -260,13 +282,17 @@ public:
       } else {
         testResult = runner(runInput);
       }
+      flit::logger->log_event("TestLoop", flit::FlitEventLogger::STOP,
+                              {{"test-name", id},
+                               {"input-index", std::to_string(input_index)},
+                               {"precision", typeid(T).name()}});
       // If the test returns a dummy value, then do not record this run.
       if (testResult.type() == Variant::Type::None) {
         continue;
       }
       std::string name = id;
       if (inputSequence.size() > 1) {
-        name += "_idx" + std::to_string(i);
+        name += "_idx" + std::to_string(input_index);
       }
       std::string resultfile;
       if (testResult.type() != Variant::Type::LongDouble) {
@@ -279,6 +305,9 @@ public:
       results.emplace_back(name, typeid(T).name(), testResult,
                            timing, resultfile);
     }
+    flit::logger->log_event("TestInputLoop", flit::FlitEventLogger::STOP,
+                            {{"test-name", id},
+                             {"precision", typeid(T).name()}});
     info_stream << id << "-" << typeid(T).name() << ": # runs = "
                 << runcount << std::endl;
     return results;

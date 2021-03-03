@@ -554,8 +554,37 @@ inline int runFlitTests(int argc, char* argv[]) {
     for (auto& gtres : results) {
       auto factory = testMap[removeIdxFromName(gtres.name())];
       auto toCompare = comparisonResults[{gtres.name(), gtres.precision()}];
+
       for (TestResult* compResult : toCompare) {
+        std::unordered_map<std::string, std::string> metadata;
+        {
+          std::ifstream fin;
+          try {
+            flit::ifopen(fin, compResult->resultfile());
+          } catch (std::ios_base::failure &ex) {
+            std::cerr << "Error: file does not exist: "
+                      << compResult->resultfile() << std::endl;
+            return 1;
+          }
+          metadata = parseMetadata(fin);
+        }
+        flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::START,
+                                {{"test-name", gtres.name()},
+                                 {"other-precision", gtres.precision()},
+                                 {"other-host"     , metadata["host"    ]},
+                                 {"other-compiler" , metadata["compiler"]},
+                                 {"other-optl"     , metadata["optl"    ]},
+                                 {"other-switches" , metadata["switches"]},
+                                });
         auto compVal = runComparison(factory, gtres, *compResult);
+        flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::STOP,
+                                {{"test-name", gtres.name()},
+                                 {"other-precision", gtres.precision()},
+                                 {"other-host"     , metadata["host"    ]},
+                                 {"other-compiler" , metadata["compiler"]},
+                                 {"other-optl"     , metadata["optl"    ]},
+                                 {"other-switches" , metadata["switches"]},
+                                });
         compResult->set_comparison(compVal);
       }
     }
