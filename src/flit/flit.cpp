@@ -139,6 +139,8 @@ std::string FlitOptions::toString() const {
     << "  compareMode:    " << boolToString(this->compareMode) << "\n"
     << "  compareGtFile:  " << this->compareGtFile << "\n"
     << "  compareSuffix:  " << this->compareSuffix << "\n"
+    << "  event_logging_enabled:  " << boolToString(this->event_logging_enabled) << "\n"
+    << "  event_log_file:  " << this->event_log_file << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
@@ -224,6 +226,8 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
+  std::vector<std::string> eventLogEnabledOpts = { "--event-logging" };
+  std::vector<std::string> eventLogFileOpts  = { "--event-logging-file" };
   auto allowedTests = getKeys(getTests());
   allowedTests.emplace_back("all");
   for (int i = 1; i < argCount; i++) {
@@ -284,6 +288,13 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
         throw ParseException(current + " requires an argument");
       }
       options.compareSuffix = argList[++i];
+    } else if (isIn(eventLogEnabledOpts, current)) {
+      options.event_logging_enabled = true;
+    } else if (isIn(eventLogFileOpts, current)) {
+      if (i+1 == argCount) {
+        throw ParseException(current + " requires an argument");
+      }
+      options.event_log_file = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!options.compareMode && !isIn(allowedTests, removeIdxFromName(current))) {
@@ -445,6 +456,7 @@ std::string usage(std::string progName) {
        "                  'double', 'long double', and 'all'.  The default\n"
        "                  is 'all' which runs all of them.\n"
        "\n";
+       // TODO: add tips for event logging options
   return messanger.str();
 }
 

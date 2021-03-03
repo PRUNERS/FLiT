@@ -92,6 +92,7 @@
 #include <flit/flitHelpers.h>
 #include <flit/fsutil.h>
 #include <flit/subprocess.h>
+#include <flit/FlitEventLogger.h>
 
 #include <algorithm>
 #include <chrono>
@@ -152,6 +153,9 @@ struct FlitOptions {
   std::string compareGtFile; // ground truth results to use in compareMode
   std::vector<std::string> compareFiles; // files for compareMode
   std::string compareSuffix; // suffix to add when writing back compareFiles
+
+  bool event_logging_enabled = false;	// capture certain flit event details such as time and parameters
+  std::string event_log_file = "test.log";	// file to store event logs
 
   /** Give a string representation of this struct for printing purposes */
   std::string toString() const;
@@ -423,6 +427,7 @@ inline int runFlitTests(int argc, char* argv[]) {
   if (isFastTrack(argc, argv)) { return callFastTrack(argc, argv); }
 
   // Argument parsing
+  // TODO: add --log-file to parser
   FlitOptions options;
   try {
     options = parseArguments(argc, argv);
@@ -451,6 +456,17 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   if (options.verbose) {
     info_stream.show();
+  }
+
+  // setup event logging
+  flit::FlitEventLogger logger; // create the logger singleton
+  std::ofstream log_out;
+  // TODO: add event_logging_enabled to FlitOptions
+  // TODO: add event_log_file to FlitOptions
+  // TODO: log events where they happen with flit::logger->log_event()
+  if (options.event_logging_enabled) {
+    flit::ofopen(log_out, options.event_log_file);
+    logger.set_stream(log_out);
   }
 
   std::unique_ptr<std::ostream> stream_deleter;

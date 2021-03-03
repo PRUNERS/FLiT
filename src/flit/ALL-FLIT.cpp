@@ -92,3 +92,4 @@
 #include "TestBase.cpp"
 #include "timeFunction.cpp"
 #include "Variant.cpp"
+#include "FlitEventLogger.cpp"

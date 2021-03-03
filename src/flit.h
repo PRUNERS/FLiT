@@ -97,5 +97,6 @@
 #include <flit/timeFunction.h>
 #include <flit/tinydir.h>
 #include <flit/Variant.h>
+#include <flit/FlitEventLogger.h>
 
 #endif // TOP_FLIT_H
