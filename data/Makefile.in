@@ -259,10 +259,9 @@ MKDIR = \
 
 {compiler_switches}
 
-LOGGING ?= false
+# LOGGING ?= false
 
-# 
-ifeq ($(LOGGING),true)
+# ifeq ($(LOGGING),true)
 
 # Create log directory, and command for writing to log file
 # This file is processed with Python strings format() function,
@@ -276,7 +275,7 @@ LOGFILE ?= $(LOG_DIR)/flit-makelog-$(shell hostname)-$$PPID.log
 LOG_EVENT ?= echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
             "name": "$1", "start_stop": "$2", "message": {{$3}}}}'
 
-endif
+# endif
 
 # If LOGFILE is nonempty, enable logging by executing the given make command
 # with an additional flag.
@@ -295,13 +294,15 @@ $(LOG_DIR):
 # be sent to stdout (determined by whether an output line begins with '{{', as
 # current logs are in JSON format.) Logfile will then be rewritten to filter 
 # contents to JSON strings only.
+# LOGGING=true should be added if above if is in...
 %: | $(LOG_DIR)
-	@$(MAKE) $@ --output-sync=line LOGFILE="" LOGGING=true -f $(firstword $(MAKEFILE_LIST)) \
+	@$(MAKE) $@ --output-sync=line LOGFILE="" -f $(firstword $(MAKEFILE_LIST)) \
 		| tee -a $(LOGFILE) \
 		| grep -v "^\\{{"
 	@grep "^\\{{" $(LOGFILE) > tmp.log
 	@mv tmp.log $(LOGFILE)
 
+# if logging is turned on, this is the end of the file.
 else
 
 .PHONY: recursion-target

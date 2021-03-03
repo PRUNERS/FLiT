@@ -521,6 +521,7 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
         '-C', directory,
         '-f', makefilename,
         '-j', str(jobs),
+        'LOGGING=true',
         ]
     if target is not None:
         command.append(target)
