@@ -81,17 +81,16 @@
 'Implements the analyze subcommand'
 
 import argparse
-import os
-import re
-import subprocess as subp
-import sys
+import copy
 import glob
-import fileinput
 import json
-import math
-import flitconfig as conf
-import flitutil as util
+import os
+import sys
+from datetime import timedelta, datetime
+
 import pygraphviz as pgv
+
+import flitutil as util
 
 brief_description = 'Aggregates and analyzes log files.'
 
@@ -117,63 +116,134 @@ def populate_parser(parser=None):
 
     return parser
 
-
-def log_to_dict(log_dir):
+class Event:
     '''
-        Read raw log files and aggregate to single log file.
-        Returns a list of individual event dictionaries.
+    An event object.
+
+    Public attributes:
+    - name: the name of the event
+    - type: START, STOP, or DURATION
+    - nanosecs_since_epoch: a time point for the event.  For DURATION events,
+      this marks the beginning of the event.
+    - datetime: a time point for the event.  For DURATION events, this marks
+      the beginning of the event.
+    - properties (dict): detailed information specific to the type of event
+    - duration: only useful for DURATION events, nanosecond duration
+    - children (list): children events (only for DURATION type)
+    - parent: None if no parent, else another Event object
     '''
 
-    with util.pushd(log_dir):
-        #------------------------
-        # Aggregate FLiT logs
-        #------------------------
-        # Read all log files into one final.log
-        # May make more sense to process files in chunks.
-        fin_list = glob.glob('flit_*.log')
-        lines = []
-        for fin in fin_list:
-            f = open(fin, 'r')
-            lines = lines + f.read().strip().split('\n')
-            f.close()
-#        for line in lines:
-#            print(line)
-#            json.loads(line)
-        lines.sort(key=lambda k: json.loads(k)['time'])
-        with open('final_flit.log', 'w') as fout:
-            fout.write('\n'.join(lines))
-       
-        # Now process data read from all logs while it is in memory.
-        flit_events = [json.loads(line) for line in lines]
+    START = 1
+    STOP = 2
+    DURATION = 3
 
-        #------------------------
-        # Aggregate bisect logs
-        #------------------------
-        # Read all log files into one final.log
-        # May make more sense to process files in chunks.
-        fin_list = glob.glob('bisect_*.log')
-        lines = []
-        for fin in fin_list:
-            f = open(fin, 'r')
-            lines = lines + f.read().strip().split('\n')
-            f.close()
-#        for line in lines:
-#            print(line)
-#            json.loads(line)
-        lines.sort(key=lambda k: json.loads(k)['time'])
-        with open('final_bisect.log', 'w') as fout:
-            fout.write('\n'.join(lines))
-       
-        # Now process data read from all logs while it is in memory.
-        bisect_events = [json.loads(line) for line in lines]
+    def __init__(self, values):
+        if values:
+            self.populate(values)
+        else:
+            self.name = ''
+            self.type = DURATION
+            self.nanosecs_since_epoch = 0
+            self.datetime = datetime(1970, 1, 1)
+            self.properties = {}
+            self.duration = 0
+            self.children = []
 
-    return flit_events, bisect_events
+    def populate(self, values):
+        self.name = values['name']
+        self.type = START if values['start_stop'] == 'start' else STOP
+        self.nanosecs_since_epoch = values['time']
+        self.datetime = \
+            datetime(1970, 1, 1) + \
+            timedelta(milliseconds=self.nanosecs_since_epoch // 1000000)
+        self.properties = values['message']
+        self.duration = 0
+        self.children = []
+        self.parent = None
 
+    @staticmethod
+    def create_root_event(first_timestamp, last_timestamp):
+        '''
+        From two timestamps of nanoseconds since the epoch, create a duration
+        event (called "root") and return it.
+        '''
+        root_event = Event()
+        root_event.name = 'root'
+        root_event.type = Event.DURATION
+        root_event.duration = last_timestamp - first_timestamp
+        root_event.datetime = \
+            datetime(1970, 1, 1) + timedelta(first_timestamp // 1000000)
+        root_event.nanosecs_since_epoch = first_timestamp
+        root_event.children = []
+        root_event.properties = {}
+        root_event.parent = None
+        return root_event
+
+    def add_to_parent(self, root, possible_parents):
+        raise NotImplementedError('add_to_parent() unimplemented')
+
+
+def parse_logs(logfiles):
+    '''
+    Read raw log files and aggregate to single log file.
+    Returns a list of individual event dictionaries.
+    '''
+    events = []
+    for filename in fin_list:
+        with open(filename, 'r') as fin:
+            events.extend(Event(json.loads(line)) for line in fin)
+    events.sort(key=lambda x: x.nanosecs_since_epoch)
+    return events
+
+def gen_event_hierarchy(events):
+    '''
+    Take a list of events and create a hierarchy (by populating event.children
+    and event.duration) of events.
+    '''
+    events.sort(key=lambda x: x.nanosecs_since_epoch)
+    root = Event.create_root_event(events[0].nanosecs_since_epoch,
+                                   events[-1].nanosecs_since_epoch)
+    # TODO: we depend here on sequential consistency.  If we move to multiple
+    # TODO: hosts, then this needs to be revisited, perhaps using Lamport
+    # TODO: clocks.
+
+    # The beginning and ending events match both in name and in properties exactly.
+    unmatched = []
+    for event in events:
+        assert event.type != Event.DURATION
+        if event.type == Event.START:
+            event_copy = copy.copy(event)
+            unmatched.append(event_copy)
+            event_copy.add_to_parent(root, unmatched)
+        elif event.type == Event.STOP:
+            # match with something in the unmatched list
+            matching = [x for x in unmatched
+                        if event.name == x.name
+                        and event.properties == x.properties]
+            assert len(matching) != 0, "could not find a matching event"
+            assert len(matching) < 2, "multiple matches for this event found"
+            matching = matching[0]
+            unmatched.remove(matching)
+            assert matching.parent is not None
+            matching.type = Event.DURATION
+            matching.duration = \
+                    event.nanosecs_since_epoch - matching.nanosecs_since_epoch
+            assert matching.parent in unmatched
+
+    assert len(unmatched) == 0
+    # TODO: assert all nodes are DURATION nodes
+
+    return root
+
+
+##
+## OLD STUFF BELOW
+##
 
 def get_event_duration(events):
     '''
-        Aggregates total time accumulated for each event name.
-        Returns a dictionary of event names with aggregated data.
+    Aggregates total time accumulated for each event name.
+    Returns a dictionary of event names with aggregated data.
     '''
     event_times = {}
 
@@ -915,7 +985,9 @@ def main(arguments, prog=None):
     
     log_dir = os.path.join(args.directory, 'event_logs')
 
-    flit_events, bisect_events = log_to_dict(log_dir)
+    with util.pushd(log_dir):
+        logfiles = glob.glob('flit_*.log')
+        flit_events = parse_logs(logfiles)
 
     if args.runtype == 'flit':
         flit_crit_path(flit_events, log_dir)
