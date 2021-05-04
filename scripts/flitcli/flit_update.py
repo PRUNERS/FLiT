@@ -310,6 +310,20 @@ def create_makefile(args, makefile='Makefile'):
             '--timing-repeats', str(projconf['run']['timing_repeats']),
             ])
 
+    # arguments added to all makefile calls.
+    extra_run_args = ''
+    log_dir = ''
+    logfile_prefix = ''
+    if projconf['run']['logging']:
+        file_suffix = '.log'
+        log_dir = str(projconf['run']['log_dir'])
+        logfile_prefix = str(projconf['run']['logfile'])
+        logfile = os.path.join(log_dir, logfile_prefix + file_suffix)
+        extra_run_args = ' '.join([
+            '--event-logging-enabled',
+            '--event-log-file', logfile
+            ])
+        
     mpi_cxxflags = []
     mpi_ldflags = []
     if projconf['run']['enable_mpi']:
@@ -333,9 +347,12 @@ def create_makefile(args, makefile='Makefile'):
         'flit_include_dir': conf.include_dir,
         'flit_data_dir': conf.data_dir,
         'flit_script_dir': conf.script_dir,
+        'log_dir': log_dir,
+        'logfile': logfile_prefix,
         'flit_version': conf.version,
         'flit_src_dir': conf.src_dir,
         'test_run_args': test_run_args,
+        'extra_run_args': extra_run_args,
         'enable_mpi': 'yes' if projconf['run']['enable_mpi'] else 'no',
         'mpi_cxxflags': ' '.join(mpi_cxxflags),
         'mpi_ldflags': ' '.join(mpi_ldflags),
@@ -372,10 +389,7 @@ def create_makefile(args, makefile='Makefile'):
             for compiler in projconf['compiler']}),
         }
 
-    if args.logging:
-        makefile_template = 'Makefile_log.in'
-    else:
-        makefile_template = 'Makefile.in'
+    makefile_template = 'Makefile.in'
 
     util.process_in_file(os.path.join(conf.data_dir, makefile_template),
                          makefile, replacements, overwrite=True)

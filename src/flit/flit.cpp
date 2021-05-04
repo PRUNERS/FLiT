@@ -226,8 +226,8 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
   std::vector<std::string> allowedPrecisions = {
     "all", "float", "double", "long double"
   };
-  std::vector<std::string> eventLogEnabledOpts = { "--event-logging" };
-  std::vector<std::string> eventLogFileOpts  = { "--event-logging-file" };
+  std::vector<std::string> eventLogEnabledOpts = { "--event-logging-enabled" };
+  std::vector<std::string> eventLogFileOpts  = { "--event-log-file" };
   auto allowedTests = getKeys(getTests());
   allowedTests.emplace_back("all");
   for (int i = 1; i < argCount; i++) {
@@ -293,6 +293,9 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
     } else if (isIn(eventLogFileOpts, current)) {
       if (i+1 == argCount) {
         throw ParseException(current + " requires an argument");
+      }
+      if (!options.event_logging_enabled) {
+        throw ParseException(current + " requires logging enabled");
       }
       options.event_log_file = argList[++i];
     } else {
@@ -456,7 +459,7 @@ std::string usage(std::string progName) {
        "                  'double', 'long double', and 'all'.  The default\n"
        "                  is 'all' which runs all of them.\n"
        "\n";
-       // TODO: add tips for event logging options
+  	// TODO: add tips for event logging options
   return messanger.str();
 }
 

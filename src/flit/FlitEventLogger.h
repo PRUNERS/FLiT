@@ -50,14 +50,13 @@ public:
   /** Log event to the logging out stream
    *
    * @param name: name of the event
-   * @param is_start: True means it is the start of the event, false means that
-   *     it is the end of the event
+   * @param type: START if this is the start of the event, else STOP 
    * @param properties: additional payload properties to encode in the event
    *     log
    */
   void log_event(const std::string &name,
                  EventType type,
-                 const std::map<std::string, std::string> &properties);
+                 std::map<std::string, std::string> properties);
 
 private:
   std::ostream *_out = nullptr;

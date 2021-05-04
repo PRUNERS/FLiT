@@ -115,6 +115,17 @@ timing_loops = -1
 # will be kept.
 timing_repeats = 3
 
+# Set this to true to enable logging of flit events
+# This captures timing and details for each stage of a flit run
+logging = false
+
+# if this is a relative path, it is relative to the directory containing this
+# configuration file.
+log_dir = 'event_logs'
+
+# Prefix for logfile names.
+logfile = 'flit_event'
+
 # The tests can be run with MPI to test MPI applications
 # Warning: FLiT assumes tests are deterministic.  It is your responsability to
 #          ensure that your test will always produce equivalent results even

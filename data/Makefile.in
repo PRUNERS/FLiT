@@ -117,6 +117,7 @@ GT_OPTL         := {ground_truth_optl}
 GT_SWITCHES     := {ground_truth_switches}
 
 TEST_RUN_ARGS   := {test_run_args}
+EXTRA_RUN_ARGS  := {extra_run_args}
 
 # initalize some variables to be appended later
 CXXFLAGS        :=
@@ -139,7 +140,8 @@ DEV_OBJ_DIR     := $(OBJ_DIR)/dev
 GT_OBJ_DIR      := $(OBJ_DIR)/gt
 RESULTS_DIR     := results
 RUNBUILD_DIR    := bin
-LOG_DIR         ?= event_logs
+LOG_DIR         := {log_dir}
+LOGFILE_PREFIX  := {logfile}
 ALL_DIRS         = $(OBJ_DIR)
 ALL_DIRS        += $(DEV_OBJ_DIR)
 ALL_DIRS        += $(GT_OBJ_DIR)
@@ -259,27 +261,24 @@ MKDIR = \
 
 {compiler_switches}
 
-# LOGGING ?= false
-
-# ifeq ($(LOGGING),true)
-
 # Create log directory, and command for writing to log file
 # This file is processed with Python strings format() function,
 # so bracket escaping is necessary.
 comma := ,
-LOGFILE ?= $(LOG_DIR)/flit-makelog-$(shell hostname)-$$PPID.log
 
 # @param 1: Event name
-# @param 2: start or end of event
-# @param 3: message for event, as list of [ "key": "value"$(comma) ] json items.
-LOG_EVENT ?= echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
-            "name": "$1", "start_stop": "$2", "message": {{$3}}}}'
+# @param 2: type (start or stop) of logged event
+# @param 3: properties of event, as list of [ "key": "value"$(comma) ] json items.
+LOG_EVENT = echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
+            "name": "$1", "type": "$2", "properties": {{$3}}}}'
 
 # endif
 
 # If LOGFILE is nonempty, enable logging by executing the given make command
 # with an additional flag.
-ifneq ($(LOGFILE),)
+ifneq ($(LOGFILE_PREFIX),)
+
+LOGFILE := $(LOG_DIR)/$(LOGFILE_PREFIX)-makelog-$(shell hostname)-$$PPID.log
 
 $(LOG_DIR):
 	+$(MKDIR) $@
@@ -296,7 +295,7 @@ $(LOG_DIR):
 # contents to JSON strings only.
 # LOGGING=true should be added if above if is in...
 %: | $(LOG_DIR)
-	@$(MAKE) $@ --output-sync=line LOGFILE="" -f $(firstword $(MAKEFILE_LIST)) \
+	@$(MAKE) $@ --output-sync=line LOGFILE_PREFIX="" -f $(firstword $(MAKEFILE_LIST)) \
 		| tee -a $(LOGFILE) \
 		| grep -v "^\\{{"
 	@grep "^\\{{" $(LOGFILE) > tmp.log
@@ -361,7 +360,7 @@ $1: Makefile custom.mk
 	  R_CXXFLAGS="$5" \
 	  R_LDFLAGS="$6" \
 	  R_OBJ_DIR="$7"
-	@$(call LOG_EVENT,$8,end,"File": "$1"$(comma) "Compilation": "$(strip $2)_$(strip $4)_$(strip $3)"$(comma) \
+	@$(call LOG_EVENT,$8,stop,"File": "$1"$(comma) "Compilation": "$(strip $2)_$(strip $4)_$(strip $3)"$(comma) \
 	  "Flags": "$5"$(comma) "LinkFlags": "$6")
 endif
 endef
@@ -403,8 +402,8 @@ $(eval $(call REC_COMPILE_RULE,\
 $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
 	@$(call LOG_EVENT,Run Test Baseline,start,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
-	$(RUNWRAP) ./$(GT_TARGET) --output $(GT_OUT) --no-timing
-	@$(call LOG_EVENT,Run Test Baseline,end,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
+	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --output $(GT_OUT) --no-timing
+	@$(call LOG_EVENT,Run Test Baseline,stop,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
 
 #
 # Enter the recursion types
@@ -474,16 +473,16 @@ $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
 	@$(call LOG_EVENT,Run Test,start,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
 		"Test": "$@"$(comma) "Compilation": "$*")
-	$(RUNWRAP) ./$< $(TEST_RUN_ARGS) --output $@ || touch $@
-	@$(call LOG_EVENT,Run Test,end,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+	$(RUNWRAP) ./$< $(EXTRA_RUN_ARGS) $(TEST_RUN_ARGS) --output $@ || touch $@
+	@$(call LOG_EVENT,Run Test,stop,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
 		"Test": "$@"$(comma) "Compilation": "$*")
 
 %-out-comparison.csv: %-out $(GT_TARGET) $(GT_OUT)
 	@$(call color_out,CYAN,  $< -> $@)
 	@$(call LOG_EVENT,Compare Test,start,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
 		"Compilation": "$*")
-	$(RUNWRAP) ./$(GT_TARGET) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
-	@$(call LOG_EVENT,Compare Test,end,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
+	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
+	@$(call LOG_EVENT,Compare Test,stop,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
 		"Compilation": "$*")
 
 $(RESULTS_DIR):
@@ -509,7 +508,7 @@ define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
 	@# Log object file
-	@$(call LOG_EVENT,Compile,start,"File": "$1"$(comma) "Object File": "$(strip $2)"$(comma)\
+	@$(call LOG_EVENT,Compile,start,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
 		"Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
 	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
@@ -517,7 +516,7 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	  -DFLIT_OPTL='"$(strip $4)"' \
 	  -DFLIT_SWITCHES='"$(strip $5)"' \
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
-	@$(call LOG_EVENT,Compile,start,"File": "$1"$(comma) "Object File": "$(strip $2)"$(comma)\
+	@$(call LOG_EVENT,Compile,stop,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
 		"Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
 endef
 
@@ -544,7 +543,7 @@ $(R_TARGET): $(R_OBJ)
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
-	@$(call LOG_EVENT,Linking,end,"File": "$(R_OBJ)"$(comma) \
+	@$(call LOG_EVENT,Linking,stop,"File": "$(R_OBJ)"$(comma) \
 	  "Compiler": "$(R_COMPILER)"$(comma) "Optimization": "$(R_OPTL)"$(comma) \
 	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
 	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
