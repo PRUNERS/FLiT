@@ -154,12 +154,12 @@ class Event:
 
     def populate(self, values):
         self.name = values['name']
-        self.type = Event.START if values['start_stop'] == 'start' else Event.STOP
+        self.type = Event.START if values['type'] == 'start' else Event.STOP
         self.nanosecs_since_epoch = values['time']
         self.datetime = \
             datetime(1970, 1, 1) + \
             timedelta(milliseconds=self.nanosecs_since_epoch // 1000000)
-        self.properties = values['message']
+        self.properties = values['properties']
         self.duration = 0
         self.children = []
         self.parent = None
@@ -187,6 +187,12 @@ class Event:
         self.parent = root
         root.children.append(self)
         return
+   
+    def __eq__(self, other):
+        return (self.name == other.name and self.properties == other.properties)
+   
+    def __str__(self):
+        return '\n'.join('%s: %s' % item for item in vars(self).items())
         
 
 
@@ -223,12 +229,17 @@ def gen_event_hierarchy(events):
             unmatched.append(event_copy)
             event_copy.add_to_parent(root, unmatched)
         elif event.type == Event.STOP:
+            # TODO: Rethink how to do this :)
+            # Just ignoring these for now, but need to accomodate.
+            # Since equality is considered equivalent properties, this
+            # must be done for now.
+            if event.name == "TestRun":
+                disabled_test = event.properties.pop('disabled')
+            
             # match with something in the unmatched list
-            matching = [x for x in unmatched
-                        if event.name == x.name
-                        and event.properties == x.properties]
-            assert len(matching) != 0, "could not find a matching event"
-            assert len(matching) < 2, "multiple matches for this event found"
+            matching = [x for x in unmatched if event == x]
+            assert len(matching) != 0, "could not find a matching event:" + "\n" + str(event)
+            assert len(matching) < 2, "multiple matches for this event found:" + "\n" + str(event)
             matching = matching[0]
             unmatched.remove(matching)
             assert matching.parent is not None
@@ -241,6 +252,9 @@ def gen_event_hierarchy(events):
     assert len(unmatched) == 0
     # TODO: assert all nodes are DURATION nodes
     # sample idea: func = lambda l: reduce(and_,[a == 1 for a in l])
+    # broken for now.
+    # all_duration = lambda root: reduce(and_, [(root.type == Event.DURATION and all_duration(e)) for e in root.children])
+    # assert all_duration(root)
 
     return root
 
@@ -251,7 +265,7 @@ def tree_toString(root, indent=0, outString=''):
     '''
     prefix = ' '*indent + '|--'
     line = prefix + root.name + ' || ' + str(root.duration) + \
-            'ns || ' + str(root.properties)[:50] + '\n'
+            'ns || ' + str(root.properties) + '\n'
     #line = spaces + 'Event: ' + root.name + ' || Duration: ' + str(root.duration) \
     #        + 'ns' + ' || Properties: ' + str(root.properties)[:50] + '\n'
     outString += line
@@ -261,6 +275,55 @@ def tree_toString(root, indent=0, outString=''):
 
     return outString
 
+
+def main(arguments, prog=None):
+    'Main logic here'
+    parser = populate_parser()
+    if prog: parser.prog = prog
+    args = parser.parse_args(arguments)
+
+    # TODO: plotting, for each event need different test cases to compare
+    # TODO: fix log_dir setup; grab from toml?
+    # TODO: implement hierarchy parent/child relationship
+    # TODO: decide what to do about disabled tests
+    
+    log_dir = os.path.join(args.directory, 'event_logs')
+
+    with util.pushd(log_dir):
+        logfiles = glob.glob('*.log')
+        flit_events = parse_logs(logfiles)
+
+    event_root = gen_event_hierarchy(flit_events)
+    
+    print(tree_toString(event_root))
+
+    #if args.runtype == 'flit':
+    #    flit_crit_path(flit_events, log_dir)
+    #if args.runtype == 'bisect':
+    #    bisect_crit_path(bisect_events, log_dir)
+
+    #print critical path for now
+    # crit_events, event_times = crit_path(events)
+    # print('Critical events:')
+    # for event in crit_events:
+    #     print('Time:', event['time'], 'Event: ', event['name'] + str(event['message'], '\n')
+
+    # Plot total time for each log event.
+    # util.logplot(event_times, log_dir)
+
+    # Temp for now, just print the results to console...
+    # for key, val in event_times.items():
+    #     print('Event: {}, Elapsed: {}, Dict: {}'.format(key, 
+    #           val['stop_total']-val['start_total'], json.dumps(val)))
+
+    # Create text tree of critical path
+    # util.texttree(event_times, log_dir)
+
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
 
 
 
@@ -1001,46 +1064,3 @@ def tree_toString(root, indent=0, outString=''):
 #            fout.write(json.dumps(alias_map))
 #
 #    return bisect_graph_dict
-
-
-def main(arguments, prog=None):
-    'Main logic here'
-    parser = populate_parser()
-    if prog: parser.prog = prog
-    args = parser.parse_args(arguments)
-
-    # TODO: plotting, for each event need different test cases to compare
-    
-    log_dir = os.path.join(args.directory, 'event_logs')
-
-    with util.pushd(log_dir):
-        logfiles = glob.glob('flit_*.log')
-        flit_events = parse_logs(logfiles)
-
-    if args.runtype == 'flit':
-        flit_crit_path(flit_events, log_dir)
-    if args.runtype == 'bisect':
-        bisect_crit_path(bisect_events, log_dir)
-
-    #print critical path for now
-    # crit_events, event_times = crit_path(events)
-    # print('Critical events:')
-    # for event in crit_events:
-    #     print('Time:', event['time'], 'Event: ', event['name'] + str(event['message'], '\n')
-
-    # Plot total time for each log event.
-    # util.logplot(event_times, log_dir)
-
-    # Temp for now, just print the results to console...
-    # for key, val in event_times.items():
-    #     print('Event: {}, Elapsed: {}, Dict: {}'.format(key, 
-    #           val['stop_total']-val['start_total'], json.dumps(val)))
-
-    # Create text tree of critical path
-    # util.texttree(event_times, log_dir)
-
-    return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))

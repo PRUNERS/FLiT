@@ -445,7 +445,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $($2),\
   $($1_CXXFLAGS),\
   $($1_LDFLAGS),\
-  $(OBJ_DIR)/$1_$2_$3))
+  $(OBJ_DIR)/$1_$2_$3,RUNBUILD REC RULE))
 endef
 
 $(foreach c,$(COMPILERS),\

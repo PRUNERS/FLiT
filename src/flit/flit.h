@@ -104,6 +104,7 @@
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
+#include <unistd.h> // for hostname in logfile
 
 #include <cstring>
 
@@ -154,8 +155,8 @@ struct FlitOptions {
   std::vector<std::string> compareFiles; // files for compareMode
   std::string compareSuffix; // suffix to add when writing back compareFiles
 
-  bool event_logging_enabled = true;	// capture certain flit event details such as time and parameters
-  std::string event_log_file = "flitevents.log";	// file to store event logs
+  bool event_logging_enabled = false;	// capture certain flit event details such as time and parameters
+  std::string event_log_file_prefix = "flit_events";	// prefix of file to store event logs
 
   /** Give a string representation of this struct for printing purposes */
   std::string toString() const;
@@ -464,13 +465,22 @@ inline int runFlitTests(int argc, char* argv[]) {
   // TODO: add event_logging_enabled to FlitOptions
   // TODO: add event_log_file to FlitOptions
   // TODO: log events where they happen with flit::logger->log_event()
+  
+  // Generate filename
+  // need to make sure this PID solution is general purpose...
+  pid_t pid = getpid();
+  std::string logsuffix = ".log";
+  // TODO: Add thread / process id?
+  std::string logfile = options.event_log_file_prefix + "-cpplog-" 
+                      + FLIT_HOST + "-"+ std::to_string(pid) + logsuffix;
+  
   if (options.event_logging_enabled) {
     try {
       // TODO: This function in fsutil.h doesn't open to append
-      //flit::ofopen(log_out, options.event_log_file);
-      log_out.open(options.event_log_file, std::fstream::in | std::fstream::out | std::fstream::app);
+      //flit::ofopen(log_out, options.event_log_file_prefix);
+      log_out.open(logfile, std::fstream::in | std::fstream::out | std::fstream::app);
     } catch (std::ios::failure &ex) {
-      std::cerr << "Error: could not write to " << options.event_log_file << std::endl;
+      std::cerr << "Error: could not write to " << logfile << std::endl;
       return 1;
     }
     logger.set_stream(log_out);

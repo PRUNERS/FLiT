@@ -140,7 +140,7 @@ std::string FlitOptions::toString() const {
     << "  compareGtFile:  " << this->compareGtFile << "\n"
     << "  compareSuffix:  " << this->compareSuffix << "\n"
     << "  event_logging_enabled:  " << boolToString(this->event_logging_enabled) << "\n"
-    << "  event_log_file:  " << this->event_log_file << "\n"
+    << "  event_log_file_prefix:  " << this->event_log_file_prefix << "\n"
     << "  tests:\n";
   for (auto& test : this->tests) {
     messanger << "    " << test << "\n";
@@ -227,7 +227,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
     "all", "float", "double", "long double"
   };
   std::vector<std::string> eventLogEnabledOpts = { "--event-logging-enabled" };
-  std::vector<std::string> eventLogFileOpts  = { "--event-log-file" };
+  std::vector<std::string> eventLogFileOpts  = { "--event-log-file-prefix" };
   auto allowedTests = getKeys(getTests());
   allowedTests.emplace_back("all");
   for (int i = 1; i < argCount; i++) {
@@ -297,7 +297,7 @@ FlitOptions parseArguments(int argCount, char const* const* argList) {
       if (!options.event_logging_enabled) {
         throw ParseException(current + " requires logging enabled");
       }
-      options.event_log_file = argList[++i];
+      options.event_log_file_prefix = argList[++i];
     } else {
       options.tests.push_back(current);
       if (!options.compareMode && !isIn(allowedTests, removeIdxFromName(current))) {

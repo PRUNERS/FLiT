@@ -315,13 +315,13 @@ def create_makefile(args, makefile='Makefile'):
     log_dir = ''
     logfile_prefix = ''
     if projconf['run']['logging']:
-        file_suffix = '.log'
+        #file_suffix = '.log' #building filename in c++ now
         log_dir = str(projconf['run']['log_dir'])
         logfile_prefix = str(projconf['run']['logfile'])
-        logfile = os.path.join(log_dir, logfile_prefix + file_suffix)
+        logfile = os.path.join(log_dir, logfile_prefix)
         extra_run_args = ' '.join([
             '--event-logging-enabled',
-            '--event-log-file', logfile
+            '--event-log-file-prefix', logfile
             ])
         
     mpi_cxxflags = []
