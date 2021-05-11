@@ -378,7 +378,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
 
     # TODO: allow toggling of logging
     util.process_in_file(
-        os.path.join(conf.data_dir, 'Makefile_bisect_binary_log.in'),
+        os.path.join(conf.data_dir, 'Makefile_bisect_binary.in'),
         makepath,
         repl_copy,
         overwrite=True)
@@ -521,7 +521,8 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
         '-C', directory,
         '-f', makefilename,
         '-j', str(jobs),
-        'LOGGING=true',
+        #'LOG_DIR=event_logs',
+        #'LOGFILE_PREFIX=flitbisect',
         ]
     if target is not None:
         command.append(target)

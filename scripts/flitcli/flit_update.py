@@ -318,7 +318,7 @@ def create_makefile(args, makefile='Makefile'):
         #file_suffix = '.log' #building filename in c++ now
         log_dir = str(projconf['run']['log_dir'])
         logfile_prefix = str(projconf['run']['logfile'])
-        logfile = os.path.join(log_dir, logfile_prefix)
+        logfile = os.path.join(os.path.abspath(log_dir), logfile_prefix)
         extra_run_args = ' '.join([
             '--event-logging-enabled',
             '--event-log-file-prefix', logfile
@@ -347,7 +347,7 @@ def create_makefile(args, makefile='Makefile'):
         'flit_include_dir': conf.include_dir,
         'flit_data_dir': conf.data_dir,
         'flit_script_dir': conf.script_dir,
-        'log_dir': log_dir,
+        'log_dir': os.path.abspath(log_dir),
         'logfile': logfile_prefix,
         'flit_version': conf.version,
         'flit_src_dir': conf.src_dir,

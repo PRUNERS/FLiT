@@ -29,7 +29,8 @@ void FlitEventLogger::log_event(
 {
   // do nothing if we don't have anywhere to output
   if (_out == nullptr) {
-    throw std::runtime_error("no outfile for logging");
+    // TODO: Using this to toggle logging for now. Does this work well?
+    //throw std::runtime_error("no outfile for logging");
     return;
   }
 

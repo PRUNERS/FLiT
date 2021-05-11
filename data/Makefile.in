@@ -147,7 +147,6 @@ ALL_DIRS        += $(DEV_OBJ_DIR)
 ALL_DIRS        += $(GT_OBJ_DIR)
 ALL_DIRS        += $(RESULTS_DIR)
 ALL_DIRS        += $(RUNBUILD_DIR)
-ALL_DIRS        += $(LOG_DIR)
 
 # This flag specifies NOT to build position-independent executables
 CXXFLAGS        += -fno-pie
@@ -266,11 +265,15 @@ MKDIR = \
 # so bracket escaping is necessary.
 comma := ,
 
-# @param 1: Event name
-# @param 2: type (start or stop) of logged event
-# @param 3: properties of event, as list of [ "key": "value"$(comma) ] json items.
-LOG_EVENT = echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
-            "name": "$1", "type": "$2", "properties": {{$3}}}}'
+ifneq ($(LOG_DIR),)
+	# @param 1: Event name
+	# @param 2: type (start or stop) of logged event
+	# @param 3: properties of event, as list of [ "key": "value"$(comma) ] json items.
+	LOG_EVENT = echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
+	            "name": "$1", "type": "$2", "properties": {{$3}}}}'
+else	
+	LOG_EVENT =
+endif
 
 # endif
 
@@ -278,7 +281,7 @@ LOG_EVENT = echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
 # with an additional flag.
 ifneq ($(LOGFILE_PREFIX),)
 
-LOGFILE := $(LOG_DIR)/$(LOGFILE_PREFIX)-makelog-$(shell hostname)-$$PPID.log
+LOGFILE := $(LOG_DIR)/$(LOGFILE_PREFIX)-makelog-$(HOSTNAME)-$$PPID.log
 
 $(LOG_DIR):
 	+$(MKDIR) $@

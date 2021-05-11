@@ -93,7 +93,7 @@
 # Note: Makefile already includes custom.mk, so we don't need to explicitly
 #       include it here.
 -include Makefile
-
+	
 PRECISION        := {precision}
 TEST_CASE        := {test_case}
 
@@ -161,6 +161,12 @@ else
   GT_RESULT_TO_USE  := $(GT_OUT)
   GT_TARGET_TO_USE  := $(GT_TARGET)
 endif
+
+# If logging is enabled, base Makefile needs
+# to recall make command and sets LOGFILE_PREFIX
+# to blank; so skip this until it is blank.
+# See base FLiT Makefile for more info.
+ifeq ($(LOGFILE_PREFIX),)
 
 .PHONY: bisect
 bisect: $(BISECT_TARGET) $(BISECT_RESULT)
@@ -238,16 +244,16 @@ endif
 
 $(GT_LIB_OUT): $(GT_LIB_TARGET) | $(BISECT_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
-	$(RUNWRAP) ./$(GT_LIB_TARGET) --output $(GT_LIB_OUT) --no-timing \
+	$(RUNWRAP) ./$(GT_LIB_TARGET) $(EXTRA_RUN_ARGS) --output $(GT_LIB_OUT) --no-timing \
 	  --precision "$(PRECISION)" $(TEST_CASE)
 
 $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
-	$(RUNWRAP) ./$< --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
+	$(RUNWRAP) ./$< $(EXTRA_RUN_ARGS) --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
 
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_TO_USE)
 	@$(call color_out,CYAN,  $< -> $@)
-	$(RUNWRAP) ./$(GT_TARGET_TO_USE) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
+	$(RUNWRAP) ./$(GT_TARGET_TO_USE) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
 	  --suffix "-comparison.csv" $< -o /dev/null
 
 #################################
@@ -278,8 +284,14 @@ recursion-target: $(BISECT_TARGET)
 
 $(BISECT_TARGET): $(BISECT_OBJ) Makefile custom.mk | $(BISECT_DIR)
 	@$(call color_out,BLUE,  Creating $@)
+	@$(call LOG_EVENT,Bisect Link,start,"File": "$@"$(comma) "Files In": "$(BISECT_OBJ)"$(comma) \
+	  "Linker": "$(BISECT_LINK)"$(comma) "LDFlags": "$(LDFLAGS) $(BISECT_LDFLAGS)"$(comma) \
+	  "LDLibs": "$(LDLIBS)"$(comma) "CXXFlags": "$(CXXFLAGS) $(GT_CXXFLAGS)")
 	$(BISECT_LINK) $(CXXFLAGS) $(GT_CXXFLAGS) -o $@ $(BISECT_OBJ) $(LDFLAGS) \
 	  $(BISECT_LDFLAGS) $(LDLIBS)
+	@$(call LOG_EVENT,Bisect Link,stop,"File": "$@"$(comma) "Files In": "$(BISECT_OBJ)"$(comma) \
+	  "Linker": "$(BISECT_LINK)"$(comma) "LDFlags": "$(LDFLAGS) $(BISECT_LDFLAGS)"$(comma) \
+	  "LDLibs": "$(LDLIBS)"$(comma) "CXXFlags": "$(CXXFLAGS) $(GT_CXXFLAGS)")
 
 # compile BISECT_GT_OBJ
 $(foreach s,$(BISECT_GT_SRC),\
@@ -295,8 +307,13 @@ $(foreach s,$(BISECT_GT_SRC),\
 # Similar to COMPILE_RULE in Makefile but has an extra param
 # @param 8: directory where a copy may reside.  If this directory has the
 #   desired object file, then copy it instead of compiling one
+#
+# TODO: Could capture "compile" or "copy" property, but may need to move conditional to make. 
+#       Probably not necessary...
 define COMPILE_OR_COPY_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
+	@$(call LOG_EVENT,Bisect Compile,start,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
+	  "Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
 	if [ -f "$(strip $8)/$(notdir $2)" ]; then \
 	  $(call color_out,CYAN,  $8/$(notdir $2) -> $2); \
 	  ln -s $$(shell realpath --relative-to $(dir $2) $(strip $8)/$(notdir $2)) $2; \
@@ -309,6 +326,8 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	    -DFLIT_SWITCHES='"$(strip $5)"' \
 	    -DFLIT_FILENAME='"$(notdir $(strip $6))"'; \
 	fi
+	@$(call LOG_EVENT,Bisect Compile,stop,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
+	  "Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
 endef
 
 # compile TROUBLE_OBJ
@@ -354,11 +373,13 @@ $(foreach s,$(SPLIT_SRC),\
 define WEAKENED_COPY_RULE
 $2: $1 $3 $$(MAKEFILE) | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $1 -> $2)
+	@$(call LOG_EVENT,Weaken Symbols,start,"File": "$2"$(comma) "Source File": "$1"$(comma) "Symbols File": "$3")
 	if [ -s "$(strip $3)" ]; then \
 	  objcopy --weaken-symbols="$(strip $3)" $1 $2; \
 	else \
 	  cp $1 $2; \
 	fi
+	@$(call LOG_EVENT,Weaken Symbols,stop,"File": "$2"$(comma) "Source File": "$1"$(comma) "Symbols File": "$3")
 endef
 
 # weakened gt object files
@@ -376,3 +397,4 @@ $(foreach s,$(SPLIT_SRC),\
     $(SYMBOLS_DIR)/$(notdir $s)_gt_symbols_$(NUMBER).txt)))
 
 endif # of ifeq ($(R_TYPE),bisect-compile)
+endif # of ifeq ($(LOGFILE_PREFIX),)
