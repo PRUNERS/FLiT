@@ -678,7 +678,7 @@ def check_output(*args, **kwargs):
     return output.decode(encoding='utf-8')
 
 
-def get_log_string(event_name, start_stop, message=dict()):
+def get_log_string(event_name, event_type, properties=dict()):
     '''
     Creates a JSON string for writing to event logs.
     '''
@@ -687,8 +687,8 @@ def get_log_string(event_name, start_stop, message=dict()):
         'date': str(datetime.utcnow()), 
         'time': time.perf_counter_ns(),
         'name': event_name,
-        'start_stop': start_stop,
-        'message': message
+        'type': event_type,
+        'properties': properties
     }
 
     return json.dumps(event)
