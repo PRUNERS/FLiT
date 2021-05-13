@@ -140,6 +140,74 @@ class Event:
     STOP = 2
     DURATION = 3
 
+    # Events for tracing FLiT workflow must be
+    # defined here. 
+    #   Parent Name   : event name of dependency
+    #   Matching Props: list of properties which 
+    #                   determine match to parent
+    event_dependencies = {
+            "Baseline Compile": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Baseline Compile fPIC": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Compile": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Compile fPIC": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Bisect Compile": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Linking": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Bisect Link": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Make Run Tests Baseline": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Make Run Tests": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Run Test": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Bisect File": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Bisect Symbol": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "Weaken Symbols": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "TestInputLoop": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                },
+            "TestLoop": {
+                    "Parent Name"   : "root",
+                    "Matching Props": []
+                }
+        } # End event_dependencies
+    
     def __init__(self, values=None):
         if values:
             self.populate(values)
@@ -152,6 +220,7 @@ class Event:
             self.duration = 0
             self.children = []
 
+
     def populate(self, values):
         self.name = values['name']
         self.type = Event.START if values['type'] == 'start' else Event.STOP
@@ -163,6 +232,7 @@ class Event:
         self.duration = 0
         self.children = []
         self.parent = None
+
 
     @staticmethod
     def create_root_event(first_timestamp, last_timestamp):
@@ -182,18 +252,44 @@ class Event:
         root_event.parent = None
         return root_event
 
+
     def add_to_parent(self, root, possible_parents):
-        # raise NotImplementedError('add_to_parent() unimplemented')
-        self.parent = root
-        root.children.append(self)
+        '''
+        Attach this event to its parent with a two-way link.
+        
+        Logic depends on event: any event to be analyzed
+        in the FLiT workflow needs a separate case with its
+        logical dependencies defined in the event_dependencies
+        dictionary.
+        '''
+        # For now, throw exception if event is not defined
+        # in dependency list; later, just don't add to hierarchy.
+        try:
+            d = Event.event_dependencies[self.name]
+        except KeyError:
+            raise LookupError('event {} not defined in dependencies.'.format(self.name))
+       
+        if d['Parent Name'] == 'root':
+            parent = root
+        else:
+            parent = [x for x in possible_parents for prop in d['Matching Props']
+                if d['Parent Name'] == x.name and all(x.properties[prop] == self.properties[prop]) ]
+        
+            assert len(parent) != 0, "could not find a parent: " + self.name
+            assert len(parent) < 2, "multiple parent matches: " + self.name
+            parent = parent[0]
+        
+        self.parent = parent
+        parent.children.append(self)
+        
         return
+   
    
     def __eq__(self, other):
         return (self.name == other.name and self.properties == other.properties)
    
     def __str__(self):
         return '\n'.join('%s: %s' % item for item in vars(self).items())
-        
 
 
 def parse_logs(logfiles):
@@ -207,6 +303,7 @@ def parse_logs(logfiles):
             events.extend(Event(json.loads(line)) for line in fin)
     events.sort(key=lambda x: x.nanosecs_since_epoch)
     return events
+
 
 def gen_event_hierarchy(events):
     '''
@@ -229,13 +326,6 @@ def gen_event_hierarchy(events):
             unmatched.append(event_copy)
             event_copy.add_to_parent(root, unmatched)
         elif event.type == Event.STOP:
-            # TODO: Rethink how to do this :)
-            # Just ignoring these for now, but need to accomodate.
-            # Since equality is considered equivalent properties, this
-            # must be done for now.
-            if event.name == "TestRun":
-                disabled_test = event.properties.pop('disabled')
-            
             # match with something in the unmatched list
             matching = [x for x in unmatched if event == x]
             assert len(matching) != 0, "could not find a matching event:" + "\n" + str(event)

@@ -461,6 +461,7 @@ inline int runFlitTests(int argc, char* argv[]) {
 
   // setup event logging
   flit::FlitEventLogger logger; // create the logger singleton
+  logger.set_program_name(argv[0]);
   std::ofstream log_out;
   // TODO: add event_logging_enabled to FlitOptions
   // TODO: add event_log_file to FlitOptions

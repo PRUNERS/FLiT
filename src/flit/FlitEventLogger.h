@@ -44,6 +44,8 @@ public:
 
   FlitEventLogger();
 
+  void set_program_name(const std::string &name) { _prog_name = name; }
+
   /** Set where to log events */
   void set_stream(std::ostream &out) { _out = &out; }
 
@@ -59,6 +61,7 @@ public:
                  std::map<std::string, std::string> properties);
 
 private:
+  std::string   _prog_name;
   std::ostream *_out = nullptr;
 
 }; // end of class FlitEventLogger

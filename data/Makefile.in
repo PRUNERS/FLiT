@@ -353,8 +353,6 @@ define REC_COMPILE_RULE
 ifneq ($$(R_TARGET),$1)
 .PHONY: $1
 $1: Makefile custom.mk
-	@$(call LOG_EVENT,$8,start,"File": "$1"$(comma) "Compilation": "$(strip $2)_$(strip $4)_$(strip $3)"$(comma) \
-	  "Flags": "$5"$(comma) "LinkFlags": "$6")
 	+$$(REC_MAKE) R_TYPE=compile \
 	  R_TARGET="$1" \
 	  R_COMPILER="$2" \
@@ -363,8 +361,6 @@ $1: Makefile custom.mk
 	  R_CXXFLAGS="$5" \
 	  R_LDFLAGS="$6" \
 	  R_OBJ_DIR="$7"
-	@$(call LOG_EVENT,$8,stop,"File": "$1"$(comma) "Compilation": "$(strip $2)_$(strip $4)_$(strip $3)"$(comma) \
-	  "Flags": "$5"$(comma) "LinkFlags": "$6")
 endif
 endef
 
@@ -382,7 +378,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_SWITCHES),\
   $(GT_CXXFLAGS) -fPIC,\
   $(GT_LDFLAGS),\
-  $(GT_OBJ_DIR)-fpic,Baseline Compile))
+  $(GT_OBJ_DIR)-fpic))
 
 $(eval $(call REC_COMPILE_RULE,\
   $(DEV_TARGET),\
@@ -391,7 +387,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $(DEV_SWITCHES),\
   $(DEV_CXXFLAGS),\
   $(DEV_LDFLAGS),\
-  $(DEV_OBJ_DIR),Dev Compile))
+  $(DEV_OBJ_DIR)))
 
 $(eval $(call REC_COMPILE_RULE,\
   $(GT_TARGET),\
@@ -400,13 +396,13 @@ $(eval $(call REC_COMPILE_RULE,\
   $(GT_SWITCHES),\
   $(GT_CXXFLAGS),\
   $(GT_LDFLAGS),\
-  $(GT_OBJ_DIR),Baseline Compile))
+  $(GT_OBJ_DIR)))
 
 $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
-	@$(call LOG_EVENT,Run Test Baseline,start,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
+	@$(call LOG_EVENT,Make Run Tests Baseline,start,"File": "$(GT_OUT)")
 	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --output $(GT_OUT) --no-timing
-	@$(call LOG_EVENT,Run Test Baseline,stop,"File": "$(GT_OUT)"$(comma) "Test": "$(RUNWRAP)")
+	@$(call LOG_EVENT,Make Run Tests Baseline,stop,"File": "$(GT_OUT)")
 
 #
 # Enter the recursion types
@@ -448,7 +444,7 @@ $(eval $(call REC_COMPILE_RULE,\
   $($2),\
   $($1_CXXFLAGS),\
   $($1_LDFLAGS),\
-  $(OBJ_DIR)/$1_$2_$3,RUNBUILD REC RULE))
+  $(OBJ_DIR)/$1_$2_$3))
 endef
 
 $(foreach c,$(COMPILERS),\
@@ -474,10 +470,10 @@ recursion-target: $(ALL_RESULTS)
 
 $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
-	@$(call LOG_EVENT,Run Test,start,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+	@$(call LOG_EVENT,Make Run Tests,start,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
 		"Test": "$@"$(comma) "Compilation": "$*")
 	$(RUNWRAP) ./$< $(EXTRA_RUN_ARGS) $(TEST_RUN_ARGS) --output $@ || touch $@
-	@$(call LOG_EVENT,Run Test,stop,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+	@$(call LOG_EVENT,Make Run Tests,stop,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
 		"Test": "$@"$(comma) "Compilation": "$*")
 
 %-out-comparison.csv: %-out $(GT_TARGET) $(GT_OUT)
@@ -542,7 +538,7 @@ $(R_TARGET): $(R_OBJ)
 	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
 	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
 	  "LDFLAGS": "$(LDFLAGS) $(R_LDFLAGS)"$(comma) \
-	  "Compilation": "$(strip $(R_COMPILER))_$(strip $(R_SWITCHES))_$(strip $(R_OPTL))")
+	  "Compilation": "$(notdir $(R_TARGET))")
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
@@ -551,7 +547,7 @@ $(R_TARGET): $(R_OBJ)
 	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
 	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
 	  "LDFLAGS": "$(LDFLAGS) $(R_LDFLAGS)"$(comma) \
-	  "Compilation": "$(strip $(R_COMPILER))_$(strip $(R_SWITCHES))_$(strip $(R_OPTL))")
+	  "Compilation": "$(notdir $(R_TARGET))")
 endif
 
 $(R_OBJ_DIR):

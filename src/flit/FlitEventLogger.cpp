@@ -15,7 +15,7 @@ namespace flit {
 
 FlitEventLogger *logger = nullptr;
 
-FlitEventLogger::FlitEventLogger() : _out(nullptr) {
+FlitEventLogger::FlitEventLogger() : _prog_name(), _out(nullptr) {
   if (logger != nullptr) {
     throw std::runtime_error("FlitEventLogger: can only make one");
   }
@@ -40,11 +40,12 @@ void FlitEventLogger::log_event(
   }
 
   // Add properties to all events.
-  properties["Host"]     = FLIT_HOST;
-  properties["Compiler"] = FLIT_COMPILER;
-  properties["Optl"]     = FLIT_OPTL;
-  properties["Switches"] = FLIT_SWITCHES;
-  properties["Filename"] = FLIT_FILENAME;
+  properties["Program Name"] = _prog_name;
+  properties["Host"]         = FLIT_HOST;
+  properties["Compiler"]     = FLIT_COMPILER;
+  properties["Optl"]         = FLIT_OPTL;
+  properties["Switches"]     = FLIT_SWITCHES;
+  properties["Filename"]     = FLIT_FILENAME;
 
   // Convert properties to a json object
   std::ostringstream prop_builder;

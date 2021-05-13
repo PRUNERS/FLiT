@@ -217,18 +217,26 @@ public:
     int runcount = 0;
     runner = [this, &runcount, &input_index] (const std::vector<T>& runInput) {
       runcount++;
-      flit::logger->log_event("TestRun", flit::FlitEventLogger::START,
+      flit::logger->log_event("Run Test", flit::FlitEventLogger::START,
                               {{"test-name", id},
                                {"input-index", std::to_string(input_index)},
-                               {"precision", typeid(T).name()}});
+                               {"precision", typeid(T).name()},
+                               {"runcount", std::to_string(runcount)}});
+      struct EndOfScopeFuncCall {
+        std::function<void(void)> f;
+        EndOfScopeFuncCall(const std::function<void(void)> &func) : f(func) {}
+        ~EndOfScopeFuncCall() { f(); }
+      };
+      EndOfScopeFuncCall eos_log (
+          [this, &input_index, &runcount] () {
+            flit::logger->log_event(
+                "Run Test", flit::FlitEventLogger::STOP,
+                {{"test-name", id},
+                 {"input-index", std::to_string(input_index)},
+                 {"precision", typeid(T).name()},
+                 {"runcount", std::to_string(runcount)}});
+          });
       auto retval = this->run_impl(runInput);
-      flit::logger->log_event("TestRun", flit::FlitEventLogger::STOP,
-                              {{"test-name", id},
-                               {"input-index", std::to_string(input_index)},
-                               {"disabled",
-                                (retval.type() == Variant::Type::None) ?
-                                   "true" : "false"},
-                               {"precision", typeid(T).name()}});
       return retval;
     };
 
