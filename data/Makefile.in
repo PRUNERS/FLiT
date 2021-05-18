@@ -400,9 +400,9 @@ $(eval $(call REC_COMPILE_RULE,\
 
 $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
-	@$(call LOG_EVENT,Make Run Tests Baseline,start,"File": "$(GT_OUT)")
+	@$(call LOG_EVENT,Make Run Tests Baseline,start,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)")
 	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --output $(GT_OUT) --no-timing
-	@$(call LOG_EVENT,Make Run Tests Baseline,stop,"File": "$(GT_OUT)")
+	@$(call LOG_EVENT,Make Run Tests Baseline,stop,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)")
 
 #
 # Enter the recursion types
@@ -470,18 +470,18 @@ recursion-target: $(ALL_RESULTS)
 
 $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
-	@$(call LOG_EVENT,Make Run Tests,start,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
-		"Test": "$@"$(comma) "Compilation": "$*")
+	@$(call LOG_EVENT,Make Run Tests,start,"File": "$<"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+		"Output": "$@"$(comma) "Compilation": "$*")
 	$(RUNWRAP) ./$< $(EXTRA_RUN_ARGS) $(TEST_RUN_ARGS) --output $@ || touch $@
-	@$(call LOG_EVENT,Make Run Tests,stop,"File": "$@"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
-		"Test": "$@"$(comma) "Compilation": "$*")
+	@$(call LOG_EVENT,Make Run Tests,stop,"File": "$<"$(comma) "Args": "$(TEST_RUN_ARGS)"$(comma) \
+		"Output": "$@"$(comma) "Compilation": "$*")
 
 %-out-comparison.csv: %-out $(GT_TARGET) $(GT_OUT)
 	@$(call color_out,CYAN,  $< -> $@)
-	@$(call LOG_EVENT,Compare Test,start,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
+	@$(call LOG_EVENT,Make Compare Tests,start,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)"$(comma) \
 		"Compilation": "$*")
 	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
-	@$(call LOG_EVENT,Compare Test,stop,"File": "$(GT_OUT)"$(comma) "Test": "$(GT_OUT)"$(comma) \
+	@$(call LOG_EVENT,Make Compare Tests,stop,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)"$(comma) \
 		"Compilation": "$*")
 
 $(RESULTS_DIR):
@@ -508,7 +508,7 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
 	@# Log object file
 	@$(call LOG_EVENT,Compile,start,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
-		"Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
+		"Compiler": "$(strip $3)"$(comma) "Switches": "$(strip $5)"$(comma) "Optl":"$(strip $4)")
 	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
@@ -516,7 +516,7 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	  -DFLIT_SWITCHES='"$(strip $5)"' \
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
 	@$(call LOG_EVENT,Compile,stop,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
-		"Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
+		"Compiler": "$(strip $3)"$(comma) "Switches": "$(strip $5)"$(comma) "Optl":"$(strip $4)")
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))
@@ -533,8 +533,8 @@ $(R_TARGET): $(R_OBJ)
 else
 $(R_TARGET): $(R_OBJ)
 	@$(call color_out,BLUE,  Creating $(R_TARGET))
-	@$(call LOG_EVENT,Linking,start,"File": "$(R_OBJ)"$(comma) \
-	  "Compiler": "$(R_COMPILER)"$(comma) "Optimization": "$(R_OPTL)"$(comma) \
+	@$(call LOG_EVENT,Linking,start,"File": "$@"$(comma) "Files In": "$(R_OBJ)"$(comma) \
+	  "Compiler": "$(R_COMPILER)"$(comma) "Optl": "$(R_OPTL)"$(comma) \
 	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
 	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
 	  "LDFLAGS": "$(LDFLAGS) $(R_LDFLAGS)"$(comma) \
@@ -543,7 +543,7 @@ $(R_TARGET): $(R_OBJ)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
 	@$(call LOG_EVENT,Linking,stop,"File": "$(R_OBJ)"$(comma) \
-	  "Compiler": "$(R_COMPILER)"$(comma) "Optimization": "$(R_OPTL)"$(comma) \
+	  "Compiler": "$(R_COMPILER)"$(comma) "Optl": "$(R_OPTL)"$(comma) \
 	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
 	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
 	  "LDFLAGS": "$(LDFLAGS) $(R_LDFLAGS)"$(comma) \

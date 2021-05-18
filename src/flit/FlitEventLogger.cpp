@@ -62,8 +62,9 @@ void FlitEventLogger::log_event(
   std::string prop_json = prop_builder.str();
 
   // Setup clock
-  std::chrono::duration<int64_t, std::nano> nanos_since_epoch(
-      std::chrono::steady_clock::now().time_since_epoch());
+  // TODO: Why does below not work?
+  //std::chrono::duration<uint64_t, std::nano> nanos_since_epoch(
+  //    std::chrono::steady_clock::now().time_since_epoch());
   auto tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
   // Construct full event json object
@@ -71,7 +72,9 @@ void FlitEventLogger::log_event(
   outref << "{"
          << "\"date\":"        << "\""
            << std::put_time(std::localtime(&tt), "%a %d %b %Y %r %Z") << "\","
-         << "\"time\":"        << nanos_since_epoch.count() << ","
+         //<< "\"time\":"        << nanos_since_epoch.count() << ","
+         << "\"time\":"        << std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::system_clock::now().time_since_epoch()).count() << ","
          << "\"name\":\""      << name << "\","
          << "\"type\":"  << '"'
            << (type == START ? "start" : "stop")

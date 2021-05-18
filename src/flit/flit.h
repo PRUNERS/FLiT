@@ -229,12 +229,29 @@ std::vector<std::string> calculateMissingComparisons(const FlitOptions &opt);
 class TestResultMap {
 public:
   using key_type = std::pair<std::string, std::string>;
+  using metadata_type = std::unordered_map<std::string, std::string>;
 
   void loadfile(const std::string &filename) {
     std::ifstream resultfile;
     flit::ifopen(resultfile, filename);
     auto parsed = parseResults(resultfile);
     this->extend(parsed, filename);
+    // one metadata object
+    // TODO: map of filename -> metadata
+    // TODO: map of testresult -> filename (i.e., reverse of m_filemap)
+    this->mapMetadata(filename);
+    this->mapFilenames(parsed, filename);
+    
+  }
+
+  metadata_type* metadata(const std::string &filename) {
+    return m_metadataMap.at(filename);
+  }
+
+  metadata_type* metadata(const TestResult &result) {
+    std::string filename = m_testToFileMap.at(
+        key_type{result.name(), result.precision()});
+    return this->metadata(filename);
   }
 
   std::vector<TestResult*> operator[](
@@ -272,6 +289,32 @@ private:
     }
   }
 
+  void mapMetadata(const std::string &filename)
+  {
+    metadata_type md;
+    
+    std::ifstream fin;
+    try {
+      flit::ifopen(fin, filename);
+    } catch (std::ios_base::failure &ex) {
+      std::cerr << "Error: file does not exist: "
+                << filename << std::endl;
+    }
+    md = parseMetadata(fin);
+    
+    m_metadataMap.emplace(filename,&md);
+  }
+  
+  void mapFilenames(const std::vector<TestResult> &results,
+                    const std::string &filename)
+  {
+    for (auto& result : results) {
+      m_testToFileMap.emplace(
+          key_type{result.name(), result.precision()},
+          filename);
+    }
+  }
+  
 private:
   std::unordered_multimap<
     std::pair<std::string, std::string>,
@@ -281,6 +324,16 @@ private:
 
   // filename -> TestResult
   std::unordered_multimap<std::string, TestResult> m_filemap;
+
+  // (testname, precision) -> filename
+  std::unordered_map<
+    std::pair<std::string, std::string>,
+    std::string,
+    pair_hash<std::string, std::string>
+    > m_testToFileMap;
+  
+  // filename -> metadata*
+  std::unordered_map<std::string, metadata_type*> m_metadataMap;
 };
 
 inline void outputResults (
@@ -574,10 +627,11 @@ inline int runFlitTests(int argc, char* argv[]) {
       auto toCompare = comparisonResults[{gtres.name(), gtres.precision()}];
 
       for (TestResult* compResult : toCompare) {
+        auto &metadata = *comparisonResults.metadata(*compResult);
         // Error: std::invalid_argument "No column named 'host'"
-	//   in parseMetadata
-	//      
-	//std::unordered_map<std::string, std::string> metadata;
+	      //   in parseMetadata
+	      //      
+	      //std::unordered_map<std::string, std::string> metadata;
         //{
         //  std::ifstream fin;
         //  try {
@@ -589,41 +643,49 @@ inline int runFlitTests(int argc, char* argv[]) {
         //  }
         //  metadata = parseMetadata(fin);
         //}
-        //flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::START,
-        //                        {{"test-name", gtres.name()},
-        //                         {"other-precision", gtres.precision()},
-        //                         {"other-host"     , metadata["host"    ]},
-        //                         {"other-compiler" , metadata["compiler"]},
-        //                         {"other-optl"     , metadata["optl"    ]},
-        //                         {"other-switches" , metadata["switches"]},
-        //                        });
+        flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::START,
+                                {{"test-name", gtres.name()},
+                                 {"other-precision", gtres.precision()},
+                                 {"other-host"     , metadata["host"]},
+                                 {"other-compiler" , metadata["compiler"]},
+                                 {"other-optl"     , metadata["optl"]},
+                                 {"other-switches" , metadata["switches"]},
+                                 {"executable-name" , metadata["file"]},
+                                 //{"other-host"     , metadata["hostname"]},
+                                 //{"other-compiler" , metadata["compiler"]},
+                                 //{"other-optl"     , metadata["optimization_levels"]},
+                                 //{"other-switches" , metadata["switches"]},
+                                 //{"executable-name" , metadata["executableFilename"]},
+                                });
         auto compVal = runComparison(factory, gtres, *compResult);
-        //flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::STOP,
-        //                        {{"test-name", gtres.name()},
-        //                         {"other-precision", gtres.precision()},
-        //                         {"other-host"     , metadata["host"    ]},
-        //                         {"other-compiler" , metadata["compiler"]},
-        //                         {"other-optl"     , metadata["optl"    ]},
-        //                         {"other-switches" , metadata["switches"]},
-        //                        });
+        flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::STOP,
+                                {{"test-name", gtres.name()},
+                                 {"other-precision", gtres.precision()},
+                                 {"other-host"     , metadata["host"]},
+                                 {"other-compiler" , metadata["compiler"]},
+                                 {"other-optl"     , metadata["optl"]},
+                                 {"other-switches" , metadata["switches"]},
+                                 {"executable-name" , metadata["file"]},
+                                });
         compResult->set_comparison(compVal);
       }
     }
 
     // save back to the compare files with compare value set
     for (auto fname : options.compareFiles) {
+      auto &metadata = *comparisonResults.metadata(fname);
       // read in the metadata to use in creating the file again
-      std::unordered_map<std::string, std::string> metadata;
-      {
-        std::ifstream fin;
-        try {
-          flit::ifopen(fin, fname);
-        } catch (std::ios_base::failure &ex) {
-          std::cerr << "Error: file does not exist: " << fname << std::endl;
-          return 1;
-        }
-        metadata = parseMetadata(fin);
-      }
+      //std::unordered_map<std::string, std::string> metadata;
+      //{
+      //  std::ifstream fin;
+      //  try {
+      //    flit::ifopen(fin, fname);
+      //  } catch (std::ios_base::failure &ex) {
+      //    std::cerr << "Error: file does not exist: " << fname << std::endl;
+      //    return 1;
+      //  }
+      //  metadata = parseMetadata(fin);
+      //}
 
       // get all results from this file
       auto fileresultPtrs = comparisonResults.fileresults(fname);

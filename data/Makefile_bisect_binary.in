@@ -244,17 +244,25 @@ endif
 
 $(GT_LIB_OUT): $(GT_LIB_TARGET) | $(BISECT_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
+	@$(call LOG_EVENT,Bisect Run Tests Baseline Lib,start,"File": "$(GT_LIB_TARGET)"$(comma) "Output": "$@" )
 	$(RUNWRAP) ./$(GT_LIB_TARGET) $(EXTRA_RUN_ARGS) --output $(GT_LIB_OUT) --no-timing \
 	  --precision "$(PRECISION)" $(TEST_CASE)
+	@$(call LOG_EVENT,Bisect Run Tests Baseline Lib,stop,"File": "$(GT_LIB_TARGET)"$(comma) "Output": "$@" )
 
 $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
 	@$(call color_out,CYAN,  $< -> $@)
+	@$(call LOG_EVENT,Make Bisect Run Tests,start,"File": "$(BISECT_TARGET)"$(comma) "Output": "$@" )
 	$(RUNWRAP) ./$< $(EXTRA_RUN_ARGS) --precision "$(PRECISION)" --output $@ $(TEST_CASE) --no-timing
+	@$(call LOG_EVENT,Make Bisect Run Tests,stop,"File": "$(BISECT_TARGET)"$(comma) "Output": "$@" )
 
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_TO_USE)
 	@$(call color_out,CYAN,  $< -> $@)
+	@$(call LOG_EVENT,Make Bisect Compare Tests,start,"File": "$(GT_TARGET_TO_USE)"$(comma) \
+		"Results Compared": "$(GT_RESULT_TO_USE)"$(comma) "Output": "$@" )
 	$(RUNWRAP) ./$(GT_TARGET_TO_USE) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
 	  --suffix "-comparison.csv" $< -o /dev/null
+	@$(call LOG_EVENT,Make Bisect Compare Tests,stop,"File": "$(GT_TARGET_TO_USE)"$(comma) \
+		"Results Compared": "$(GT_RESULT_TO_USE)"$(comma) "Output": "$@" )
 
 #################################
 # *** R_TYPE=bisect-compile *** #
@@ -313,7 +321,7 @@ $(foreach s,$(BISECT_GT_SRC),\
 define COMPILE_OR_COPY_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call LOG_EVENT,Bisect Compile,start,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
-	  "Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
+		"Compiler": "$(strip $3)"$(comma) "Switches": "$(strip $5)"$(comma) "Optl":"$(strip $4)")
 	if [ -f "$(strip $8)/$(notdir $2)" ]; then \
 	  $(call color_out,CYAN,  $8/$(notdir $2) -> $2); \
 	  ln -s $$(shell realpath --relative-to $(dir $2) $(strip $8)/$(notdir $2)) $2; \
@@ -327,7 +335,7 @@ $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	    -DFLIT_FILENAME='"$(notdir $(strip $6))"'; \
 	fi
 	@$(call LOG_EVENT,Bisect Compile,stop,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
-	  "Compilation": "$(strip $3)_$(strip $5)_$(strip $4)")
+		"Compiler": "$(strip $3)"$(comma) "Switches": "$(strip $5)"$(comma) "Optl":"$(strip $4)")
 endef
 
 # compile TROUBLE_OBJ

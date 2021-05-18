@@ -90,7 +90,9 @@ from operator import and_
 from functools import reduce
 from io import StringIO
 from datetime import timedelta, datetime
+from collections import defaultdict
 
+import networkx as nx
 import pygraphviz as pgv
 
 import flitutil as util
@@ -146,65 +148,74 @@ class Event:
     #   Matching Props: list of properties which 
     #                   determine match to parent
     event_dependencies = {
+            "Undefined": {
+                    "Parent Name"   : ["root"],
+                    "Matching": None
+                },
             "Baseline Compile": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["root"],
+                    "Matching": None
                 },
             "Baseline Compile fPIC": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["root"],
+                    "Matching": None
                 },
             "Compile": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["root"],
+                    "Matching": None
                 },
             "Compile fPIC": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["root"],
+                    "Matching": None
                 },
             "Bisect Compile": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["root"],
+                    "Matching": None
                 },
             "Linking": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
+                                        "Compile fPIC", "Baseline Compile fPIC"],
+                    "Matching":
+                        lambda s, p: p.properties['Object File'] in s.properties['Files In'].split()
+                            and s.properties['Compiler'] == p.properties['Compiler']
+                            and s.properties['Optl'] == p.properties['Optl']
+                            and s.properties['Switches'] == p.properties['Switches']
                 },
             "Bisect Link": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "Make Run Tests Baseline": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "Make Run Tests": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "Run Test": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "Bisect File": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "Bisect Symbol": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "Weaken Symbols": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "TestInputLoop": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 },
             "TestLoop": {
-                    "Parent Name"   : "root",
-                    "Matching Props": []
+                    "Parent Name"   : ["Undefined"],
+                    "Matching": None
                 }
         } # End event_dependencies
     
@@ -250,6 +261,14 @@ class Event:
         root_event.children = []
         root_event.properties = {}
         root_event.parent = None
+       
+        # create a placeholder parent for events with
+        # undefined relationships
+        undef = Event()
+        undef.name = 'Undefined'
+        undef.parent = root_event
+        root_event.children.append(undef)
+       
         return root_event
 
 
@@ -262,22 +281,23 @@ class Event:
         logical dependencies defined in the event_dependencies
         dictionary.
         '''
-        # For now, throw exception if event is not defined
-        # in dependency list; later, just don't add to hierarchy.
-        try:
-            d = Event.event_dependencies[self.name]
-        except KeyError:
-            raise LookupError('event {} not defined in dependencies.'.format(self.name))
+        d = Event.event_dependencies.get(self.name, {'Parent Name': ['Undefined'], 'Matching': None})
        
-        if d['Parent Name'] == 'root':
+        if 'root' in d['Parent Name']:
             parent = root
-        else:
-            parent = [x for x in possible_parents for prop in d['Matching Props']
-                if d['Parent Name'] == x.name and all(x.properties[prop] == self.properties[prop]) ]
-        
+        elif 'Undefined' in d['Parent Name']:
+            parent = [x for x in root.children if x.name == 'Undefined']
             assert len(parent) != 0, "could not find a parent: " + self.name
             assert len(parent) < 2, "multiple parent matches: " + self.name
             parent = parent[0]
+        else:
+            parent = [x for p in d['Parent Name'] for x in possible_parents[p] if d['Matching'](self, x)]
+            assert len(parent) != 0, "could not find a parent: " + self.name
+            assert len(parent) < 2, "multiple parent matches: " + self.name
+            
+            parent = parent[0]
+            possible_parents.remove[parent]
+            
         
         self.parent = parent
         parent.children.append(self)
@@ -313,18 +333,22 @@ def gen_event_hierarchy(events):
     events.sort(key=lambda x: x.nanosecs_since_epoch)
     root = Event.create_root_event(events[0].nanosecs_since_epoch,
                                    events[-1].nanosecs_since_epoch)
+    
     # TODO: we depend here on sequential consistency.  If we move to multiple
     # TODO: hosts, then this needs to be revisited, perhaps using Lamport
     # TODO: clocks.
 
     # The beginning and ending events match both in name and in properties exactly.
     unmatched = []
+    # Group all events by name for parent identification
+    event_dict = defaultdict(lambda: [])
     for event in events:
         assert event.type != Event.DURATION
         if event.type == Event.START:
             event_copy = copy.copy(event)
             unmatched.append(event_copy)
-            event_copy.add_to_parent(root, unmatched)
+            event_dict[event_copy.name].append(event_copy)
+            event_copy.add_to_parent(root, event_dict)
         elif event.type == Event.STOP:
             # match with something in the unmatched list
             matching = [x for x in unmatched if event == x]
