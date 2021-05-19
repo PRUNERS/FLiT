@@ -144,6 +144,8 @@ class Event:
     START = 1
     STOP = 2
     DURATION = 3
+    
+    __eventCount = 0
 
     # Events for tracing FLiT workflow must be
     # defined here. 
@@ -179,26 +181,46 @@ class Event:
                     "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
                                         "Compile fPIC", "Baseline Compile fPIC"],
                     "Matching":
-                        lambda s, p: p.properties['Object File'] in s.properties['Files In'].split()
+                        lambda s, p: 
+                            p.properties['Object File'] in s.properties['Files In'].split()
                             and s.properties['Compiler'] == p.properties['Compiler']
                             and s.properties['Optl'] == p.properties['Optl']
                             and s.properties['Switches'] == p.properties['Switches']
                 },
             "Bisect Link": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
+                    "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
+                                        "Compile fPIC", "Baseline Compile fPIC"],
+                    "Matching":
+                        lambda s, p: 
+                            p.properties['Object File'] in s.properties['Files In'].split()
+                            and s.properties['Compiler'] == p.properties['Compiler']
+                            and s.properties['Optl'] == p.properties['Optl']
+                            and s.properties['Switches'] == p.properties['Switches']
                 },
             "Make Run Tests Baseline": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
+                    "Parent Name"   : ["Linking", "Bisect Link"],
+                    "Matching":
+                        lambda s, p: s.properties['File'] == p.properties['Compilation']
                 },
             "Make Run Tests": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
+                    "Parent Name"   : ["Linking", "Bisect Link"],
+                    "Matching":
+                        lambda s, p: s.properties['Compilation'] == p.properties['Compilation']
                 },
-            "Run Test": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
+            "Run Test": { # Should link in testloops here probably?
+                    "Parent Name"   : ["Make Run Tests", "Make Run Tests Baseline"],
+                    "Matching":
+                        lambda s, p: s.properties['Filename'] == p.properties['Compilation']
+                },
+            "Make Compare Tests": {
+                    "Parent Name"   : ["Run Test"],
+                    "Matching":
+                        lambda s, p: s.properties['Compilation'] == p.properties['Filename']
+                },
+            "TestResultCompare": {
+                    "Parent Name"   : ["Make Compare Tests"],
+                    "Matching":
+                        lambda s, p: s.properties['executable-name'] == p.properties['Compilation']
                 },
             "Bisect File": {
                     "Parent Name"   : ["Undefined"],
@@ -223,25 +245,100 @@ class Event:
         } # End event_dependencies
     
     def __init__(self, values=None):
+        self._id = Event.__eventCount
+        Event.__eventCount += 1
+        
         if values:
             self.populate(values)
         else:
-            self.name = ''
-            self.type = Event.DURATION
-            self.nanosecs_since_epoch = 0
-            self.datetime = datetime(1970, 1, 1)
-            self.properties = {}
-
+            self._name = ''
+            self._label = ''
+            self._type = Event.DURATION
+            self._nanosecs_since_epoch = 0
+            self._datetime = datetime(1970, 1, 1)
+            self._properties = {}
+            self._duration = 0
 
     def populate(self, values):
         self.name = values['name']
-        self.type = Event.START if values['type'] == 'start' else Event.STOP
-        self.nanosecs_since_epoch = values['time']
-        self.datetime = \
+        self._type = Event.START if values['type'] == 'start' else Event.STOP
+        self._nanosecs_since_epoch = values['time']
+        self._datetime = \
             datetime(1970, 1, 1) + \
             timedelta(milliseconds=self.nanosecs_since_epoch // 1000000)
-        self.properties = values['properties']
-        self.duration = 0
+        self._properties = values['properties']
+        self._duration = 0
+
+
+    @property
+    def id(self):
+        return self._id
+   
+   
+    @property
+    def name(self):
+        return self._name
+   
+   
+    @name.setter
+    def name(self, newName):
+        self._name = newName
+        self._label = str(self._id) + ' - ' + newName
+
+    
+    @property
+    def label(self):
+        return self._label
+
+
+    @property
+    def type(self):
+        return self._type
+   
+   
+    @type.setter
+    def type(self, newType):
+        self._type = newType
+
+
+    @property
+    def nanosecs_since_epoch(self):
+        return self._nanosecs_since_epoch
+   
+   
+    @nanosecs_since_epoch.setter
+    def nanosecs_since_epoch(self, newNano):
+        self._nanosecs_since_epoch = newNano
+
+
+    @property
+    def datetime(self):
+        return self._datetime
+   
+   
+    @datetime.setter
+    def datetime(self, newDate):
+        self._datetime = newDate
+
+
+    @property
+    def properties(self):
+        return self._properties
+   
+   
+    @properties.setter
+    def properties(self, newProps):
+        self._properties = newProps
+
+
+    @property
+    def duration(self):
+        return self._duration
+   
+   
+    @duration.setter
+    def duration(self, newDuration):
+        self._duration = newDuration
 
 
     @staticmethod
@@ -258,6 +355,7 @@ class Event:
             datetime(1970, 1, 1) + timedelta(milliseconds=first_timestamp // 1000000)
         root_event.nanosecs_since_epoch = first_timestamp
         root_event.properties = {}
+        
        
         # create a placeholder parent for events with
         # undefined relationships
@@ -279,35 +377,44 @@ class Event:
         d = Event.event_dependencies.get(self.name, {'Parent Name': ['Undefined'], 'Matching': None})
        
         if 'root' in d['Parent Name']:
-            elist = [(root, self, self.duration)]
+            parents = [root]
+            edgeList = [(root.label, self.label, self.duration)]
         elif 'Undefined' in d['Parent Name']:
-            elist = [(undef, self, self.duration)]
+            parents = [undef]
+            edgeList = [(undef.label, self.label, self.duration)]
         else:
-            parents = [x for x in list(G.nodes) if x.name in d['Parent Name'] and d['Matching'](self, x)]
+            parents = [G.nodes[l]['event'] for l in list(G.nodes) if
+                    G.nodes[l]['event'].name in d['Parent Name'] 
+                    and d['Matching'](self, G.nodes[l]['event'])]
             assert len(parents) > 0, "could not find a parent: " + self.name
             
-            elist = [(p, self, self.duration) for p in parents]
-      
-        assert len(elist) > 0, "could not add to graph: " + self.name
-        G.add_weighted_edges_from(elist)
-        
+            edgeList = [(p.label, self.label, self.duration) for p in parents]
+            
+     
+        # TODO: Don't use Event's as nodes! Use e.id and name as node, and add event to 'data'.
+        assert len(edgeList) > 0, "could not add to graph: " + self.name
+        G.add_weighted_edges_from(edgeList)
+        G.nodes[self.label]['event'] = self # Add object as node attribute
+       
         return
    
    
     def __eq__(self, other):
         return (self.name == other.name and self.properties == other.properties)
    
+   
     def __str__(self):
         return '\n'.join('%s: %s' % item for item in vars(self).items())
-    
-    def __hash__(self):
-        '''
-        Using Python's built in hashes for tuples and strings.
-        '''
-        prop_list = list(self.properties.items())
-        prop_list.append(self.name)
-        prop_tuple = tuple(prop_list)
-        return hash(prop_tuple)
+   
+   
+    #def __hash__(self):
+    #    '''
+    #    Using Python's built in hashes for tuples and strings.
+    #    '''
+    #    prop_list = list(self.properties.items())
+    #    prop_list.append(self.name)
+    #    prop_tuple = tuple(prop_list)
+    #    return hash(prop_tuple)
 
 
 def parse_logs(logfiles):
@@ -335,8 +442,11 @@ def gen_event_graph(events):
     G = nx.DiGraph()
     root, undef = Event.create_root_event(events[0].nanosecs_since_epoch,
                                    events[-1].nanosecs_since_epoch)
-    G.add_node(root)
-    G.add_node(undef)
+    G.add_node(root.label)
+    G.add_node(undef.label)
+    G.nodes[root.label]['event'] = root
+    G.nodes[undef.label]['event'] = undef
+    
     
     # TODO: we depend here on sequential consistency.  If we move to multiple
     # TODO: hosts, then this needs to be revisited, perhaps using Lamport

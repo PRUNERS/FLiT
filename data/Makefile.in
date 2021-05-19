@@ -400,9 +400,11 @@ $(eval $(call REC_COMPILE_RULE,\
 
 $(GT_OUT): $(GT_TARGET)
 	@$(call color_out,CYAN,  $< -> $@)
-	@$(call LOG_EVENT,Make Run Tests Baseline,start,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)")
+	@$(call LOG_EVENT,Make Run Tests Baseline,start,"File": "$(GT_TARGET)"$(comma) \
+		"Output": "$(GT_OUT)"$(comma) "Compilation": "$(GT_TARGET)")
 	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --output $(GT_OUT) --no-timing
-	@$(call LOG_EVENT,Make Run Tests Baseline,stop,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)")
+	@$(call LOG_EVENT,Make Run Tests Baseline,stop,"File": "$(GT_TARGET)"$(comma) \
+		"Output": "$(GT_OUT)"$(comma) "Compilation": "$(GT_TARGET)")
 
 #
 # Enter the recursion types
@@ -479,10 +481,10 @@ $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 %-out-comparison.csv: %-out $(GT_TARGET) $(GT_OUT)
 	@$(call color_out,CYAN,  $< -> $@)
 	@$(call LOG_EVENT,Make Compare Tests,start,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)"$(comma) \
-		"Compilation": "$*")
+		"Compilation": "$(notdir $*)")
 	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
 	@$(call LOG_EVENT,Make Compare Tests,stop,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)"$(comma) \
-		"Compilation": "$*")
+		"Compilation": "$(notdir $*)")
 
 $(RESULTS_DIR):
 	+$(MKDIR) $@
