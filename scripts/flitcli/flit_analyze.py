@@ -92,7 +92,10 @@ from io import StringIO
 from datetime import timedelta, datetime
 from collections import defaultdict
 
+# NetworkX is a graph utility for managing the data structure.
+# https://networkx.org/documentation/stable/index.html
 import networkx as nx
+import matplotlib.pyplot as plt
 import pygraphviz as pgv
 
 import flitutil as util
@@ -228,8 +231,6 @@ class Event:
             self.nanosecs_since_epoch = 0
             self.datetime = datetime(1970, 1, 1)
             self.properties = {}
-            self.duration = 0
-            self.children = []
 
 
     def populate(self, values):
@@ -241,8 +242,6 @@ class Event:
             timedelta(milliseconds=self.nanosecs_since_epoch // 1000000)
         self.properties = values['properties']
         self.duration = 0
-        self.children = []
-        self.parent = None
 
 
     @staticmethod
@@ -258,21 +257,17 @@ class Event:
         root_event.datetime = \
             datetime(1970, 1, 1) + timedelta(milliseconds=first_timestamp // 1000000)
         root_event.nanosecs_since_epoch = first_timestamp
-        root_event.children = []
         root_event.properties = {}
-        root_event.parent = None
        
         # create a placeholder parent for events with
         # undefined relationships
         undef = Event()
         undef.name = 'Undefined'
-        undef.parent = root_event
-        root_event.children.append(undef)
        
-        return root_event
+        return root_event, undef
 
 
-    def add_to_parent(self, root, possible_parents):
+    def add_to_graph(self, G, root, undef):
         '''
         Attach this event to its parent with a two-way link.
         
@@ -284,23 +279,17 @@ class Event:
         d = Event.event_dependencies.get(self.name, {'Parent Name': ['Undefined'], 'Matching': None})
        
         if 'root' in d['Parent Name']:
-            parent = root
+            elist = [(root, self, self.duration)]
         elif 'Undefined' in d['Parent Name']:
-            parent = [x for x in root.children if x.name == 'Undefined']
-            assert len(parent) != 0, "could not find a parent: " + self.name
-            assert len(parent) < 2, "multiple parent matches: " + self.name
-            parent = parent[0]
+            elist = [(undef, self, self.duration)]
         else:
-            parent = [x for p in d['Parent Name'] for x in possible_parents[p] if d['Matching'](self, x)]
-            assert len(parent) != 0, "could not find a parent: " + self.name
-            assert len(parent) < 2, "multiple parent matches: " + self.name
+            parents = [x for x in list(G.nodes) if x.name in d['Parent Name'] and d['Matching'](self, x)]
+            assert len(parents) > 0, "could not find a parent: " + self.name
             
-            parent = parent[0]
-            possible_parents.remove[parent]
-            
-        
-        self.parent = parent
-        parent.children.append(self)
+            elist = [(p, self, self.duration) for p in parents]
+      
+        assert len(elist) > 0, "could not add to graph: " + self.name
+        G.add_weighted_edges_from(elist)
         
         return
    
@@ -310,6 +299,15 @@ class Event:
    
     def __str__(self):
         return '\n'.join('%s: %s' % item for item in vars(self).items())
+    
+    def __hash__(self):
+        '''
+        Using Python's built in hashes for tuples and strings.
+        '''
+        prop_list = list(self.properties.items())
+        prop_list.append(self.name)
+        prop_tuple = tuple(prop_list)
+        return hash(prop_tuple)
 
 
 def parse_logs(logfiles):
@@ -325,14 +323,20 @@ def parse_logs(logfiles):
     return events
 
 
-def gen_event_hierarchy(events):
+def gen_event_graph(events):
     '''
-    Take a list of events and create a hierarchy (by populating event.children
+    Take a list of events and create a graph (by populating event.children
     and event.duration) of events.
     '''
     events.sort(key=lambda x: x.nanosecs_since_epoch)
-    root = Event.create_root_event(events[0].nanosecs_since_epoch,
+    
+    # TODO: define edge weights as durations
+    # TODO: Update parent/child relationships with graph connections.
+    G = nx.DiGraph()
+    root, undef = Event.create_root_event(events[0].nanosecs_since_epoch,
                                    events[-1].nanosecs_since_epoch)
+    G.add_node(root)
+    G.add_node(undef)
     
     # TODO: we depend here on sequential consistency.  If we move to multiple
     # TODO: hosts, then this needs to be revisited, perhaps using Lamport
@@ -347,21 +351,20 @@ def gen_event_hierarchy(events):
         if event.type == Event.START:
             event_copy = copy.copy(event)
             unmatched.append(event_copy)
-            event_dict[event_copy.name].append(event_copy)
-            event_copy.add_to_parent(root, event_dict)
         elif event.type == Event.STOP:
             # match with something in the unmatched list
             matching = [x for x in unmatched if event == x]
-            assert len(matching) != 0, "could not find a matching event:" + "\n" + str(event)
+            assert len(matching) > 0, "could not find a matching event:" + "\n" + str(event)
             assert len(matching) < 2, "multiple matches for this event found:" + "\n" + str(event)
             matching = matching[0]
             unmatched.remove(matching)
-            assert matching.parent is not None
+            
             matching.type = Event.DURATION
             matching.duration = \
                     event.nanosecs_since_epoch - matching.nanosecs_since_epoch
             assert matching.duration >= 0
-            # assert matching.parent in unmatched
+            
+            matching.add_to_graph(G, root, undef)
 
     assert len(unmatched) == 0
     # TODO: assert all nodes are DURATION nodes
@@ -370,24 +373,24 @@ def gen_event_hierarchy(events):
     # all_duration = lambda root: reduce(and_, [(root.type == Event.DURATION and all_duration(e)) for e in root.children])
     # assert all_duration(root)
 
-    return root
+    return G, root, undef
 
 
-def tree_toString(root, indent=0, outString=''):
-    '''
-    Returns a string describing tree structure of events from root
-    '''
-    prefix = ' '*indent + '|--'
-    line = prefix + root.name + ' || ' + str(root.duration) + \
-            'ns || ' + str(root.properties) + '\n'
-    #line = spaces + 'Event: ' + root.name + ' || Duration: ' + str(root.duration) \
-    #        + 'ns' + ' || Properties: ' + str(root.properties)[:50] + '\n'
-    outString += line
-
-    for node in root.children:
-        outString += tree_toString(node, indent+2)
-
-    return outString
+#def tree_toString(root, indent=0, outString=''):
+#    '''
+#    Returns a string describing tree structure of events from root
+#    '''
+#    prefix = ' '*indent + '|--'
+#    line = prefix + root.name + ' || ' + str(root.duration) + \
+#            'ns || ' + str(root.properties) + '\n'
+#    #line = spaces + 'Event: ' + root.name + ' || Duration: ' + str(root.duration) \
+#    #        + 'ns' + ' || Properties: ' + str(root.properties)[:50] + '\n'
+#    outString += line
+#
+#    for node in root.children:
+#        outString += tree_toString(node, indent+2)
+#
+#    return outString
 
 
 def main(arguments, prog=None):
@@ -407,9 +410,12 @@ def main(arguments, prog=None):
         logfiles = glob.glob('*.log')
         flit_events = parse_logs(logfiles)
 
-    event_root = gen_event_hierarchy(flit_events)
+    event_graph, root = gen_event_graph(flit_events)
     
-    print(tree_toString(event_root))
+    nx.draw(G)
+    plt.savefig('plot.png')
+    
+    #print(tree_toString(event_root))
 
     #if args.runtype == 'flit':
     #    flit_crit_path(flit_events, log_dir)

@@ -245,7 +245,7 @@ public:
   }
 
   metadata_type* metadata(const std::string &filename) {
-    return m_metadataMap.at(filename);
+    return &m_metadataMap.at(filename);
   }
 
   metadata_type* metadata(const TestResult &result) {
@@ -302,7 +302,7 @@ private:
     }
     md = parseMetadata(fin);
     
-    m_metadataMap.emplace(filename,&md);
+    m_metadataMap.emplace(filename,md);
   }
   
   void mapFilenames(const std::vector<TestResult> &results,
@@ -332,8 +332,8 @@ private:
     pair_hash<std::string, std::string>
     > m_testToFileMap;
   
-  // filename -> metadata*
-  std::unordered_map<std::string, metadata_type*> m_metadataMap;
+  // filename -> metadata
+  std::unordered_map<std::string, metadata_type> m_metadataMap;
 };
 
 inline void outputResults (
@@ -651,11 +651,6 @@ inline int runFlitTests(int argc, char* argv[]) {
                                  {"other-optl"     , metadata["optl"]},
                                  {"other-switches" , metadata["switches"]},
                                  {"executable-name" , metadata["file"]},
-                                 //{"other-host"     , metadata["hostname"]},
-                                 //{"other-compiler" , metadata["compiler"]},
-                                 //{"other-optl"     , metadata["optimization_levels"]},
-                                 //{"other-switches" , metadata["switches"]},
-                                 //{"executable-name" , metadata["executableFilename"]},
                                 });
         auto compVal = runComparison(factory, gtres, *compResult);
         flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::STOP,

@@ -542,7 +542,7 @@ $(R_TARGET): $(R_OBJ)
 	@+mkdir -p $(dir $@)
 	$(R_COMPILER) -o $@ $(R_OPTL) $(R_SWITCHES) $(R_CXXFLAGS) $(CXXFLAGS) \
 	  $(R_OBJ) $(LDFLAGS) $(R_LDFLAGS) $(LDLIBS)
-	@$(call LOG_EVENT,Linking,stop,"File": "$(R_OBJ)"$(comma) \
+	@$(call LOG_EVENT,Linking,stop,"File": "$@"$(comma) "Files In": "$(R_OBJ)"$(comma) \
 	  "Compiler": "$(R_COMPILER)"$(comma) "Optl": "$(R_OPTL)"$(comma) \
 	  "Switches": "$(R_SWITCHES)"$(comma) "LDLibs": "$(LDLIBS)"$(comma) \
 	  "CXXFLAGS": "$(R_CXXFLAGS) $(CXXFLAGS)"$(comma) \
