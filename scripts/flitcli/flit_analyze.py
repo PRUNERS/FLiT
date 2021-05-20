@@ -181,8 +181,8 @@ class Event:
                     "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
                                         "Compile fPIC", "Baseline Compile fPIC"],
                     "Matching":
-                        lambda s, p: 
-                            p.properties['Object File'] in s.properties['Files In'].split()
+                        lambda s, p: p.properties['Object File'].strip() 
+                                in [f.strip() for f in s.properties['Files In'].split()]
                             and s.properties['Compiler'] == p.properties['Compiler']
                             and s.properties['Optl'] == p.properties['Optl']
                             and s.properties['Switches'] == p.properties['Switches']
@@ -191,11 +191,8 @@ class Event:
                     "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
                                         "Compile fPIC", "Baseline Compile fPIC"],
                     "Matching":
-                        lambda s, p: 
-                            p.properties['Object File'] in s.properties['Files In'].split()
-                            and s.properties['Compiler'] == p.properties['Compiler']
-                            and s.properties['Optl'] == p.properties['Optl']
-                            and s.properties['Switches'] == p.properties['Switches']
+                        lambda s, p: p.properties['Object File'].strip() 
+                            in [f.strip() for f in s.properties['Files In'].split()]
                 },
             "Make Run Tests Baseline": {
                     "Parent Name"   : ["Linking", "Bisect Link"],
@@ -207,6 +204,11 @@ class Event:
                     "Matching":
                         lambda s, p: s.properties['Compilation'] == p.properties['Compilation']
                 },
+            "Make Bisect Run Tests": {
+                    "Parent Name"   : ["Bisect Link"], # Linking?
+                    "Matching":
+                        lambda s, p: s.properties['File'] == p.properties['File']
+                },
             "Run Test": { # Should link in testloops here probably?
                     "Parent Name"   : ["Make Run Tests", "Make Run Tests Baseline"],
                     "Matching":
@@ -217,8 +219,15 @@ class Event:
                     "Matching":
                         lambda s, p: s.properties['Compilation'] == p.properties['Filename']
                 },
+            "Make Bisect Compare Tests": {
+                    "Parent Name"   : ["Run Test"],
+                    "Matching": 
+                    # need to get prog name, so for now removing the '-out' from result and './' from prog.
+                    lambda s, p: 
+                        s.properties['Test Result'].strip()[:-4] == p.properties['Program Name'].strip()[2:]
+                },
             "TestResultCompare": {
-                    "Parent Name"   : ["Make Compare Tests"],
+                    "Parent Name"   : ["Make Compare Tests", "Make Bisect Compare Tests"],
                     "Matching":
                         lambda s, p: s.properties['executable-name'] == p.properties['Compilation']
                 },
@@ -386,13 +395,13 @@ class Event:
             parents = [G.nodes[l]['event'] for l in list(G.nodes) if
                     G.nodes[l]['event'].name in d['Parent Name'] 
                     and d['Matching'](self, G.nodes[l]['event'])]
-            assert len(parents) > 0, "could not find a parent: " + self.name
+            assert len(parents) > 0, "could not find a parent: " + str(self.id)
             
             edgeList = [(p.label, self.label, self.duration) for p in parents]
             
      
         # TODO: Don't use Event's as nodes! Use e.id and name as node, and add event to 'data'.
-        assert len(edgeList) > 0, "could not add to graph: " + self.name
+        assert len(edgeList) > 0, "could not add to graph: " + str(self.id)
         G.add_weighted_edges_from(edgeList)
         G.nodes[self.label]['event'] = self # Add object as node attribute
        
@@ -457,22 +466,22 @@ def gen_event_graph(events):
     # Group all events by name for parent identification
     event_dict = defaultdict(lambda: [])
     for event in events:
-        assert event.type != Event.DURATION
+        assert event.type != Event.DURATION, "Duration event in event list! " + str(event.id)
         if event.type == Event.START:
             event_copy = copy.copy(event)
             unmatched.append(event_copy)
         elif event.type == Event.STOP:
             # match with something in the unmatched list
             matching = [x for x in unmatched if event == x]
-            assert len(matching) > 0, "could not find a matching event:" + "\n" + str(event)
-            assert len(matching) < 2, "multiple matches for this event found:" + "\n" + str(event)
+            assert len(matching) > 0, "could not find a matching event: " + str(event.id)
+            assert len(matching) < 2, "multiple matches for this event found: " + str(event.id)
             matching = matching[0]
             unmatched.remove(matching)
             
             matching.type = Event.DURATION
             matching.duration = \
                     event.nanosecs_since_epoch - matching.nanosecs_since_epoch
-            assert matching.duration >= 0
+            assert matching.duration >= 0, "Negative duration! " + str(matching.id)
             
             matching.add_to_graph(G, root, undef)
 

@@ -258,11 +258,11 @@ $(BISECT_OUT): $(BISECT_TARGET) | $(BISECT_DIR)
 $(BISECT_RESULT): $(BISECT_OUT) $(GT_RESULT_TO_USE) $(GT_TARGET_TO_USE)
 	@$(call color_out,CYAN,  $< -> $@)
 	@$(call LOG_EVENT,Make Bisect Compare Tests,start,"File": "$(GT_TARGET_TO_USE)"$(comma) \
-		"Results Compared": "$(GT_RESULT_TO_USE)"$(comma) "Output": "$@" )
+		"Results Compared": "$(GT_RESULT_TO_USE)"$(comma) "Output": "$@"$(comma) "Test Result": "$(BISECT_OUT)")
 	$(RUNWRAP) ./$(GT_TARGET_TO_USE) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_RESULT_TO_USE) \
 	  --suffix "-comparison.csv" $< -o /dev/null
 	@$(call LOG_EVENT,Make Bisect Compare Tests,stop,"File": "$(GT_TARGET_TO_USE)"$(comma) \
-		"Results Compared": "$(GT_RESULT_TO_USE)"$(comma) "Output": "$@" )
+		"Results Compared": "$(GT_RESULT_TO_USE)"$(comma) "Output": "$@"$(comma) "Test Result": "$(BISECT_OUT)")
 
 #################################
 # *** R_TYPE=bisect-compile *** #
