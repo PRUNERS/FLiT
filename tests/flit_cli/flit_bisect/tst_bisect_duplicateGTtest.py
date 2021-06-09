@@ -124,8 +124,8 @@ and run FLiT bisect
 Verify ground-truth.csv is not generated in bisect run,
 since it was generated prior to bisect call
 >>> gt_lines = [line for line in log_contents if line.find('--output ground-truth.csv') != -1]
->>> print(gt_lines)
-[]
+>>> len(gt_lines)
+0
 
 '''
 
