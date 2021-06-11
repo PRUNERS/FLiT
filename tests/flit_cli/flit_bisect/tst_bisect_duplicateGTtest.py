@@ -109,21 +109,25 @@ and run FLiT bisect
 ...     _ = subp.check_call(['make', '-C', os.path.relpath(temp_dir), 'ground-truth.csv'])
 ...     outfile = os.path.join(temp_dir, 'out.log')
 ...     os.environ['VERBOSE'] = '1'
-...     with open(outfile, 'a') as ofile:
-...         _ = subp.check_call(['flit', 'bisect', 
-...                          '-C', os.path.relpath(temp_dir),
-...                          '--verbose',
-...                          '--compiler-type', 'gcc',
-...                          '--precision', 'double',
-...                          'g++ -O2', 'BisectTest'],
-...                          stdout = ofile)
-...     with open(outfile, 'r') as fin:
+...     with StringIO() as ostream:
+...         retval = th.flit.main(['bisect', '-C', os.path.relpath(temp_dir),
+...                                '--verbose',
+...                                '--compiler-type', 'gcc',
+...                                '--precision', 'double',
+...                                'g++ -O2', 'BisectTest'],
+...                                outstream=ostream)
+...         if retval != 0:
+...             raise BisectTestError(
+...                 'Could not bisect (1) (retval={0}):\\n'.format(retval) +
+...                 ostream.getvalue())
+...         bisect_out = ostream.getvalue().splitlines()
+...     with open(os.path.join(temp_dir, 'bisect-01', 'bisect.log')) as fin:
 ...         raw_log = fin.readlines()
 ...         log_contents = [line for line in raw_log if line.strip() != '']
 
 Verify ground-truth.csv is not generated in bisect run,
 since it was generated prior to bisect call
->>> gt_lines = [line for line in log_contents if line.find('--output ground-truth.csv') != -1]
+>>> gt_lines = [line for line in bisect_out if line.find('--output ground-truth.csv') != -1]
 >>> len(gt_lines)
 0
 

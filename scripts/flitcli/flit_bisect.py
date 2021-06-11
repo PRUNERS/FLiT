@@ -524,10 +524,15 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
                 subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
             else:
                 ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
-                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
+                sobj = subp.run(['tee', tmpout.name], stdin=ps.stdout, text=True, capture_output=True)
                 ps.communicate()
+                
                 if ps.returncode != 0:
                     raise subp.CalledProcessError(ps.returncode, command)
+                
+                # If StringIO passed, write output
+                if sys.stdout != sys.__stdout__:
+                    _ = sys.stdout.write(sobj.stdout)
         except:
             tmpout.flush()
             with open(tmpout.name, 'r') as tmpin:
