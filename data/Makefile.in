@@ -315,7 +315,7 @@ Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 define REC_COMPILE_RULE
 ifneq ($$(R_TARGET),$1)
 $1: $1-phony
-	true
+	@true
 
 .PHONY: $1-phony
 $1-phony: Makefile custom.mk

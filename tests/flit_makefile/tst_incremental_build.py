@@ -139,7 +139,7 @@ Make sure all of the correct files were created with our build commands
 ['devrun', 'obj/dev/ALL-FLIT.cpp.o', 'obj/dev/Empty.cpp.o', 'obj/dev/main.cpp.o']
 
 >>> touched_files(after_build)
-[]
+['devrun']
 
 >>> touched_files(after_modify)
 ['devrun', 'obj/dev/main.cpp.o']
@@ -177,7 +177,7 @@ Make sure all of the correct files were created with our build commands
 ['gtrun', 'obj/gt/ALL-FLIT.cpp.o', 'obj/gt/Empty.cpp.o', 'obj/gt/main.cpp.o']
 
 >>> touched_files(after_build)
-[]
+['gtrun']
 
 >>> touched_files(after_modify)
 ['gtrun', 'obj/gt/main.cpp.o']
