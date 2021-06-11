@@ -524,7 +524,7 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
                 subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
             else:
                 ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
-                out = subp.check_output(['tee', tmpout.name], stdin=ps.stdout, encoding='UTF-8')
+                out = subp.check_output(['tee', tmpout.name], stdin=ps.stdout, universal_newlines=True)
                 ps.communicate()
                 
                 if ps.returncode != 0:
