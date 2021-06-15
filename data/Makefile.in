@@ -291,6 +291,20 @@ Makefile: $(FLIT_SCRIPT_DIR)/flitutil.py
 Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 	$(FLIT_SCRIPT_DIR)/flit.py update
 
+# Since this makefile has a huge dependency tree, it was causing the parsing to
+# take way too long to generate, especially for small requested tasks.
+# Therefore, we split each executable's dependencies into a recursive call on
+# this Makefile, setting R_TYPE to compile so that it enumerates the inner
+# dependencies of the specified executable (specified in R_TARGET).
+#
+# This function creates the recursive call for a target.
+#
+# Note: The target itself should not be phony, otherwise any targets depending
+# on $1 would always be rebuilt even if $1 does not need to be.  But, we can
+# instead have the $1 target depending on a phony target, then having a no-op
+# recipe so that other targets that depend on $1 will recheck the timestamp of
+# $1 after the phony target is called.
+#
 # @param 1: binary compile target
 # @param 2: compiler binary
 # @param 3: optimization level
@@ -300,8 +314,11 @@ Makefile: $(FLIT_SCRIPT_DIR)/flit_update.py
 # @param 7: directory for object files
 define REC_COMPILE_RULE
 ifneq ($$(R_TARGET),$1)
-.PHONY: $1
-$1: Makefile custom.mk
+$1: $1-phony
+	@true
+
+.PHONY: $1-phony
+$1-phony: Makefile custom.mk
 	+$$(REC_MAKE) R_TYPE=compile \
 	  R_TARGET="$1" \
 	  R_COMPILER="$2" \
