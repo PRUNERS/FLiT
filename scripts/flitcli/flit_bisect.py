@@ -532,10 +532,15 @@ def run_make(makefilename='Makefile', directory='.', verbose=False,
                 subp.check_call(command, stdout=tmpout, stderr=subp.STDOUT)
             else:
                 ps = subp.Popen(command, stdout=subp.PIPE, stderr=subp.STDOUT)
-                subp.check_call(['tee', tmpout.name], stdin=ps.stdout)
+                out = subp.check_output(['tee', tmpout.name], stdin=ps.stdout, universal_newlines=True)
                 ps.communicate()
+                
                 if ps.returncode != 0:
                     raise subp.CalledProcessError(ps.returncode, command)
+                
+                # write to stdout; can't set stdout in subprocess as non-file streams throw exceptions
+                if sys.stdout != sys.__stdout__:
+                    _ = sys.stdout.write(out)
         except:
             tmpout.flush()
             with open(tmpout.name, 'r') as tmpin:
