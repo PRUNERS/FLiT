@@ -333,7 +333,7 @@ distclean: clean
 	rm -f $(GT_OUT)
 	rm -f $(addsuffix *.dat,$(GT_OUT))
 	rm -rf lib
-	rm -rf $(LOG_DIR)
+	rm -rf event_logs
 
 Makefile: flit-config.toml
 Makefile: $(FLIT_DATA_DIR)/Makefile.in
@@ -498,10 +498,10 @@ $(RESULTS_DIR)/%-out: $(RUNBUILD_DIR)/% | $(RESULTS_DIR)
 %-out-comparison.csv: %-out $(GT_TARGET) $(GT_OUT)
 	@$(call color_out,CYAN,  $< -> $@)
 	@$(call LOG_EVENT,Make Compare Tests,start,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)"$(comma) \
-		"Compilation": "$(notdir $*)")
+		"Compilation": "$(notdir $*)"$(comma) "Test Result": "$(notdir $*)-out")
 	$(RUNWRAP) ./$(GT_TARGET) $(EXTRA_RUN_ARGS) --compare-mode --compare-gt $(GT_OUT) --suffix "-comparison.csv" $< -o /dev/null
 	@$(call LOG_EVENT,Make Compare Tests,stop,"File": "$(GT_TARGET)"$(comma) "Output": "$(GT_OUT)"$(comma) \
-		"Compilation": "$(notdir $*)")
+		"Compilation": "$(notdir $*)"$(comma) "Test Result": "$(notdir $*)-out")
 
 $(RESULTS_DIR):
 	+$(MKDIR) $@

@@ -651,6 +651,7 @@ inline int runFlitTests(int argc, char* argv[]) {
                                  {"other-optl"     , metadata["optl"]},
                                  {"other-switches" , metadata["switches"]},
                                  {"executable-name" , metadata["file"]},
+                                 {"result-file" , compResult->resultfile()},
                                 });
         auto compVal = runComparison(factory, gtres, *compResult);
         flit::logger->log_event("TestResultCompare", flit::FlitEventLogger::STOP,
@@ -661,6 +662,7 @@ inline int runFlitTests(int argc, char* argv[]) {
                                  {"other-optl"     , metadata["optl"]},
                                  {"other-switches" , metadata["switches"]},
                                  {"executable-name" , metadata["file"]},
+                                 {"result-file" , compResult->resultfile()},
                                 });
         compResult->set_comparison(compVal);
       }

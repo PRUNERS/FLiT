@@ -222,14 +222,16 @@ class Event:
             "Make Bisect Compare Tests": {
                     "Parent Name"   : ["Run Test"],
                     "Matching": 
-                    # need to get prog name, so for now removing the '-out' from result and './' from prog.
-                    lambda s, p: 
+                        # need to get prog name, so for now removing the '-out' from result and './' from prog.
+                        lambda s, p: 
                         s.properties['Test Result'].strip()[:-4] == p.properties['Program Name'].strip()[2:]
                 },
             "TestResultCompare": {
                     "Parent Name"   : ["Make Compare Tests", "Make Bisect Compare Tests"],
                     "Matching":
-                        lambda s, p: s.properties['executable-name'] == p.properties['Compilation']
+                    # TODO: This isn't robust, but for now hacking out the 'run-bisect##' for comparison roughly for testing 
+                    lambda s, p: s.properties['result-file'][s.properties['result-file'].find('/')+1 : s.properties['result-file'].find('-out')+4].strip()
+                        == p.properties['Test Result'].strip()
                 },
             "Bisect File": {
                     "Parent Name"   : ["Undefined"],
