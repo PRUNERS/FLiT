@@ -269,8 +269,7 @@ ifneq ($(LOG_DIR),)
 	# @param 1: Event name
 	# @param 2: type (start or stop) of logged event
 	# @param 3: properties of event, as list of [ "key": "value"$(comma) ] json items.
-	LOG_EVENT = echo '{{"date": "'$(shell date)'", "time": '$(shell date +%s%N)', \
-	            "name": "$1", "type": "$2", "properties": {{$3}}}}'
+	LOG_EVENT = echo '{{"date": "'$$(date)'", "time": '$$(date +%s%N)', "name": "$1", "type": "$2", "properties": {{$3}}}}'
 else	
 	LOG_EVENT =
 endif
@@ -526,16 +525,16 @@ define COMPILE_RULE
 $2: $1 Makefile custom.mk | $(patsubst %/,%,$(dir $2))
 	@$(call color_out,CYAN,  $(strip $1) -> $(strip $2))
 	@# Log object file
-	@$(call LOG_EVENT,Compile,start,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
-		"Compiler": "$(strip $3)"$(comma) "Switches": "$(strip $5)"$(comma) "Optl":"$(strip $4)")
+	@$$(call LOG_EVENT,Compile,start,"File": "$$(strip $1)"$$(comma) "Object File": "$$(strip $2)"$$(comma)\
+		"Compiler": "$$(strip $3)"$$(comma) "Switches": "$$(strip $5)"$$(comma) "Optl":"$$(strip $4)")
 	$3 $4 $5 -c $(CXXFLAGS) $(DEPFLAGS) $(2:%.o=%.d) $7 $1 -o $2 \
 	  -DFLIT_HOST='"$(HOSTNAME)"' \
 	  -DFLIT_COMPILER='"$(strip $3)"' \
 	  -DFLIT_OPTL='"$(strip $4)"' \
 	  -DFLIT_SWITCHES='"$(strip $5)"' \
 	  -DFLIT_FILENAME='"$(notdir $(strip $6))"'
-	@$(call LOG_EVENT,Compile,stop,"File": "$(strip $1)"$(comma) "Object File": "$(strip $2)"$(comma)\
-		"Compiler": "$(strip $3)"$(comma) "Switches": "$(strip $5)"$(comma) "Optl":"$(strip $4)")
+	@$$(call LOG_EVENT,Compile,stop,"File": "$$(strip $1)"$$(comma) "Object File": "$$(strip $2)"$$(comma)\
+		"Compiler": "$$(strip $3)"$$(comma) "Switches": "$$(strip $5)"$$(comma) "Optl":"$$(strip $4)")
 endef
 
 R_OBJ   := $(addprefix $(R_OBJ_DIR)/,$(notdir $(SOURCE:%=%.o)))

@@ -685,7 +685,7 @@ def get_log_string(event_name, event_type, properties=dict()):
 
     event = {
         'date': str(datetime.utcnow()), 
-        'time': time.perf_counter_ns(),
+        'time': time.time() * 1e9, # python 3.7: time.perf_counter_ns(),
         'name': event_name,
         'type': event_type,
         'properties': properties

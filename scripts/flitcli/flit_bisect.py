@@ -100,6 +100,7 @@ import sqlite3
 import subprocess as subp
 import sys
 import socket # for hostname in logging
+import ntpath
 
 import flitconfig as conf
 import flit_update
@@ -113,7 +114,7 @@ except ImportError:
 brief_description = 'Bisect compilation to identify problematic source code'
 
 LOG_DIR = './event_logs'
-LOG_FILE = 'pylog_' + socket.gethostname()
+LOG_FILE = 'flit_event-pylog-' + socket.gethostname()
 LOG_EVENTS = []
 
 def hash_compilation(compiler, optl, switches):
@@ -391,6 +392,7 @@ def create_bisect_makefile(directory, replacements, gt_src,
                 pass # ignore if the directory already exists
 
     # Create the txt files containing symbol lists within the obj directory
+    # NOTE: for logging this code is duplicated, needs to be exported to flitutil
     for split_srcfile, split_symbols in split_symbol_map.items():
         split_basename = os.path.basename(split_srcfile)
         split_base = os.path.join(directory, 'obj', 'symbols', split_basename)
@@ -1424,11 +1426,20 @@ def _gen_bisect_source_checker(args, bisect_path, replacements, sources,
                                           sources_to_optimize, dict())
         makepath = os.path.join(bisect_path, makefile)
         print('writing bisect file')
+        
+        
+        num = util.extract_make_var('NUMBER', makefile, bisect_path)[0]
+        
+        # get just the bisect folder name
+        head, tail = ntpath.split(bisect_path)
+        bdir = tail or ntpath.basename(head)
         LOG_EVENTS.append(util.get_log_string('Bisect File', 'start',
-            {'Path': bisect_path, 'Trouble': sources_to_optimize}))
+            {'Path': bisect_path, 'Trouble': sources_to_optimize, 'Bisect Dir': bdir,
+                'Bisect Target': bdir + '/runbisect-' + num}))
         result = test_makefile(args, makepath, sources_to_optimize, indent=indent)
         LOG_EVENTS.append(util.get_log_string('Bisect File', 'stop',
-            {'Path': bisect_path, 'Trouble': sources_to_optimize}))
+            {'Path': bisect_path, 'Trouble': sources_to_optimize, 'Bisect Dir': bdir,
+                'Bisect Target': bdir + '/runbisect-' + num}))
         return result 
 
     return memoize_strlist_func(builder_and_checker)
@@ -1474,11 +1485,29 @@ def _gen_bisect_symbol_checker(args, bisect_path, replacements, sources,
             '  {sym.fname}:{sym.lineno} {sym.symbol} -- {sym.demangled}'
             .format(sym=sym) for sym in symbols_to_optimize
             ]
+        
+        num = util.extract_make_var('NUMBER', makefile, bisect_path)[0]
+        
+        for split_srcfile, split_symbols in symbol_map.items():
+            split_basename = os.path.basename(split_srcfile)
+            split_base = os.path.join(bisect_path, 'obj', 'symbols', split_basename)
+            trouble_symbols_fname = split_base + '_trouble_symbols_' \
+                    + num + '.txt'
+            gt_symbols_fname = split_base + '_gt_symbols_' \
+                    + num + '.txt'
+
+        # get just the bisect folder name
+        head, tail = ntpath.split(bisect_path)
+        bdir = tail or ntpath.basename(head)
         LOG_EVENTS.append(util.get_log_string('Bisect Symbol', 'start',
-            {'Path': bisect_path, 'Trouble': symbol_strings}))
+            {'Path': bisect_path, 'Trouble': symbol_strings, 
+                'Trouble Symbol File': trouble_symbols_fname, 'GT Symbol File': gt_symbols_fname,
+                'Bisect Dir': bdir, 'Bisect Target': bdir + '/runbisect-' + num}))
         result = test_makefile(args, makepath, symbol_strings, indent=indent)
         LOG_EVENTS.append(util.get_log_string('Bisect Symbol', 'stop',
-            {'Path': bisect_path, 'Trouble': symbol_strings}))
+            {'Path': bisect_path, 'Trouble': symbol_strings, 
+                'Trouble Symbol File': trouble_symbols_fname, 'GT Symbol File': gt_symbols_fname,
+                'Bisect Dir': bdir, 'Bisect Target': bdir + '/runbisect-' + num}))
         return result 
 
     return memoize_strlist_func(builder_and_checker)

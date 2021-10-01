@@ -86,6 +86,7 @@ import glob
 import json
 import os
 import sys
+import importlib
 from operator import and_
 from functools import reduce
 from io import StringIO
@@ -113,7 +114,8 @@ def populate_parser(parser=None):
             '''
     parser.add_argument('-C', '--directory', default='.',
                         help='The directory to initialize')
-
+    parser.add_argument('--definitions', default = {},
+                        help='Path to python file with dictionary of event definitions.')    
     parser.add_argument('-l', '--logs', default=False, action='store_true',
                         help='Enable logging of FLiT events.')
     parser.add_argument('-r', '--runtype', default='flit',
@@ -123,6 +125,13 @@ def populate_parser(parser=None):
                         ''')
 
     return parser
+
+
+def import_dependencies(filepath):
+    
+    
+    return dependency_dict
+
 
 class Event:
     '''
@@ -147,118 +156,20 @@ class Event:
     
     __eventCount = 0
 
-    # Events for tracing FLiT workflow must be
-    # defined here. 
-    #   Parent Name   : event name of dependency
-    #   Matching Props: list of properties which 
-    #                   determine match to parent
-    event_dependencies = {
-            "Undefined": {
-                    "Parent Name"   : ["root"],
-                    "Matching": None
-                },
-            "Baseline Compile": {
-                    "Parent Name"   : ["root"],
-                    "Matching": None
-                },
-            "Baseline Compile fPIC": {
-                    "Parent Name"   : ["root"],
-                    "Matching": None
-                },
-            "Compile": {
-                    "Parent Name"   : ["root"],
-                    "Matching": None
-                },
-            "Compile fPIC": {
-                    "Parent Name"   : ["root"],
-                    "Matching": None
-                },
-            "Bisect Compile": {
-                    "Parent Name"   : ["root"],
-                    "Matching": None
-                },
-            "Linking": {
-                    "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
-                                        "Compile fPIC", "Baseline Compile fPIC"],
-                    "Matching":
-                        lambda s, p: p.properties['Object File'].strip() 
-                                in [f.strip() for f in s.properties['Files In'].split()]
-                            and s.properties['Compiler'] == p.properties['Compiler']
-                            and s.properties['Optl'] == p.properties['Optl']
-                            and s.properties['Switches'] == p.properties['Switches']
-                },
-            "Bisect Link": {
-                    "Parent Name"   : ["Compile", "Baseline Compile", "Bisect Compile", 
-                                        "Compile fPIC", "Baseline Compile fPIC"],
-                    "Matching":
-                        lambda s, p: p.properties['Object File'].strip() 
-                            in [f.strip() for f in s.properties['Files In'].split()]
-                },
-            "Make Run Tests Baseline": {
-                    "Parent Name"   : ["Linking", "Bisect Link"],
-                    "Matching":
-                        lambda s, p: s.properties['File'] == p.properties['Compilation']
-                },
-            "Make Run Tests": {
-                    "Parent Name"   : ["Linking", "Bisect Link"],
-                    "Matching":
-                        lambda s, p: s.properties['Compilation'] == p.properties['Compilation']
-                },
-            "Make Bisect Run Tests": {
-                    "Parent Name"   : ["Bisect Link"], # Linking?
-                    "Matching":
-                        lambda s, p: s.properties['File'] == p.properties['File']
-                },
-            "Run Test": { # Should link in testloops here probably?
-                    "Parent Name"   : ["Make Run Tests", "Make Run Tests Baseline"],
-                    "Matching":
-                        lambda s, p: s.properties['Filename'] == p.properties['Compilation']
-                },
-            "Make Compare Tests": {
-                    "Parent Name"   : ["Run Test"],
-                    "Matching":
-                        lambda s, p: s.properties['Compilation'] == p.properties['Filename']
-                },
-            "Make Bisect Compare Tests": {
-                    "Parent Name"   : ["Run Test"],
-                    "Matching": 
-                        # need to get prog name, so for now removing the '-out' from result and './' from prog.
-                        lambda s, p: 
-                        s.properties['Test Result'].strip()[:-4] == p.properties['Program Name'].strip()[2:]
-                },
-            "TestResultCompare": {
-                    "Parent Name"   : ["Make Compare Tests", "Make Bisect Compare Tests"],
-                    "Matching":
-                    # TODO: This isn't robust, but for now hacking out the 'run-bisect##' for comparison roughly for testing 
-                    lambda s, p: s.properties['result-file'][s.properties['result-file'].find('/')+1 : s.properties['result-file'].find('-out')+4].strip()
-                        == p.properties['Test Result'].strip()
-                },
-            "Bisect File": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
-                },
-            "Bisect Symbol": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
-                },
-            "Weaken Symbols": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
-                },
-            "TestInputLoop": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
-                },
-            "TestLoop": {
-                    "Parent Name"   : ["Undefined"],
-                    "Matching": None
-                }
-        } # End event_dependencies
+    # This dictionary should be provided in a Python file
+    # passed as an argument when calling this function.
+    event_dependencies = None
     
     def __init__(self, values=None):
         self._id = Event.__eventCount
         Event.__eventCount += 1
         
+        self.children = [] # a list of Event objects
+        self.nested_children = [] # a list of Event objects
+
+        self.nested_parent = None # one other Event object
+        self.parents = [] # a list of Event objects
+
         if values:
             self.populate(values)
         else:
@@ -284,7 +195,7 @@ class Event:
     @property
     def id(self):
         return self._id
-   
+
    
     @property
     def name(self):
@@ -366,8 +277,8 @@ class Event:
             datetime(1970, 1, 1) + timedelta(milliseconds=first_timestamp // 1000000)
         root_event.nanosecs_since_epoch = first_timestamp
         root_event.properties = {}
-        
-       
+
+
         # create a placeholder parent for events with
         # undefined relationships
         undef = Event()
@@ -375,49 +286,62 @@ class Event:
        
         return root_event, undef
 
+    def connect_nested_parent(self, possible_parents):
+        d = Event.event_dependencies.get(self.name, {'Nested Parent': 'Undefined', 'Parent Name': [], 'Matching': None})
 
-    def add_to_graph(self, G, root, undef):
+        # find the matches
+        matching_nested_parents = (x for x in possible_parents if x.name in d['Nested Parent'])
+        matching_nested_parents = [x for x in matching_nested_parents
+                                   if x.name == 'root'
+                                   or x.name == 'Undefined'
+                                   or d['Matching'] is None
+                                   or d['Matching'](self, x)]
+
+        # make sure we only have one nested parent
+        assert len(matching_nested_parents) > 0, 'Nested parent not found: ' + self._label
+        assert len(matching_nested_parents) == 1, 'More than one nested parents found: ' + self._label
+        matching_nested_parent = matching_nested_parents[0]
+        del matching_nested_parents
+
+        # create connections
+        self.nested_parent = matching_nested_parent
+        matching_nested_parent.nested_children.append(self)
+
+    def connect_parents(self, possible_parents):
         '''
         Attach this event to its parent with a two-way link.
-        
+
         Logic depends on event: any event to be analyzed
         in the FLiT workflow needs a separate case with its
         logical dependencies defined in the event_dependencies
         dictionary.
+
+        @param possible_parents (list(Event)): events that have turned into
+            Duration events and can be used as sequential dependencies.
         '''
-        d = Event.event_dependencies.get(self.name, {'Parent Name': ['Undefined'], 'Matching': None})
-       
-        if 'root' in d['Parent Name']:
-            parents = [root]
-            edgeList = [(root.label, self.label, self.duration)]
-        elif 'Undefined' in d['Parent Name']:
-            parents = [undef]
-            edgeList = [(undef.label, self.label, self.duration)]
-        else:
-            parents = [G.nodes[l]['event'] for l in list(G.nodes) if
-                    G.nodes[l]['event'].name in d['Parent Name'] 
-                    and d['Matching'](self, G.nodes[l]['event'])]
-            assert len(parents) > 0, "could not find a parent: " + str(self.id)
-            
-            edgeList = [(p.label, self.label, self.duration) for p in parents]
-            
-     
-        # TODO: Don't use Event's as nodes! Use e.id and name as node, and add event to 'data'.
-        assert len(edgeList) > 0, "could not add to graph: " + str(self.id)
-        G.add_weighted_edges_from(edgeList)
-        G.nodes[self.label]['event'] = self # Add object as node attribute
-       
-        return
-   
-   
+        d = Event.event_dependencies.get(self.name, {'Nested Parent': 'Undefined', 'Parent Name': [], 'Matching': None})
+
+        # find the matches
+        matching_parents = (x for x in possible_parents if x.name in d['Parent Name'])
+        matching_parents = [x for x in matching_parents
+                            if d['Matching'] is None
+                            or d['Matching'](self, x)]
+
+        # create connections
+        self.parents.extend(matching_parents)
+        for parent in matching_parents:
+            parent.children.append(self)
+
+
     def __eq__(self, other):
         return (self.name == other.name and self.properties == other.properties)
-   
-   
+
+    def __repr__(self):
+        return repr(self.label)
+
     def __str__(self):
-        return '\n'.join('%s: %s' % item for item in vars(self).items())
-   
-   
+        return '\n'.join('{}: {}'.format(name, repr(val)) for name, val in vars(self).items())
+
     #def __hash__(self):
     #    '''
     #    Using Python's built in hashes for tuples and strings.
@@ -445,55 +369,107 @@ def gen_event_graph(events):
     '''
     Take a list of events and create a graph (by populating event.children
     and event.duration) of events.
+    
+    @param events: list of individual events in dict format
+    
+    @return networkx event graph, root node for DAG defined by event
+                relationships, and undefined node connected to all events
+                with undefined relationships
     '''
     events.sort(key=lambda x: x.nanosecs_since_epoch)
-    
-    # TODO: define edge weights as durations
-    # TODO: Update parent/child relationships with graph connections.
-    G = nx.DiGraph()
+
     root, undef = Event.create_root_event(events[0].nanosecs_since_epoch,
                                    events[-1].nanosecs_since_epoch)
-    G.add_node(root.label)
-    G.add_node(undef.label)
-    G.nodes[root.label]['event'] = root
-    G.nodes[undef.label]['event'] = undef
-    
-    
+
+    # Each node will:
+    # - either belong to root or undef
+    # - have exactly one nested parent (except for root and undef)
+    # - have zero or more sequential parents (sequential dependency)
+    #
+    # Each node should:
+    # - be a duration type
+    # - have a start and duration
+    # - have zero sequential parents only if they are the top-level tasks in a nested scope
+    # - have zero sequential children only if they are the end tasks in a nested scope
+    # - root and leaf nodes within a nested scope may have parents and children from other nested scopes
+
     # TODO: we depend here on sequential consistency.  If we move to multiple
     # TODO: hosts, then this needs to be revisited, perhaps using Lamport
     # TODO: clocks.
 
     # The beginning and ending events match both in name and in properties exactly.
-    unmatched = []
+    matched = []
+    unmatched = [root, undef]
+
     # Group all events by name for parent identification
     event_dict = defaultdict(lambda: [])
     for event in events:
         assert event.type != Event.DURATION, "Duration event in event list! " + str(event.id)
         if event.type == Event.START:
             event_copy = copy.copy(event)
+            event_copy.connect_nested_parent(unmatched)
             unmatched.append(event_copy)
         elif event.type == Event.STOP:
             # match with something in the unmatched list
-            matching = [x for x in unmatched if event == x]
+            matching = [x for x in unmatched if event == x]  # everything but type is the same
             assert len(matching) > 0, "could not find a matching event: " + str(event.id)
             assert len(matching) < 2, "multiple matches for this event found: " + str(event.id)
             matching = matching[0]
             unmatched.remove(matching)
-            
+
+            # assert that the nesting parent has not ended yet
+            assert matching.nested_parent is not None
+            assert matching.nested_parent in unmatched, 'Parent cannot end before nested children'
+
             matching.type = Event.DURATION
             matching.duration = \
                     event.nanosecs_since_epoch - matching.nanosecs_since_epoch
             assert matching.duration >= 0, "Negative duration! " + str(matching.id)
-            
-            matching.add_to_graph(G, root, undef)
 
+            matching.connect_parents(matched)
+            matched.append(matching)
+        else:
+            raise AssertionError('Event is not a START or STOP type')
+
+    # we are now done with the top-level events
+    unmatched.remove(root)
+    unmatched.remove(undef)
+    matched.append(root)
+    matched.append(undef)
+
+    # make sure no straglers are still there
     assert len(unmatched) == 0
+
     # TODO: assert all nodes are DURATION nodes
     # sample idea: func = lambda l: reduce(and_,[a == 1 for a in l])
     # broken for now.
     # all_duration = lambda root: reduce(and_, [(root.type == Event.DURATION and all_duration(e)) for e in root.children])
     # assert all_duration(root)
 
+    # For now, we create the graph at the very end (after we have created our
+    # graph with our Event data structure
+    # TODO: separate out this logic into two separate functions
+    # TODO: define edge weights as durations
+    # TODO: Update parent/child relationships with graph connections.
+    G = nx.DiGraph()
+    edges = []
+    for event in matched:
+        G.add_node(event.label)
+        G.nodes[event.label]['event'] = event
+        if event.nested_parent is not None:
+            edges.append((
+                event.nested_parent.label,
+                event.label,
+                event.nanosecs_since_epoch - event.nested_parent.nanosecs_since_epoch
+                ))
+        edges.extend((p.label, event.label, event.duration) for p in event.parents)
+
+    # root is only connected by nesting relationship, so need edges here.
+    edges.extend((root.label, node.label, node.duration) for node in root.nested_children)
+    
+    G.add_weighted_edges_from(edges)
+
+    # TODO: also return matched list
     return G, root, undef
 
 
@@ -525,16 +501,29 @@ def main(arguments, prog=None):
     # TODO: implement hierarchy parent/child relationship
     # TODO: decide what to do about disabled tests
     
+    # TODO: Very hacky, this import process needs to be made 
+    #   more robust and general
+    # Get event dependencies from user-provided file
+    definition_file = args.definitions
+    
+    def_path = os.path.dirname(os.path.abspath(definition_file))
+    if def_path not in sys.path:
+        sys.path.insert(0, def_path)
+    
+    def_module = importlib.import_module(os.path.basename(definition_file))
+    Event.event_dependencies = def_module.event_dependencies
+    
+    # Read logfiles from user-provided directory
     log_dir = os.path.join(args.directory, 'event_logs')
 
     with util.pushd(log_dir):
         logfiles = glob.glob('*.log')
         flit_events = parse_logs(logfiles)
 
-    event_graph, root = gen_event_graph(flit_events)
+    event_graph, root, undef = gen_event_graph(flit_events)
     
-    nx.draw(G)
-    plt.savefig('plot.png')
+    #nx.draw(G)
+    #plt.savefig('plot.png')
     
     #print(tree_toString(event_root))
 
