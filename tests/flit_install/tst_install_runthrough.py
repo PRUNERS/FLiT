@@ -294,6 +294,7 @@ True
  'share/flit/scripts/experimental/ninja_syntax.py',
  'share/flit/scripts/flit.py',
  'share/flit/scripts/flit_bisect.py',
+ 'share/flit/scripts/flit_disguise.py',
  'share/flit/scripts/flit_experimental.py',
  'share/flit/scripts/flit_import.py',
  'share/flit/scripts/flit_init.py',

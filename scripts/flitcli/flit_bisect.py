@@ -85,6 +85,7 @@ Implements the bisect subcommand, identifying the problematic subset of source
 files that cause the variability.
 '''
 
+from collections import namedtuple
 from tempfile import NamedTemporaryFile
 import argparse
 import csv
@@ -699,6 +700,8 @@ def is_result_differing(resultfile):
     return float(get_comparison_result(resultfile)) != 0.0
 
 _extract_symbols_memos = {}
+BisectSymbolTuple = namedtuple('BisectSymbolTuple',
+                               'src, symbol, demangled, fname, lineno')
 def extract_symbols(file_or_filelist, objdir):
     '''
     Extracts symbols for the given source file(s).  The corresponding object is
@@ -733,7 +736,16 @@ def extract_symbols(file_or_filelist, objdir):
     if fobj in _extract_symbols_memos:
         return _extract_symbols_memos[fobj]
 
-    _extract_symbols_memos[fobj] = elf.extract_symbols(fobj, fname)
+    func_symbols, remaining_symbols = elf.extract_symbols(fobj)
+    func_symbols = [
+        BisectSymbolTuple(fname, sym.symbol, sym.demangled, sym.fname,
+                          sym.lineno)
+        for sym in func_symbols]
+    remaining_symbols = [
+        BisectSymbolTuple(fname, sym.symbol, sym.demangled, sym.fname,
+                          sym.lineno)
+        for sym in remaining_symbols]
+    _extract_symbols_memos[fobj] = (func_symbols, remaining_symbols)
     return _extract_symbols_memos[fobj]
 
 def memoize_strlist_func(func):
@@ -2215,7 +2227,7 @@ def main(arguments, prog=None):
     '''
 
     if elf is None:
-        print('Error: pyelftools is not installed, bisect disabled',
+        print('Error: binutils is not installed, bisect disabled',
               file=sys.stderr)
         return 1
 

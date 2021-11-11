@@ -162,11 +162,6 @@ flit import --dbfile temporary.sqlite backup/results/*.csv
 
 ## flit bisect
 
-There is an additional optional dependency in order to run `flit bisect`.  That
-is [pyelftools](https://github.com/eliben/pyelftools) as discussed in [FLiT
-Installation](installation.md).  If `pyelftools` is not installed, then
-`bisect` is disabled.
-
 After FLiT identifies compilations that cause some tests to exhibit
 variability, one may want to investigate further and understand where the
 compiler introduced overly aggressive optimizations.
@@ -176,6 +171,9 @@ and can often go further to assign blame to individual functions within the
 blamed source files.  You can run `flit bisect` directly giving it a specific
 compilation, precision, and test case, or you can tell it to automatically run
 for all differences in a given SQLite3 database.
+
+FLiT Bisect depends on binutils to extract symbols, filenames, and line numbers
+from compiled object files.
 
 Here is an example of giving a single test case (named `subnormal`) known to
 show variability:

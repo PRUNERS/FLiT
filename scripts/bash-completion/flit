@@ -23,7 +23,8 @@ _flit__sqlite_files()
 _flit_help()
 {
   local cur available_subcommands
-  available_subcommands="-h --help bisect experimental init make update import"
+  available_subcommands="-h --help
+    bisect experimental disguise init make update import"
   cur="${COMP_WORDS[COMP_CWORD]}"
   COMPREPLY=( $(compgen -W "${available_subcommands}" -- ${cur}) )
 }
@@ -90,6 +91,39 @@ _flit_bisect()
   # TODO: If there has already been one positional argument, then give a list
   #       of test names
 
+  return 0
+}
+
+_flit_disguise()
+{
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="-h --help
+    -g --generate
+    -o --output
+    -m --disguise-map
+    -u --undo
+    -j --jobs"
+  # file field
+
+  case "${prev}" in
+
+    -m|--disguise-map|-o|--output)
+      _filedir  # match with a file
+      return 0
+      ;;
+
+    -j|--jobs)
+      # do no completion -- numbers
+      return 0
+      ;;
+
+  esac
+
+  COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+  _filedir  # positional argument, match on files
   return 0
 }
 
@@ -258,7 +292,7 @@ _flit()
   available_subcommands="
     -h --help
     -v --version
-    experimental help bisect init make update import"
+    experimental help bisect disguise init make update import"
 
   # subcommand completion
   if [ ${COMP_CWORD} -le 1 ]; then
@@ -270,6 +304,7 @@ _flit()
   case "${subcommand}" in
     help)         _flit_help         ;;
     bisect)       _flit_bisect       ;;
+    disguise)     _flit_disguise     ;;
     init)         _flit_init         ;;
     make)         _flit_make         ;;
     update)       _flit_update       ;;

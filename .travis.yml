@@ -82,18 +82,19 @@
 
 language: cpp
 os: linux
+#dist: bionic
 addons:
   apt:
     packages: &native_deps
       - python3
       - python3-pip
+      - bash-completion
 
 matrix:
   include:
     # Job 1: OpenMPI
     - env:
       - mpi_type=openmpi
-      - extra_pip=pyelftools
       addons:
         apt:
           packages:
@@ -103,7 +104,6 @@ matrix:
     # Job 2: MPICH
     - env:
       - mpi_type=mpich
-      - extra_pip=
       addons:
         apt:
           packages:
@@ -113,7 +113,6 @@ matrix:
     # Job 3: No MPI
     - env:
       - mpi_type=none
-      - extra_pip=
       addons:
         apt:
           packages:
@@ -121,9 +120,9 @@ matrix:
 
 before_install:
   - pip3 install --user setuptools
-  - pip3 install --user toml $extra_pip
+  - pip3 install --user toml
 
-script: make -j4 && make -j4 -C tests && make check
+script: dpkg --list | grep binutil && make -j4 && make -j4 -C tests && make check
 
 #notifications:
 #  email: false

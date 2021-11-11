@@ -1,6 +1,3 @@
-# Much of this is copied from the examples given in
-#   https://github.com/eliben/pyelftools.git
-
 # -- LICENSE BEGIN --
 #
 # Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
@@ -84,199 +81,123 @@
 # -- LICENSE END --
 
 '''
-Utility functions for dealing with ELF binary files.  This file requires the
-pyelftools package to be installed (i.e. module elftools).
+Utility functions for dealing with ELF binary files.  This file uses
+alternative methods to do this functionality that does not require the
+pyelftools package.
+
+Instead, this package uses binutils through subprocesses.  The programs used
+are "nm" and "c++filt" to perform the same functionality.
 '''
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import subprocess as subp
 import os
+import shutil
 
-from elftools.elf.elffile import ELFFile
-from elftools.elf.sections import SymbolTableSection
+if not shutil.which('nm') or not shutil.which('c++filt'):
+    raise ImportError('Cannot find binaries "nm" and "c++filt"')
 
 SymbolTuple = namedtuple('SymbolTuple',
-                         'src, symbol, demangled, fname, lineno')
+                         'symbol, demangled, fname, lineno')
 SymbolTuple.__doc__ = '''
 Tuple containing information about the symbols in a file.  Has the following
 attributes:
-    src:        source file that was compiled
     symbol:     mangled symbol in the compiled version
     demangled:  demangled version of symbol
-    fname:      filename where the symbol is actually defined.  This usually
-                will be equal to src, but may not be in some situations.
+    fname:      filename where the symbol is defined.
     lineno:     line number of definition within fname.
 '''
 
-def extract_symbols(objfile, srcfile):
+def extract_symbols(objfile_or_list):
     '''
     Extracts symbols for the given object file.
 
-    @param objfile: (str) path to object file
+    @param objfile_or_list: (str or list(str)) path to object file(s)
 
     @return two lists of SymbolTuple objects (funcsyms, remaining).
         The first is the list of exported functions that are strong symbols and
         have a filename and line number where they are defined.  The second is
         all remaining symbols that are strong, exported, and defined.
     '''
-    with open(objfile, 'rb') as fin:
-        elffile = ELFFile(fin)
+    funcsym_tuples = []
+    remaining_tuples = []
+    nm_args = [
+        'nm',
+        '--print-file-name',
+        '--extern-only',
+        '--defined-only',
+        ]
+    if isinstance(objfile_or_list, str):
+        nm_args.append(objfile_or_list)
+    else:
+        nm_args.extend(objfile_or_list)
+    symbol_strings = subp.check_output(nm_args).decode('utf-8').splitlines()
 
-        symtabs = [x for x in elffile.iter_sections()
-                   if isinstance(x, SymbolTableSection)]
-        if len(symtabs) == 0:
-            raise RuntimeError('Object file {} does not have a symbol table'
-                               .format(objfile))
+    obj_symbols = defaultdict(list)
+    symbols = []
+    for symbol_string in symbol_strings:
+        loc, stype, symbol = symbol_string.split(maxsplit=2)
+        objfile, offset = loc.split(':')
+        symbols.append(symbol)
+        obj_symbols[objfile].append((offset, stype, symbol))
 
-        # get globally exported defined symbols
-        syms = [sym for symtab in symtabs
-                for sym in symtab.iter_symbols()
-                if _is_symbol(sym)
-                and _is_extern(sym)
-                and _is_strong(sym)
-                and _is_defined(sym)]
+    demangle_map = dict(zip(symbols, _demangle(symbols)))
 
-        # split symbols into functions and non-functions
-        fsyms = [sym for sym in syms if _is_func(sym)] # functions
-        rsyms = list(set(syms).difference(fsyms))      # remaining
+    fileinfo_map = {}
+    linenumber_map = {}
+    for obj, symlist in obj_symbols.items():
+        to_check = []
+        for offset, stype, symbol in symlist:
+            if symbol in fileinfo_map and fileinfo_map[symbol]:
+                continue
+            elif stype.lower() != 't':
+                fileinfo_map[symbol] = (None, None)
+            else:
+                to_check.append((offset, symbol))
+        fileinfo_map.update(_fnames_and_line_numbers(obj, to_check))
 
-        # find filename and line numbers for each relevant func symbol
-        locs = _locate_symbols(elffile, fsyms)
+    for symbol in symbols:
+        fnam, line = fileinfo_map[symbol]
+        symbol_tuple = SymbolTuple(symbol, demangle_map[symbol], fnam, line)
+        if fnam:
+            funcsym_tuples.append(symbol_tuple)
+        else:
+            remaining_tuples.append(symbol_tuple)
 
-        # demangle all symbols
-        fdemangled = _demangle([sym.name for sym in fsyms])
-        rdemangled = _demangle([sym.name for sym in rsyms])
-
-        funcsym_tuples = [SymbolTuple(srcfile, fsyms[i].name, fdemangled[i],
-                                      locs[i][0], locs[i][1])
-                          for i in range(len(fsyms))]
-        remaining_tuples = [SymbolTuple(srcfile, rsyms[i].name, rdemangled[i],
-                                        None, None)
-                            for i in range(len(rsyms))]
-
-        return funcsym_tuples, remaining_tuples
-
-def _symbols(symtab):
-    'Returns all symbols from the given symbol table'
-    return [sym for sym in symtab.iter_symbols() if _is_symbol(sym)]
-
-def _is_symbol(sym):
-    'Returns True if elf.sections.Symbol object is a symbol'
-    return sym.name != '' and sym['st_info']['type'] != 'STT_FILE'
-
-def _is_extern(sym):
-    'Returns True if elf.sections.Symbol is an extern symbol'
-    return sym['st_info']['bind'] != 'STB_LOCAL'
-
-def _is_weak(sym):
-    'Returns True if elf.sections.Symbol is a weak symbol'
-    return sym['st_info']['bind'] == 'STB_WEAK'
-
-def _is_strong(sym):
-    'Returns True if elf.sections.Symbol is a strong symbol'
-    return sym['st_info']['bind'] == 'STB_GLOBAL'
-
-def _is_defined(sym):
-    'Returns True if elf.sections.Symbol is defined'
-    return sym['st_shndx'] != 'SHN_UNDEF'
-
-def _is_func(sym):
-    'Returns True if elf.sections.Symbol is a function'
-    return sym['st_info']['type'] == 'STT_FUNC'
+    return funcsym_tuples, remaining_tuples
 
 def _demangle(symbol_list):
     'Demangles each C++ name in the given list'
+    if not symbol_list:
+        return []
     proc = subp.Popen(['c++filt'], stdin=subp.PIPE, stdout=subp.PIPE)
     out, _ = proc.communicate('\n'.join(symbol_list).encode())
     demangled = out.decode('utf8').splitlines()
     assert len(demangled) == len(symbol_list)
     return demangled
 
-def _locate_symbols(elffile, symbols):
+def _fnames_and_line_numbers(objfile, offset_symbol_tuples):
     '''
-    Locates the filename and line number of each symbol in the elf file.
-
-    @param elffile: (elf.elffile.ELFFile) The top-level elf file
-    @param symbols: (list(elf.sections.Symbol)) symbols to locate
-
-    @return list(tuple(filename, lineno)) in the order of the given symbols
-
-    If the file does not have DWARF info or a symbol is not found, an exception
-    is raised
-
-    Test that even without a proper elffile, if there are no symbols to match,
-    then no error occurs and you can be on your merry way.
-    >>> _locate_symbols(object(), [])
-    []
+    Given a list of tuples of (offset, symbol), return a single dictionaries, a
+    mapping from symbol name to a tuple of (filename, line number).  If the
+    filename and/or line number could not be determined, then both will be set
+    to None.
     '''
-    if len(symbols) == 0:
-        return []
-
-    if not elffile.has_dwarf_info():
-        raise RuntimeError('Elf file has no DWARF info')
-
-    dwarfinfo = elffile.get_dwarf_info()
-    fltable = _gen_file_line_table(dwarfinfo)
-
-    locations = []
-    for sym in symbols:
-        for fname, lineno, start, end in fltable:
-            if start <= sym.entry['st_value'] < end:
-                locations.append((fname.decode('utf8'), lineno))
-                break
-        else:
-            locations.append((None, None))
-
-    return locations
-
-def _gen_file_line_table(dwarfinfo):
-    '''
-    Generates and returns a list of (filename, lineno, startaddr, endaddr).
-
-    Tests that an empty dwarfinfo object will result in an empty return list
-    >>> class FakeDwarf:
-    ...     def __init__(self):
-    ...         pass
-    ...     def iter_CUs(self):
-    ...         return []
-    >>> _gen_file_line_table(FakeDwarf())
-    []
-    '''
-    # generate the table
-    table = []
-    for unit in dwarfinfo.iter_CUs():
-        lineprog = dwarfinfo.line_program_for_CU(unit)
-        prevstate = None
-        for entry in lineprog.get_entries():
-            # We're interested in those entries where a new state is assigned
-            if entry.state is None or entry.state.end_sequence:
-                continue
-            # Looking for a range of addresses in two consecutive states that
-            # contain a required address.
-            if prevstate is not None:
-                filename = lineprog['file_entry'][prevstate.file - 1].name
-                dirno = lineprog['file_entry'][prevstate.file - 1].dir_index
-                filepath = os.path.join(
-                        lineprog['include_directory'][dirno - 1], filename)
-                line = prevstate.line
-                fromaddr = prevstate.address
-                toaddr = max(fromaddr, entry.state.address)
-                table.append((filepath, line, fromaddr, toaddr))
-            prevstate = entry.state
-
-    # If there are no functions, then return an empty list
-    if len(table) == 0:
-        return []
-
-    # consolidate the table
-    consolidated = []
-    prev = table[0]
-    for entry in table[1:]:
-        if prev[1] == entry[1] and prev[3] == entry[2]:
-            prev = (prev[0], prev[1], prev[2], entry[3])
-        else:
-            consolidated.append(prev)
-            prev = entry
-    consolidated.append(prev)
-
-    return consolidated
+    if not offset_symbol_tuples:
+        return {}
+    proc = subp.Popen(['addr2line', '-e', objfile], stdin=subp.PIPE,
+                      stdout=subp.PIPE)
+    out, _ = proc.communicate('\n'.join(x[0] for x in offset_symbol_tuples)
+                              .encode())
+    info = out.decode('utf8').splitlines()
+    assert len(info) == len(offset_symbol_tuples), \
+        'len(info) = {}, len(offset_symbol_tuples) = {}'\
+        .format(len(info), len(offset_symbol_tuples))
+    mapping = {}
+    for line, symbol in zip(info, (x[1] for x in offset_symbol_tuples)):
+        filename, linenumber = line.strip().split(':')
+        if filename == '??' or linenumber == '0':
+            filename = None
+            linenumber = None
+        mapping[symbol] = (filename, linenumber)
+    return mapping
