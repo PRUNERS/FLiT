@@ -1,9 +1,10 @@
 name: Automated Tests
 
 on:
-  push:
+  push:              # all pushes, but only to the specified branches
     branches: [ devel, master, main ]
-  pull_request:
+  pull_request:      # all pull requests
+  workflow_dispatch: # allows manual triggering on web interface
 
 jobs:
   automated-tests:

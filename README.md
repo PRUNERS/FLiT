@@ -1,7 +1,7 @@
 | branch  | status  |
 |---------|---------|
-| master  | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=master)](https://travis-ci.org/PRUNERS/FLiT) |
-| devel   | [![Build Status](https://travis-ci.org/PRUNERS/FLiT.svg?branch=devel)](https://travis-ci.org/PRUNERS/FLiT) |
+| master  | ![Build Status](https://github.com/PRUNERS/FLiT/actions/workflows/automated-tests.yml/badge.svg?branch=master) |
+| devel   | ![Build Status](https://github.com/PRUNERS/FLiT/actions/workflows/automated-tests.yml/badge.svg) |
 
 ![PyPI - License](https://img.shields.io/pypi/l/Django.svg)
 ![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
