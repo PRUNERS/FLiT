@@ -115,7 +115,7 @@ def load_subcommands(directory):
     '''
     if directory not in sys.path:
         sys.path.insert(0, directory)
-    subcommand_files = glob.glob(os.path.join(directory, 'flit_*.py'))
+    subcommand_files = sorted(glob.glob(os.path.join(directory, 'flit_*.py')))
     subcommand_names = [os.path.basename(x)[5:-3] for x in subcommand_files]
     subcom_modules = [importlib.import_module(os.path.basename(x)[:-3])
                       for x in subcommand_files]
@@ -165,7 +165,8 @@ def populate_parser(parser=None, subcommands=None, recursive=False):
         subparsers = parser.add_subparsers(
             title='Subcommands',
             dest='subcommand',
-            metavar='subcommand')
+            metavar='subcommand',
+        )
         for subcommand in subcommands:
             subparser = subparsers.add_parser(
                 subcommand.name, help=subcommand.brief_description,
@@ -236,13 +237,16 @@ def create_help_subcommand(subcommands):
 def _main_impl(arguments, module_dir, prog=None):
     'Implementation of main'
     subcommands = load_subcommands(module_dir)
-    subcommands.append(create_help_subcommand(subcommands))
+    subcommands.insert(0, create_help_subcommand(subcommands))
 
     parser = populate_parser(subcommands=subcommands)
     if prog: parser.prog = prog
     args, remaining = parser.parse_known_args(arguments)
 
     subcommand_map = {sub.name: sub for sub in subcommands}
+    if args.subcommand is None:
+        parser.print_help()
+        return 0
     subcommand = subcommand_map[args.subcommand]
     return subcommand.main(remaining, prog=parser.prog + ' ' + args.subcommand)
 
