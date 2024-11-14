@@ -113,6 +113,9 @@ def main(arguments, prog=None):
     if prog: parser.prog = prog
     args, remaining = parser.parse_known_args(arguments)
 
+    if args.subcommand is None:
+        parser.print_help()
+        return 0
     subcommand_map = {sub.name: sub for sub in subcommands}
     subcommand = subcommand_map[args.subcommand]
     return subcommand.main(remaining, prog=parser.prog + ' ' + args.subcommand)
